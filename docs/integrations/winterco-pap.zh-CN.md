@@ -1,10 +1,10 @@
 # 联盟 PAP：独立服务接入
 
-## 2026-10-02 历史月份未兑换补兑（本地待发布）
+## 2026-10-02 历史月份未兑换补兑（已发布，待真实管理员验收）
 
 管理员可在联盟 PAP 的“兑换联盟 PAP”弹窗选择仍有未兑换余额的已保存月份，按该月份完整快照预览并提交补兑。每个月有独立的完整性标记和版本；提交时重新核对快照版本、当前有效绑定角色、`alliance_pap` 比例和已兑换单位，沿用 exchange 的请求键幂等与来源流水。已全部兑换的月份不出现在补兑列表，失败或版本变化需刷新后重试。补兑不改变历史快照，也不把历史数据改写为当前月。
 
-迁移会为已有快照建立成功同步月份记录；后续完整同步在同一事务保存月份记录。未有完整发布记录的月份不能补兑，避免把失败或不完整数据当作有效 PAP。接口为管理员专用 `GET /api/v1/attendance/alliance-pap/conversions`、`GET /api/v1/attendance/alliance-pap/conversion?month=YYYY-MM` 和带 `month` 的 POST；当前月接口保持兼容。
+生产版本 `v0.1.0-alliance-pap-history-20261002` 已执行 Goose 61，为已有快照建立成功同步月份记录；后续完整同步在同一事务保存月份记录。未有完整发布记录的月份不能补兑，避免把失败或不完整数据当作有效 PAP。接口为管理员专用 `GET /api/v1/attendance/alliance-pap/conversions`、`GET /api/v1/attendance/alliance-pap/conversion?month=YYYY-MM` 和带 `month` 的 POST；当前月接口保持兼容。九月真实管理员预览、币账核对和实际补兑仍待现场验收。
 
 ## 2026-09-23 自动兑换（已发布）
 
