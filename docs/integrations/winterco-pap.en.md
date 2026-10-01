@@ -1,10 +1,10 @@
 # Alliance PAP: standalone service integration
 
-## Local historical conversion update 2026-10-02 (not deployed)
+## Historical conversion update 2026-10-02 (deployed, live admin acceptance pending)
 
 Administrators can open the Alliance PAP conversion dialog and select any retained complete month with an unconverted balance. Each month has its own completeness marker and version. Submission rechecks the snapshot version, current valid bindings, the `alliance_pap` rate and already-converted units, then uses the exchange idempotency key and source ledger. Fully converted months are omitted; stale versions require a fresh preview. Historical conversion does not rewrite the snapshot or treat it as the current month.
 
-The migration backfills successful-month markers for existing snapshots and records the marker in the same transaction as future complete publications. A month without a complete publication marker cannot be converted. The administrator-only endpoints are `GET /api/v1/attendance/alliance-pap/conversions`, `GET /api/v1/attendance/alliance-pap/conversion?month=YYYY-MM` and the POST request with `month`; omitting the month remains compatible with the current-month flow.
+Production `v0.1.0-alliance-pap-history-20261002` applied Goose 61, backfilling successful-month markers for existing snapshots and recording the marker in the same transaction as future complete publications. A month without a complete publication marker cannot be converted. The administrator-only endpoints are `GET /api/v1/attendance/alliance-pap/conversions`, `GET /api/v1/attendance/alliance-pap/conversion?month=YYYY-MM` and the POST request with `month`; omitting the month remains compatible with the current-month flow. Live administrator preview, ledger verification and settlement for September remain pending.
 
 ## Local automatic conversion update 2026-09-23 (deployed)
 
