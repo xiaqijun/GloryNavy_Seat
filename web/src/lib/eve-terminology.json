@@ -1,0 +1,2673 @@
+{
+  "metadata": {
+    "build": 3503375,
+    "sde_files_sha256": {
+      "accountingEntryTypes.jsonl": "8e7125ea48c84d10957e625dbe882412f477e58d10a3a08379bf87bdb19a021d",
+      "corporationRoles.jsonl": "7710ef51d129cd14c6483fd21c8f8b5340c2ffd9ac962a899d0d5c31d74a7f7e",
+      "types.jsonl": "c601af805c940688c140d89d83de110cbd9798bf483b12bf49f1fd25f5a225cd"
+    },
+    "client_files": {
+      "res:/localizationfsd/localization_fsd_main.pickle": {
+        "sha256": "a62bbf35c05819dbdc462073f0f796c23e292e858a1b7490bee7863f40c4cde0",
+        "index_md5": "1bac9e198a1e70598775d4b506380385"
+      },
+      "res:/localizationfsd/localization_fsd_en-us.pickle": {
+        "sha256": "d61c91891d2aab88a58a626d06b09288f2653134fadda4cbb2efe571db1e953c",
+        "index_md5": "5a8142515617a51fd494ea0ee195b1c8"
+      },
+      "res:/localizationfsd/localization_fsd_zh.pickle": {
+        "sha256": "5674755572301f961bf31e3aaa25642b31db8d891443977efbc7f4e24b38265f",
+        "index_md5": "af559f0c1cc6c79de1d445ef5ec2dba5"
+      }
+    }
+  },
+  "wallet": {
+    "acceleration_gate_fee": {
+      "en": "Acceleration Gate Fee",
+      "zh": "加速轨道费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 53,
+        "key": "acceleration_gate_fee"
+      }
+    },
+    "achievement_category_milestone_reward": {
+      "en": "Achievement",
+      "zh": "成就",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 199,
+        "key": "achievement_category_milestone_reward"
+      }
+    },
+    "achievement_milestone_reward": {
+      "en": "Achievement",
+      "zh": "成就",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 198,
+        "key": "achievement_milestone_reward"
+      }
+    },
+    "advertisement_listing_fee": {
+      "en": "Advertisement Listing Fee",
+      "zh": "广告登记费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 86,
+        "key": "advertisement_listing_fee"
+      }
+    },
+    "agent_donation": {
+      "en": "Agent Donation",
+      "zh": "代理人捐赠",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 28,
+        "key": "agent_donation"
+      }
+    },
+    "agent_location_services": {
+      "en": "Agent Location Services",
+      "zh": "位置追踪服务",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 27,
+        "key": "agent_location_services"
+      }
+    },
+    "agent_miscellaneous": {
+      "en": "Agent Miscellaneous",
+      "zh": "代理人杂项",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 25,
+        "key": "agent_miscellaneous"
+      }
+    },
+    "agent_mission_collateral_paid": {
+      "en": "Agent Mission Collateral Paid",
+      "zh": "代理人任务保证金已缴纳",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 30,
+        "key": "agent_mission_collateral_paid"
+      }
+    },
+    "agent_mission_collateral_refunded": {
+      "en": "Agent Mission Collateral Refunded",
+      "zh": "代理人任务保证金已返还",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 31,
+        "key": "agent_mission_collateral_refunded"
+      }
+    },
+    "agent_mission_reward": {
+      "en": "Agent Mission Reward",
+      "zh": "代理人任务奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 33,
+        "key": "agent_mission_reward"
+      }
+    },
+    "agent_mission_reward_corporation_tax": {
+      "en": "Agent Mission Reward Corporation Tax",
+      "zh": "代理人任务奖励 军团税金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 93,
+        "key": "agent_mission_reward_corporation_tax"
+      }
+    },
+    "agent_mission_security_tax": {
+      "en": "Exordium Mission Agent Tax",
+      "zh": "始源星域任务代理税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 197,
+        "key": "agent_mission_security_tax"
+      }
+    },
+    "agent_mission_time_bonus_reward": {
+      "en": "Agent Mission Time Bonus Reward",
+      "zh": "代理人任务时间加成奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 34,
+        "key": "agent_mission_time_bonus_reward"
+      }
+    },
+    "agent_mission_time_bonus_reward_corporation_tax": {
+      "en": "Agent Mission Time Bonus Reward Corporation Tax",
+      "zh": "代理人任务时间加成奖励 军团税金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 94,
+        "key": "agent_mission_time_bonus_reward_corporation_tax"
+      }
+    },
+    "agent_security_services": {
+      "en": "Agent Security Services",
+      "zh": "代理人保安服务",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 29,
+        "key": "agent_security_services"
+      }
+    },
+    "agent_services_rendered": {
+      "en": "Agent Services Rendered",
+      "zh": "代理人服务已提供",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 43,
+        "key": "agent_services_rendered"
+      }
+    },
+    "agents_preward": {
+      "en": "Agents_preward",
+      "zh": "代理人_预付金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 32,
+        "key": "agents_preward"
+      }
+    },
+    "air_career_program_reward": {
+      "en": "AIR Career Program Reward",
+      "zh": "星空会职业计划奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 185,
+        "key": "air_career_program_reward"
+      }
+    },
+    "alliance_maintainance_fee": {
+      "en": "Alliance Maintainance Fee",
+      "zh": "联盟维护费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 50,
+        "key": "alliance_maintainance_fee"
+      }
+    },
+    "alliance_registration_fee": {
+      "en": "Alliance Registration Fee",
+      "zh": "联盟注册费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 48,
+        "key": "alliance_registration_fee"
+      }
+    },
+    "allignment_based_gate_toll": {
+      "en": "Zarzakh Stargate Toll",
+      "zh": "扎尔扎克星门通行费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 168,
+        "key": "allignment_based_gate_toll"
+      }
+    },
+    "asset_safety_recovery_tax": {
+      "en": "Asset safety recovery tax",
+      "zh": "资产安全恢复税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 123,
+        "key": "asset_safety_recovery_tax"
+      }
+    },
+    "bounty": {
+      "en": "Bounty",
+      "zh": "赏金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 16,
+        "key": "bounty"
+      }
+    },
+    "bounty_prize": {
+      "en": "Bounty Prize",
+      "zh": "追击赏金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 17,
+        "key": "bounty_prize"
+      }
+    },
+    "bounty_prize_corporation_tax": {
+      "en": "Bounty Prize Corporation Tax",
+      "zh": "追击赏金 军团税金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 92,
+        "key": "bounty_prize_corporation_tax"
+      }
+    },
+    "bounty_prizes": {
+      "en": "Bounty Prizes",
+      "zh": "追击赏金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 85,
+        "key": "bounty_prizes"
+      }
+    },
+    "bounty_reimbursement": {
+      "en": "Bounty Reimbursement",
+      "zh": "支付追击赏金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 115,
+        "key": "bounty_reimbursement"
+      }
+    },
+    "bounty_surcharge": {
+      "en": "Bounty Surcharge",
+      "zh": "赏金附加费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 101,
+        "key": "bounty_surcharge"
+      }
+    },
+    "brokers_fee": {
+      "en": "Brokers Fee",
+      "zh": "经纪人中介费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 46,
+        "key": "brokers_fee"
+      }
+    },
+    "campaign_objective_isk_reward": {
+      "en": "Campaign Objective Reward",
+      "zh": "军事行动目标奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 200,
+        "key": "campaign_objective_isk_reward"
+      }
+    },
+    "clone_activation": {
+      "en": "Clone Activation",
+      "zh": "克隆激活",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 8,
+        "key": "clone_activation"
+      }
+    },
+    "clone_transfer": {
+      "en": "Clone Transfer",
+      "zh": "克隆转移",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 52,
+        "key": "clone_transfer"
+      }
+    },
+    "contraband_fine": {
+      "en": "Contraband Fine",
+      "zh": "违禁物罚金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 51,
+        "key": "contraband_fine"
+      }
+    },
+    "contract_auction_bid": {
+      "en": "Contract Auction Bid",
+      "zh": "合同拍卖出价",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 63,
+        "key": "contract_auction_bid"
+      }
+    },
+    "contract_auction_bid_corp": {
+      "en": "Contract Auction Bid (corp)",
+      "zh": "合同拍卖出价(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 77,
+        "key": "contract_auction_bid_corp"
+      }
+    },
+    "contract_auction_bid_refund": {
+      "en": "Contract Auction Bid Refund",
+      "zh": "合同拍卖出价返还",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 64,
+        "key": "contract_auction_bid_refund"
+      }
+    },
+    "contract_auction_sold": {
+      "en": "Contract Auction Sold",
+      "zh": "合同拍卖售出",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 67,
+        "key": "contract_auction_sold"
+      }
+    },
+    "contract_brokers_fee": {
+      "en": "Contract Brokers Fee",
+      "zh": "合同经纪人中介费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 72,
+        "key": "contract_brokers_fee"
+      }
+    },
+    "contract_brokers_fee_corp": {
+      "en": "Contract Brokers Fee (corp)",
+      "zh": "合同经纪人中介费(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 80,
+        "key": "contract_brokers_fee_corp"
+      }
+    },
+    "contract_collateral": {
+      "en": "Contract Collateral",
+      "zh": "合同保证金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 65,
+        "key": "contract_collateral"
+      }
+    },
+    "contract_collateral_deposited_corp": {
+      "en": "Contract Collateral Deposited (corp)",
+      "zh": "预缴合同保证金(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 78,
+        "key": "contract_collateral_deposited_corp"
+      }
+    },
+    "contract_collateral_payout": {
+      "en": "Contract Collateral Payout",
+      "zh": "合同保证金支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 70,
+        "key": "contract_collateral_payout"
+      }
+    },
+    "contract_collateral_refund": {
+      "en": "Contract Collateral Refund",
+      "zh": "合同保证金返还",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 69,
+        "key": "contract_collateral_refund"
+      }
+    },
+    "contract_deposit": {
+      "en": "Contract Deposit",
+      "zh": "合同定金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 74,
+        "key": "contract_deposit"
+      }
+    },
+    "contract_deposit_corp": {
+      "en": "Contract Deposit (corp)",
+      "zh": "合同定金(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 81,
+        "key": "contract_deposit_corp"
+      }
+    },
+    "contract_deposit_refund": {
+      "en": "Contract Deposit Refund",
+      "zh": "合同定金返还",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 82,
+        "key": "contract_deposit_refund"
+      }
+    },
+    "contract_deposit_sales_tax": {
+      "en": "Contract Deposit Sales Tax",
+      "zh": "合同定金销售税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 75,
+        "key": "contract_deposit_sales_tax"
+      }
+    },
+    "contract_price": {
+      "en": "Contract Price",
+      "zh": "合同价格",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 71,
+        "key": "contract_price"
+      }
+    },
+    "contract_price_payment_corp": {
+      "en": "Contract Price Payment (corp)",
+      "zh": "合同价格付款(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 79,
+        "key": "contract_price_payment_corp"
+      }
+    },
+    "contract_reversal": {
+      "en": "Contract Reversal",
+      "zh": "合同撤销",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 102,
+        "key": "contract_reversal"
+      }
+    },
+    "contract_reward": {
+      "en": "Contract Reward",
+      "zh": "合同酬金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 68,
+        "key": "contract_reward"
+      }
+    },
+    "contract_reward_deposited": {
+      "en": "Contract Reward Deposited",
+      "zh": "预缴合同奖金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 83,
+        "key": "contract_reward_deposited"
+      }
+    },
+    "contract_reward_deposited_corp": {
+      "en": "Contract Reward Deposited (corp)",
+      "zh": "预缴合同奖金(军团)",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 84,
+        "key": "contract_reward_deposited_corp"
+      }
+    },
+    "contract_reward_refund": {
+      "en": "Contract Reward Refund",
+      "zh": "合同奖金返还",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 66,
+        "key": "contract_reward_refund"
+      }
+    },
+    "contract_sales_tax": {
+      "en": "Contract Sales Tax",
+      "zh": "合同销售税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 73,
+        "key": "contract_sales_tax"
+      }
+    },
+    "copying": {
+      "en": "Copying",
+      "zh": "拷贝",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 60,
+        "key": "copying"
+      }
+    },
+    "corporate_reward_payout": {
+      "en": "Corporate Reward Payout",
+      "zh": "军团奖励支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 99,
+        "key": "corporate_reward_payout"
+      }
+    },
+    "corporate_reward_tax": {
+      "en": "Corporate Reward Tax",
+      "zh": "军团奖励税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 103,
+        "key": "corporate_reward_tax"
+      }
+    },
+    "corporation_account_withdrawal": {
+      "en": "Corporation Account Withdrawal",
+      "zh": "军团账户支取",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 37,
+        "key": "corporation_account_withdrawal"
+      }
+    },
+    "corporation_bulk_payment": {
+      "en": "Corporation Bulk Payment",
+      "zh": "军团批量付款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 47,
+        "key": "corporation_bulk_payment"
+      }
+    },
+    "corporation_dividend_payment": {
+      "en": "Corporation Dividend Payment",
+      "zh": "军团分红支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 38,
+        "key": "corporation_dividend_payment"
+      }
+    },
+    "corporation_liquidation": {
+      "en": "Corporation Liquidation",
+      "zh": "军团结算",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 45,
+        "key": "corporation_liquidation"
+      }
+    },
+    "corporation_logo_change_cost": {
+      "en": "Corporation Logo Change Cost",
+      "zh": "军团图标变更费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 40,
+        "key": "corporation_logo_change_cost"
+      }
+    },
+    "corporation_payment": {
+      "en": "Corporation Payment",
+      "zh": "军团付款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 11,
+        "key": "corporation_payment"
+      }
+    },
+    "corporation_registration_fee": {
+      "en": "Corporation Registration Fee",
+      "zh": "军团注册费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 39,
+        "key": "corporation_registration_fee"
+      }
+    },
+    "cosmetic_market_component_item_purchase": {
+      "en": "Paragon Hub Design Element",
+      "zh": "派瑞根中心设计元素",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 178,
+        "key": "cosmetic_market_component_item_purchase"
+      }
+    },
+    "cosmetic_market_skin_purchase": {
+      "en": "Paragon Hub SKIN purchase",
+      "zh": "派瑞根中心涂装购买",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 180,
+        "key": "cosmetic_market_skin_purchase"
+      }
+    },
+    "cosmetic_market_skin_sale": {
+      "en": "Paragon Hub SKIN sale",
+      "zh": "派瑞根中心涂装销售",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 181,
+        "key": "cosmetic_market_skin_sale"
+      }
+    },
+    "cosmetic_market_skin_sale_broker_fee": {
+      "en": "Paragon Hub Listing Fee",
+      "zh": "派瑞根中心上架费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 179,
+        "key": "cosmetic_market_skin_sale_broker_fee"
+      }
+    },
+    "cosmetic_market_skin_sale_tax": {
+      "en": "Paragon Hub Vendor Fee",
+      "zh": "派瑞根中心商家费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 182,
+        "key": "cosmetic_market_skin_sale_tax"
+      }
+    },
+    "cosmetic_market_skin_transaction": {
+      "en": "Paragon Hub SKIN transaction",
+      "zh": "派瑞根中心涂装交易",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 183,
+        "key": "cosmetic_market_skin_transaction"
+      }
+    },
+    "courier_mission_escrow": {
+      "en": "Courier Mission Escrow",
+      "zh": "快递任务契约金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 23,
+        "key": "courier_mission_escrow"
+      }
+    },
+    "cspa": {
+      "en": "CSPA",
+      "zh": "CSPA",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 35,
+        "key": "cspa"
+      }
+    },
+    "cspaofflinerefund": {
+      "en": "CSPAOfflineRefund",
+      "zh": "CSPA离线返还金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 36,
+        "key": "cspaofflinerefund"
+      }
+    },
+    "daily_challenge_reward": {
+      "en": "Daily Challenge Completed",
+      "zh": "完成的每日挑战",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 148,
+        "key": "daily_challenge_reward"
+      }
+    },
+    "daily_goal_payouts": {
+      "en": "Daily Goal Reward",
+      "zh": "每日目标奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 174,
+        "key": "daily_goal_payouts"
+      }
+    },
+    "daily_goal_payouts_tax": {
+      "en": "Daily Goal Reward Tax",
+      "zh": "每日目标奖励税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 175,
+        "key": "daily_goal_payouts_tax"
+      }
+    },
+    "datacore_fee": {
+      "en": "Datacore Fee",
+      "zh": "数据核心费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 112,
+        "key": "datacore_fee"
+      }
+    },
+    "dna_modification_fee": {
+      "en": "DNA Modification Fee",
+      "zh": "DNA改造费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 90,
+        "key": "dna_modification_fee"
+      }
+    },
+    "docking_fee": {
+      "en": "Docking Fee",
+      "zh": "停靠费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 12,
+        "key": "docking_fee"
+      }
+    },
+    "duel_wager_escrow": {
+      "en": "Duel wager escrow payment",
+      "zh": "决斗赌注保证金支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 132,
+        "key": "duel_wager_escrow"
+      }
+    },
+    "duel_wager_payment": {
+      "en": "Duel wager reward",
+      "zh": "决斗赌注奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 133,
+        "key": "duel_wager_payment"
+      }
+    },
+    "duel_wager_refund": {
+      "en": "Duel wager refund",
+      "zh": "决斗赌注退款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 134,
+        "key": "duel_wager_refund"
+      }
+    },
+    "ess_escrow_transfer": {
+      "en": "ESS Escrow Payment",
+      "zh": "事件监测装置保证金支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 155,
+        "key": "ess_escrow_transfer"
+      }
+    },
+    "external_trade_delivery": {
+      "en": "External Trade Delivery",
+      "zh": "外部交易递送",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 138,
+        "key": "external_trade_delivery"
+      }
+    },
+    "external_trade_freeze": {
+      "en": "External Trade Freeze",
+      "zh": "外部交易冻结",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 136,
+        "key": "external_trade_freeze"
+      }
+    },
+    "external_trade_thaw": {
+      "en": "External Trade Thaw",
+      "zh": "外部交易解冻",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 137,
+        "key": "external_trade_thaw"
+      }
+    },
+    "factory_slot_rental_fee": {
+      "en": "Factory Slot Rental Fee",
+      "zh": "工厂槽位租借费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 14,
+        "key": "factory_slot_rental_fee"
+      }
+    },
+    "flux_payout": {
+      "en": "Completed HyperNet Relay Payout",
+      "zh": "完成的超网中继支付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 144,
+        "key": "flux_payout"
+      }
+    },
+    "flux_tax": {
+      "en": "HyperNet Relay Fee",
+      "zh": "超网中继交易费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 145,
+        "key": "flux_tax"
+      }
+    },
+    "flux_ticket_repayment": {
+      "en": "HyperNode refund for expired HyperNet Offer",
+      "zh": "因超网订单过期而返还超网节点购买金额",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 146,
+        "key": "flux_ticket_repayment"
+      }
+    },
+    "flux_ticket_sale": {
+      "en": "HyperNode transaction",
+      "zh": "超网节点交易",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 143,
+        "key": "flux_ticket_sale"
+      }
+    },
+    "freelance_jobs_broadcasting_fee": {
+      "en": "Freelance Jobs Broadcasting Fee",
+      "zh": "自由任务广播费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 187,
+        "key": "freelance_jobs_broadcasting_fee"
+      }
+    },
+    "freelance_jobs_duration_fee": {
+      "en": "Freelance Jobs Duration Fee",
+      "zh": "自由任务时长费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 186,
+        "key": "freelance_jobs_duration_fee"
+      }
+    },
+    "freelance_jobs_escrow_refund": {
+      "en": "Freelance Jobs Escrow Refund",
+      "zh": "自由任务托管退款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 190,
+        "key": "freelance_jobs_escrow_refund"
+      }
+    },
+    "freelance_jobs_reward": {
+      "en": "Freelance Jobs Reward",
+      "zh": "自由任务奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 189,
+        "key": "freelance_jobs_reward"
+      }
+    },
+    "freelance_jobs_reward_corporation_tax": {
+      "en": "Freelance Jobs Reward Corporation Tax",
+      "zh": "自由任务奖励军团税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 191,
+        "key": "freelance_jobs_reward_corporation_tax"
+      }
+    },
+    "freelance_jobs_reward_escrow": {
+      "en": "Freelance Jobs Reward Escrow",
+      "zh": "自由任务奖励托管",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 188,
+        "key": "freelance_jobs_reward_escrow"
+      }
+    },
+    "gm_cash_transfer": {
+      "en": "GM Cash Transfer",
+      "zh": "GM现金转帐",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 3,
+        "key": "gm_cash_transfer"
+      }
+    },
+    "gm_plex_fee_refund": {
+      "en": "GM Cash Transfer",
+      "zh": "GM现金转帐",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 192,
+        "key": "gm_plex_fee_refund"
+      }
+    },
+    "industry_job_tax": {
+      "en": "Industry Facility Tax",
+      "zh": "工业设施税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 120,
+        "key": "industry_job_tax"
+      }
+    },
+    "industry_security_tax": {
+      "en": "Exordium Industrial Tax",
+      "zh": "始源星域工业税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 196,
+        "key": "industry_security_tax"
+      }
+    },
+    "infrastructure_hub_maintenance": {
+      "en": "Infrastructure Hub bill",
+      "zh": "基础设施中心账单",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 122,
+        "key": "infrastructure_hub_maintenance"
+      }
+    },
+    "inheritance": {
+      "en": "Inheritance",
+      "zh": "继承",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 9,
+        "key": "inheritance"
+      }
+    },
+    "insurance": {
+      "en": "Insurance",
+      "zh": "保险",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 19,
+        "key": "insurance"
+      }
+    },
+    "insurgency_corruption_contribution_reward": {
+      "en": "Insurgency corruption contribution reward",
+      "zh": "叛乱活动的腐蚀贡献奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 172,
+        "key": "insurgency_corruption_contribution_reward"
+      }
+    },
+    "insurgency_suppression_contribution_reward": {
+      "en": "Insurgency suppression contribution reward",
+      "zh": "叛乱活动的镇压贡献奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 173,
+        "key": "insurgency_suppression_contribution_reward"
+      }
+    },
+    "item_trader_payment": {
+      "en": "Item Trade",
+      "zh": "物品交易",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 142,
+        "key": "item_trader_payment"
+      }
+    },
+    "jump_clone_activation_fee": {
+      "en": "Jump Clone Activation Fee",
+      "zh": "远距克隆激活费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 128,
+        "key": "jump_clone_activation_fee"
+      }
+    },
+    "jump_clone_installation_fee": {
+      "en": "Jump Clone Installation Fee",
+      "zh": "远距克隆安装费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 55,
+        "key": "jump_clone_installation_fee"
+      }
+    },
+    "kill_right_fee": {
+      "en": "Kill Right",
+      "zh": "击毁权",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 116,
+        "key": "kill_right_fee"
+      }
+    },
+    "lp_store": {
+      "en": "LP Store",
+      "zh": "忠诚点商店",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 26,
+        "key": "lp_store"
+      }
+    },
+    "manufacturing": {
+      "en": "Manufacturing",
+      "zh": "制造",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 56,
+        "key": "manufacturing"
+      }
+    },
+    "market_escrow": {
+      "en": "Market Escrow",
+      "zh": "市场契约金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 42,
+        "key": "market_escrow"
+      }
+    },
+    "market_fine_paid": {
+      "en": "Market Fine Paid",
+      "zh": "支付市场罚款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 44,
+        "key": "market_fine_paid"
+      }
+    },
+    "market_provider_tax": {
+      "en": "SCC surcharge",
+      "zh": "商业安全委员会追加费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 149,
+        "key": "market_provider_tax"
+      }
+    },
+    "market_security_tax": {
+      "en": "Exordium Market Tax",
+      "zh": "始源星域市场税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 194,
+        "key": "market_security_tax"
+      }
+    },
+    "market_transaction": {
+      "en": "Market Transaction",
+      "zh": "市场交易",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 2,
+        "key": "market_transaction"
+      }
+    },
+    "medal_creation": {
+      "en": "Medal Creation",
+      "zh": "制作奖章",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 87,
+        "key": "medal_creation"
+      }
+    },
+    "medal_issued": {
+      "en": "Medal Issued",
+      "zh": "授予奖章",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 88,
+        "key": "medal_issued"
+      }
+    },
+    "milestone_reward_payment": {
+      "en": "First Day ISK Bonus",
+      "zh": "首日星币加成",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 156,
+        "key": "milestone_reward_payment"
+      }
+    },
+    "mission_completion": {
+      "en": "Mission Completion",
+      "zh": "任务完成",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 21,
+        "key": "mission_completion"
+      }
+    },
+    "mission_cost": {
+      "en": "Mission Cost",
+      "zh": "任务花销",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 24,
+        "key": "mission_cost"
+      }
+    },
+    "mission_expiration": {
+      "en": "Mission Expiration",
+      "zh": "任务过期",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 20,
+        "key": "mission_expiration"
+      }
+    },
+    "mission_reward": {
+      "en": "Mission Reward",
+      "zh": "任务奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 7,
+        "key": "mission_reward"
+      }
+    },
+    "npc_bounty_security_tax": {
+      "en": "Exordium Bounty Tax",
+      "zh": "始源星域赏金税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 195,
+        "key": "npc_bounty_security_tax"
+      }
+    },
+    "office_rental_fee": {
+      "en": "Office Rental Fee",
+      "zh": "办公室租金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 13,
+        "key": "office_rental_fee"
+      }
+    },
+    "operation_bonus": {
+      "en": "Mission Reward",
+      "zh": "任务奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 129,
+        "key": "operation_bonus"
+      }
+    },
+    "opportunity_reward": {
+      "en": "Opportunity Reward",
+      "zh": "机遇奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 124,
+        "key": "opportunity_reward"
+      }
+    },
+    "planetary_construction": {
+      "en": "Planetary Construction",
+      "zh": "行星建设",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 98,
+        "key": "planetary_construction"
+      }
+    },
+    "planetary_export_tax": {
+      "en": "Planetary Export Tax",
+      "zh": "行星出口税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 97,
+        "key": "planetary_export_tax"
+      }
+    },
+    "planetary_import_tax": {
+      "en": "Planetary Import Tax",
+      "zh": "行星进口税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 96,
+        "key": "planetary_import_tax"
+      }
+    },
+    "player_donation": {
+      "en": "Player Donation",
+      "zh": "玩家捐助",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 10,
+        "key": "player_donation"
+      }
+    },
+    "player_trading": {
+      "en": "Player Trading",
+      "zh": "玩家交易",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 1,
+        "key": "player_trading"
+      }
+    },
+    "project_discovery_reward": {
+      "en": "Project Discovery reward",
+      "zh": "探索计划奖励",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 125,
+        "key": "project_discovery_reward"
+      }
+    },
+    "project_discovery_tax": {
+      "en": "Corporation tax on Project Discovery rewards",
+      "zh": "针对探索计划奖励的军团税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 126,
+        "key": "project_discovery_tax"
+      }
+    },
+    "project_payouts": {
+      "en": "Corporation Projects",
+      "zh": "军团项目",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 170,
+        "key": "project_payouts"
+      }
+    },
+    "reaction": {
+      "en": "Reactions",
+      "zh": "反应",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 135,
+        "key": "reaction"
+      }
+    },
+    "redeemed_isk_token": {
+      "en": "Redeemed ISK token",
+      "zh": "兑换星币令牌",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 147,
+        "key": "redeemed_isk_token"
+      }
+    },
+    "release_of_impounded_property": {
+      "en": "Release Of Impounded Property",
+      "zh": "扣押资产赎金",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 41,
+        "key": "release_of_impounded_property"
+      }
+    },
+    "repair_bill": {
+      "en": "Repair Bill",
+      "zh": "维修账单",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 15,
+        "key": "repair_bill"
+      }
+    },
+    "reprocessing_tax": {
+      "en": "Reprocessing Tax",
+      "zh": "提炼税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 127,
+        "key": "reprocessing_tax"
+      }
+    },
+    "researching_material_productivity": {
+      "en": "Researching Material Efficiency",
+      "zh": "研究材料效率",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 59,
+        "key": "researching_material_productivity"
+      }
+    },
+    "researching_technology": {
+      "en": "Researching Technology",
+      "zh": "研究技术",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 57,
+        "key": "researching_technology"
+      }
+    },
+    "researching_time_productivity": {
+      "en": "Researching Time Efficiency",
+      "zh": "研究时间效率",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 58,
+        "key": "researching_time_productivity"
+      }
+    },
+    "resource_wars_reward": {
+      "en": "Mining Site Protection Money",
+      "zh": "采集地点保护费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 131,
+        "key": "resource_wars_reward"
+      }
+    },
+    "reverse_engineering": {
+      "en": "Reverse Engineering",
+      "zh": "逆向工程",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 62,
+        "key": "reverse_engineering"
+      }
+    },
+    "season_challenge_reward": {
+      "en": "Challenge Completed",
+      "zh": "挑战已完成",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 139,
+        "key": "season_challenge_reward"
+      }
+    },
+    "security_processing_fee": {
+      "en": "Fee for processing one or more security tags",
+      "zh": "安全等级铭牌上交手续费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 117,
+        "key": "security_processing_fee"
+      }
+    },
+    "shares": {
+      "en": "Shares",
+      "zh": "股票",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 22,
+        "key": "shares"
+      }
+    },
+    "skill_purchase": {
+      "en": "Skill Purchase",
+      "zh": "技能购买",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 141,
+        "key": "skill_purchase"
+      }
+    },
+    "skyhook_claim_fee": {
+      "en": "Skyhook claim fee",
+      "zh": "天钩索赔费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 184,
+        "key": "skyhook_claim_fee"
+      }
+    },
+    "sovereignity_bill": {
+      "en": "Sovereignty bill",
+      "zh": "主权账单",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 91,
+        "key": "sovereignity_bill"
+      }
+    },
+    "store_purchase": {
+      "en": "Store Purchase",
+      "zh": "商城消费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 106,
+        "key": "store_purchase"
+      }
+    },
+    "store_purchase_refund": {
+      "en": "Store Purchase Refund",
+      "zh": "商城消费退款",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 107,
+        "key": "store_purchase_refund"
+      }
+    },
+    "structure_gate_jump": {
+      "en": "Jump Bridge Fee",
+      "zh": "跳跃桥接费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 140,
+        "key": "structure_gate_jump"
+      }
+    },
+    "transaction_tax": {
+      "en": "Transaction Tax",
+      "zh": "交易税",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 54,
+        "key": "transaction_tax"
+      }
+    },
+    "under_construction": {
+      "en": "Building Materials Delivered",
+      "zh": "建造材料已交付",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 166,
+        "key": "under_construction"
+      }
+    },
+    "upkeep_adjustment_fee": {
+      "en": "Upkeep adjustment fee",
+      "zh": "主权维护调整费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 95,
+        "key": "upkeep_adjustment_fee"
+      }
+    },
+    "war_ally_contract": {
+      "en": "War Ally Contract",
+      "zh": "战争同盟合同",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 114,
+        "key": "war_ally_contract"
+      }
+    },
+    "war_fee": {
+      "en": "War Fee",
+      "zh": "战争费",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 49,
+        "key": "war_fee"
+      }
+    },
+    "war_fee_surrender": {
+      "en": "War Surrender Fee",
+      "zh": "战争投降费用",
+      "source": {
+        "kind": "sde",
+        "file": "accountingEntryTypes.jsonl",
+        "id": 113,
+        "key": "war_fee_surrender"
+      }
+    }
+  },
+  "roles": {
+    "Director": {
+      "en": "Director",
+      "zh": "总监",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 0,
+        "key": "roleDirector"
+      }
+    },
+    "Accountant": {
+      "en": "Accountant",
+      "zh": "会计",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 8,
+        "key": "roleAccountant"
+      }
+    },
+    "Junior_Accountant": {
+      "en": "Junior Accountant",
+      "zh": "初级会计",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 52,
+        "key": "roleJuniorAccountant"
+      }
+    },
+    "Auditor": {
+      "en": "Auditor",
+      "zh": "审计员",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 12,
+        "key": "roleAuditor"
+      }
+    },
+    "Personnel_Manager": {
+      "en": "Personnel Manager",
+      "zh": "人事主管",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 7,
+        "key": "rolePersonnelManager"
+      }
+    },
+    "Security_Officer": {
+      "en": "Security Officer",
+      "zh": "安全官",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 9,
+        "key": "roleSecurityOfficer"
+      }
+    },
+    "Contract_Manager": {
+      "en": "Contract Manager",
+      "zh": "合同总管",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 56,
+        "key": "roleContractManager"
+      }
+    },
+    "Diplomat": {
+      "en": "Diplomat",
+      "zh": "外交官",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 34,
+        "key": "roleDiplomat"
+      }
+    },
+    "Trader": {
+      "en": "Trader",
+      "zh": "贸易官",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 54,
+        "key": "roleTrader"
+      }
+    },
+    "Project_Manager": {
+      "en": "Project Manager",
+      "zh": "项目经理",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 60,
+        "key": "roleProjectManager"
+      }
+    },
+    "Factory_Manager": {
+      "en": "Factory Manager",
+      "zh": "工厂主任",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 10,
+        "key": "roleFactoryManager"
+      }
+    },
+    "Station_Manager": {
+      "en": "Station Manager",
+      "zh": "空间站总管",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 11,
+        "key": "roleStationManager"
+      }
+    },
+    "Fitting_Manager": {
+      "en": "Fitting Manager",
+      "zh": "装配主管",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 59,
+        "key": "roleFittingManager"
+      }
+    },
+    "Brand_Manager": {
+      "en": "Brand Manager",
+      "zh": "品牌主管",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 35,
+        "key": "roleBrandManager"
+      }
+    },
+    "Communications_Officer": {
+      "en": "Communications Officer",
+      "zh": "通讯官",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 55,
+        "key": "roleChatManager"
+      }
+    },
+    "Skill_Plan_Manager": {
+      "en": "Skill Plan Manager",
+      "zh": "技能方案管理",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 62,
+        "key": "roleSkillPlanManager"
+      }
+    },
+    "Config_Equipment": {
+      "en": "Config Equipment",
+      "zh": "设备配置",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 41,
+        "key": "roleEquipmentConfig"
+      }
+    },
+    "Config_Starbase_Equipment": {
+      "en": "Config Starbase Equipment",
+      "zh": "母星设备配置",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 53,
+        "key": "roleStarbaseConfig"
+      }
+    },
+    "Starbase_Defense_Operator": {
+      "en": "Starbase Defense Operator",
+      "zh": "母星防御操作员",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 57,
+        "key": "roleInfrastructureTacticalOfficer"
+      }
+    },
+    "Starbase_Fuel_Technician": {
+      "en": "Starbase Fuel Technician",
+      "zh": "母星燃料技术员",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 58,
+        "key": "roleStarbaseCaretaker"
+      }
+    },
+    "Rent_Factory_Facility": {
+      "en": "Rent Factory Facility",
+      "zh": "租借工厂设施",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 50,
+        "key": "roleCanRentFactorySlot"
+      }
+    },
+    "Rent_Research_Facility": {
+      "en": "Rent Research Facility",
+      "zh": "租借研究设施",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 51,
+        "key": "roleCanRentResearchSlot"
+      }
+    },
+    "Rent_Office": {
+      "en": "Rent Office",
+      "zh": "租借办公室",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 49,
+        "key": "roleCanRentOffice"
+      }
+    },
+    "Deliveries_Container_Take": {
+      "en": "Project Hangar Container Take",
+      "zh": "机库货柜提取计划",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 3,
+        "key": "roleDeliveriesHangarContainerCanTake0"
+      }
+    },
+    "Deliveries_Query": {
+      "en": "Project Hangar Query",
+      "zh": "机库查询计划",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 2,
+        "key": "roleDeliveriesHangarCanQuery0"
+      }
+    },
+    "Deliveries_Take": {
+      "en": "Project Hangar Take",
+      "zh": "机库提取计划",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 1,
+        "key": "roleDeliveriesHangarCanTake0"
+      }
+    },
+    "Terrestrial_Logistics_Officer": {
+      "en": "Terrestrial Logistics Officer",
+      "zh": "地面后勤官",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 61,
+        "key": "roleTerrestrialLogisticsOfficer"
+      }
+    },
+    "Account_Take_1": {
+      "en": "Account Take [1]",
+      "zh": "帐户取款 [1]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 27,
+        "key": "roleAccountCanTake1"
+      }
+    },
+    "Account_Take_2": {
+      "en": "Account Take [2]",
+      "zh": "帐户取款 [2]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 28,
+        "key": "roleAccountCanTake2"
+      }
+    },
+    "Account_Take_3": {
+      "en": "Account Take [3]",
+      "zh": "帐户取款 [3]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 29,
+        "key": "roleAccountCanTake3"
+      }
+    },
+    "Account_Take_4": {
+      "en": "Account Take [4]",
+      "zh": "帐户取款 [4]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 30,
+        "key": "roleAccountCanTake4"
+      }
+    },
+    "Account_Take_5": {
+      "en": "Account Take [5]",
+      "zh": "帐户取款 [5]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 31,
+        "key": "roleAccountCanTake5"
+      }
+    },
+    "Account_Take_6": {
+      "en": "Account Take [6]",
+      "zh": "帐户取款 [6]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 32,
+        "key": "roleAccountCanTake6"
+      }
+    },
+    "Account_Take_7": {
+      "en": "Account Take [7]",
+      "zh": "帐户取款 [7]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 33,
+        "key": "roleAccountCanTake7"
+      }
+    },
+    "Container_Take_1": {
+      "en": "Container Take [1]",
+      "zh": "货柜存取 [1]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 42,
+        "key": "roleContainerCanTake1"
+      }
+    },
+    "Container_Take_2": {
+      "en": "Container Take [2]",
+      "zh": "货柜存取 [2]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 43,
+        "key": "roleContainerCanTake2"
+      }
+    },
+    "Container_Take_3": {
+      "en": "Container Take [3]",
+      "zh": "货柜存取 [3]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 44,
+        "key": "roleContainerCanTake3"
+      }
+    },
+    "Container_Take_4": {
+      "en": "Container Take [4]",
+      "zh": "货柜存取 [4]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 45,
+        "key": "roleContainerCanTake4"
+      }
+    },
+    "Container_Take_5": {
+      "en": "Container Take [5]",
+      "zh": "货柜存取 [5]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 46,
+        "key": "roleContainerCanTake5"
+      }
+    },
+    "Container_Take_6": {
+      "en": "Container Take [6]",
+      "zh": "货柜存取 [6]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 47,
+        "key": "roleContainerCanTake6"
+      }
+    },
+    "Container_Take_7": {
+      "en": "Container Take [7]",
+      "zh": "货柜存取 [7]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 48,
+        "key": "roleContainerCanTake7"
+      }
+    },
+    "Hangar_Query_1": {
+      "en": "Hangar Query [1]",
+      "zh": "机库查询 [1]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 20,
+        "key": "roleHangarCanQuery1"
+      }
+    },
+    "Hangar_Query_2": {
+      "en": "Hangar Query [2]",
+      "zh": "机库查询 [2]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 21,
+        "key": "roleHangarCanQuery2"
+      }
+    },
+    "Hangar_Query_3": {
+      "en": "Hangar Query [3]",
+      "zh": "机库查询 [3]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 22,
+        "key": "roleHangarCanQuery3"
+      }
+    },
+    "Hangar_Query_4": {
+      "en": "Hangar Query [4]",
+      "zh": "机库查询 [4]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 23,
+        "key": "roleHangarCanQuery4"
+      }
+    },
+    "Hangar_Query_5": {
+      "en": "Hangar Query [5]",
+      "zh": "机库查询 [5]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 24,
+        "key": "roleHangarCanQuery5"
+      }
+    },
+    "Hangar_Query_6": {
+      "en": "Hangar Query [6]",
+      "zh": "机库查询 [6]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 25,
+        "key": "roleHangarCanQuery6"
+      }
+    },
+    "Hangar_Query_7": {
+      "en": "Hangar Query [7]",
+      "zh": "机库查询 [7]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 26,
+        "key": "roleHangarCanQuery7"
+      }
+    },
+    "Hangar_Take_1": {
+      "en": "Hangar Take [1]",
+      "zh": "机库存取 [1]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 13,
+        "key": "roleHangarCanTake1"
+      }
+    },
+    "Hangar_Take_2": {
+      "en": "Hangar Take [2]",
+      "zh": "机库存取 [2]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 14,
+        "key": "roleHangarCanTake2"
+      }
+    },
+    "Hangar_Take_3": {
+      "en": "Hangar Take [3]",
+      "zh": "机库存取 [3]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 15,
+        "key": "roleHangarCanTake3"
+      }
+    },
+    "Hangar_Take_4": {
+      "en": "Hangar Take [4]",
+      "zh": "机库存取 [4]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 16,
+        "key": "roleHangarCanTake4"
+      }
+    },
+    "Hangar_Take_5": {
+      "en": "Hangar Take [5]",
+      "zh": "机库存取 [5]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 17,
+        "key": "roleHangarCanTake5"
+      }
+    },
+    "Hangar_Take_6": {
+      "en": "Hangar Take [6]",
+      "zh": "机库存取 [6]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 18,
+        "key": "roleHangarCanTake6"
+      }
+    },
+    "Hangar_Take_7": {
+      "en": "Hangar Take [7]",
+      "zh": "机库存取 [7]",
+      "source": {
+        "kind": "sde",
+        "file": "corporationRoles.jsonl",
+        "id": 19,
+        "key": "roleHangarCanTake7"
+      }
+    }
+  },
+  "ships": {
+    "growth_gila": {
+      "en": "Gila",
+      "zh": "毒蜥级",
+      "source": {
+        "kind": "sde",
+        "file": "types.jsonl",
+        "id": 17715,
+        "key": 17715
+      }
+    },
+    "growth_ishtar": {
+      "en": "Ishtar",
+      "zh": "伊什塔级",
+      "source": {
+        "kind": "sde",
+        "file": "types.jsonl",
+        "id": 12005,
+        "key": 12005
+      }
+    },
+    "growth_loki": {
+      "en": "Loki",
+      "zh": "洛基级",
+      "source": {
+        "kind": "sde",
+        "file": "types.jsonl",
+        "id": 29990,
+        "key": 29990
+      }
+    },
+    "growth_absolution": {
+      "en": "Absolution",
+      "zh": "救赎级",
+      "source": {
+        "kind": "sde",
+        "file": "types.jsonl",
+        "id": 22448,
+        "key": 22448
+      }
+    }
+  },
+  "contractTypes": {
+    "item_exchange": {
+      "en": "Item Exchange",
+      "zh": "物品交换",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/ItemExchange",
+        "message_id": 232829
+      }
+    },
+    "courier": {
+      "en": "Courier",
+      "zh": "快递",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Courier",
+        "message_id": 232686
+      }
+    },
+    "auction": {
+      "en": "Auction",
+      "zh": "拍卖",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Auction",
+        "message_id": 232706
+      }
+    },
+    "loan": {
+      "en": "Loan",
+      "zh": "借贷",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Loan",
+        "message_id": 239858
+      }
+    },
+    "unknown": {
+      "en": "Unknown",
+      "zh": "未知",
+      "source": {
+        "kind": "client",
+        "label": "UI/Generic/Unknown",
+        "message_id": 60303
+      }
+    }
+  },
+  "contractStatuses": {
+    "outstanding": {
+      "en": "Outstanding",
+      "zh": "未决",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Outstanding",
+        "message_id": 239863
+      }
+    },
+    "in_progress": {
+      "en": "In Progress",
+      "zh": "正在进行",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/InProgress",
+        "message_id": 239866
+      }
+    },
+    "finished_issuer": {
+      "en": "Items not yet claimed",
+      "zh": "物品未被认领",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/ItemsNotYetClaimed",
+        "message_id": 239868
+      }
+    },
+    "finished_contractor": {
+      "en": "Unclaimed by seller",
+      "zh": "卖方尚未领取货款",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/UnclaimedBySeller",
+        "message_id": 239870
+      }
+    },
+    "finished": {
+      "en": "Finished",
+      "zh": "已结束",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Finished",
+        "message_id": 232731
+      }
+    },
+    "cancelled": {
+      "en": "Cancelled",
+      "zh": "已取消",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Cancelled",
+        "message_id": 526679
+      }
+    },
+    "rejected": {
+      "en": "Rejected",
+      "zh": "被拒绝",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Rejected",
+        "message_id": 239871
+      }
+    },
+    "failed": {
+      "en": "Failed",
+      "zh": "失败",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Failed",
+        "message_id": 239873
+      }
+    },
+    "deleted": {
+      "en": "Deleted",
+      "zh": "已删除",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Deleted",
+        "message_id": 239874
+      }
+    },
+    "reversed": {
+      "en": "Reversal",
+      "zh": "撤销",
+      "source": {
+        "kind": "client",
+        "label": "UI/Contracts/ContractsWindow/Reversal",
+        "message_id": 264036
+      }
+    }
+  },
+  "slots": {
+    "high": {
+      "en": "High Slot",
+      "zh": "高能量槽",
+      "source": {
+        "kind": "client",
+        "label": "UI/Ship/HighSlot",
+        "message_id": 78675
+      }
+    },
+    "medium": {
+      "en": "Medium Slot",
+      "zh": "中能量槽",
+      "source": {
+        "kind": "client",
+        "label": "UI/Ship/MediumSlot",
+        "message_id": 78676
+      }
+    },
+    "low": {
+      "en": "Low Slot",
+      "zh": "低能量槽",
+      "source": {
+        "kind": "client",
+        "label": "UI/Ship/LowSlot",
+        "message_id": 78678
+      }
+    },
+    "rig": {
+      "en": "Rig Slots",
+      "zh": "改装件安装座",
+      "source": {
+        "kind": "client",
+        "label": "UI/Corporations/Wars/Killmails/RigSlots",
+        "message_id": 278129
+      }
+    },
+    "subsystem": {
+      "en": "Subsystem Slots",
+      "zh": "子系统槽位",
+      "source": {
+        "kind": "client",
+        "label": "UI/InfoWindow/FittingSubsystemSlots",
+        "message_id": 502520
+      }
+    },
+    "service": {
+      "en": "Service Slots",
+      "zh": "服务槽位",
+      "source": {
+        "kind": "client",
+        "label": "UI/InfoWindow/FittingServiceSlots",
+        "message_id": 515430
+      }
+    },
+    "fighter_tube": {
+      "en": "Fighter Launch Tube",
+      "zh": "铁骑舰载机发射管",
+      "source": {
+        "kind": "client",
+        "label": "UI/Ship/FighterLaunchTube",
+        "message_id": 517637
+      }
+    },
+    "fighter_bay": {
+      "en": "Fighter Bay",
+      "zh": "铁骑舰载机挂舱",
+      "source": {
+        "kind": "client",
+        "label": "UI/Ship/FighterBay",
+        "message_id": 510275
+      }
+    },
+    "drone_bay": {
+      "en": "Drone Bay",
+      "zh": "无人机挂舱",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/DroneBay",
+        "message_id": 78638
+      }
+    },
+    "cargo": {
+      "en": "Cargo Hold",
+      "zh": "货柜舱",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/CargoHold",
+        "message_id": 78637
+      }
+    }
+  },
+  "contexts": {
+    "structure_id": {
+      "en": "Structure",
+      "zh": "建筑",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Structure",
+        "message_id": 519144
+      }
+    },
+    "station_id": {
+      "en": "Station",
+      "zh": "空间站",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Station",
+        "message_id": 232484
+      }
+    },
+    "market_transaction_id": {
+      "en": "Market Transactions",
+      "zh": "市场交易",
+      "source": {
+        "kind": "client",
+        "label": "UI/Wallet/WalletWindow/MarketTransactions",
+        "message_id": 543183
+      }
+    },
+    "character_id": {
+      "en": "Character",
+      "zh": "人物",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Character",
+        "message_id": 78252
+      }
+    },
+    "corporation_id": {
+      "en": "Corporation",
+      "zh": "军团",
+      "source": {
+        "kind": "client",
+        "label": "UI/Generic/Corporation",
+        "message_id": 232411
+      }
+    },
+    "alliance_id": {
+      "en": "Alliance",
+      "zh": "联盟",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Alliance",
+        "message_id": 60862
+      }
+    },
+    "contract_id": {
+      "en": "Contract",
+      "zh": "合同",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Contract",
+        "message_id": 232697
+      }
+    },
+    "planet_id": {
+      "en": "Planet",
+      "zh": "行星",
+      "source": {
+        "kind": "client",
+        "label": "UI/Journal/JournalWindow/PI/HeaderPlanet",
+        "message_id": 239884
+      }
+    },
+    "system_id": {
+      "en": "Solar System",
+      "zh": "恒星系",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/SolarSystem",
+        "message_id": 232485
+      }
+    },
+    "type_id": {
+      "en": "Item Type",
+      "zh": "物品类型",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/ItemType",
+        "message_id": 232488
+      }
+    },
+    "eve_system": {
+      "en": "EVE system",
+      "zh": "",
+      "source": {
+        "kind": "protocol",
+        "key": "eve_system"
+      }
+    },
+    "industry_job_id": {
+      "en": "Industry job",
+      "zh": "",
+      "source": {
+        "kind": "protocol",
+        "key": "industry_job_id"
+      }
+    }
+  },
+  "attributes": {
+    "shield": {
+      "en": "Shield",
+      "zh": "护盾",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Shield",
+        "message_id": 78645
+      }
+    },
+    "armor": {
+      "en": "Armor",
+      "zh": "装甲",
+      "source": {
+        "kind": "client",
+        "label": "UI/Common/Armor",
+        "message_id": 78647
+      }
+    },
+    "structure": {
+      "en": "Structure",
+      "zh": "结构",
+      "source": {
+        "kind": "client",
+        "label": "UI/Fitting/Structure",
+        "message_id": 78648
+      }
+    },
+    "powerGrid": {
+      "en": "Power Grid",
+      "zh": "能量栅格",
+      "source": {
+        "kind": "client",
+        "label": "Tooltips/FittingWindow/PowerGrid",
+        "message_id": 502935
+      }
+    },
+    "calibration": {
+      "en": "Calibration",
+      "zh": "校准值",
+      "source": {
+        "kind": "client",
+        "label": "Tooltips/FittingWindow/Calibration",
+        "message_id": 502923
+      }
+    },
+    "turretHardpoints": {
+      "en": "Turret Hardpoints",
+      "zh": "炮台安装数",
+      "source": {
+        "kind": "client",
+        "label": "Tooltips/FittingWindow/TurretIcon",
+        "message_id": 502925
+      }
+    },
+    "launcherHardpoints": {
+      "en": "Launcher Hardpoints",
+      "zh": "发射器安装数",
+      "source": {
+        "kind": "client",
+        "label": "Tooltips/FittingWindow/LauncherIcon",
+        "message_id": 502928
+      }
+    },
+    "droneBandwidth": {
+      "en": "Drone Bandwidth",
+      "zh": "无人机带宽",
+      "source": {
+        "kind": "client",
+        "label": "Tooltips/FittingWindow/DroneBandwidth",
+        "message_id": 519146
+      }
+    }
+  },
+  "shipClasses": {
+    "supercarrier": {
+      "en": "Supercarrier",
+      "zh": "超级航母",
+      "source": {
+        "kind": "client",
+        "label": "UI/Industry/Specialities/Supercarrier",
+        "message_id": 503373
+      }
+    },
+    "titan": {
+      "en": "Titan",
+      "zh": "泰坦",
+      "source": {
+        "kind": "client",
+        "label": "UI/Industry/Specialities/Titan",
+        "message_id": 503374
+      }
+    }
+  }
+}

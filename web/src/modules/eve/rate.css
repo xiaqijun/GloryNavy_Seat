@@ -1,0 +1,259 @@
+.sync-tabs {
+  flex-wrap: wrap;
+}
+.rate-caption {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.rate-bucket {
+  border-top: 1px solid var(--border);
+}
+.rate-list {
+  container-type: inline-size;
+}
+.rate-bucket-main {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.3fr) minmax(160px, 1fr) minmax(135px, 0.8fr)
+    44px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 0;
+  font-size: 14px;
+}
+.rate-bucket-main:hover {
+  background: var(--color-muted);
+}
+.rate-identity,
+.rate-quota,
+.rate-total {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.rate-caption,
+.rate-label,
+.rate-window,
+.rate-observed,
+.rate-identity > .sync-state,
+.rate-chart-toolbar h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rate-label svg,
+.rate-observed svg,
+.rate-window svg,
+.rate-identity > .sync-state svg {
+  flex-shrink: 0;
+}
+.rate-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+.rate-chart-toolbar h3 {
+  font-size: 14px;
+  margin: 0;
+  font-weight: 600;
+}
+.rate-chart-loading {
+  min-height: 140px;
+  color: var(--muted);
+}
+.rate-window {
+  flex-wrap: wrap;
+}
+.rate-window > span {
+  white-space: nowrap;
+}
+.rate-identity > .sync-state {
+  justify-self: start;
+}
+.rate-owner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.rate-owner > div {
+  min-width: 0;
+}
+.rate-owner h2 {
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.rate-public {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: var(--color-muted);
+  color: var(--primary);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+.rate-label,
+.rate-mobile-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.rate-quota > strong,
+.rate-total > strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.rate-quota > strong > span {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.rate-quota meter {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  background: var(--color-muted);
+  border-radius: 8px;
+  appearance: none;
+}
+.rate-quota meter::-webkit-meter-bar {
+  background: var(--color-muted);
+  border: 0;
+  border-radius: 8px;
+}
+.rate-quota meter::-webkit-meter-optimum-value {
+  background: var(--primary);
+  border-radius: 8px;
+}
+.rate-quota meter::-moz-meter-bar {
+  background: var(--primary);
+  border-radius: 8px;
+}
+.rate-detail {
+  padding: 20px;
+  background: var(--color-muted);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  min-width: 0;
+}
+.rate-routes {
+  margin-top: 24px;
+}
+.rate-route-head,
+.rate-route {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(75px, 1fr));
+  gap: 16px;
+  align-items: center;
+}
+.rate-route-head {
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 12px;
+}
+.rate-route {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.rate-route > div {
+  min-width: 0;
+}
+.rate-route .sync-time {
+  display: block;
+  margin-top: 4px;
+}
+.rate-route-name {
+  display: grid;
+  gap: 6px;
+}
+.rate-route code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.rate-mobile-label {
+  display: none;
+  margin-bottom: 4px;
+}
+@container (max-width: 719px) {
+  .rate-bucket-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    gap: 16px;
+  }
+  .rate-identity {
+    grid-column: 1 / -1;
+  }
+  .rate-route-head {
+    display: none;
+  }
+  .rate-route {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .rate-route-name {
+    grid-column: 1 / -1;
+  }
+  .rate-mobile-label {
+    display: block;
+  }
+}
+@media (max-width: 600px) {
+  .sync-page > .sync-tabs {
+    gap: 4px;
+  }
+  .sync-tabs .sync-tab {
+    padding-inline: 8px;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .sync-tabs .sync-tab svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+@container (max-width: 479px) {
+  .rate-bucket-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px 0;
+  }
+  .rate-identity {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding-right: 48px;
+  }
+  .rate-bucket-main > .icon-action {
+    grid-column: 2;
+    justify-self: end;
+  }
+  .rate-bucket-main > button {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+    align-self: start;
+  }
+  .rate-quota {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .rate-total {
+    grid-row: 2;
+    grid-column: 2;
+  }
+  .rate-detail {
+    padding: 16px;
+  }
+  .rate-route {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rate-owner h2 {
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,133 @@
+.growth-reward-summary,
+.growth-reward-editor {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.growth-reward-summary {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.growth-reward-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.growth-reward-summary img,
+.growth-reward-row img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+.growth-reward-summary span,
+.growth-reward-row span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.growth-reward-summary b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.growth-reward-summary span {
+  flex: 0 1 auto;
+}
+.growth-reward-summary .eve-image,
+.growth-reward-row .eve-image {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 6px;
+}
+.growth-reward-summary .eve-image svg,
+.growth-reward-row .eve-image svg {
+  width: 18px;
+  height: 18px;
+}
+.growth-reward-editor {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.growth-reward-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 88px 44px;
+  align-items: center;
+  gap: 8px;
+}
+.growth-reward-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+}
+.growth-add-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.growth-add-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.growth-item-options {
+  display: grid;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.growth-item-options button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: start;
+  padding: 10px;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.growth-item-options button:hover {
+  background: var(--background);
+}
+.growth-item-options button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+@media (max-width: 480px) {
+  .growth-reward-row {
+    grid-template-columns: 24px minmax(0, 1fr) 64px 44px;
+    gap: 6px;
+  }
+  .growth-reward-row img {
+    width: 24px;
+    height: 24px;
+  }
+  .growth-reward-row .eve-image {
+    width: 24px;
+    height: 24px;
+  }
+}
+.exchange-card > .growth-reward-summary {
+  border: 0;
+  padding: 12px 0;
+  background: transparent;
+}
+.exchange-card > .growth-reward-summary-compact {
+  padding: 0;
+  gap: 8px;
+}
+.growth-reward-summary-compact > div {
+  gap: 8px;
+}
+.growth-reward-summary-compact span {
+  flex: 0 1 auto;
+}

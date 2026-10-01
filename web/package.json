@@ -1,0 +1,45 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "preview:local": "vite preview --host 127.0.0.1 --port 5173 --strictPort",
+    "test": "vitest run src",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@eveshipfit/dogma-engine": "10.3.0",
+    "@eveshipfit/sde": "2.3503375.0",
+    "@gsap/react": "2.1.2",
+    "@tanstack/react-query": "5.102.8",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "echarts": "6.1.0",
+    "gsap": "3.15.0",
+    "lucide-react": "1.45.0",
+    "radix-ui": "1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router-dom": "7.18.3",
+    "tailwind-merge": "3.7.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "oxlint": "1.81.0",
+    "prettier": "3.9.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.2",
+    "vite": "8.3.0",
+    "vitest": "5.0.0"
+  }
+}

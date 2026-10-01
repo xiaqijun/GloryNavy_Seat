@@ -1,0 +1,100 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+}
+.workspace-navigation {
+  display: grid;
+  gap: 6px;
+  margin-top: 32px;
+}
+.workspace-navigation a,
+.navigation-group-trigger {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.navigation-group-trigger {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+.navigation-group-trigger:hover {
+  background: var(--background);
+  color: var(--foreground);
+}
+.navigation-group-trigger[data-active="true"] {
+  color: var(--primary);
+}
+.navigation-group-trigger span {
+  flex: 1;
+}
+.navigation-group-trigger > svg:last-child {
+  transition: transform 150ms ease-out;
+}
+.navigation-group-trigger .is-expanded {
+  transform: rotate(180deg);
+}
+.navigation-children {
+  margin: 2px 0 8px 20px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+.navigation-children[hidden] {
+  display: none;
+}
+.workspace-navigation a {
+  white-space: normal;
+}
+.navigation-toggle {
+  display: none;
+}
+@media (max-width: 760px) {
+  .sidebar {
+    position: relative;
+    height: auto;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .navigation-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--foreground);
+  }
+  .workspace-navigation {
+    grid-column: 1/-1;
+    margin-top: 4px;
+  }
+  .workspace-navigation[data-mobile-open="false"] {
+    display: none;
+  }
+  .workspace-navigation a {
+    flex-direction: row;
+    justify-content: flex-start;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navigation-group-trigger > svg:last-child {
+    transition: none;
+  }
+}

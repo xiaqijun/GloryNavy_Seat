@@ -1,0 +1,18 @@
+{
+  "name": "glorynavy-seat", "private": true, "version": "0.1.0", "type": "module",
+  "engines": { "node": ">=24.15.0" },
+  "scripts": {
+    "pap:browser": "node scripts/winterco-pap.mjs",
+    "auth:key": "node scripts/auth-key.mjs",
+    "access:admin": "node scripts/tasks.mjs access-admin",
+    "sde:import": "node scripts/tasks.mjs sde-import",
+    "setup": "node scripts/tasks.mjs setup",
+    "dev": "node scripts/tasks.mjs dev",
+    "dev:external": "node scripts/tasks.mjs dev-external",
+    "db:migrate": "node scripts/tasks.mjs migrate",
+    "db:generate": "node scripts/tasks.mjs generate",
+    "check": "node scripts/tasks.mjs check",
+    "build": "node scripts/tasks.mjs build",
+    "start:api": "node scripts/tasks.mjs api"
+  }
+}

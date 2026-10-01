@@ -1,0 +1,56 @@
+# Approval center
+
+Released in `v0.1.0-approval-main-recipient-20260930` (2026-09-30): after records from multiple characters under one Seat account are merged, the in-game contract recipient is always that account's main character. Batch settlements appear as rows in the main Fulfillment table instead of a separate batch card. The first data column shows the batch type and batch number; the second shows the main account name, without repeating an in-game contract number. The source records represented by an active batch are hidden from that same table to avoid duplicates. Opening a batch row shows its progress and provides copy controls for the contract recipient character ID, the whole-ISK amount, the settlement reference, and any generated in-game contract ID. Existing contract verification and retry rules remain unchanged.
+
+Local update (2026-09-28): the first load now requests only the active view instead of prefetching the other three views concurrently. A tab is still prefetched on focus/hover, while the active page and next page use short-lived cache entries. Previous rows remain visible while a changed filter is loading; authorization and source-error reporting are unchanged.
+
+Released (2026-09-27): the approval time column is now a clickable header with an arrow showing the active direction; the direction is bound to the keyset cursor. Production is on `v0.1.0-approval-sorting-20260927`; no migration was required.
+
+Fixed (2026-09-28): ID-sort pagination validates an ID cursor without requiring a timestamp. A delivered contract awaiting member acceptance (`awaiting_acceptance`) no longer appears in “Pending delivery”; it remains in “Processed” with its waiting status.
+
+Local change pending release (2026-09-25): pending corporation/PVP reimbursements show their saved assessed amount, explicitly labeled as an appraisal. Cases awaiting an assessment say so. After approval, the queue shows the frozen `award_minor`. The original welfare approval endpoint rejects per-account period-cap overruns; the approval center does not own a separate quota ledger.
+
+Locally implemented activity benefits (`activity_<id>`) enter the existing read-only welfare queue; the `activity` filter groups those projects. Welfare retains approval, cancellation, delivery, image access and authorization. The center stores no copy of applications or evidence. See the [welfare guide](welfare.en.md). This extension is not yet deployed.
+
+> Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
+
+Implemented on 2026-09-21 and deployed with `v0.1.0-workspace-alliance-pap-20260922`; that release added no migration; see project status for the current production migration version. Production MODULES now includes approval, so administrators see the workspace review queue.
+
+## Access and ownership
+
+Enable approval in MODULES alongside the required welfare/exchange sources. /approvals is shown after the workspace only when the current account can manage a source. approval.self is an authenticated host capability, not an assignable management grant. Welfare retains corporation.welfare and current valid member scope; exchange requires the current site administrator flag and a recipient still bound to the order owner. Lists, counts and details recheck access. Ordinary members cannot access management data. Administrators cannot review their own applications or cancellation requests; the original exchange decision service enforces this too.
+
+Member filters use account IDs and main character names. Multi-character eligibility and account-merge history remain owned by the source modules.
+
+## Workflow
+
+The Amount / items column reads frozen source snapshots. Welfare shows ISK, shell coins, and a ship/item name-and-quantity summary; exchange shows the coin cost alongside the frozen reward contents. It lists at most two physical lines and counts the remainder. Appraised value is not presented as a paid amount, and currencies are not combined.
+
+Four views: To review, Fulfillment, Exceptions, and Processed. Information requests have a separate filter and do not inflate actionable review counts. Normal redemptions gain no new approval stage. Contract synchronization, missing items awaiting sync, and acceptance are normal progress. Mismatches, multiple matches, conflicting claims, unverified issuers, unavailable evidence and incomplete snapshots are exceptions.
+
+Processed shows one row per source record with its latest handling action and current state; complete original audits remain in details. An approved record can also remain in fulfillment. Handled by me filters human actions by the current actor, not automated verification. Own records are excluded from actionable queues/counts and are read-only in authorized management details. Legacy coin-only growth awards still need explicit payment confirmation.
+
+Batch settlement accepts at most 100 records per idempotent request. A batch may contain records from one Seat account group only; multiple EVE characters under that account can be merged, while cross-account selections are rejected by both the UI and API. Goose 57 freezes the aggregate ISK/item snapshot and creates a `BATCH-YYYYMMDD-UUID` reference. The administrator creates one in-game item exchange contract with that reference; River then verifies the actual recipient belongs to the account, the issuer, whole-ISK amount, item multiset, and completion state before updating all batch entries in one transaction. Records containing Guoke coins remain on the original single-record flow, and older batches keep their per-item compatibility path. Missing contract evidence, acceptance, or item details keeps the batch pending for a later scan. This release is production version `v0.1.0-contract-batch-merged-20260930` with Goose 57; real in-game delivery remains a live acceptance task.
+
+Source pages retain personal records, applications, withdrawal, supplementary evidence, cancellation requests and configuration. Management queues/actions move to the center when enabled. Direct coin grants, grant reversal and historical benefit registration retain their original entry points. No evidence, history, eligibility or ledger is deleted. Existing management UI remains as a compatibility fallback when approval is disabled; backend self-review restrictions remain active.
+
+Details reuse welfare CaseView, exchange cancellation forms and contract copy components. Commands still use the original welfare and exchange endpoints with CSRF, current authorization, optimistic versions, idempotency keys and transaction locks. Successful actions invalidate both source caches and center counts. The center cannot force fulfillment or bypass contract checks. Deep links use /approvals?source=welfare&id=123 (or exchange); closing preserves filters and the cursor. Disabled sources and revoked scopes fail closed.
+
+Released in `v0.1.0-approval-navigation-prefetch-20260925`: after the first complete authorized workbench list, other categories are prefetched in sequence; the approval center also prefetches the next page using the current filters and server cursor. Background reads require confirmed source access and no unavailable source. Every read still passes server authorization, while the 30-second client cache is invalidated by manual refresh and business actions. API, approval states, and database are unchanged.
+
+## API and query model
+
+Read-only endpoints: GET /api/v1/approval/context, GET /api/v1/approval/items, GET /api/v1/approval/items/{source}/{id}. Context provides allowed, sources, corporations, people and unavailable. List filters: view, sort, kind, corporation, account, q, status, from, until, mine and cursor. `sort` accepts `time_asc`/`time_desc` (application/processing time) or `id_asc`/`id_desc` (record number); when omitted, active views default to oldest application first and Processed defaults to newest processing first. Dates are RFC3339 with inclusive from / exclusive until; the UI explicitly uses UTC for date filters. Search covers IDs, settlement references, recipients and titles; select main characters in the member filter. Exchange has no historical corporation scope and is excluded when a corporation filter is selected.
+
+Source-private SQL authorizes and filters before selecting at most 31 candidates. Shared reviewqueue contains projection/keyset utilities but no business table references. Host adapters inject services; approval never imports another module's store. Active views use application time, Processed uses processing time, and both time and record number can be ordered in either direction. Merge returns at most 30 records with source tie-breakers. A global tuple cursor bound to actor, filters and sort is applied identically to every source. Stable records are neither skipped nor duplicated; live status changes can reposition records, so refresh the first page for current work.
+
+Per-source counts and page use one SQL snapshot. All reads are local; no ESI fetches or duplicate approval/ledger state are created. Source failure reports unavailable and incomplete totals instead of zero. Remaining records can be viewed, but pagination pauses until recovery. Visible tabs refresh about every 30 seconds; background polling is disabled.
+
+The pending local read optimization fetches current corporation-member authorizations in one database query while still checking each character's owner hash, state, expiry, and corporation. Welfare item and solar-system names are projected once per result page; case and evidence content are unchanged. The UI still requests the management queue only after access context allows it, and both server endpoints authorize independently. This adds no migration, configuration, or permission change. Local timings do not establish production performance until deployment.
+
+## Validation and limits
+
+Database tests cover scope, self-exclusion, exchange cancellation self-review refusal and idempotency, classification and approved-but-unfulfilled history. Aggregation tests cover tied cross-source pagination, filter-bound cursors, source failures and unknown sources. Browser checks cover shared forms, cancellation confirmation, member access denial, pagination/deep links, source-page consolidation, bilingual layouts and 320/375/1440px.
+
+No real member review, refund or game contract has been performed for validation. Existing real-game fulfillment limitations remain documented in [welfare](welfare.en.md) and [exchange](exchange.en.md). Bulk review, multi-stage approval, automatic approval and notifications are out of scope.
+> Local update (2026-09-28): approval source access, context, and queue reads now run in parallel. Source isolation, merged sorting, and unavailable-source markers are unchanged. The UI loads only the active view and keeps hover/focus and next-page prefetching.

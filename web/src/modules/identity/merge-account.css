@@ -1,0 +1,103 @@
+.merge-dialog {
+  --dialog-width: 560px;
+}
+.merge-direction {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0 16px;
+}
+.merge-account-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.merge-account-person span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.merge-account-person small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.merge-account-person strong {
+  font-size: 15px;
+}
+.merge-account-person > svg {
+  flex-shrink: 0;
+  width: 18px;
+  margin-left: auto;
+  color: var(--muted-foreground);
+}
+.merge-portrait {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.merge-characters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.merge-characters > span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.merge-mini-portrait {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+.merge-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-block: 1px solid var(--border);
+  margin: 20px 0 12px;
+}
+.merge-totals dt {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.merge-totals dd {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.merge-policy {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.merge-dialog .account-dialog-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 400px) {
+  .merge-direction {
+    grid-template-columns: 1fr;
+  }
+  .merge-account-person > svg {
+    transform: rotate(90deg);
+  }
+}
+.account-roster-heading {
+  flex-wrap: wrap;
+}
+.account-roster-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}

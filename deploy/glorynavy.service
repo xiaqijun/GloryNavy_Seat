@@ -1,0 +1,31 @@
+[Unit]
+Description=Glory Navy EVE corporation platform
+Wants=network-online.target
+Requires=glorynavy-database.service glorynavy-network.service
+After=network-online.target glorynavy-database.service glorynavy-network.service
+
+[Service]
+Type=simple
+User=glorynavy
+Group=glorynavy
+WorkingDirectory=/var/lib/glorynavy
+EnvironmentFile=/etc/glorynavy/seat.env
+ExecStartPre=/opt/glorynavy/current/bin/migrate up
+ExecStartPre=/opt/glorynavy/current/bin/jobs-migrate
+ExecStart=/opt/glorynavy/current/bin/server
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=90
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/glorynavy
+RestrictSUIDSGID=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,116 @@
+package exchange
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/jackc/pgx/v5"
+	"glorynavy.local/seat/internal/modules/exchange/internal/store"
+	"glorynavy.local/seat/internal/platform/reviewqueue"
+	"strconv"
+)
+
+func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
+	out := reviewqueue.Access{Corporations: []reviewqueue.Option{}}
+	if s.Administrator == nil {
+		return out, nil
+	}
+	ok, e := s.Administrator(ctx, user)
+	out.Allowed = ok
+	return out, e
+}
+func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int) (reviewqueue.Page, error) {
+	a, e := s.ApprovalAccess(ctx, user)
+	if e != nil {
+		return reviewqueue.Page{}, e
+	}
+	if !a.Allowed {
+		return reviewqueue.Page{}, pgx.ErrNoRows
+	}
+	scope, e := s.approvalBindings(ctx)
+	if e != nil {
+		return reviewqueue.Page{}, e
+	}
+	raw, _ := json.Marshal(scope)
+	page, e := store.Approval(ctx, s.Pool, raw, user, f, p, limit)
+	if e != nil {
+		return page, e
+	}
+	for i := range page.Items {
+		v := &page.Items[i]
+		var order RewardOrder
+		if e = json.Unmarshal(v.Payload, &order); e != nil {
+			return page, e
+		}
+		if order.Content != nil {
+			if e = s.presentPhysical(ctx, order.Content); e != nil {
+				return page, e
+			}
+		}
+		if order.Name == "" && s.Names != nil {
+			names, err := s.Names.TypeNames(ctx, []int64{order.TypeID})
+			if err != nil {
+				return page, err
+			}
+			order.Name = names[order.TypeID].Name
+		}
+		v.Title = order.Name
+		v.Payload, _ = json.Marshal(order)
+		if f.ID > 0 {
+			history, err := store.ApprovalHistory(ctx, s.Pool, v.ID)
+			if err != nil {
+				return page, err
+			}
+			var payload map[string]json.RawMessage
+			if err = json.Unmarshal(v.Payload, &payload); err != nil {
+				return page, err
+			}
+			payload["history"], _ = json.Marshal(history)
+			v.Payload, _ = json.Marshal(payload)
+		}
+		if v.Account != user && v.State == "cancel_requested" {
+			v.Actions = []string{"cancelled", "pending"}
+		}
+	}
+	return page, nil
+}
+
+func (s *Service) ApprovalPeople(ctx context.Context, user string) ([]string, error) {
+	if e := s.shopAdmin(ctx, user); e != nil {
+		return nil, e
+	}
+	rows, e := s.approvalBindings(ctx)
+	if e != nil {
+		return nil, e
+	}
+	ids := []string{}
+	seen := map[string]bool{}
+	for _, r := range rows {
+		if !seen[r["account"]] {
+			seen[r["account"]] = true
+			ids = append(ids, r["account"])
+		}
+	}
+	return ids, nil
+}
+
+func (s *Service) approvalBindings(ctx context.Context) ([]map[string]string, error) {
+	if s.Bindings == nil {
+		return nil, ErrUnavailable
+	}
+	ids, e := store.ApprovalRecipients(ctx, s.Pool)
+	if e != nil {
+		return nil, e
+	}
+	out := []map[string]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, e := s.Bindings(ctx, nil, ids)
+	if e != nil {
+		return nil, e
+	}
+	for _, r := range rows {
+		out = append(out, map[string]string{"account": r.UserID, "recipient": strconv.FormatInt(r.ID, 10)})
+	}
+	return out, nil
+}

@@ -1,0 +1,49 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_USER: glorynavy
+          POSTGRES_PASSWORD: glorynavy_dev
+          POSTGRES_DB: glorynavy
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U glorynavy -d glorynavy"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://glorynavy:glorynavy_dev@127.0.0.1:55432/glorynavy?sslmode=disable
+      TEST_DATABASE_URL: postgres://glorynavy:glorynavy_dev@127.0.0.1:55432/glorynavy?sslmode=disable
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm run setup
+      - run: npm run db:migrate
+      - run: npm run check
+      - run: go test -race ./...
+      - run: npm run db:generate
+      - run: git diff --exit-code -- internal/modules
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: web/test-results

@@ -1,0 +1,1829 @@
+.welfare-page {
+  display: grid;
+  gap: 24px;
+}
+.welfare-loss-detail {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.welfare-loss-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.welfare-loss-heading > .eve-image {
+  flex: 0 0 auto;
+}
+.welfare-loss-heading > div {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.welfare-loss-heading strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.welfare-loss-heading small,
+.welfare-loss-facts {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-loss-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.welfare-km-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  cursor: pointer;
+}
+.welfare-km-link:hover {
+  text-decoration: underline;
+}
+.welfare-km-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.welfare-loss-review {
+  display: grid;
+  gap: 16px;
+}
+.welfare-loss-review-overview {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-loss-review-overview .welfare-proof {
+  margin: 0;
+}
+.welfare-loss-review-quote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-block: 12px;
+  border-block: 1px solid var(--border);
+}
+.welfare-loss-review-quote > span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.welfare-loss-review-quote > strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+.welfare-loss-review-quote > small {
+  flex-basis: 100%;
+  color: var(--muted-foreground);
+}
+.welfare-review-support {
+  min-width: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.welfare-review-support > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.welfare-review-support > .welfare-loss-evidence-sections {
+  margin-top: 12px;
+}
+.welfare-loss-evidence-sections {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  container-type: inline-size;
+}
+.welfare-loss-evidence-sections > details {
+  min-width: 0;
+}
+.welfare-km-attackers {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  align-content: start;
+}
+.welfare-km-attackers-head,
+.welfare-km-attacker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.welfare-km-attackers-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.welfare-km-attacker {
+  align-items: flex-start;
+}
+.welfare-km-attackers-head span,
+.welfare-km-attacker small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-km-attackers-empty {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.welfare-km-attacker-portraits {
+  display: flex;
+  flex: 0 0 78px;
+  gap: 2px;
+  margin-top: 2px;
+}
+.welfare-km-attacker-portraits > .eve-image {
+  width: 38px;
+  height: 38px;
+}
+.welfare-km-attacker-body {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.welfare-km-attacker-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.welfare-km-attacker-title > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.welfare-km-attacker strong,
+.welfare-km-attacker small {
+  overflow-wrap: anywhere;
+}
+.welfare-km-attacker-damage {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  text-align: right;
+  color: var(--color-destructive);
+  font-variant-numeric: tabular-nums;
+}
+.welfare-km-attacker-damage strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.welfare-km-attacker-damage small {
+  color: inherit;
+  white-space: nowrap;
+  font-weight: 400;
+}
+@container (max-width: 420px) {
+  .welfare-km-attacker {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 2px 8px;
+  }
+  .welfare-km-attacker-portraits {
+    grid-row: 1 / 3;
+    width: 62px;
+    min-width: 0;
+    gap: 2px;
+  }
+  .welfare-km-attacker-portraits > .eve-image {
+    width: 30px;
+    height: 30px;
+  }
+  .welfare-km-attacker-damage {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+}
+.welfare-km-attackers-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+}
+.welfare-km-layout {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 0 16px 16px;
+}
+.welfare-km-layout > section {
+  min-width: 0;
+}
+.welfare-km-items-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.welfare-km-items {
+  container-type: inline-size;
+}
+.welfare-km-items-head span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-km-slot-title {
+  padding: 8px 10px;
+  background: var(--color-muted);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+.welfare-km-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.welfare-km-item-row[data-price="true"] {
+  grid-template-columns: minmax(0, 1fr) 52px 136px;
+}
+.welfare-km-items .welfare-columns {
+  display: grid;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-km-item-row > span:not(:first-child) {
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.welfare-km-item-dropped {
+  background: #ecfdf5;
+}
+.welfare-km-item-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.welfare-km-item-name .eve-image {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.welfare-km-item-name > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-km-item-name small {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.welfare-km-item-dropped .welfare-km-item-name small {
+  color: #15803d;
+}
+.welfare-km-item-nested .welfare-km-item-name {
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+.welfare-km-item-quantity {
+  font-weight: 600;
+}
+.welfare-km-item-price {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+@container (min-width: 680px) {
+  .welfare-km-layout[data-dual="true"] {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+  .welfare-km-layout[data-dual="true"] > .welfare-km-items {
+    border-left: 1px solid var(--border);
+    padding: 0 24px 0 20px;
+  }
+}
+@container (max-width: 430px) {
+  .welfare-km-items .welfare-columns {
+    display: none;
+  }
+  .welfare-km-item-row,
+  .welfare-km-item-row[data-price="true"] {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 4px 8px;
+  }
+  .welfare-km-item-name {
+    grid-column: 1 / -1;
+  }
+  .welfare-km-item-quantity {
+    grid-column: 2;
+  }
+  .welfare-km-item-price {
+    grid-column: 3;
+  }
+}
+.welfare-loss-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+}
+.welfare-loss-total > div {
+  display: grid;
+  gap: 6px;
+}
+.welfare-loss-total span,
+.welfare-loss-breakdown {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.welfare-loss-total strong {
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+.welfare-loss-breakdown,
+.welfare-loss-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.welfare-loss-contract {
+  border-block: 1px solid var(--border);
+  padding-block: 16px;
+  min-width: 0;
+}
+.welfare-loss-contract h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.welfare-loss-contract .welfare-contract-handoff {
+  margin-bottom: 12px;
+}
+.welfare-loss-contract > p {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.welfare-loss-detail details {
+  min-width: 0;
+}
+.welfare-loss-detail summary {
+  cursor: pointer;
+  font-size: 14px;
+  min-height: 28px;
+  overflow-wrap: anywhere;
+}
+.welfare-loss-detail details > .welfare-valuation {
+  border: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.welfare-loss-preview {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--accent);
+  font-size: 14px;
+}
+.welfare-loss-preview strong {
+  flex-basis: 100%;
+  font-size: 20px;
+  line-height: 1.3;
+}
+@media (max-width: 480px) {
+  .welfare-loss-total {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.welfare-contract-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.welfare-contract-search input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+}
+.welfare-contract-options {
+  display: grid;
+  gap: 0;
+}
+.welfare-contract-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.welfare-contract-option > div {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-contract-option span,
+.welfare-contract-hint {
+  font-size: 14px;
+  color: var(--muted);
+}
+.welfare-contract-summary {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-contract-summary p {
+  margin: 0;
+}
+.welfare-contract-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.welfare-contract-heading > span {
+  margin-left: auto;
+  font-size: 14px;
+}
+.welfare-contract-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.welfare-contract-values dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+.welfare-contract-values dd {
+  margin: 4px 0 0;
+}
+.welfare-contract-items {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.welfare-contract-items li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-contract-items img,
+.welfare-contract-items .eve-image {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.welfare-contract-items li > .welfare-contract-item-text {
+  flex: 1;
+  min-width: 0;
+}
+.welfare-contract-items small {
+  display: block;
+  color: var(--muted);
+}
+.welfare-contract-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: var(--muted);
+}
+.welfare-delivery-confirm {
+  margin: 20px 0;
+  min-height: 44px;
+}
+@media (max-width: 400px) {
+  .welfare-contract-values {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .welfare-contract-option {
+    gap: 8px;
+  }
+}
+.welfare-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.welfare-heading h1 {
+  font-size: 28px;
+  font-weight: 650;
+  margin: 0;
+}
+.welfare-heading > .ui-select-trigger {
+  margin-left: auto;
+  max-width: 260px;
+}
+.welfare-brand {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--color-accent);
+  color: var(--primary);
+}
+.welfare-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.welfare-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  transition: background-color 150ms ease-out;
+}
+.welfare-tabs button[aria-current] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--color-accent);
+}
+.welfare-tabs button:focus-visible,
+.welfare-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.welfare-quota-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.welfare-quota-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.welfare-quota-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--primary);
+  background: var(--color-accent);
+}
+.welfare-quota-heading h2,
+.welfare-quota-heading p {
+  margin: 0;
+}
+.welfare-quota-heading h2 {
+  font-size: 15px;
+}
+.welfare-quota-heading p {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-quota-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.welfare-quota-kind {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--color-muted);
+}
+.welfare-quota-kind-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.welfare-quota-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+}
+.welfare-quota-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.welfare-quota-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.welfare-quota-legend i.is-used,
+.welfare-quota-bar span.is-used {
+  background: var(--primary);
+}
+.welfare-quota-legend i.is-reserved,
+.welfare-quota-bar span.is-reserved {
+  background: var(--color-warning, #f59e0b);
+}
+.welfare-quota-periods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.welfare-quota-period {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.welfare-quota-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-quota-line strong {
+  color: var(--foreground);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.welfare-quota-bar {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 75%, transparent);
+}
+.welfare-quota-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 180ms ease-out;
+}
+.welfare-quota-bar span + span {
+  border-left: 2px solid var(--card);
+}
+.welfare-quota-bar.is-unlimited {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--border) 65%, transparent),
+    color-mix(in srgb, var(--border) 65%, transparent) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+.welfare-quota-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 16px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.welfare-quota-metrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.welfare-quota-metrics span::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  content: "";
+}
+.welfare-quota-metrics .is-reserved::before {
+  background: var(--color-warning, #f59e0b);
+}
+.welfare-quota-metrics .is-available::before {
+  background: var(--primary);
+}
+.welfare-toolbar > .ui-select-trigger {
+  width: 180px;
+}
+.welfare-spacer {
+  flex: 1;
+}
+.welfare-list {
+  padding: 0 !important;
+  gap: 0;
+  overflow: hidden;
+}
+.welfare-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 120px 140px 130px 20px;
+  gap: 16px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  transition: background-color 150ms ease-out;
+}
+.welfare-row:last-child {
+  border-bottom: 0;
+}
+.welfare-row:hover {
+  background: var(--color-accent);
+}
+.welfare-columns {
+  background: var(--color-muted);
+  color: var(--muted);
+  font-size: 12px;
+}
+.welfare-object {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-object strong {
+  display: block;
+  font-weight: 600;
+}
+.welfare-object small,
+.welfare-amount small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.welfare-object img {
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--color-muted);
+}
+.welfare-status {
+  font-size: 12px;
+  background: var(--color-muted);
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: fit-content;
+}
+.state-completed {
+  background: #ecfdf5;
+  color: #047857;
+}
+.state-cancel_requested,
+.state-approved,
+.state-executing {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.state-information,
+.state-external {
+  background: #fffbeb;
+  color: #92400e;
+}
+.state-rejected,
+.state-reversed {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.welfare-amount {
+  font-variant-numeric: tabular-nums;
+}
+.welfare-empty {
+  padding: 40px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--muted);
+}
+.welfare-paging {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.welfare-form fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.welfare-form .wide {
+  grid-column: 1/-1;
+}
+.welfare-period-caps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .welfare-period-caps {
+    grid-template-columns: 1fr;
+  }
+}
+.welfare-config-more {
+  border-top: 1px solid var(--border);
+}
+.welfare-config-more > summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+  font-weight: 500;
+}
+.welfare-config-more > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.welfare-config-fields {
+  display: grid;
+  gap: 16px;
+  padding-top: 8px;
+}
+.welfare-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+.welfare-field input,
+.welfare-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  font: inherit;
+}
+.welfare-field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.welfare-field input:focus-visible,
+.welfare-field textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  min-height: 44px;
+}
+.welfare-check input {
+  width: 18px;
+  height: 18px;
+}
+.welfare-warning {
+  font-size: 14px;
+  color: #92400e;
+  background: #fffbeb;
+  border-radius: 8px;
+  padding: 12px;
+}
+.welfare-form [role="alert"] {
+  color: var(--color-destructive);
+  margin-top: 12px;
+}
+.welfare-grant-line {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 8px 0;
+  min-width: 0;
+}
+.welfare-grant-line > .ui-select-trigger {
+  flex: 1;
+  min-width: 0;
+}
+.welfare-grant-line > .welfare-field {
+  width: 110px;
+  flex-shrink: 0;
+}
+.welfare-grant-total {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--primary);
+  padding: 16px 0;
+}
+.welfare-grant-total strong {
+  font-size: 28px;
+}
+.welfare-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.welfare-detail-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.welfare-detail-values strong {
+  display: block;
+  font-size: 16px;
+  color: var(--foreground);
+  margin-top: 6px;
+}
+.welfare-proof {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.welfare-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.welfare-audit {
+  border-left: 2px solid var(--border);
+  padding: 8px 12px;
+  margin-top: 12px;
+}
+.welfare-audit time {
+  font-size: 12px;
+  color: var(--muted);
+}
+.welfare-audit p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+.welfare-page details,
+.welfare-details details {
+  margin: 16px 0;
+}
+.welfare-page summary,
+.welfare-details summary {
+  cursor: pointer;
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .welfare-quota-grid,
+  .welfare-quota-periods {
+    grid-template-columns: 1fr;
+  }
+  .welfare-heading h1 {
+    font-size: 24px;
+  }
+  .welfare-tabs {
+    gap: 8px;
+  }
+  .welfare-tabs button {
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 4px;
+    font-size: 13px;
+  }
+  .welfare-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .welfare-columns {
+    display: none;
+  }
+  .welfare-row > time {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .welfare-row > svg {
+    display: none;
+  }
+  .welfare-toolbar > .ui-select-trigger {
+    flex: 1;
+    width: 140px;
+  }
+  .welfare-spacer {
+    display: none;
+  }
+  .welfare-form fieldset {
+    grid-template-columns: 1fr;
+  }
+  .welfare-detail-values {
+    gap: 12px;
+  }
+  .welfare-grant-line {
+    flex-wrap: wrap;
+  }
+  .welfare-grant-line > .ui-select-trigger {
+    flex-basis: 100%;
+  }
+  .welfare-grant-line > .welfare-field {
+    flex: 1;
+  }
+  .welfare-heading > .ui-select-trigger {
+    max-width: none;
+    width: 100%;
+  }
+}
+
+.welfare-ship-image {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.welfare-ship-search {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+.welfare-ship-search > .welfare-field {
+  flex: 1;
+}
+
+@media (max-width: 760px) {
+  .welfare-toolbar > .ui-select-trigger {
+    flex: 0 0 calc(50% - 6px);
+    min-width: 130px;
+  }
+  .welfare-toolbar {
+    row-gap: 12px;
+  }
+  .welfare-toolbar > button:last-child {
+    margin-left: auto;
+  }
+}
+.welfare-loss-browser {
+  display: grid;
+  gap: 16px;
+}
+.welfare-loss-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.welfare-loss-toolbar > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.welfare-loss-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--card);
+  cursor: pointer;
+}
+.welfare-loss-row:hover {
+  background: var(--color-muted);
+}
+.welfare-loss-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-loss-row > img,
+.welfare-loss-row > .eve-image {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.welfare-loss-row > span:not(.eve-image) {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+.welfare-loss-row small {
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.welfare-loss-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.welfare-loss-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+.welfare-loss-row strong {
+  overflow-wrap: anywhere;
+}
+.welfare-loss-row > svg {
+  flex-shrink: 0;
+}
+.loss-reimbursement {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  background: var(--color-muted);
+  color: var(--muted);
+}
+.loss-completed {
+  color: #15803d;
+  background: #f0fdf4;
+}
+.loss-processing {
+  color: #b45309;
+  background: #fffbeb;
+}
+.loss-available {
+  color: var(--primary);
+  background: #eff6ff;
+}
+.welfare-loss-evidence {
+  display: grid;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+  container-type: inline-size;
+}
+.welfare-km-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.welfare-km-portraits {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+.welfare-km-portraits > .eve-image {
+  width: 64px;
+  height: 64px;
+}
+.welfare-km-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.welfare-km-identity > strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.welfare-km-identity > span,
+.welfare-km-facts {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.welfare-km-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+}
+.welfare-km-facts > span:nth-child(2) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+@container (max-width: 420px) {
+  .welfare-km-portraits > .eve-image {
+    width: 44px;
+    height: 44px;
+  }
+}
+.welfare-loss-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px 52px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.welfare-loss-item > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.welfare-loss-item > span:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.welfare-loss-item img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.welfare-loss-item .eve-image {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.losses-page .welfare-loss-browser {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 24px;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+.losses-page .welfare-loss-toolbar {
+  max-width: 400px;
+}
+.welfare-loss-actions {
+  display: flex;
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .welfare-loss-actions {
+    flex-basis: 100%;
+  }
+  .welfare-loss-actions > button {
+    flex: 1;
+  }
+}
+.losses-page .welfare-loss-row {
+  min-width: 0;
+  min-height: 104px;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  gap: 14px;
+  transition: background-color 150ms ease-out;
+}
+.losses-page .welfare-loss-row:hover {
+  background: var(--color-muted);
+}
+.losses-page .welfare-loss-row > .eve-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+}
+.losses-page .welfare-loss-row-content {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 7px;
+}
+.welfare-loss-row-heading,
+.welfare-loss-row-facts {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.welfare-loss-row-heading strong {
+  font-size: 15px;
+  line-height: 1.3;
+}
+.welfare-loss-row-heading small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.welfare-loss-row-facts {
+  color: var(--muted);
+  font-size: 12px;
+}
+.welfare-loss-row-facts small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.welfare-loss-row-facts time {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.losses-page .welfare-loss-row > svg {
+  color: var(--muted);
+}
+.losses-page .welfare-loss-row:hover > svg {
+  color: var(--primary);
+}
+.losses-page .welfare-loss-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.losses-page .welfare-loss-row:last-child {
+  border-bottom: 0;
+}
+@container (min-width: 760px) {
+  .losses-page .welfare-loss-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+  .losses-page .welfare-loss-row:nth-last-child(2):nth-child(odd) {
+    border-bottom: 0;
+  }
+}
+.losses-page .welfare-loss-browser > button {
+  justify-self: start;
+}
+.welfare-loss-apply {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.welfare-loss-apply .ui-select-trigger {
+  width: 180px;
+}
+@media (max-width: 600px) {
+  .losses-page .welfare-loss-browser {
+    padding: 16px;
+  }
+  .losses-page .welfare-loss-row {
+    padding: 12px 0;
+  }
+  .losses-page .welfare-loss-row > .eve-image {
+    width: 64px;
+    height: 64px;
+  }
+  .welfare-loss-apply .ui-select-trigger {
+    width: 100%;
+  }
+}
+.welfare-valuation {
+  min-width: 0;
+  border-block: 1px solid var(--border);
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.welfare-valuation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.welfare-valuation-head > div {
+  display: grid;
+  gap: 4px;
+}
+.welfare-valuation-head strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.welfare-valuation-meta {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-valuation p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-valuation details {
+  min-width: 0;
+}
+.welfare-valuation summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.welfare-valuation-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.welfare-valuation table {
+  min-width: 560px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.welfare-valuation th,
+.welfare-valuation td {
+  padding: 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.welfare-valuation th:first-child {
+  text-align: left;
+}
+.welfare-valuation td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+.welfare-valuation .eve-image {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+.welfare-pricing-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.welfare-cancellation-summary {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-cancellation-summary > span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.welfare-cancellation-summary > p {
+  margin: 0;
+}
+
+.welfare-page {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  container-type: inline-size;
+}
+.welfare-page > * {
+  min-width: 0;
+}
+.welfare-tabs {
+  margin: 0;
+}
+.welfare-tabs button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-tabs button > svg,
+.welfare-brand {
+  flex-shrink: 0;
+}
+.welfare-list > [role="status"],
+.welfare-list > [role="alert"] {
+  padding: 24px;
+  font-size: 14px;
+}
+.welfare-object > div,
+.welfare-row > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 760px) {
+  .welfare-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .welfare-columns,
+  .welfare-row > svg {
+    display: none;
+  }
+  .welfare-row > time {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+}
+@media (max-width: 480px) {
+  .welfare-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .welfare-tabs button {
+    flex-direction: row;
+    min-height: 48px;
+    padding: 10px;
+  }
+  .welfare-detail-values,
+  .welfare-contract-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.welfare-growth-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.welfare-growth-projects {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.welfare-activity-section { display: grid; gap: 16px; min-width: 0; }
+.welfare-activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.welfare-activity-heading h2 { margin: 0; font-size: 17px; }
+.welfare-activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), min(100%, 360px))); gap: 16px; }
+.welfare-activity-card { display: grid; gap: 8px; padding: 16px 18px; min-width: 0; align-content: start; }
+.welfare-activity-card-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.welfare-activity-card-title strong { overflow-wrap: anywhere; }
+.welfare-activity-card > .growth-reward-summary { padding: 0; border: 0; background: transparent; gap: 6px; }
+.welfare-activity-card > button { justify-self: end; }
+.welfare-activity-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.welfare-activity-form .ui-select-trigger { width: 100%; align-self: start; }
+.welfare-character-picker { border: 0; padding: 0; margin: 0; }
+.welfare-character-picker legend { padding: 0; font-size: 14px; }
+.welfare-character-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; color: var(--muted-foreground); font-size: 12px; }
+.welfare-character-picker-actions { display: flex; align-items: center; }
+.welfare-character-picker-actions .button-motion { min-height: 32px; }
+.welfare-character-picker-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; max-height: 148px; overflow: auto; padding: 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
+.welfare-character-option { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; min-width: 0; min-height: 42px; padding: 7px 10px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.welfare-character-option:hover { background: var(--color-muted); }
+.welfare-character-option.is-selected { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
+.welfare-character-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.welfare-character-option input:focus-visible + .welfare-character-option-mark { outline: 2px solid var(--primary); outline-offset: 2px; }
+.welfare-character-option-mark { display: grid; place-items: center; width: 18px; height: 18px; color: white; border: 1px solid var(--border); border-radius: 5px; background: var(--card); }
+.welfare-character-option.is-selected .welfare-character-option-mark { border-color: var(--primary); background: var(--primary); }
+.welfare-character-option-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.welfare-character-option small { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted-foreground); font-size: 11px; }
+.welfare-activity-fields { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(140px, .6fr); gap: 16px; align-items: start; }
+.welfare-activity-preview { display: grid; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.welfare-activity-preview > span { color: var(--muted-foreground); }
+.welfare-activity-preview > .growth-reward-summary { max-width: none; padding: 0; border: 0; background: transparent; gap: 8px; }
+.welfare-activity-form .welfare-field textarea { min-height: 96px; }
+.welfare-activity-upload { position: relative; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; color: var(--foreground); cursor: pointer; }
+.welfare-activity-upload:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 3%, var(--card)); }
+.welfare-activity-upload:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.welfare-activity-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.welfare-activity-upload small { margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.welfare-field-hint { color: var(--muted-foreground); font-size: 12px; }
+.welfare-activity-preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.welfare-activity-preview-item { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 9px; background: var(--muted); }
+.welfare-activity-preview-item a { display: block; cursor: zoom-in; }
+.welfare-activity-preview-item img { display: block; width: 100%; height: 92px; object-fit: cover; }
+.welfare-activity-preview-item > button { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; color: var(--foreground); background: color-mix(in srgb, var(--background) 88%, transparent); cursor: pointer; }
+.welfare-activity-contract-field { display: grid; gap: 8px; }
+.welfare-activity-contract-toggle { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); background: var(--card); text-align: left; cursor: pointer; }
+.welfare-activity-contract-toggle:hover, .welfare-activity-contract-toggle.is-open { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); background: color-mix(in srgb, var(--primary) 4%, var(--card)); }
+.welfare-activity-contract-toggle small { margin-left: auto; color: var(--muted-foreground); font-size: 12px; }
+.welfare-activity-contract-picker { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--muted); }
+.welfare-activity-contract-toolbar { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 8px; }
+.welfare-activity-contract-search { display: flex; gap: 6px; min-width: 0; }
+.welfare-activity-contract-search input { min-width: 0; flex: 1; }
+.welfare-activity-selected-contract { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 6px 9px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius: 7px; color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, var(--card)); cursor: pointer; }
+.welfare-activity-selected-contract span { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.welfare-activity-contract-list { display: grid; gap: 4px; max-height: 190px; overflow: auto; }
+.welfare-activity-contract-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 8px 9px; border: 1px solid transparent; border-radius: 7px; color: var(--foreground); background: var(--card); text-align: left; cursor: pointer; }
+.welfare-activity-contract-option:hover, .welfare-activity-contract-option.is-selected { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); background: color-mix(in srgb, var(--primary) 6%, var(--card)); }
+.welfare-activity-contract-option > span { display: grid; gap: 2px; min-width: 0; }
+.welfare-activity-contract-option strong, .welfare-activity-contract-option small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.welfare-activity-contract-option small { color: var(--muted-foreground); font-size: 11px; }
+.welfare-activity-images { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.welfare-activity-images img { display: block; width: 100%; height: 140px; object-fit: cover; border: 1px solid var(--border); border-radius: 8px; }
+.welfare-activity-records .welfare-empty { display: flex; justify-content: flex-start; padding: 18px 24px; }
+.welfare-activity-records .welfare-empty svg { width: 20px; height: 20px; }
+@media (max-width: 560px) { .welfare-activity-fields { grid-template-columns: minmax(0, 1fr); } .welfare-character-picker-list { grid-template-columns: minmax(0, 1fr); } .welfare-activity-contract-toolbar { grid-template-columns: minmax(0, 1fr); } .welfare-activity-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.welfare-growth-project {
+  padding: 20px;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-growth-project header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.welfare-growth-project h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.welfare-growth-project-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.welfare-growth-project-content > .growth-reward-summary {
+  flex: 1 1 180px;
+  max-width: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.welfare-growth-project-content > button {
+  margin-left: auto;
+}
+.welfare-growth-project-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+@container (min-width: 1000px) {
+  .welfare-growth-projects {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .welfare-growth-project {
+    padding: 16px;
+  }
+}
+
+.welfare-growth-toolbar > .ui-select-trigger {
+  flex: 0 1 440px;
+  min-width: 0;
+  width: min(100%, 440px);
+}
+.welfare-page .welfare-growth-management {
+  margin: 0 0 0 auto;
+  min-width: 0;
+}
+.welfare-growth-management summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--muted);
+  border-radius: 8px;
+}
+.welfare-growth-management summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-growth-management[open] summary {
+  color: var(--primary);
+}
+.welfare-growth-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+}
+.welfare-growth-claim {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+.welfare-contract-handoff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.welfare-contract-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.welfare-contract-copy label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+.welfare-contract-copy.wide {
+  grid-column: 1 / -1;
+}
+.welfare-contract-copy input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+  font-size: 14px;
+}
+.welfare-contract-copy small {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .welfare-contract-handoff {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.welfare-growth-claim > .growth-reward-summary {
+  flex: 1 1 280px;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.welfare-growth-claim-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-growth-claim-actions > .ui-select-trigger {
+  width: 180px;
+  max-width: 100%;
+}
+.welfare-growth-records-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: -12px;
+}
+.welfare-growth-records-heading h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.welfare-growth-records-heading > .ui-select-trigger {
+  width: 160px;
+}
+.welfare-growth-records .welfare-row {
+  grid-template-columns: minmax(0, 1fr) 120px 130px 20px;
+}
+@container (max-width: 760px) {
+  .welfare-growth-records .welfare-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .welfare-growth-records .welfare-row > time {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 480px) {
+  .welfare-growth-claim {
+    padding: 16px;
+    gap: 16px;
+  }
+  .welfare-growth-claim-actions {
+    width: 100%;
+  }
+  .welfare-growth-claim-actions > .ui-select-trigger {
+    width: 100%;
+  }
+  .welfare-growth-claim-actions > button:last-child {
+    margin-left: auto;
+  }
+  .welfare-growth-records .welfare-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}

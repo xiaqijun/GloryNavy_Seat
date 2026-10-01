@@ -1,0 +1,12 @@
+[Unit]
+Description=Restrict Glory Navy API to the ZeroTier reverse proxy
+After=network-online.target
+Before=glorynavy.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/glorynavy/api-firewall.sh
+
+[Install]
+WantedBy=multi-user.target

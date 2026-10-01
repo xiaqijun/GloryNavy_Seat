@@ -1,0 +1,16 @@
+[Unit]
+Description=Glory Navy dedicated PostgreSQL
+Requires=docker.service
+After=docker.service
+Before=glorynavy.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker compose -f /etc/glorynavy/compose.database.yaml up -d --wait
+ExecStop=/usr/bin/docker compose -f /etc/glorynavy/compose.database.yaml stop
+TimeoutStartSec=180
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

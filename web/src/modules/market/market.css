@@ -1,0 +1,324 @@
+.market-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 24px;
+  max-width: 1320px;
+}
+.market-page > * {
+  min-width: 0;
+}
+.market-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.market-heading h1 {
+  margin: 0;
+}
+.market-symbol {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: var(--primary);
+}
+.market-location {
+  color: var(--muted);
+  font-size: 13px;
+  margin-left: auto;
+}
+.market-input {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.market-input label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.market-input textarea,
+.market-ratio-form input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  padding: 12px;
+  font: inherit;
+}
+.market-input textarea {
+  resize: vertical;
+  min-height: 120px;
+  max-height: 400px;
+}
+.market-input-actions,
+.market-result-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.market-input-actions > span,
+.market-result-heading > span,
+.market-footnote {
+  font-size: 12px;
+  color: var(--muted);
+}
+.market-result-heading {
+  margin-bottom: 16px;
+}
+.market-result-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.market-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.market-total {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.market-total.is-mid {
+  border-color: var(--primary);
+}
+.market-total > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.market-total > strong {
+  display: block;
+  margin: 12px 0;
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+}
+.market-total strong small {
+  font-size: 12px;
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.market-total p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.market-total p b {
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+.market-table-wrap {
+  overflow-x: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.market-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+.market-table-wrap th,
+.market-table-wrap td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.market-table-wrap th {
+  color: var(--muted);
+  font-weight: 500;
+  background: var(--background);
+}
+.market-table-wrap td:first-child,
+.market-table-wrap th:first-child {
+  text-align: left;
+  white-space: normal;
+}
+.market-table-wrap tr:last-child td {
+  border-bottom: 0;
+}
+.market-table-wrap tbody tr:hover {
+  background: var(--background);
+}
+.market-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+.market-item img {
+  width: 32px;
+  height: 32px;
+}
+.market-item small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.market-item .market-row-warning,
+.market-incomplete {
+  color: #92400e;
+}
+.market-incomplete {
+  font-size: 14px;
+}
+.market-footnote {
+  margin: 12px 0 0;
+}
+.market-ratio-form {
+  display: grid;
+  gap: 12px;
+}
+.market-ratio-form small {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .market-input {
+    padding: 20px;
+  }
+  .market-totals {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .market-total {
+    padding: 16px 20px;
+  }
+  .market-total > strong {
+    margin: 8px 0;
+    font-size: 22px;
+  }
+  .market-input-actions {
+    align-items: flex-end;
+  }
+  .market-heading {
+    gap: 8px;
+  }
+  .market-location {
+    margin-left: 0;
+  }
+  .market-result-heading {
+    flex-wrap: wrap;
+  }
+}
+
+.market-input-heading,
+.market-contract-actions,
+.market-contract-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.market-input-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.market-contract-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.market-contract-search input {
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: var(--background);
+}
+.market-contract-search button {
+  min-width: 44px;
+}
+.market-contract-list {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.market-contract-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.market-contract-row.is-selected {
+  border-color: var(--primary);
+  background: var(--background);
+}
+.market-contract-row input {
+  accent-color: var(--primary);
+}
+.market-contract-row:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.market-contract-row strong {
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.market-contract-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.market-contract-price {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.market-contract-actions > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.market-source {
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  margin: 0 0 16px;
+}
+@media (max-width: 560px) {
+  .market-contract-row {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .market-contract-price {
+    grid-column: 2;
+  }
+}
+
+.market-contract-picker > * {
+  min-width: 0;
+}

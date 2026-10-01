@@ -1,0 +1,82 @@
+version: "2"
+sql:
+  - engine: postgresql
+    queries: internal/modules/community/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/community/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/access/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/access/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/system/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/system/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/identity/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/identity/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/eve/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/eve/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/attendance/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/attendance/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/exchange/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/exchange/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/fittings/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/fittings/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true

@@ -1,0 +1,1405 @@
+{
+  "compatibility_date": "2026-08-18",
+  "source": "https://esi.evetech.net/meta/openapi.json?compatibility_date=2026-08-18",
+  "sha256": "9a9a0f4af77216300e960cfd2576c9baac085a8170022e40c928c28622d80fc6",
+  "routes": {
+    "GET /alliances/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /alliances/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /alliances/{id}/contacts/": {
+      "group": "alliance-social",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /alliances/{id}/contacts/labels/": {
+      "group": "alliance-social",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /alliances/{id}/corporations/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /alliances/{id}/icons/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "POST /characters/affiliation/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 86400
+    },
+    "GET /characters/{id}/access-lists/": {
+      "group": "char-access",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/access-lists/{id}/": {
+      "group": "char-access",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/agents_research/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/assets/": {
+      "group": "char-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "POST /characters/{id}/assets/locations/": {
+      "group": "char-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /characters/{id}/assets/names/": {
+      "group": "char-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/attributes/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 120
+    },
+    "GET /characters/{id}/blueprints/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/calendar/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "GET /characters/{id}/calendar/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "PUT /characters/{id}/calendar/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "GET /characters/{id}/calendar/{id}/attendees/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/clones/": {
+      "group": "char-location",
+      "capacity": 1200,
+      "window_seconds": 900,
+      "cache_seconds": 120
+    },
+    "GET /characters/{id}/contacts/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "POST /characters/{id}/contacts/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "PUT /characters/{id}/contacts/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /characters/{id}/contacts/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/contacts/labels/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/contracts/": {
+      "group": "char-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/contracts/{id}/bids/": {
+      "group": "char-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/contracts/{id}/items/": {
+      "group": "char-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/corporationhistory/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 86400
+    },
+    "GET /characters/{id}/cosmetics/skinr/": {
+      "group": "char-skinr",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/cosmetics/skinr/components/": {
+      "group": "char-skinr",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "POST /characters/{id}/cspa/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/fatigue/": {
+      "group": "char-location",
+      "capacity": 1200,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/fittings/": {
+      "group": "fitting",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "POST /characters/{id}/fittings/": {
+      "group": "fitting",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /characters/{id}/fittings/{id}/": {
+      "group": "fitting",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/fleet/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/freelance-jobs/": {
+      "group": "char-freelance-job",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/freelance-jobs/{id}/participation/": {
+      "group": "char-freelance-job",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/fw/stats/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/implants/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 120
+    },
+    "GET /characters/{id}/industry/jobs/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/killmails/recent/": {
+      "group": "char-killmail",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/location/": {
+      "group": "char-location",
+      "capacity": 1200,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "GET /characters/{id}/loyalty/points/": {
+      "group": "char-wallet",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/mail/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 30
+    },
+    "POST /characters/{id}/mail/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/mail/labels/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 30
+    },
+    "POST /characters/{id}/mail/labels/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /characters/{id}/mail/labels/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/mail/lists/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 120
+    },
+    "GET /characters/{id}/mail/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 30
+    },
+    "PUT /characters/{id}/mail/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /characters/{id}/mail/{id}/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/medals/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/mercenary-tactical-operations/": {
+      "group": "char-activity",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/mercenary-tactical-operations/{id}/": {
+      "group": "char-activity",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /characters/{id}/military-campaigns/objectives/": {
+      "group": "char-military-campaign",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/military-campaigns/objectives/{id}/": {
+      "group": "char-military-campaign",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/mining/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/notifications/": {
+      "group": "char-notification",
+      "capacity": 15,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/notifications/contacts/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/online/": {
+      "group": "char-location",
+      "capacity": 1200,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/orders/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 1200
+    },
+    "GET /characters/{id}/orders/history/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/paragon-hub/skinr/": {
+      "group": "char-paragon-hub",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/planets/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/planets/{id}/": {
+      "group": "char-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /characters/{id}/portrait/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /characters/{id}/roles/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/search/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/ship/": {
+      "group": "char-location",
+      "capacity": 1200,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "GET /characters/{id}/skillqueue/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/skills/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /characters/{id}/standings/": {
+      "group": "char-social",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/structures/mercenary-dens/": {
+      "group": "char-structure",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/structures/mercenary-dens/{id}/": {
+      "group": "char-structure",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/titles/": {
+      "group": "char-detail",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/wallet/": {
+      "group": "char-wallet",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 120
+    },
+    "GET /characters/{id}/wallet/journal/": {
+      "group": "char-wallet",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /characters/{id}/wallet/transactions/": {
+      "group": "char-wallet",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /contracts/public/bids/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 300
+    },
+    "GET /contracts/public/items/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /contracts/public/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 1800
+    },
+    "GET /corporation/{id}/mining/extractions/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 1800
+    },
+    "GET /corporation/{id}/mining/observers/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporation/{id}/mining/observers/{id}/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/npccorps/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/alliancehistory/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/assets/": {
+      "group": "corp-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "POST /corporations/{id}/assets/locations/": {
+      "group": "corp-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /corporations/{id}/assets/names/": {
+      "group": "corp-asset",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/blueprints/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/contacts/": {
+      "group": "corp-social",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/contacts/labels/": {
+      "group": "corp-social",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/containers/logs/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /corporations/{id}/contracts/": {
+      "group": "corp-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/contracts/{id}/bids/": {
+      "group": "corp-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/contracts/{id}/items/": {
+      "group": "corp-contract",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/customs_offices/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/divisions/": {
+      "group": "corp-wallet",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/facilities/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/freelance-jobs/": {
+      "group": "corp-freelance-job",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/freelance-jobs/{id}/participants/": {
+      "group": "corp-freelance-job",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/fw/stats/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/icons/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/industry/jobs/": {
+      "group": "corp-industry",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/killmails/recent/": {
+      "group": "corp-killmail",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/medals/": {
+      "group": "corp-detail",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/medals/issued/": {
+      "group": "corp-detail",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/members/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/members/limit/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/members/titles/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/membertracking/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/orders/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 1200
+    },
+    "GET /corporations/{id}/orders/history/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/projects/": {
+      "group": "corp-project",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/projects/{id}/": {
+      "group": "corp-project",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /corporations/{id}/projects/{id}/contribution/{id}/": {
+      "group": "corp-project",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /corporations/{id}/projects/{id}/contributors/": {
+      "group": "corp-project",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /corporations/{id}/roles/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/roles/history/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/shareholders/": {
+      "group": "corp-detail",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/standings/": {
+      "group": "corp-member",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/starbases/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/starbases/{id}/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/structures/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/structures/skyhooks/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/structures/skyhooks/{id}/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/structures/sovereignty-hubs/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/structures/sovereignty-hubs/{id}/": {
+      "group": "corp-structure",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/titles/": {
+      "group": "corp-detail",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/wallets/": {
+      "group": "corp-wallet",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /corporations/{id}/wallets/{id}/journal/": {
+      "group": "corp-wallet",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /corporations/{id}/wallets/{id}/transactions/": {
+      "group": "corp-wallet",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /cosmetics/skinr/{id}/": {
+      "group": "skinr",
+      "capacity": 12000,
+      "window_seconds": 900,
+      "cache_seconds": 31536000
+    },
+    "GET /dogma/attributes/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /dogma/attributes/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /dogma/dynamic/items/{id}/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /dogma/effects/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /dogma/effects/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /fleets/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "PUT /fleets/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fleets/{id}/members/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "POST /fleets/{id}/members/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "PUT /fleets/{id}/members/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /fleets/{id}/members/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "PUT /fleets/{id}/squads/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /fleets/{id}/squads/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fleets/{id}/wings/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "POST /fleets/{id}/wings/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "PUT /fleets/{id}/wings/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "DELETE /fleets/{id}/wings/{id}/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /fleets/{id}/wings/{id}/squads/": {
+      "group": "fleet",
+      "capacity": 1800,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /freelance-jobs/": {
+      "group": "freelance-job",
+      "capacity": 12000,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /freelance-jobs/{id}/": {
+      "group": "freelance-job",
+      "capacity": 12000,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /fw/leaderboards/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fw/leaderboards/characters/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fw/leaderboards/corporations/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fw/stats/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /fw/systems/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 1800
+    },
+    "GET /fw/wars/": {
+      "group": "factional-warfare",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /incursions/": {
+      "group": "incursion",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /industry/facilities/": {
+      "group": "industry",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /industry/systems/": {
+      "group": "industry",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /insurance/prices/": {
+      "group": "insurance",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /killmails/{id}/{id}/": {
+      "group": "killmail",
+      "capacity": 3600,
+      "window_seconds": 900,
+      "cache_seconds": 2592000
+    },
+    "GET /loyalty/stores/{id}/offers/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /markets/groups/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /markets/groups/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /markets/prices/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /markets/structures/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 300
+    },
+    "GET /markets/{id}/history/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /markets/{id}/orders/": {
+      "group": "market-order",
+      "capacity": 12000,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /markets/{id}/types/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 600
+    },
+    "GET /meta/changelog/": {
+      "group": "meta",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /meta/compatibility-dates/": {
+      "group": "meta",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /meta/name/": {
+      "group": "meta",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 600
+    },
+    "GET /meta/status/": {
+      "group": "meta",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /military-campaigns/": {
+      "group": "military-campaign",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /military-campaigns/{id}/": {
+      "group": "military-campaign",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /military-campaigns/{id}/objectives/": {
+      "group": "military-campaign",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /military-campaigns/{id}/objectives/{id}/": {
+      "group": "military-campaign",
+      "capacity": 300,
+      "window_seconds": 900,
+      "cache_seconds": 60
+    },
+    "GET /paragon-hub/skinr/": {
+      "group": "paragon-hub",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /paragon-hub/skinr/alliances/{id}/": {
+      "group": "char-paragon-hub",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /paragon-hub/skinr/characters/{id}/": {
+      "group": "char-paragon-hub",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /paragon-hub/skinr/corporations/{id}/": {
+      "group": "char-paragon-hub",
+      "capacity": 150,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /route/{id}/{id}/": {
+      "group": "routes",
+      "capacity": 3600,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /skyhooks/raidable/": {
+      "group": "activity",
+      "capacity": 30,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /sovereignty/campaigns/": {
+      "group": "sovereignty",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 5
+    },
+    "GET /sovereignty/systems/": {
+      "group": "sovereignty",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 300
+    },
+    "GET /status/": {
+      "group": "status",
+      "capacity": 600,
+      "window_seconds": 900,
+      "cache_seconds": 30
+    },
+    "POST /ui/autopilot/waypoint/": {
+      "group": "ui",
+      "capacity": 900,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /ui/openwindow/contract/": {
+      "group": "ui",
+      "capacity": 900,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /ui/openwindow/information/": {
+      "group": "ui",
+      "capacity": 900,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /ui/openwindow/marketdetails/": {
+      "group": "ui",
+      "capacity": 900,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "POST /ui/openwindow/newmail/": {
+      "group": "ui",
+      "capacity": 900,
+      "window_seconds": 900,
+      "cache_seconds": 0
+    },
+    "GET /universe/ancestries/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/asteroid_belts/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/bloodlines/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/categories/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/categories/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/constellations/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/constellations/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/factions/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/graphics/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/graphics/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/groups/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/groups/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "POST /universe/ids/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/moons/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "POST /universe/names/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/planets/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/races/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/regions/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/regions/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/schematics/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /universe/stargates/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/stars/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/stations/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/structures/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /universe/structures/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /universe/system_jumps/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /universe/system_kills/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 3600
+    },
+    "GET /universe/systems/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/systems/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/types/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /universe/types/{id}/": {
+      "group": "",
+      "capacity": 0,
+      "window_seconds": 0,
+      "cache_seconds": 0
+    },
+    "GET /wars/": {
+      "group": "killmail",
+      "capacity": 3600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /wars/{id}/": {
+      "group": "killmail",
+      "capacity": 3600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    },
+    "GET /wars/{id}/killmails/": {
+      "group": "killmail",
+      "capacity": 3600,
+      "window_seconds": 900,
+      "cache_seconds": 3600
+    }
+  }
+}
