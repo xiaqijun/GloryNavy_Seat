@@ -2,7 +2,7 @@ import { msg, getLocale } from "@/lib/i18n";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { RadioTower, RefreshCw, Copy, Coins, Clock3, Gauge, Settings2, Timer } from "lucide-react";
+import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2 } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
@@ -271,11 +271,8 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
     Number.isSafeInteger(Number(ttlSeconds)) && Number(ttlSeconds) >= 60 && Number(ttlSeconds) <= 2678400;
   const hasPolicy = pricing.unit_seconds > 0 && pricing.unit_price_minor > 0 && pricing.max_grant_seconds > 0 && pricing.grant_ttl_seconds >= 60;
   return (
-    <section className="sentry-pricing" aria-labelledby="sentry-pricing-title">
-      <div className="sentry-usage-heading sentry-pricing-heading">
-        <div>
-          <h2 id="sentry-pricing-title">{msg("预警收费配置")}</h2>
-        </div>
+    <div className="sentry-pricing-inline">
+      <div className="sentry-pricing-inline-heading">
         <div className="sentry-pricing-actions">
           <span className={`sentry-pricing-status ${pricing.charging_enabled ? "is-on" : "is-off"}`}>
             {pricing.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
@@ -286,8 +283,6 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
       <div className="sentry-usage-summary sentry-pricing-summary">
         <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Clock3 aria-hidden="true" /></span><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
         <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Coins aria-hidden="true" /></span><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
-        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Gauge aria-hidden="true" /></span><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
-        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Timer aria-hidden="true" /></span><span>{msg("授权有效期")}</span><strong>{hasPolicy ? `${pricing.grant_ttl_seconds}${msg("秒")}` : "—"}</strong></div>
         <small>{pricing.configured ? `${msg("版本")}：${pricing.price_version}` : hasPolicy ? msg("尚未保存独立收费配置，当前使用部署默认值") : msg("尚未配置预警收费规则")}</small>
       </div>
       {editing && pricing.can_edit && (
@@ -308,7 +303,7 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
           {save.isError && <p role="alert">{save.error.message}</p>}
         </FormDialog>
       )}
-    </section>
+    </div>
   );
 }
 
