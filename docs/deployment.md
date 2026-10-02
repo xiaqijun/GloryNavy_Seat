@@ -2,7 +2,7 @@
 
 ## 联盟 PAP 历史月份未兑换补兑（2026-10-02）
 
-已发布 `v0.1.0-alliance-pap-history-20261002`。应用机与公网 1Panel 静态前端已原子切换，Goose 61、River 迁移和应用 `active/ready` 检查通过；切换前数据库与配置由激活脚本备份至 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-history-20261002-20261001T171710Z.{dump,env}`。管理员可按完整历史月份预览并补兑联盟 PAP；历史兑换列表匿名返回 401。公网首页/登录 200、容器静态入口和 OpenResty `nginx -t` 通过，上一前端保留为 `releases/v0.1.0-operations-finance-20261001`。九月真实管理员操作及本机 Playwright 浏览器提交检查仍待现场验收；本机缺少 Chromium 可执行文件。
+已发布 `v0.1.0-alliance-pap-history-20261002`。应用机与公网 1Panel 静态前端已原子切换，Goose 61、River 迁移和应用 `active/ready` 检查通过；切换前数据库与配置由激活脚本备份至 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-history-20261002-20261001T171710Z.{dump,env}`。管理员可按完整历史月份预览并补兑联盟 PAP；历史兑换列表匿名返回 401。公网首页/登录 200、容器静态入口和 OpenResty `nginx -t` 通过，上一前端保留为 `releases/v0.1.0-operations-finance-20261001`。本轮用真实浏览器完成首页、登录入口和 EVE SSO 人物选择页只读检查，未提交授权；九月真实管理员操作、币账核对、实际补兑和授权后页面提交仍待现场验收。本机 Playwright 浏览器提交脚本因缺少 Chromium 可执行文件未运行。
 
 ## 审批批次编号恢复（2026-09-30）
 
