@@ -38,6 +38,7 @@ type ESIRequest struct {
 	CharacterID, Generation int64
 	Scopes                  []string
 	ExpectPages, LimitTrust bool
+	ForceRefresh            bool
 	Mutation                bool
 }
 type ESIResponse struct {
@@ -53,6 +54,9 @@ func (s *AuthorizationService) ESI() *ESIService { return s.esi }
 func (c *ESIService) Request(ctx context.Context, r ESIRequest, out any) (ESIResponse, error) {
 	o := &esiObservation{ExpectPages: r.ExpectPages, LimitTrust: r.LimitTrust}
 	ctx = context.WithValue(ctx, esiObservationKey{}, o)
+	if r.ForceRefresh {
+		ctx = context.WithValue(ctx, esiclient.ForceRefreshKey{}, true)
+	}
 	if r.Mutation {
 		ctx = context.WithValue(ctx, esiclient.MutationKey{}, true)
 	}

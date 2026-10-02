@@ -51,7 +51,7 @@ func TestAlertTimeReservationSettlementReleaseAndRefund(t *testing.T) {
 		t.Fatal(err)
 	}
 	sh, err = s.Shop(ctx, manager, 0)
-	if err != nil || sh.Spent != 0 || sh.Reserved != 0 {
+	if err != nil || sh.Spent != 0 || sh.Reserved != 2 {
 		t.Fatalf("after refund: %+v, %v", sh, err)
 	}
 	if err := s.ReserveAlertInterval(ctx, AlertTimeIntervalRequest{GrantID: grantID, IntervalID: "interval-2", RequestKey: rewardKey(78), StartedAt: start, EndedAt: start.Add(2 * time.Second)}); err != nil {
@@ -103,7 +103,7 @@ func TestAlertUsageReadModelKeepsCoinStatesSeparate(t *testing.T) {
 		t.Fatal(err)
 	}
 	usage, err = s.AlertUsage(ctx, manager)
-	if err != nil || usage.AlertRefundedMinor != 2 || usage.AlertSettledMinor != 0 {
+	if err != nil || usage.AlertRefundedMinor != 2 || usage.AlertSettledMinor != 0 || usage.AlertReservedMinor != 2 {
 		t.Fatalf("after refund: %+v, %v", usage, err)
 	}
 }

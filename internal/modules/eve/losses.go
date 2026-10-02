@@ -202,7 +202,7 @@ func (s *SyncService) collectLosses(ctx context.Context, t store.EveSyncTarget, 
 				SecurityStatus float64 `json:"security_status"`
 			} `json:"attackers"`
 		}
-		r, e := s.auth.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/killmails/%d/%s/", ref.ID, ref.Hash)}, &detail)
+		r, e := s.auth.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/killmails/%d/%s/", ref.ID, ref.Hash), ForceRefresh: true}, &detail)
 		if e != nil {
 			return out, e
 		}

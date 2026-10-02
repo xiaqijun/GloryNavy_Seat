@@ -136,7 +136,8 @@ func TestAttendanceCaptureManualOwnershipAndReplay(t *testing.T) {
 	}
 	var audits int
 	if err = s.Pool.QueryRow(ctx, "SELECT count(*) FROM attendance_audit").Scan(&audits); err != nil || audits != 4 {
-		t.Fatal(audits, err)
+		rows, listErr := store.New(s.Pool).ListAudit(ctx, store.ListAuditParams{EventID: e.ID})
+		t.Fatal(audits, err, rows, listErr)
 	}
 	// Historical attribution is immutable even if today's mapping changes.
 	original := s.Bindings

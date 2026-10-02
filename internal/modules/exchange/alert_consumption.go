@@ -429,6 +429,14 @@ func (s *Service) RefundAlertTimeTx(ctx context.Context, tx pgx.Tx, grantID, int
 	if err = q.ReverseAlertSettled(ctx, gid, charge.DurationSeconds, charge.CoinsMinor); err != nil {
 		return err
 	}
+	// A refund restores the prepaid grant's usable capacity. If the grant was
+	// closed after releasing its unused remainder, reopen it while it is still
+	// valid so the corrected interval can be reserved again.
+	if grant.State == "closed" && grant.ExpiresAt.After(time.Now().UTC()) {
+		if err = q.ReopenAlertGrant(ctx, gid); err != nil {
+			return err
+		}
+	}
 	return q.CoinEntry(ctx, store.CoinEntryParams{AccountID: grant.AccountID, Kind: "alert_refund", Reference: grantID + ":" + intervalID, RequestKey: key, Delta: charge.CoinsMinor, Reason: "预警无效时长退款"})
 }
 

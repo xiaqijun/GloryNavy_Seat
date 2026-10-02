@@ -124,6 +124,7 @@ func (q *Queries) RefundAlertCharge(ctx context.Context, id int64, key pgtype.UU
 const updateAlertGrantSettled = `UPDATE exchange_alert_grants SET settled_seconds=settled_seconds+$2,settled_minor=settled_minor+$3 WHERE id=$1`
 const updateAlertGrantReleased = `UPDATE exchange_alert_grants SET released_seconds=released_seconds+$2,released_minor=released_minor+$3 WHERE id=$1`
 const reverseAlertGrantSettled = `UPDATE exchange_alert_grants SET settled_seconds=settled_seconds-$2,settled_minor=settled_minor-$3 WHERE id=$1`
+const reopenAlertGrant = `UPDATE exchange_alert_grants SET state='active' WHERE id=$1 AND state='closed' AND expires_at>now()`
 const closeAlertGrant = `UPDATE exchange_alert_grants SET state='closed',closed_at=now() WHERE id=$1 AND state='active'`
 
 func (q *Queries) AddAlertSettled(ctx context.Context, id pgtype.UUID, seconds, minor int64) error {
@@ -136,6 +137,10 @@ func (q *Queries) AddAlertReleased(ctx context.Context, id pgtype.UUID, seconds,
 }
 func (q *Queries) ReverseAlertSettled(ctx context.Context, id pgtype.UUID, seconds, minor int64) error {
 	_, err := q.db.Exec(ctx, reverseAlertGrantSettled, id, seconds, minor)
+	return err
+}
+func (q *Queries) ReopenAlertGrant(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, reopenAlertGrant, id)
 	return err
 }
 func (q *Queries) CloseAlertGrant(ctx context.Context, id pgtype.UUID) error {

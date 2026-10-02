@@ -265,8 +265,8 @@ func TestActivityClaimLimitCountsOneMultiRoleBatch(t *testing.T) {
 	fourth := second
 	fourth.RequestKey = activityChildRequestKey(key(8833), 456)
 	fourth.Detail.ActivityBatchKey = key(8833)
-	if _, err = s.Execute(ctx, userID, fourth); err != nil {
-		t.Fatalf("claim limit should be independent per character: %v", err)
+	if _, err = s.Execute(ctx, userID, fourth); !errors.Is(err, ErrActivityClaimed) {
+		t.Fatalf("claim limit should apply independently to character 456: %v", err)
 	}
 }
 

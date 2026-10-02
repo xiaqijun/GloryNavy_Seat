@@ -41,6 +41,11 @@ type Client struct {
 	Observer  func(context.Context, Credential, RequestEvent)
 }
 
+// ForceRefreshKey asks the ESI client to revalidate a cached response. It is
+// used when a local projection is incomplete and must be enriched from the
+// upstream detail, even if the normal route cache is still fresh.
+type ForceRefreshKey struct{}
+
 // RequestEvent carries operational metadata only, never headers, paths or bodies.
 type RequestEvent struct {
 	Status                             int
@@ -116,6 +121,7 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 	defer func() { s.recordRate(ctx, rate) }()
 	var cached store.EveEsiCache
 	err := pgx.ErrNoRows
+	forceRefresh, _ := ctx.Value(ForceRefreshKey{}).(bool)
 	if !mutation {
 		cached, err = q.ReadESICache(ctx, key)
 	}
@@ -136,7 +142,7 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 				return now, Fault{"cache_invalid", 0, false}
 			}
 		}
-		if cached.ExpiresAt.Time.After(now) {
+		if !forceRefresh && cached.ExpiresAt.Time.After(now) {
 			event.CacheHit = true
 			rate.cache = true
 			if o, ok := ctx.Value(ObservationKey{}).(*Observation); ok && o.ExpectPages {
