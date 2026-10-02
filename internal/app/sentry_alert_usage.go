@@ -32,7 +32,7 @@ func (r *sentryAlertUsageReader) AlertConsumptions(ctx context.Context, account 
 	if err != nil {
 		return sentry.AlertConsumptionPage{}, err
 	}
-	out := sentry.AlertConsumptionPage{NextCursor: "", AsOf: page.AsOf}
+	out := sentry.AlertConsumptionPage{Items: make([]sentry.AlertConsumption, 0), NextCursor: "", AsOf: page.AsOf}
 	if page.NextCursor > 0 {
 		out.NextCursor = formatCursor(page.NextCursor)
 	}

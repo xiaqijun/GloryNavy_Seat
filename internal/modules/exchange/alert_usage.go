@@ -81,7 +81,7 @@ SELECT
 // cursor is the opaque-to-UI database row id used by the existing exchange
 // pagination convention.
 func (s *Service) AlertConsumptions(ctx context.Context, account string, before int64, state string, from, to *time.Time, limit int) (AlertConsumptionPage, error) {
-	var out AlertConsumptionPage
+	out := AlertConsumptionPage{Items: make([]AlertConsumption, 0)}
 	id, err := uuid(account)
 	if err != nil {
 		return out, err

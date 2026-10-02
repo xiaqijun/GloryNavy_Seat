@@ -1,5 +1,9 @@
 # 项目状态
 
+## 已发布：预警空消费账单响应修复（2026-10-02）
+
+生产前端已切换至 `v0.1.0-sentry-key-actions-20261002`，修复预警消费页面布局和接口诊断提示；后端补齐空消费账单的 `items: []` 响应，避免没有记录时被页面校验误报“服务响应格式异常”。本轮随后发布后端修复版本 `v0.1.0-sentry-consumption-empty-20261002`，无 Goose/River 新迁移；部署前端已保留上一版静态目录，后端切换前由激活脚本备份数据库与配置。收费开关保持关闭。
+
 ## 已发布：联盟 PAP 历史月份未兑换补兑（2026-10-02）
 
 生产前后端已切换至 `v0.1.0-alliance-pap-history-20261002`。管理员可在联盟 PAP 兑换弹窗选择仍有未兑换余额的完整历史月份（包括九月），按保存快照预览并补兑；每月完整性与版本记录、当前绑定复核和 exchange 幂等币账已上线。Goose 61 已执行，新增月份历史表存在并完成已有快照回填；应用与数据库服务 `active`、`ready`，`NRestarts=0`。应用机切换前备份为 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-history-20261002-20261001T171710Z.{dump,env}`；公网前端使用站点内相对 `current` 链接，上一版本保留为 `releases/v0.1.0-operations-finance-20261001`。公网首页与登录 200、联盟 PAP 历史兑换接口匿名 401、容器静态入口和 OpenResty `nginx -t` 通过；本轮用真实浏览器完成首页、登录入口和 EVE SSO 人物选择页只读检查，未提交授权。九月真实管理员预览、币账核对、实际补兑和授权后页面提交仍需现场验收；本机 `scripts/check-deployment.mjs` 仍因缺少 Playwright Chromium 无法运行。

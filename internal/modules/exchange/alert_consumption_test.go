@@ -1,11 +1,28 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 )
+
+func TestAlertConsumptionsEmptyPageUsesArray(t *testing.T) {
+	s, _, _ := rewardFixture(t)
+	page, err := s.AlertConsumptions(context.Background(), manager, 0, "", nil, nil, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := json.Marshal(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(payload) == "" || !bytes.Contains(payload, []byte(`"items":[]`)) {
+		t.Fatalf("empty page must encode items as an array: %s", payload)
+	}
+}
 
 func TestAlertTimeReservationSettlementReleaseAndRefund(t *testing.T) {
 	s, _, _ := rewardFixture(t)
