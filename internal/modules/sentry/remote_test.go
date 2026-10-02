@@ -91,19 +91,29 @@ func TestHTTPRemoteCreateAlertGrantV2OmitsPricing(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatal(err)
 		}
-		if body["protocol_version"] != 2.0 || body["reserved_seconds"] != 3600.0 {
-			t.Fatalf("unexpected v2 body: %#v", body)
+		for key, want := range map[string]any{
+			"operation_id":     "op-2",
+			"grant_id":         "grant-2",
+			"account_id":       "account-2",
+			"key_id":           "key-2",
+			"reserved_seconds": 3600.0,
+			"expires_at":       wantExpiry.Format(time.RFC3339),
+			"protocol_version": 2.0,
+		} {
+			if body[key] != want {
+				t.Fatalf("%s = %#v, want %#v", key, body[key], want)
+			}
 		}
 		for _, field := range []string{"price_version", "unit_seconds", "unit_price_minor"} {
 			if _, ok := body[field]; ok {
 				t.Fatalf("v2 request leaked pricing field %q: %#v", field, body)
 			}
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"grant_id": "grant-2", "operation_id": "op-2", "account_id": "account-2", "reserved_seconds": 3600, "remaining_seconds": 3600, "expires_at": wantExpiry.Format(time.RFC3339), "status": "active", "protocol_version": 2})
+		_ = json.NewEncoder(w).Encode(map[string]any{"grant_id": "grant-2", "operation_id": "op-2", "account_id": "account-2", "key_id": "key-2", "reserved_seconds": 3600, "remaining_seconds": 3600, "expires_at": wantExpiry.Format(time.RFC3339), "status": "active", "protocol_version": 2})
 	}))
 	defer server.Close()
 	r := &HTTPRemote{BaseURL: server.URL, Token: strings.Repeat("x", 32), Client: server.Client()}
-	got, err := r.CreateAlertGrant(context.Background(), AlertGrantRequest{OperationID: "op-2", GrantID: "grant-2", AccountID: "account-2", ReservedSeconds: 3600, ExpiresAt: wantExpiry, ProtocolVersion: 2})
+	got, err := r.CreateAlertGrant(context.Background(), AlertGrantRequest{OperationID: "op-2", GrantID: "grant-2", AccountID: "account-2", KeyID: "key-2", PriceVersion: "seat-price-v2", UnitSeconds: 60, UnitPriceMinor: 7, ReservedSeconds: 3600, ExpiresAt: wantExpiry, ProtocolVersion: 2})
 	if err != nil {
 		t.Fatal(err)
 	}

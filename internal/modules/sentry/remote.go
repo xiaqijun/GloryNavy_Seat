@@ -84,20 +84,20 @@ type AlertEventPage struct {
 }
 
 type AlertDelivery struct {
-	DeliveryID       string `json:"delivery_id"`
-	ChargeEventID    string `json:"charge_event_id"`
-	Revision         int64  `json:"revision"`
-	GrantID          string `json:"grant_id"`
-	AccountID        string `json:"account_id"`
-	KeyID            string `json:"key_id"`
-	StartedAt        string `json:"started_at"`
-	EndedAt          string `json:"ended_at"`
-	DurationSeconds  int64  `json:"duration_seconds"`
-	ConsumptionState string `json:"consumption_state"`
-	Status           string `json:"status"`
-	AckAt            string `json:"ack_at"`
+	DeliveryID       string         `json:"delivery_id"`
+	ChargeEventID    string         `json:"charge_event_id"`
+	Revision         int64          `json:"revision"`
+	GrantID          string         `json:"grant_id"`
+	AccountID        string         `json:"account_id"`
+	KeyID            string         `json:"key_id"`
+	StartedAt        string         `json:"started_at"`
+	EndedAt          string         `json:"ended_at"`
+	DurationSeconds  int64          `json:"duration_seconds"`
+	ConsumptionState string         `json:"consumption_state"`
+	Status           string         `json:"status"`
+	AckAt            string         `json:"ack_at"`
 	AckEvidence      map[string]any `json:"ack_evidence"`
-	CreatedAt        string `json:"created_at"`
+	CreatedAt        string         `json:"created_at"`
 }
 
 type AlertDeliveryPage struct {
@@ -213,18 +213,26 @@ func (c *HTTPRemote) CreateAlertGrant(ctx context.Context, input AlertGrantReque
 	if protocolVersion == 1 && (strings.TrimSpace(input.PriceVersion) == "" || input.UnitSeconds <= 0 || input.UnitPriceMinor <= 0) {
 		return out, ErrRemoteUnavailable
 	}
-	payload := struct {
-		OperationID     string `json:"operation_id"`
-		GrantID         string `json:"grant_id"`
-		AccountID       string `json:"account_id"`
-		KeyID           string `json:"key_id,omitempty"`
-		PriceVersion    string `json:"price_version,omitempty"`
-		UnitSeconds     int64  `json:"unit_seconds,omitempty"`
-		UnitPriceMinor  int64  `json:"unit_price_minor,omitempty"`
-		ReservedSeconds int64  `json:"reserved_seconds"`
-		ExpiresAt       string `json:"expires_at"`
-		ProtocolVersion int64  `json:"protocol_version"`
-	}{OperationID: input.OperationID, GrantID: input.GrantID, AccountID: input.AccountID, KeyID: input.KeyID, PriceVersion: input.PriceVersion, UnitSeconds: input.UnitSeconds, UnitPriceMinor: input.UnitPriceMinor, ReservedSeconds: input.ReservedSeconds, ExpiresAt: input.ExpiresAt.UTC().Format(time.RFC3339), ProtocolVersion: protocolVersion}
+	// Build the wire payload explicitly by protocol version. v2 deliberately
+	// has no price fields: Seat owns pricing and coin accounting, while Sentry
+	// only receives a bounded seconds allowance and its expiry. Do not rely on
+	// omitempty here because callers may carry the local frozen v2 policy.
+	payload := map[string]any{
+		"operation_id":     input.OperationID,
+		"grant_id":         input.GrantID,
+		"account_id":       input.AccountID,
+		"reserved_seconds": input.ReservedSeconds,
+		"expires_at":       input.ExpiresAt.UTC().Format(time.RFC3339),
+		"protocol_version": protocolVersion,
+	}
+	if input.KeyID != "" {
+		payload["key_id"] = input.KeyID
+	}
+	if protocolVersion == 1 {
+		payload["price_version"] = input.PriceVersion
+		payload["unit_seconds"] = input.UnitSeconds
+		payload["unit_price_minor"] = input.UnitPriceMinor
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return out, err

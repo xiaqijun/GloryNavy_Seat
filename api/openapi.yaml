@@ -7538,7 +7538,7 @@ paths:
     post:
       operationId: sentryCreateAlertGrant
       summary: Reserve a prepaid time allowance for alert delivery
-      description: Uses the server-frozen price policy, reserves coins in exchange, and projects the same seconds grant to EVE Sentry. The request key is also the stable grant identifier for safe retry.
+      description: Uses Seat's server-frozen price policy, reserves coins in exchange, and projects a v2 seconds-only grant to EVE Sentry. Pricing remains local to Seat; the request key is also the stable grant identifier for safe retry.
       security: [{SessionCookie: []}]
       parameters:
         - {$ref: '#/components/parameters/CSRFToken'}
@@ -7853,14 +7853,14 @@ components:
         operation_id: {type: string, format: uuid}
         account_id: {type: string, format: uuid}
         key_id: {type: string}
-        price_version: {type: string}
-        unit_seconds: {type: integer, format: int64, minimum: 1}
-        unit_price_minor: {type: integer, format: int64, minimum: 1}
+        price_version: {type: string, description: Seat-local frozen pricing policy version returned with the grant.}
+        unit_seconds: {type: integer, format: int64, minimum: 1, description: Seat-local frozen pricing unit; not sent to Sentry v2.}
+        unit_price_minor: {type: integer, format: int64, minimum: 1, description: Seat-local frozen Nutshell Coin price per unit; not sent to Sentry v2.}
         reserved_seconds: {type: integer, format: int64, minimum: 1}
         remaining_seconds: {type: integer, format: int64, minimum: 0}
         expires_at: {type: string, format: date-time}
         status: {type: string, enum: [active, revoked, exhausted, expired]}
-        protocol_version: {type: integer, enum: [1]}
+        protocol_version: {type: integer, enum: [1, 2], description: Downstream grant protocol; v2 carries seconds and expiry only, while the price fields remain Seat-owned snapshots.}
     ApprovalContext:
       {"type":"object","required":["allowed","sources","corporations","people","unavailable"],"properties":{"allowed":{"type":"boolean"},"sources":{"type":"array","items":{"type":"string"}},"corporations":{"type":"array","items":{"type":"object","required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}},"people":{"type":"array","items":{"type":"object","required":["id","name"],"properties":{"id":{"type":"string"},"name":{"type":"string"}}}},"unavailable":{"type":"array","items":{"type":"string"}}}}
     ApprovalItem:

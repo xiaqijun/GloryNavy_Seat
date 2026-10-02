@@ -357,7 +357,17 @@ func (s *Service) CreateAlertGrant(ctx context.Context, account, keyID, requestK
 	if err = s.AlertFunding.ReserveAlertTime(ctx, opID, account, opID, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, reservedSeconds, expiresAt); err != nil {
 		return out, err
 	}
-	return s.AlertRemote.CreateAlertGrant(ctx, AlertGrantRequest{OperationID: opID, GrantID: opID, AccountID: account, KeyID: remoteKeyID, PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt, ProtocolVersion: 2})
+	grant, err := s.AlertRemote.CreateAlertGrant(ctx, AlertGrantRequest{OperationID: opID, GrantID: opID, AccountID: account, KeyID: remoteKeyID, PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt, ProtocolVersion: 2})
+	if err != nil {
+		return out, err
+	}
+	// Sentry v2 intentionally omits pricing in its response. Keep Seat's
+	// frozen policy visible to callers so the API remains auditable and does
+	// not derive billing data from the downstream projection.
+	grant.PriceVersion = policy.PriceVersion
+	grant.UnitSeconds = policy.UnitSeconds
+	grant.UnitPriceMinor = policy.UnitPriceMinor
+	return grant, nil
 }
 
 // RevokeAlertGrant first revokes the remote allowance, then releases any
