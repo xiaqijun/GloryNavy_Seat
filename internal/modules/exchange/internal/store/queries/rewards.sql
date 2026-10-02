@@ -20,10 +20,10 @@ UPDATE exchange_rewards SET type_id=$2,quantity=$3,isk_value=$4,stock=$5,enabled
 UPDATE exchange_rewards SET stock=stock+sqlc.arg(delta)::integer,version=version+1 WHERE id=$1;
 -- name: ShopBalance :one
 SELECT coalesce((SELECT sum(a.delta) FROM exchange_coin_ledger a WHERE a.account_id=sqlc.arg(account_id)::uuid AND a.kind='source'),0)::bigint AS earned,
-coalesce((SELECT sum(r.coins_minor) FROM exchange_redemptions r WHERE r.account_id=sqlc.arg(account_id)::uuid AND r.state IN ('pending','cancel_requested')),0)::bigint +
-coalesce((SELECT sum(g.reserved_minor-g.settled_minor-g.released_minor) FROM exchange_alert_grants g WHERE g.account_id=sqlc.arg(account_id)::uuid AND g.state='active'),0)::bigint AS reserved,
-coalesce((SELECT sum(r.coins_minor) FROM exchange_redemptions r WHERE r.account_id=sqlc.arg(account_id)::uuid AND r.state='fulfilled'),0)::bigint +
-coalesce((SELECT sum(c.coins_minor) FROM exchange_alert_charges c WHERE c.account_id=sqlc.arg(account_id)::uuid AND c.state='settled'),0)::bigint AS spent;
+(coalesce((SELECT sum(r.coins_minor) FROM exchange_redemptions r WHERE r.account_id=sqlc.arg(account_id)::uuid AND r.state IN ('pending','cancel_requested')),0)::bigint +
+ coalesce((SELECT sum(g.reserved_minor-g.settled_minor-g.released_minor) FROM exchange_alert_grants g WHERE g.account_id=sqlc.arg(account_id)::uuid AND g.state='active'),0)::bigint)::bigint AS reserved,
+(coalesce((SELECT sum(r.coins_minor) FROM exchange_redemptions r WHERE r.account_id=sqlc.arg(account_id)::uuid AND r.state='fulfilled'),0)::bigint +
+ coalesce((SELECT sum(c.coins_minor) FROM exchange_alert_charges c WHERE c.account_id=sqlc.arg(account_id)::uuid AND c.state='settled'),0)::bigint)::bigint AS spent;
 -- name: FindRedemption :one
 SELECT * FROM exchange_redemptions WHERE account_id=$1 AND request_key=$2;
 -- name: CreateRedemption :one
