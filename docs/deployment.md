@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警收费配置弹窗（2026-10-03）
+
+公网静态前端已切换至 `v0.1.0-sentry-pricing-modal-20261003`，后端继续运行 `v0.1.0-sentry-v2-billing-20261003`。收费规则编辑改为点击“配置收费”后在弹窗中完成，页面主体只保留规则摘要；前端构建、容器静态入口、OpenResty `nginx -t` 和正式首页检查通过。没有后端、数据库或收费开关变更。
+
 ## 预警 v2 授权与收费规则配置（2026-10-03）
 
 已发布 `v0.1.0-sentry-v2-billing-20261003`。应用机与公网 1Panel 静态站点均已原子切换，生产 Goose 62、River 迁移和应用 `active/ready` 检查通过；应用机备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-v2-billing-20261003-20261002T173836Z.{dump,env}`。Sentry v2 下游请求只包含秒数授权和有效期，Seat 保留本地冻结价格与果壳币账务；管理员可在 `/sentry` 配置价格规则，但收费开关仍由 `SENTRY_ALERT_CONSUMPTION_ENABLED` 控制，当前未设置并按默认值 `false` 运行。公网首页/登录 200、匿名受保护接口 401、容器静态入口和 OpenResty `nginx -t` 通过。隔离生产账号和真实币账现场验收未完成，不能据此开启收费。

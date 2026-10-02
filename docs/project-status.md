@@ -1,8 +1,12 @@
 # 项目状态
 
+## 已发布：预警收费配置弹窗（2026-10-03）
+
+公网静态前端已切换至 `v0.1.0-sentry-pricing-modal-20261003`，后端继续运行 `v0.1.0-sentry-v2-billing-20261003`。预警收费规则摘要保留在页面中，管理员点击“配置收费”后在弹窗内编辑，取消/保存操作不再占用页面主体布局；普通成员仍只读。前端构建、91 项前端测试、容器静态入口、OpenResty `nginx -t` 和正式首页检查通过，收费开关保持关闭。
+
 ## 已发布：预警 v2 授权与收费规则配置（2026-10-03）
 
-生产前后端已切换至 `v0.1.0-sentry-v2-billing-20261003`，应用机与公网静态站点均已原子切换；生产 Goose 62 已执行，应用服务 `active/ready`。Sentry v2 授权投影只发送预留秒数和有效期，价格与果壳币账务仍由 Seat 本地冻结、预留和结算，v1 历史字段保持兼容。`/sentry` 提供管理员收费规则展示与配置，`GET/PUT /api/v1/sentry/alert-pricing` 带版本冲突保护和审计；前端配置价格不会启停收费。应用机环境未设置 `SENTRY_ALERT_CONSUMPTION_ENABLED`，当前按默认值 `false` 运行。公网首页/登录 200、匿名受保护接口 401、容器静态入口和 OpenResty `nginx -t` 通过；切换前备份位于 `/var/backups/glorynavy/before-v0.1.0-sentry-v2-billing-20261003-20261002T173836Z.{dump,env}`。隔离生产账号和真实币账现场验收未完成，收费仍不得开启。
+后端已切换至 `v0.1.0-sentry-v2-billing-20261003`，生产 Goose 62 已执行，应用服务 `active/ready`。Sentry v2 授权投影只发送预留秒数和有效期，价格与果壳币账务仍由 Seat 本地冻结、预留和结算，v1 历史字段保持兼容。`/sentry` 提供管理员收费规则展示与配置，`GET/PUT /api/v1/sentry/alert-pricing` 带版本冲突保护和审计；前端配置价格不会启停收费。应用机环境未设置 `SENTRY_ALERT_CONSUMPTION_ENABLED`，当前按默认值 `false` 运行。后端切换时公网首页/登录 200、匿名受保护接口 401、容器静态入口和 OpenResty `nginx -t` 通过；切换前备份位于 `/var/backups/glorynavy/before-v0.1.0-sentry-v2-billing-20261003-20261002T173836Z.{dump,env}`。隔离生产账号和真实币账现场验收未完成，收费仍不得开启。
 
 ## 已发布：预警空消费账单响应修复（2026-10-02）
 
