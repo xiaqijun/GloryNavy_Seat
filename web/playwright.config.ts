@@ -2,6 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // GitHub's runner exposes two workers by default.  The suite has 476
+  // generated project tests, so running with a small fixed pool keeps the
+  // run within the job budget without allowing unbounded browser pressure.
+  workers: process.env.CI ? 4 : undefined,
+  globalTimeout: process.env.CI ? 30 * 60 * 1000 : undefined,
   use: {
     baseURL: "http://127.0.0.1:5173",
     trace: "retain-on-failure",
