@@ -43,9 +43,6 @@
 .sentry-consumption-details dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, monospace; }
 .sentry-usage-pagination { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .sentry-pricing { display: grid; gap: 16px; min-width: 0; }
-.sentry-pricing-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.sentry-pricing-heading h3 { margin: 0; font-size: 20px; font-weight: 650; }
-.sentry-pricing-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
 .sentry-pricing-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .sentry-pricing-status { padding: 4px 9px; border-radius: 999px; font-size: 12px; }
 .sentry-pricing-status.is-on { color: var(--success, #15803d); background: color-mix(in srgb, var(--success, #16a34a) 13%, transparent); }
@@ -66,7 +63,6 @@
   .sentry-usage-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sentry-consumption-main { align-items: flex-start; flex-direction: column; gap: 8px; }
   .sentry-usage-toolbar label { flex: 1 1 130px; }
-  .sentry-pricing-heading { display: grid; grid-template-columns: minmax(0, 1fr); }
   .sentry-pricing-actions { justify-content: flex-start; }
   .sentry-pricing-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sentry-pricing-form { grid-template-columns: minmax(0, 1fr); }

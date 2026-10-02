@@ -272,9 +272,9 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
   const hasPolicy = pricing.unit_seconds > 0 && pricing.unit_price_minor > 0 && pricing.max_grant_seconds > 0 && pricing.grant_ttl_seconds >= 60;
   return (
     <section className="sentry-pricing" aria-labelledby="sentry-pricing-title">
-      <div className="sentry-pricing-heading">
+      <div className="sentry-usage-heading sentry-pricing-heading">
         <div>
-          <h3 id="sentry-pricing-title">{msg("预警收费配置")}</h3>
+          <h2 id="sentry-pricing-title">{msg("预警收费配置")}</h2>
         </div>
         <div className="sentry-pricing-actions">
           <span className={`sentry-pricing-status ${pricing.charging_enabled ? "is-on" : "is-off"}`}>
@@ -283,7 +283,7 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
           {pricing.can_edit && !editing && <Button variant="outline" onClick={() => setEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
         </div>
       </div>
-      <div className="sentry-pricing-summary">
+      <div className="sentry-usage-summary sentry-pricing-summary">
         <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Clock3 aria-hidden="true" /></span><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
         <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Coins aria-hidden="true" /></span><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
         <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Gauge aria-hidden="true" /></span><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
