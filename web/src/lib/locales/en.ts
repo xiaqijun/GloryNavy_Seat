@@ -492,6 +492,8 @@ export const english: Record<string, string> = {
   "暂时无法连接服务，请稍后重试": "Unable to connect. Please try again later.",
   "服务响应格式异常，请联系管理员":
     "Unexpected response. Contact an administrator.",
+  "服务响应格式异常（接口：{0}），请联系管理员":
+    "Unexpected response from {0}. Contact an administrator.",
   正在同步职务: "Syncing corporation roles",
   "需要完成 EVE 授权": "EVE authorization required",
   "职务已过期，游戏职务权限暂停。":
@@ -2233,6 +2235,7 @@ export const english: Record<string, string> = {
   预警平台: "Warning platform",
   管理监控和预警客户端密钥: "Manage monitoring and alert client keys",
   管理预警平台客户端密钥: "Manage warning platform client keys",
+  查看预警消耗并管理客户端密钥: "Review warning consumption and manage client keys",
   申请密钥: "Request key",
   更新密钥: "Rotate key",
   刷新密钥: "Refresh key",

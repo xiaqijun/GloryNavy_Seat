@@ -11,7 +11,9 @@ describe("system status contract", () => {
           new Response(JSON.stringify({ data: { database: "ready" } })),
         ),
     );
-    await expect(getSystemStatus()).rejects.toThrow("服务响应格式异常");
+    await expect(getSystemStatus()).rejects.toMatchObject({
+      message: expect.stringContaining("/api/v1/system/status"),
+    });
   });
   it("preserves a failure request ID for troubleshooting", async () => {
     vi.stubGlobal(

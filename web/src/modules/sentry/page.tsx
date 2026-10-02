@@ -1,8 +1,8 @@
 import { msg, getLocale } from "@/lib/i18n";
-import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { KeyRound, RadioTower, RefreshCw, Copy, Check, Coins, Clock3 } from "lucide-react";
+import { RadioTower, RefreshCw, Copy, Coins, Clock3 } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
@@ -114,37 +114,23 @@ function Workspace({ csrf }: { csrf: string }) {
     toast.info(msg("完整密钥仅在生成或刷新后可用"));
   };
 
-  const activateCopy = (event: KeyboardEvent<HTMLDivElement>, id: string) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    copyCardSecret(id);
-  };
-
   return (
     <div className="sentry-page">
       <header className="sentry-heading">
         <span className="sentry-brand"><RadioTower aria-hidden="true" /></span>
-        <div><h1>{msg("预警平台")}</h1><p>{msg("管理预警平台客户端密钥")}</p></div>
+        <div><h1>{msg("预警平台")}</h1><p>{msg("查看预警消耗并管理客户端密钥")}</p></div>
       </header>
       {q.isError && <div className="sentry-state" role="alert">{q.error.message}<Button variant="outline" onClick={() => void q.refetch()}>{msg("重试")}</Button></div>}
       {!q.isError && items.length === 0 && create.isError && <div className="sentry-state" role="alert"><span>{msg("密钥准备失败")}</span><Button variant="outline" onClick={retryAutoCreate}>{msg("重试")}</Button></div>}
-      <div className="sentry-list">
-        {!q.isError && items.length === 0 && !create.isError && <article className="sentry-card" aria-busy="true"><div className="sentry-key-block"><div className="sentry-card-header"><span className="sentry-key-icon"><KeyRound aria-hidden="true" /></span><div className="sentry-card-identity"><h2>{msg("预警平台密钥")}</h2></div></div><div className="sentry-card-key"><span>{msg("正在准备密钥")}</span></div><div className="sentry-card-footer"><span className="sentry-status">{msg("处理中")}</span></div></div></article>}
-        {items.map((key) => <article className="sentry-card" key={key.id}>
-          <div className="sentry-key-block">
-            <div className="sentry-card-header"><span className="sentry-key-icon"><KeyRound aria-hidden="true" /></span><div className="sentry-card-identity"><h2>{key.name}</h2><span className="sentry-meta-date">{date(key.created_at)}</span></div>{key.status === "active" && <IconAction label={msg("刷新密钥")} disabled={rotate.isPending} aria-busy={rotate.isPending} onClick={() => refreshKey(key.id)}><RefreshCw aria-hidden="true" /></IconAction>}</div>
-            <div className="sentry-card-key" role="button" tabIndex={0} aria-label={msg("复制密钥")} onClick={() => copyCardSecret(key.id)} onKeyDown={(event) => activateCopy(event, key.id)}><code>{secrets[key.id] || `${key.prefix}••••••`}</code></div>
-            <div className="sentry-card-footer"><span className={`sentry-status sentry-status-${key.status}`}>{key.status === "active" ? msg("已启用") : key.status === "revoked" ? msg("已吊销") : key.status === "sync_error" ? msg("待同步") : msg("处理中")}</span><div className="sentry-card-actions"><IconAction label={msg(copied ? "已复制" : "复制密钥")} onClick={() => copyCardSecret(key.id)}>{copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}</IconAction></div></div>
-            {key.last_error && <p className="sentry-error">{key.last_error}</p>}
-          </div>
-        </article>)}
-      </div>
-      <AlertUsagePanel />
+      <AlertUsagePanel keyActions={items.map((key) => <span className="sentry-key-actions" key={key.id}>
+        <Button variant="outline" onClick={() => copyCardSecret(key.id)} aria-label={msg("复制密钥")}><Copy aria-hidden="true" />{msg(copied ? "已复制" : "复制密钥")}</Button>
+        <Button onClick={() => refreshKey(key.id)} disabled={key.status !== "active" || rotate.isPending} aria-busy={rotate.isPending}><RefreshCw aria-hidden="true" />{msg("更新密钥")}</Button>
+      </span>)} />
     </div>
   );
 }
 
-function AlertUsagePanel() {
+function AlertUsagePanel({ keyActions }: { keyActions: ReactNode }) {
   const [before, setBefore] = useState("");
   const [state, setState] = useState("");
   const [from, setFrom] = useState("");
@@ -181,11 +167,13 @@ function AlertUsagePanel() {
       <div className="sentry-usage-heading">
         <div>
           <h2 id="sentry-usage-title">{msg("预警果壳币消费")}</h2>
-          <p>{msg("时间只用于说明计价依据，实际账务单位是果壳币")}</p>
         </div>
-        <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
-          <RefreshCw size={18} aria-hidden="true" />
-        </IconAction>
+        <div className="sentry-usage-actions">
+          {keyActions}
+          <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
+            <RefreshCw size={18} aria-hidden="true" />
+          </IconAction>
+        </div>
       </div>
       {usage.isError ? (
         <div className="sentry-state" role="alert">

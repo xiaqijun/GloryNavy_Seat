@@ -32,7 +32,7 @@ export async function getData<T>(
   }
   if (!validate(payload?.data)) {
     throw new APIError(
-      msg("服务响应格式异常，请联系管理员"),
+      msg("服务响应格式异常（接口：{0}），请联系管理员", path),
       response.status,
       payload?.request_id,
     );
