@@ -2,7 +2,7 @@ import { msg, getLocale } from "@/lib/i18n";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2 } from "lucide-react";
+import { RadioTower, RefreshCw, Copy, Coins, Clock3, Gauge, Settings2, Timer } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
@@ -284,10 +284,10 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
         </div>
       </div>
       <div className="sentry-pricing-summary">
-        <div><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
-        <div><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
-        <div><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
-        <div><span>{msg("授权有效期")}</span><strong>{hasPolicy ? `${pricing.grant_ttl_seconds}${msg("秒")}` : "—"}</strong></div>
+        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Clock3 aria-hidden="true" /></span><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
+        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Coins aria-hidden="true" /></span><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
+        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Gauge aria-hidden="true" /></span><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
+        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Timer aria-hidden="true" /></span><span>{msg("授权有效期")}</span><strong>{hasPolicy ? `${pricing.grant_ttl_seconds}${msg("秒")}` : "—"}</strong></div>
         <small>{pricing.configured ? `${msg("版本")}：${pricing.price_version}` : hasPolicy ? msg("尚未保存独立收费配置，当前使用部署默认值") : msg("尚未配置预警收费规则")}</small>
       </div>
       {editing && pricing.can_edit && (
