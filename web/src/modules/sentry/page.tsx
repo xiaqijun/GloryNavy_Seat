@@ -2,10 +2,11 @@ import { msg, getLocale } from "@/lib/i18n";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2, Save, X } from "lucide-react";
+import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2 } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { useToast } from "@/components/ui/toast-context";
 import * as api from "./api";
 import "./sentry.css";
@@ -282,24 +283,30 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
           {pricing.can_edit && !editing && <Button variant="outline" onClick={() => setEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
         </div>
       </div>
-      {editing && pricing.can_edit ? (
-        <form className="sentry-pricing-form" onSubmit={(event) => { event.preventDefault(); if (valid && !save.isPending) save.mutate(); }}>
-          <label><span>{msg("价格版本")}</span><input value={priceVersion} onChange={(event) => setPriceVersion(event.target.value)} maxLength={80} required /></label>
+      <div className="sentry-pricing-summary">
+        <div><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
+        <div><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
+        <div><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
+        <div><span>{msg("授权有效期")}</span><strong>{hasPolicy ? `${pricing.grant_ttl_seconds}${msg("秒")}` : "—"}</strong></div>
+        <small>{pricing.configured ? `${msg("版本")}：${pricing.price_version}` : hasPolicy ? msg("尚未保存独立收费配置，当前使用部署默认值") : msg("尚未配置预警收费规则")}</small>
+      </div>
+      {editing && pricing.can_edit && (
+        <FormDialog
+          title={msg("预警收费配置")}
+          close={() => setEditing(false)}
+          busy={save.isPending}
+          disabled={!valid}
+          submitLabel={msg("保存收费配置")}
+          className="sentry-pricing-form"
+          onSubmit={() => save.mutate()}
+        >
+          <label><span>{msg("价格版本")}</span><input autoFocus value={priceVersion} onChange={(event) => setPriceVersion(event.target.value)} maxLength={80} required /></label>
           <label><span>{msg("计价单位（秒）")}</span><input type="number" min={1} max={86400} value={unitSeconds} onChange={(event) => setUnitSeconds(event.target.value)} required /></label>
           <label><span>{msg("每单位价格（果壳币）")}</span><input type="number" min={0.01} max={10000000000} step={0.01} value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} required /></label>
           <label><span>{msg("单次授权上限（秒）")}</span><input type="number" min={1} max={2678400} value={maxGrantSeconds} onChange={(event) => setMaxGrantSeconds(event.target.value)} required /></label>
           <label><span>{msg("授权有效期（秒）")}</span><input type="number" min={60} max={2678400} value={ttlSeconds} onChange={(event) => setTtlSeconds(event.target.value)} required /></label>
-          <div className="sentry-pricing-form-actions"><Button type="button" variant="outline" onClick={() => setEditing(false)} disabled={save.isPending}><X aria-hidden="true" />{msg("取消")}</Button><Button type="submit" disabled={!valid || save.isPending}><Save aria-hidden="true" />{save.isPending ? msg("正在保存") : msg("保存收费配置")}</Button></div>
           {save.isError && <p role="alert">{save.error.message}</p>}
-        </form>
-      ) : (
-        <div className="sentry-pricing-summary">
-          <div><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
-          <div><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
-          <div><span>{msg("授权上限")}</span><strong>{hasPolicy ? `${pricing.max_grant_seconds}${msg("秒")}` : "—"}</strong></div>
-          <div><span>{msg("授权有效期")}</span><strong>{hasPolicy ? `${pricing.grant_ttl_seconds}${msg("秒")}` : "—"}</strong></div>
-          <small>{pricing.configured ? `${msg("版本")}：${pricing.price_version}` : hasPolicy ? msg("尚未保存独立收费配置，当前使用部署默认值") : msg("尚未配置预警收费规则")}</small>
-        </div>
+        </FormDialog>
       )}
     </section>
   );

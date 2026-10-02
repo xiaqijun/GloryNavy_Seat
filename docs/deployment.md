@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警 v2 授权与收费规则配置（2026-10-03）
+
+已发布 `v0.1.0-sentry-v2-billing-20261003`。应用机与公网 1Panel 静态站点均已原子切换，生产 Goose 62、River 迁移和应用 `active/ready` 检查通过；应用机备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-v2-billing-20261003-20261002T173836Z.{dump,env}`。Sentry v2 下游请求只包含秒数授权和有效期，Seat 保留本地冻结价格与果壳币账务；管理员可在 `/sentry` 配置价格规则，但收费开关仍由 `SENTRY_ALERT_CONSUMPTION_ENABLED` 控制，当前未设置并按默认值 `false` 运行。公网首页/登录 200、匿名受保护接口 401、容器静态入口和 OpenResty `nginx -t` 通过。隔离生产账号和真实币账现场验收未完成，不能据此开启收费。
+
 ## 预警空消费账单响应修复（2026-10-02）
 
 生产前端已切换至 `v0.1.0-sentry-key-actions-20261002`，随后后端切换至 `v0.1.0-sentry-consumption-empty-20261002`。后端预警消费查询在没有记录时返回空数组，前端不再把合法空态判为响应格式异常；本轮无 Goose/River 新迁移，收费开关保持关闭。应用 `active/ready`、公网首页与登录 200、匿名模块和系统状态 401、静态容器入口及 OpenResty `nginx -t` 通过。前端上一版本和应用切换前备份均保留，可按现有回退约束恢复。
