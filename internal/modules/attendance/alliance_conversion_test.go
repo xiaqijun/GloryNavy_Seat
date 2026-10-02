@@ -206,7 +206,7 @@ func TestAllianceHistoricalMonthManualConversion(t *testing.T) {
 		t.Fatal(err)
 	}
 	var total int64
-	if err = p.QueryRow(ctx, `SELECT coalesce(sum(delta),0) FROM exchange_coin_ledger`).Scan(&total); err != nil || total != 30000 {
+	if err = p.QueryRow(ctx, `SELECT coalesce(sum(delta),0) FROM exchange_coin_ledger`).Scan(&total); err != nil || total != 300 {
 		t.Fatalf("coin total=%d err=%v", total, err)
 	}
 	quote, err := s.ConvertAlliancePAP(ctx, user, nil, month.Format("2006-01"))

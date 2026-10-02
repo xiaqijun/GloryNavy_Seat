@@ -31,7 +31,9 @@ func Read(ctx context.Context, db DB, projection string, scope any, actor string
 	cursor := `($12::timestamptz IS NULL OR (moment,$16::text,id) ` + comparison + ` ($12,$13::text,$14::bigint))`
 	order := "moment " + direction + ", id " + direction
 	if byID {
-		cursor = `($14::bigint=0 OR (id,$16::text) ` + comparison + ` ($14,$13::text))`
+		// Keep the shared $12 argument typed even though ID ordering does not
+		// use a time cursor.
+		cursor = `($14::bigint=0 OR (id,$16::text) ` + comparison + ` ($14,$13::text)) AND ($12::timestamptz IS NULL OR TRUE)`
 		order = "id " + direction
 	}
 	sql := `WITH base AS (` + projection + `), filtered AS (

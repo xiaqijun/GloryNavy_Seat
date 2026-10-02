@@ -33,7 +33,7 @@ func ActivityClaimCount(ctx context.Context, db DB, account string, corporation,
 	err := db.QueryRow(ctx, `SELECT count(DISTINCT COALESCE(NULLIF(detail->>'activity_batch_key',''), id::text))
 		FROM welfare_cases
 		WHERE account_id=$1::uuid AND corporation_id=$2 AND kind=$3
-		AND detail->>'character_id' = $4::text
+		AND detail->>'character_id' = ($4::bigint)::text
 		AND state NOT IN ('cancelled','rejected')
 		AND ($5='' OR detail->>'activity_batch_key' IS DISTINCT FROM $5)`, account, corporation, kind, characterID, batchKey).Scan(&count)
 	return count, err

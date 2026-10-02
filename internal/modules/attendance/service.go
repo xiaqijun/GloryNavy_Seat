@@ -468,6 +468,9 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		fleet, err = s.EVE.Fleet(ctx, source.ID, source.OwnerHash)
 		if errors.Is(err, eve.ErrFleetDisbanded) {
 			fleetEnded = true
+			// A disbanded fleet has no valid roster snapshot. Do not record stale
+			// members that a cached or test source may still carry.
+			fleet.Members = nil
 			observed = time.Now().UTC()
 		} else if err != nil {
 			return result, ErrUnavailable

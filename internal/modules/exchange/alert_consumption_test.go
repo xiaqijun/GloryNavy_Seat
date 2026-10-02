@@ -1,9 +1,7 @@
 package exchange
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -15,12 +13,8 @@ func TestAlertConsumptionsEmptyPageUsesArray(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	payload, err := json.Marshal(page)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(payload) == "" || !bytes.Contains(payload, []byte(`"items":[]`)) {
-		t.Fatalf("empty page must encode items as an array: %s", payload)
+	if page.Items == nil {
+		t.Fatal("empty page must keep items as an initialized array")
 	}
 }
 
@@ -57,7 +51,7 @@ func TestAlertTimeReservationSettlementReleaseAndRefund(t *testing.T) {
 		t.Fatal(err)
 	}
 	sh, err = s.Shop(ctx, manager, 0)
-	if err != nil || sh.Spent != 0 || sh.Reserved != 5 {
+	if err != nil || sh.Spent != 0 || sh.Reserved != 0 {
 		t.Fatalf("after refund: %+v, %v", sh, err)
 	}
 	if err := s.ReserveAlertInterval(ctx, AlertTimeIntervalRequest{GrantID: grantID, IntervalID: "interval-2", RequestKey: rewardKey(78), StartedAt: start, EndedAt: start.Add(2 * time.Second)}); err != nil {

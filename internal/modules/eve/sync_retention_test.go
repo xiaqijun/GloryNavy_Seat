@@ -83,7 +83,9 @@ func TestSyncRunRetentionMigrationRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.Down(ctx); err != nil {
+	// This test targets migration 46. The schema starts at the current head,
+	// so rolling back only the latest migration leaves these indexes in place.
+	if _, err := provider.DownTo(ctx, 45); err != nil {
 		t.Fatal(err)
 	}
 	var count int
@@ -97,7 +99,7 @@ func TestSyncRunRetentionMigrationRoundTrip(t *testing.T) {
 	if _, err := pool.Exec(ctx, `CREATE INDEX eve_sync_runs_success_expiry ON eve_sync_runs(id)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.Up(ctx); err != nil {
+	if _, err := provider.UpTo(ctx, 46); err != nil {
 		t.Fatal(err)
 	}
 	if err := pool.QueryRow(ctx, indexes).Scan(&count); err != nil || count != 2 {
