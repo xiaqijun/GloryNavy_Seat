@@ -84,6 +84,34 @@ func TestHTTPRemoteCreateAlertGrantUsesTimeSnapshot(t *testing.T) {
 	}
 }
 
+func TestHTTPRemoteCreateAlertGrantV2OmitsPricing(t *testing.T) {
+	wantExpiry := time.Date(2099, time.January, 1, 0, 0, 0, 0, time.UTC)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		if body["protocol_version"] != 2.0 || body["reserved_seconds"] != 3600.0 {
+			t.Fatalf("unexpected v2 body: %#v", body)
+		}
+		for _, field := range []string{"price_version", "unit_seconds", "unit_price_minor"} {
+			if _, ok := body[field]; ok {
+				t.Fatalf("v2 request leaked pricing field %q: %#v", field, body)
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"grant_id": "grant-2", "operation_id": "op-2", "account_id": "account-2", "reserved_seconds": 3600, "remaining_seconds": 3600, "expires_at": wantExpiry.Format(time.RFC3339), "status": "active", "protocol_version": 2})
+	}))
+	defer server.Close()
+	r := &HTTPRemote{BaseURL: server.URL, Token: strings.Repeat("x", 32), Client: server.Client()}
+	got, err := r.CreateAlertGrant(context.Background(), AlertGrantRequest{OperationID: "op-2", GrantID: "grant-2", AccountID: "account-2", ReservedSeconds: 3600, ExpiresAt: wantExpiry, ProtocolVersion: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ProtocolVersion != 2 || got.RemainingSeconds != 3600 {
+		t.Fatalf("grant = %#v", got)
+	}
+}
+
 func TestHTTPRemoteListAlertDeliveries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/integrations/seat/alert-deliveries" || r.URL.Query().Get("after") != "cursor-1" || r.URL.Query().Get("limit") != "20" {

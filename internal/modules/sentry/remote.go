@@ -37,9 +37,9 @@ type Remote interface {
 	Revoke(context.Context, string, string) error
 }
 
-// AlertGrantRequest is the frozen, time-based allowance sent to Sentry.
-// The exchange module remains the source of truth for the reserved coins;
-// Sentry only stores this pricing/seconds snapshot and delivery evidence.
+// AlertGrantRequest is the time allowance sent to Sentry. Protocol v2 omits
+// pricing entirely: Seat remains the source of truth for policy, coin
+// reservation, settlement and refunds. The price fields stay for v1 replay.
 type AlertGrantRequest struct {
 	OperationID     string    `json:"operation_id"`
 	GrantID         string    `json:"grant_id"`
@@ -50,6 +50,7 @@ type AlertGrantRequest struct {
 	UnitPriceMinor  int64     `json:"unit_price_minor"`
 	ReservedSeconds int64     `json:"reserved_seconds"`
 	ExpiresAt       time.Time `json:"-"`
+	ProtocolVersion int64     `json:"-"`
 }
 
 type AlertGrant struct {
@@ -202,14 +203,28 @@ func (c *HTTPRemote) Revoke(ctx context.Context, remoteID, operationID string) e
 
 func (c *HTTPRemote) CreateAlertGrant(ctx context.Context, input AlertGrantRequest) (AlertGrant, error) {
 	var out AlertGrant
-	if c == nil || c.Client == nil || strings.TrimSpace(input.OperationID) == "" || strings.TrimSpace(input.GrantID) == "" || strings.TrimSpace(input.AccountID) == "" || strings.TrimSpace(input.PriceVersion) == "" || input.UnitSeconds <= 0 || input.UnitPriceMinor <= 0 || input.ReservedSeconds <= 0 || input.ExpiresAt.IsZero() {
+	protocolVersion := input.ProtocolVersion
+	if protocolVersion == 0 {
+		protocolVersion = 1
+	}
+	if c == nil || c.Client == nil || strings.TrimSpace(input.OperationID) == "" || strings.TrimSpace(input.GrantID) == "" || strings.TrimSpace(input.AccountID) == "" || input.ReservedSeconds <= 0 || input.ExpiresAt.IsZero() {
+		return out, ErrRemoteUnavailable
+	}
+	if protocolVersion == 1 && (strings.TrimSpace(input.PriceVersion) == "" || input.UnitSeconds <= 0 || input.UnitPriceMinor <= 0) {
 		return out, ErrRemoteUnavailable
 	}
 	payload := struct {
-		AlertGrantRequest
+		OperationID     string `json:"operation_id"`
+		GrantID         string `json:"grant_id"`
+		AccountID       string `json:"account_id"`
+		KeyID           string `json:"key_id,omitempty"`
+		PriceVersion    string `json:"price_version,omitempty"`
+		UnitSeconds     int64  `json:"unit_seconds,omitempty"`
+		UnitPriceMinor  int64  `json:"unit_price_minor,omitempty"`
+		ReservedSeconds int64  `json:"reserved_seconds"`
 		ExpiresAt       string `json:"expires_at"`
 		ProtocolVersion int64  `json:"protocol_version"`
-	}{AlertGrantRequest: input, ExpiresAt: input.ExpiresAt.UTC().Format(time.RFC3339), ProtocolVersion: 1}
+	}{OperationID: input.OperationID, GrantID: input.GrantID, AccountID: input.AccountID, KeyID: input.KeyID, PriceVersion: input.PriceVersion, UnitSeconds: input.UnitSeconds, UnitPriceMinor: input.UnitPriceMinor, ReservedSeconds: input.ReservedSeconds, ExpiresAt: input.ExpiresAt.UTC().Format(time.RFC3339), ProtocolVersion: protocolVersion}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return out, err
@@ -228,7 +243,10 @@ func (c *HTTPRemote) CreateAlertGrant(ctx context.Context, input AlertGrantReque
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 		return out, fmt.Errorf("sentry remote alert grant: %w", ErrRemoteUnavailable)
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<10)).Decode(&out); err != nil || out.GrantID != input.GrantID || out.OperationID != input.OperationID || out.AccountID != input.AccountID || (input.KeyID != "" && out.KeyID != input.KeyID) || out.PriceVersion != input.PriceVersion || out.UnitSeconds != input.UnitSeconds || out.UnitPriceMinor != input.UnitPriceMinor || out.ReservedSeconds != input.ReservedSeconds || out.RemainingSeconds < 0 || out.RemainingSeconds > out.ReservedSeconds || out.Status != "active" || out.ProtocolVersion != 1 {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<10)).Decode(&out); err != nil || out.GrantID != input.GrantID || out.OperationID != input.OperationID || out.AccountID != input.AccountID || (input.KeyID != "" && out.KeyID != input.KeyID) || out.ReservedSeconds != input.ReservedSeconds || out.RemainingSeconds < 0 || out.RemainingSeconds > out.ReservedSeconds || out.Status != "active" || out.ProtocolVersion != protocolVersion {
+		return out, ErrRemoteUnavailable
+	}
+	if protocolVersion == 1 && (out.PriceVersion != input.PriceVersion || out.UnitSeconds != input.UnitSeconds || out.UnitPriceMinor != input.UnitPriceMinor) {
 		return out, ErrRemoteUnavailable
 	}
 	remoteExpiry, err := time.Parse(time.RFC3339, out.ExpiresAt)

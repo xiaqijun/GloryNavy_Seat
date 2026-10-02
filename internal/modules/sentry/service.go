@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -21,9 +22,11 @@ import (
 )
 
 var (
-	ErrInvalid       = errors.New("invalid sentry key request")
-	ErrConflict      = errors.New("sentry key state conflict")
-	ErrAlertDisabled = errors.New("sentry alert consumption is disabled")
+	ErrInvalid              = errors.New("invalid sentry key request")
+	ErrConflict             = errors.New("sentry key state conflict")
+	ErrAlertDisabled        = errors.New("sentry alert consumption is disabled")
+	ErrAlertPricingConflict = errors.New("sentry alert pricing version conflict")
+	ErrAlertPricingInvalid  = errors.New("invalid sentry alert pricing")
 )
 
 type AlertGrantPolicy struct {
@@ -34,6 +37,30 @@ type AlertGrantPolicy struct {
 	GrantTTL        time.Duration
 }
 
+// AlertPricing is the administrator-visible policy. Coins are returned in
+// exchange minor units so the API never rounds a billing value in the browser.
+type AlertPricing struct {
+	PriceVersion    string     `json:"price_version"`
+	UnitSeconds     int64      `json:"unit_seconds"`
+	UnitPriceMinor  int64      `json:"unit_price_minor"`
+	MaxGrantSeconds int64      `json:"max_grant_seconds"`
+	GrantTTLSeconds int64      `json:"grant_ttl_seconds"`
+	Version         int64      `json:"version"`
+	Configured      bool       `json:"configured"`
+	ChargingEnabled bool       `json:"charging_enabled"`
+	CanEdit         bool       `json:"can_edit"`
+	UpdatedAt       *time.Time `json:"updated_at,omitempty"`
+}
+
+type AlertPricingEdit struct {
+	PriceVersion    string `json:"price_version"`
+	UnitSeconds     int64  `json:"unit_seconds"`
+	UnitPriceMinor  int64  `json:"unit_price_minor"`
+	MaxGrantSeconds int64  `json:"max_grant_seconds"`
+	GrantTTLSeconds int64  `json:"grant_ttl_seconds"`
+	Version         int64  `json:"version"`
+}
+
 // AlertGrantFunding is the host-owned exchange boundary for prepaid alert
 // grants. The sentry module never imports exchange's private store.
 type AlertGrantFunding interface {
@@ -41,6 +68,14 @@ type AlertGrantFunding interface {
 	ReleaseAlertGrant(context.Context, string, string) error
 	AlertGrantAccount(context.Context, string) (string, error)
 	AlertGrantExpiresAt(context.Context, string) (time.Time, error)
+}
+
+// AlertGrantPricingReader is an optional host boundary used when a request is
+// retried after an administrator changed the current pricing rule. The
+// exchange owns the frozen values; the sentry module must replay those values
+// instead of applying the newer rule to the same grant.
+type AlertGrantPricingReader interface {
+	AlertGrantPricing(context.Context, string) (string, int64, int64, int64, time.Time, error)
 }
 
 type Key struct {
@@ -67,6 +102,8 @@ type Service struct {
 	AlertPolicy      AlertGrantPolicy
 	AlertFunding     AlertGrantFunding
 	AlertUsageReader AlertUsageReader
+	Administrator    func(context.Context, string) (bool, error)
+	policyMu         sync.RWMutex
 	alertQueue       *river.Client[pgx.Tx]
 }
 
@@ -89,15 +126,201 @@ func (s *Service) SetAlertUsageReader(reader AlertUsageReader) {
 	s.AlertUsageReader = reader
 }
 
-// CreateAlertGrant reserves coins locally before projecting the same frozen
-// time/price snapshot to Sentry. The request UUID is also the stable grant ID,
-// so a lost response can be retried without creating a second allowance.
+func (s *Service) alertPolicy() AlertGrantPolicy {
+	s.policyMu.RLock()
+	defer s.policyMu.RUnlock()
+	return s.AlertPolicy
+}
+
+func (s *Service) setAlertPolicy(policy AlertGrantPolicy) {
+	s.policyMu.Lock()
+	s.AlertPolicy = policy
+	s.policyMu.Unlock()
+}
+
+// currentAlertPolicy refreshes the process-local bootstrap policy from the
+// singleton row. This keeps a multi-instance deployment consistent when an
+// administrator saves a rule through another API process.
+func (s *Service) currentAlertPolicy(ctx context.Context) (AlertGrantPolicy, error) {
+	policy := s.alertPolicy()
+	if s.Pool == nil {
+		return policy, nil
+	}
+	var ttl int64
+	err := s.Pool.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds FROM sentry_alert_pricing WHERE id=1`).Scan(&policy.PriceVersion, &policy.UnitSeconds, &policy.UnitPriceMinor, &policy.MaxGrantSeconds, &ttl)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return policy, nil
+	}
+	if err != nil {
+		return AlertGrantPolicy{}, err
+	}
+	policy.GrantTTL = time.Duration(ttl) * time.Second
+	if !policyValid(policy) {
+		return AlertGrantPolicy{}, ErrAlertPricingInvalid
+	}
+	s.setAlertPolicy(policy)
+	return policy, nil
+}
+
+func policyValid(policy AlertGrantPolicy) bool {
+	return strings.TrimSpace(policy.PriceVersion) != "" && len(policy.PriceVersion) <= 80 &&
+		!strings.ContainsAny(policy.PriceVersion, "\r\n") && policy.UnitSeconds > 0 && policy.UnitSeconds <= 86400 &&
+		policy.UnitPriceMinor > 0 && policy.UnitPriceMinor <= 1000000000000 &&
+		policy.MaxGrantSeconds > 0 && policy.MaxGrantSeconds <= 31*24*60*60 &&
+		policy.GrantTTL >= time.Minute && policy.GrantTTL <= 31*24*time.Hour
+}
+
+func pricingFromPolicy(policy AlertGrantPolicy, configured, enabled, canEdit bool, version int64, updatedAt time.Time) AlertPricing {
+	var stamp *time.Time
+	if !updatedAt.IsZero() {
+		value := updatedAt.UTC()
+		stamp = &value
+	}
+	return AlertPricing{PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor, MaxGrantSeconds: policy.MaxGrantSeconds, GrantTTLSeconds: int64(policy.GrantTTL / time.Second), Version: version, Configured: configured, ChargingEnabled: enabled, CanEdit: canEdit, UpdatedAt: stamp}
+}
+
+func policyFromEdit(edit AlertPricingEdit) AlertGrantPolicy {
+	return AlertGrantPolicy{PriceVersion: strings.TrimSpace(edit.PriceVersion), UnitSeconds: edit.UnitSeconds, UnitPriceMinor: edit.UnitPriceMinor, MaxGrantSeconds: edit.MaxGrantSeconds, GrantTTL: time.Duration(edit.GrantTTLSeconds) * time.Second}
+}
+
+// LoadAlertPricing applies the persisted policy when one exists. The
+// environment policy remains the bootstrap fallback for old databases and is
+// still required by the deployment when charging is enabled.
+func (s *Service) LoadAlertPricing(ctx context.Context, fallback AlertGrantPolicy) error {
+	if s.Pool == nil {
+		s.setAlertPolicy(fallback)
+		return nil
+	}
+	var p AlertGrantPolicy
+	var ttl int64
+	if err := s.Pool.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds FROM sentry_alert_pricing WHERE id=1`).Scan(&p.PriceVersion, &p.UnitSeconds, &p.UnitPriceMinor, &p.MaxGrantSeconds, &ttl); errors.Is(err, pgx.ErrNoRows) {
+		s.setAlertPolicy(fallback)
+		return nil
+	} else if err != nil {
+		return err
+	} else {
+		p.GrantTTL = time.Duration(ttl) * time.Second
+		if !policyValid(p) {
+			return ErrAlertPricingInvalid
+		}
+		s.setAlertPolicy(p)
+		return nil
+	}
+}
+
+func (s *Service) ReadAlertPricing(ctx context.Context, user string) (AlertPricing, error) {
+	canEdit := false
+	if s.Administrator != nil {
+		var err error
+		canEdit, err = s.Administrator(ctx, user)
+		if err != nil {
+			return AlertPricing{}, err
+		}
+	}
+	if s.Pool == nil {
+		return pricingFromPolicy(s.alertPolicy(), false, s.AlertEnabled, canEdit, 0, time.Time{}), nil
+	}
+	if _, err := s.currentAlertPolicy(ctx); err != nil {
+		return AlertPricing{}, err
+	}
+	var p AlertGrantPolicy
+	var ttl, version int64
+	var updated time.Time
+	err := s.Pool.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at FROM sentry_alert_pricing WHERE id=1`).Scan(&p.PriceVersion, &p.UnitSeconds, &p.UnitPriceMinor, &p.MaxGrantSeconds, &ttl, &version, &updated)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return pricingFromPolicy(s.alertPolicy(), false, s.AlertEnabled, canEdit, 0, time.Time{}), nil
+	}
+	if err != nil {
+		return AlertPricing{}, err
+	}
+	p.GrantTTL = time.Duration(ttl) * time.Second
+	if !policyValid(p) {
+		return AlertPricing{}, ErrAlertPricingInvalid
+	}
+	return pricingFromPolicy(p, true, s.AlertEnabled, canEdit, version, updated), nil
+}
+
+func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertPricingEdit) (AlertPricing, error) {
+	if s.Administrator == nil {
+		return AlertPricing{}, pgx.ErrNoRows
+	}
+	if s.Pool == nil {
+		return AlertPricing{}, ErrRemoteUnavailable
+	}
+	ok, err := s.Administrator(ctx, user)
+	if err != nil {
+		return AlertPricing{}, err
+	}
+	if !ok {
+		return AlertPricing{}, pgx.ErrNoRows
+	}
+	policy := policyFromEdit(edit)
+	if edit.Version < 0 || !policyValid(policy) {
+		return AlertPricing{}, ErrAlertPricingInvalid
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return AlertPricing{}, err
+	}
+	defer tx.Rollback(ctx)
+	// The singleton row does not exist on the first save, so FOR UPDATE cannot
+	// serialize two concurrent inserts. A transaction advisory lock gives the
+	// absent-row case the same optimistic-version semantics as later updates.
+	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(62062)`); err != nil {
+		return AlertPricing{}, err
+	}
+	var current AlertGrantPolicy
+	var ttl, currentVersion int64
+	var updated time.Time
+	rowErr := tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&current.PriceVersion, &current.UnitSeconds, &current.UnitPriceMinor, &current.MaxGrantSeconds, &ttl, &currentVersion, &updated)
+	if errors.Is(rowErr, pgx.ErrNoRows) {
+		if edit.Version != 0 {
+			return AlertPricing{}, ErrAlertPricingConflict
+		}
+		currentVersion = 0
+	} else if rowErr != nil {
+		return AlertPricing{}, rowErr
+	} else {
+		current.GrantTTL = time.Duration(ttl) * time.Second
+		if edit.Version != currentVersion {
+			return AlertPricing{}, ErrAlertPricingConflict
+		}
+	}
+	nextVersion := currentVersion + 1
+	if currentVersion == 0 {
+		_, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing(id,price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_by) VALUES(1,$1,$2,$3,$4,$5,$6,$7)`, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, policy.MaxGrantSeconds, edit.GrantTTLSeconds, nextVersion, user)
+	} else {
+		_, err = tx.Exec(ctx, `UPDATE sentry_alert_pricing SET price_version=$1,unit_seconds=$2,unit_price_minor=$3,max_grant_seconds=$4,grant_ttl_seconds=$5,version=$6,updated_by=$7,updated_at=now() WHERE id=1`, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, policy.MaxGrantSeconds, edit.GrantTTLSeconds, nextVersion, user)
+	}
+	if err != nil {
+		return AlertPricing{}, err
+	}
+	before := map[string]any{"price_version": current.PriceVersion, "unit_seconds": current.UnitSeconds, "unit_price_minor": current.UnitPriceMinor, "max_grant_seconds": current.MaxGrantSeconds, "grant_ttl_seconds": int64(current.GrantTTL / time.Second), "version": currentVersion}
+	after := map[string]any{"price_version": policy.PriceVersion, "unit_seconds": policy.UnitSeconds, "unit_price_minor": policy.UnitPriceMinor, "max_grant_seconds": policy.MaxGrantSeconds, "grant_ttl_seconds": edit.GrantTTLSeconds, "version": nextVersion}
+	if _, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing_audit(actor_id,previous_version,version,before_snapshot,after_snapshot) VALUES($1,$2,$3,$4,$5)`, user, currentVersion, nextVersion, before, after); err != nil {
+		return AlertPricing{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return AlertPricing{}, err
+	}
+	s.setAlertPolicy(policy)
+	return pricingFromPolicy(policy, true, s.AlertEnabled, true, nextVersion, time.Now().UTC()), nil
+}
+
+// CreateAlertGrant reserves coins locally in Seat and projects only a frozen
+// seconds allowance to Sentry (protocol v2). The request UUID is also the
+// stable grant ID, so a lost response can be retried without creating a
+// second allowance. Seat remains the sole pricing/coin authority.
 func (s *Service) CreateAlertGrant(ctx context.Context, account, keyID, requestKey string, reservedSeconds int64) (AlertGrant, error) {
 	var out AlertGrant
 	if !s.AlertEnabled || s.AlertRemote == nil || s.AlertFunding == nil {
 		return out, ErrAlertDisabled
 	}
-	if strings.TrimSpace(account) == "" || strings.TrimSpace(keyID) == "" || strings.TrimSpace(requestKey) == "" || reservedSeconds <= 0 || reservedSeconds > s.AlertPolicy.MaxGrantSeconds || s.AlertPolicy.PriceVersion == "" || s.AlertPolicy.UnitSeconds <= 0 || s.AlertPolicy.UnitPriceMinor <= 0 || s.AlertPolicy.GrantTTL <= 0 {
+	policy, err := s.currentAlertPolicy(ctx)
+	if err != nil {
+		return out, err
+	}
+	if strings.TrimSpace(account) == "" || strings.TrimSpace(keyID) == "" || strings.TrimSpace(requestKey) == "" || reservedSeconds <= 0 || reservedSeconds > policy.MaxGrantSeconds || policy.PriceVersion == "" || policy.UnitSeconds <= 0 || policy.UnitPriceMinor <= 0 || policy.GrantTTL <= 0 {
 		return out, ErrInvalid
 	}
 	opID, err := operationID(requestKey)
@@ -114,14 +337,27 @@ func (s *Service) CreateAlertGrant(ctx context.Context, account, keyID, requestK
 	}
 	expiresAt, err := s.AlertFunding.AlertGrantExpiresAt(ctx, opID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		expiresAt = time.Now().UTC().Add(s.AlertPolicy.GrantTTL)
+		expiresAt = time.Now().UTC().Add(policy.GrantTTL)
 	} else if err != nil {
 		return out, err
+	} else if reader, ok := s.AlertFunding.(AlertGrantPricingReader); ok {
+		priceVersion, unitSeconds, unitPriceMinor, frozenSeconds, frozenExpiry, readErr := reader.AlertGrantPricing(ctx, opID)
+		if readErr != nil {
+			return out, readErr
+		}
+		if frozenSeconds != reservedSeconds {
+			return out, ErrConflict
+		}
+		policy.PriceVersion = priceVersion
+		policy.UnitSeconds = unitSeconds
+		policy.UnitPriceMinor = unitPriceMinor
+		reservedSeconds = frozenSeconds
+		expiresAt = frozenExpiry
 	}
-	if err = s.AlertFunding.ReserveAlertTime(ctx, opID, account, opID, s.AlertPolicy.PriceVersion, s.AlertPolicy.UnitSeconds, s.AlertPolicy.UnitPriceMinor, reservedSeconds, expiresAt); err != nil {
+	if err = s.AlertFunding.ReserveAlertTime(ctx, opID, account, opID, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, reservedSeconds, expiresAt); err != nil {
 		return out, err
 	}
-	return s.AlertRemote.CreateAlertGrant(ctx, AlertGrantRequest{OperationID: opID, GrantID: opID, AccountID: account, KeyID: remoteKeyID, PriceVersion: s.AlertPolicy.PriceVersion, UnitSeconds: s.AlertPolicy.UnitSeconds, UnitPriceMinor: s.AlertPolicy.UnitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt})
+	return s.AlertRemote.CreateAlertGrant(ctx, AlertGrantRequest{OperationID: opID, GrantID: opID, AccountID: account, KeyID: remoteKeyID, PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt, ProtocolVersion: 2})
 }
 
 // RevokeAlertGrant first revokes the remote allowance, then releases any

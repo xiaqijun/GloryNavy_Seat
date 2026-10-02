@@ -20,6 +20,8 @@
 
 ## 未发布
 
+- 预警平台新增管理员收费规则配置：`/sentry` 展示当前计价版本、计价单位、每单位果壳币价格、授权上限和有效期；站点管理员可通过 `PUT /api/v1/sentry/alert-pricing` 保存带版本冲突保护的规则并写入审计，普通成员只读。新增 Goose 62；收费开关仍由 `SENTRY_ALERT_CONSUMPTION_ENABLED` 控制，尚未发布生产。
+
 - 预警 ACK、`alert-use-evidence.v1`、Seat 区间账本和两端对账技术验收已完成；Seat `npm run check`、Sentry 服务/客户端回归和前端构建通过。正式价格通过生产环境变量配置且无代码默认值；隔离账户实账验收未执行，两个收费开关继续关闭。
 
 - 新增预警果壳币只读账单：`/api/v1/sentry/alert-usage` 汇总可用、暂占、结算、释放和退款，`/api/v1/sentry/alert-consumptions` 按状态/日期游标分页展示冻结计价快照；`/sentry` 页面说明时间只是计价依据，结算不重复写负币流水。新增 Goose 60 `price_version`；生产预警扣费开关仍关闭。

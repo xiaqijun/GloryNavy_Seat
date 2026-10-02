@@ -42,6 +42,25 @@
 .sentry-consumption-details dt { color: var(--muted); }
 .sentry-consumption-details dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, monospace; }
 .sentry-usage-pagination { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.sentry-pricing { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.sentry-pricing-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sentry-pricing-heading h3 { margin: 0; font-size: 17px; font-weight: 650; }
+.sentry-pricing-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+.sentry-pricing-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.sentry-pricing-status { padding: 4px 9px; border-radius: 999px; font-size: 12px; }
+.sentry-pricing-status.is-on { color: var(--success, #15803d); background: color-mix(in srgb, var(--success, #16a34a) 13%, transparent); }
+.sentry-pricing-status.is-off { color: var(--muted); background: var(--color-accent); }
+.sentry-pricing-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.sentry-pricing-summary div { display: grid; gap: 4px; min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.sentry-pricing-summary span, .sentry-pricing-summary small { color: var(--muted); font-size: 12px; }
+.sentry-pricing-summary strong { overflow-wrap: anywhere; font-size: 16px; }
+.sentry-pricing-summary small { grid-column: 1 / -1; }
+.sentry-pricing-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sentry-pricing-form label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.sentry-pricing-form input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; }
+.sentry-pricing-form input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.sentry-pricing-form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+.sentry-pricing-form > p[role="alert"] { grid-column: 1 / -1; margin: 0; color: var(--destructive); font-size: 13px; }
 @media (max-width: 640px) {
   .sentry-heading h1 { font-size: 24px; }
   .sentry-usage-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
@@ -50,7 +69,12 @@
   .sentry-usage-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sentry-consumption-main { align-items: flex-start; flex-direction: column; gap: 8px; }
   .sentry-usage-toolbar label { flex: 1 1 130px; }
+  .sentry-pricing-heading { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .sentry-pricing-actions { justify-content: flex-start; }
+  .sentry-pricing-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sentry-pricing-form { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 420px) {
   .sentry-usage-summary { grid-template-columns: minmax(0, 1fr); }
+  .sentry-pricing-summary { grid-template-columns: minmax(0, 1fr); }
 }

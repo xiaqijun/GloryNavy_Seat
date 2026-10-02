@@ -7489,6 +7489,51 @@ paths:
         '400': {description: Invalid cursor, state, time range, or limit}
         '401': {description: No active session}
         '503': {description: Alert usage projection unavailable}
+  /api/v1/sentry/alert-pricing:
+    get:
+      operationId: sentryReadAlertPricing
+      summary: Read the current alert charging policy
+      description: Returns the current price basis in Nutshell Coin minor units. Time fields explain pricing and grant limits; they are not a second wallet or total allowance. Site administrators receive can_edit=true.
+      security: [{SessionCookie: []}]
+      responses:
+        '200':
+          description: Current alert charging policy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/SentryAlertPricing'}
+        '401': {description: No active session}
+        '503': {description: Pricing storage unavailable}
+    put:
+      operationId: sentryUpdateAlertPricing
+      summary: Update the alert charging policy
+      description: Site administrators only. The version is optimistic concurrency protection; the persisted policy applies to new grants and existing grants retain their frozen pricing snapshot. This endpoint does not enable the deployment charging switch.
+      security: [{SessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SentryAlertPricingEdit'}
+      responses:
+        '200':
+          description: Pricing policy saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/SentryAlertPricing'}
+        '400': {description: Invalid pricing values}
+        '401': {description: No active session}
+        '403': {description: Site administrator required}
+        '409': {description: Pricing version conflict}
+        '503': {description: Pricing storage unavailable}
   /api/v1/sentry/alert-grants:
     post:
       operationId: sentryCreateAlertGrant
@@ -7748,6 +7793,32 @@ components:
         alert_released_minor: {type: integer, format: int64, minimum: 0, description: Coins released from unused alert reservations.}
         alert_refunded_minor: {type: integer, format: int64, minimum: 0, description: Coins refunded for settled alert intervals.}
         as_of: {type: string, format: date-time}
+    SentryAlertPricing:
+      type: object
+      additionalProperties: false
+      required: [price_version, unit_seconds, unit_price_minor, max_grant_seconds, grant_ttl_seconds, version, configured, charging_enabled, can_edit]
+      properties:
+        price_version: {type: string, description: Price policy version; empty only when no deployment or administrator policy is configured.}
+        unit_seconds: {type: integer, format: int64, minimum: 0, maximum: 86400, description: Seconds represented by one price unit. Zero is returned only before a policy exists while charging is disabled.}
+        unit_price_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000, description: Nutshell Coin minor units per price unit.}
+        max_grant_seconds: {type: integer, format: int64, minimum: 0, maximum: 2678400}
+        grant_ttl_seconds: {type: integer, format: int64, minimum: 0, maximum: 2678400}
+        version: {type: integer, format: int64, minimum: 0, description: Optimistic concurrency version; zero means no persisted policy yet.}
+        configured: {type: boolean, description: True when the administrator has saved a persisted policy.}
+        charging_enabled: {type: boolean, description: Deployment switch state; this endpoint does not change it.}
+        can_edit: {type: boolean, description: True only for a site administrator.}
+        updated_at: {type: string, format: date-time}
+    SentryAlertPricingEdit:
+      type: object
+      additionalProperties: false
+      required: [price_version, unit_seconds, unit_price_minor, max_grant_seconds, grant_ttl_seconds, version]
+      properties:
+        price_version: {type: string, minLength: 1, maxLength: 80}
+        unit_seconds: {type: integer, format: int64, minimum: 1, maximum: 86400}
+        unit_price_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000000}
+        max_grant_seconds: {type: integer, format: int64, minimum: 1, maximum: 2678400}
+        grant_ttl_seconds: {type: integer, format: int64, minimum: 60, maximum: 2678400}
+        version: {type: integer, format: int64, minimum: 0}
     SentryAlertConsumption:
       type: object
       additionalProperties: false

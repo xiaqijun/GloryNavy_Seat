@@ -23,7 +23,7 @@ type Handler struct {
 func (h Handler) Module() module.Definition {
 	return module.Definition{
 		Manifest:    module.Manifest{ID: "sentry", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}, {ID: "access", APIVersion: 1}}},
-		Permissions: []string{"sentry.self"},
+		Permissions: []string{"sentry.self", "sentry.manage"},
 		Routes: []module.Route{
 			{Method: http.MethodGet, Path: "/keys", Permission: "sentry.self", Handler: http.HandlerFunc(h.list)},
 			{Method: http.MethodPost, Path: "/keys", Permission: "sentry.self", Handler: http.HandlerFunc(h.create)},
@@ -33,8 +33,27 @@ func (h Handler) Module() module.Definition {
 			{Method: http.MethodDelete, Path: "/alert-grants/{id}", Permission: "sentry.self", Handler: http.HandlerFunc(h.revokeAlertGrant)},
 			{Method: http.MethodGet, Path: "/alert-usage", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertUsage)},
 			{Method: http.MethodGet, Path: "/alert-consumptions", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertConsumptions)},
+			{Method: http.MethodGet, Path: "/alert-pricing", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertPricing)},
+			{Method: http.MethodPut, Path: "/alert-pricing", Permission: "sentry.manage", Handler: http.HandlerFunc(h.editAlertPricing)},
 		},
 	}
+}
+
+func (h Handler) alertPricing(w http.ResponseWriter, r *http.Request) {
+	pricing, err := h.Service.ReadAlertPricing(r.Context(), h.User(r))
+	h.respond(w, r, pricing, err)
+}
+
+func (h Handler) editAlertPricing(w http.ResponseWriter, r *http.Request) {
+	var body AlertPricingEdit
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF {
+		h.respond(w, r, nil, ErrAlertPricingInvalid)
+		return
+	}
+	pricing, err := h.Service.EditAlertPricing(r.Context(), h.User(r), body)
+	h.respond(w, r, pricing, err)
 }
 
 func (h Handler) alertUsage(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +198,10 @@ func (h Handler) respondStatus(w http.ResponseWriter, r *http.Request, status in
 		httpapi.Failure(w, r, http.StatusNotFound, "sentry_key_not_found", "密钥不存在或无权访问")
 	case errors.Is(err, ErrInvalid):
 		httpapi.Failure(w, r, http.StatusBadRequest, "invalid_sentry_key", "请检查密钥名称、权限或时间额度参数")
+	case errors.Is(err, ErrAlertPricingInvalid):
+		httpapi.Failure(w, r, http.StatusBadRequest, "invalid_alert_pricing", "请检查预警收费配置")
+	case errors.Is(err, ErrAlertPricingConflict):
+		httpapi.Failure(w, r, http.StatusConflict, "alert_pricing_conflict", "收费配置已被其他管理员更新，请刷新后重试")
 	case errors.Is(err, ErrAlertUsageInvalid):
 		httpapi.Failure(w, r, http.StatusBadRequest, "invalid_alert_usage", "请检查预警消费查询条件")
 	case errors.Is(err, ErrAlertDisabled):

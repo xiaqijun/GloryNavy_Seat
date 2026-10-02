@@ -29,6 +29,10 @@ func (a *sentryAlertSettlement) AlertGrantExpiresAt(ctx context.Context, grantID
 	return a.exchange.AlertGrantExpiresAt(ctx, grantID)
 }
 
+func (a *sentryAlertSettlement) AlertGrantPricing(ctx context.Context, grantID string) (string, int64, int64, int64, time.Time, error) {
+	return a.exchange.AlertGrantPricing(ctx, grantID)
+}
+
 func (a *sentryAlertSettlement) ReserveAlertInterval(ctx context.Context, grantID, intervalID, requestKey string, startedAt, endedAt time.Time) error {
 	return a.exchange.ReserveAlertInterval(ctx, exchange.AlertTimeIntervalRequest{
 		GrantID: grantID, IntervalID: intervalID, RequestKey: requestKey, StartedAt: startedAt, EndedAt: endedAt,

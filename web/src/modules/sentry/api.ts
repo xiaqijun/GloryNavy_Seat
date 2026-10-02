@@ -26,6 +26,19 @@ export type AlertUsage = {
   as_of: string;
 };
 
+export type AlertPricing = {
+  price_version: string;
+  unit_seconds: number;
+  unit_price_minor: number;
+  max_grant_seconds: number;
+  grant_ttl_seconds: number;
+  version: number;
+  configured: boolean;
+  charging_enabled: boolean;
+  can_edit: boolean;
+  updated_at?: string;
+};
+
 export type AlertConsumption = {
   id: string;
   grant_id: string;
@@ -76,6 +89,28 @@ const isUsage = (v: unknown): v is AlertUsage =>
   ].every((key) => Number.isSafeInteger(v[key]) && Number(v[key]) >= 0) &&
   typeof v.as_of === "string";
 
+const isPricing = (v: unknown): v is AlertPricing =>
+  object(v) &&
+  typeof v.price_version === "string" &&
+  Number.isSafeInteger(v.unit_seconds) &&
+  Number.isSafeInteger(v.unit_price_minor) &&
+  Number.isSafeInteger(v.max_grant_seconds) &&
+  Number.isSafeInteger(v.grant_ttl_seconds) &&
+  Number.isSafeInteger(v.version) &&
+  typeof v.configured === "boolean" &&
+  typeof v.charging_enabled === "boolean" &&
+  typeof v.can_edit === "boolean" &&
+  (v.updated_at === undefined || typeof v.updated_at === "string") &&
+  (v.configured || v.charging_enabled
+    ? Number(v.unit_seconds) > 0 &&
+      Number(v.unit_price_minor) > 0 &&
+      Number(v.max_grant_seconds) > 0 &&
+      Number(v.grant_ttl_seconds) >= 60
+    : Number(v.unit_seconds) >= 0 &&
+      Number(v.unit_price_minor) >= 0 &&
+      Number(v.max_grant_seconds) >= 0 &&
+      Number(v.grant_ttl_seconds) >= 0);
+
 const isConsumption = (v: unknown): v is AlertConsumption =>
   object(v) &&
   typeof v.id === "string" &&
@@ -107,6 +142,9 @@ export const list = (signal?: AbortSignal) =>
 
 export const usage = (signal?: AbortSignal) =>
   getData("/api/v1/sentry/alert-usage", isUsage, signal);
+
+export const pricing = (signal?: AbortSignal) =>
+  getData("/api/v1/sentry/alert-pricing", isPricing, signal);
 
 export const consumptions = (
   params: { before?: string; state?: string; from?: string; to?: string },
@@ -145,3 +183,8 @@ export const revoke = (csrf: string, id: string) =>
   mutate(`/api/v1/sentry/keys/${encodeURIComponent(id)}`, csrf, "DELETE");
 export const rotate = (csrf: string, id: string) =>
   mutate(`/api/v1/sentry/keys/${encodeURIComponent(id)}/rotate`, csrf, "POST") as Promise<Key>;
+
+export const updatePricing = (
+  csrf: string,
+  value: Pick<AlertPricing, "price_version" | "unit_seconds" | "unit_price_minor" | "max_grant_seconds" | "grant_ttl_seconds" | "version">,
+) => mutate("/api/v1/sentry/alert-pricing", csrf, "PUT", value) as Promise<AlertPricing>;

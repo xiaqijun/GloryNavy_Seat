@@ -229,8 +229,14 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		sentryRemote = remote
 	}
 	sentryService := sentry.New(pool, sentryRemote)
+	sentryService.Administrator = accessService.IsAdministrator
 	sentryService.AlertEnabled = alertConsumptionEnabled && slices.Contains(enabled, "exchange") && sentryService.AlertRemote != nil
 	sentryService.AlertPolicy = sentry.AlertGrantPolicy{PriceVersion: auth.AlertPriceVersion, UnitSeconds: auth.AlertUnitSeconds, UnitPriceMinor: auth.AlertUnitPriceMinor, MaxGrantSeconds: auth.AlertMaxGrantSeconds, GrantTTL: auth.AlertGrantTTL}
+	if pool != nil {
+		if err := sentryService.LoadAlertPricing(context.Background(), sentryService.AlertPolicy); err != nil {
+			return nil, fmt.Errorf("load Sentry alert pricing: %w", err)
+		}
+	}
 	sentryBoundary := &sentryAlertSettlement{exchange: exchangeService}
 	sentryService.SetAlertFunding(sentryBoundary)
 	sentryService.SetAlertSettlement(sentryBoundary)
@@ -271,6 +277,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		}
 		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
+		}
+		if permission == "sentry.manage" {
+			return accessService.IsAdministrator(ctx, s.UserID)
 		}
 		if !slices.Contains(enabled, "access") {
 			return false, nil

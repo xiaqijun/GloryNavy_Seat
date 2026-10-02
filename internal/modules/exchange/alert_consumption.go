@@ -100,6 +100,21 @@ func (s *Service) AlertGrantExpiresAt(ctx context.Context, grantID string) (time
 	return grant.ExpiresAt, nil
 }
 
+// AlertGrantPricing returns the immutable pricing snapshot stored with a
+// grant. Sentry uses it only for idempotent retries after the current policy
+// has changed.
+func (s *Service) AlertGrantPricing(ctx context.Context, grantID string) (string, int64, int64, int64, time.Time, error) {
+	gid, err := uuid(grantID)
+	if err != nil {
+		return "", 0, 0, 0, time.Time{}, err
+	}
+	grant, err := store.New(s.Pool).AlertGrant(ctx, gid)
+	if err != nil {
+		return "", 0, 0, 0, time.Time{}, err
+	}
+	return grant.PriceVersion, grant.UnitSeconds, grant.UnitPriceMinor, grant.ReservedSeconds, grant.ExpiresAt, nil
+}
+
 func (s *Service) ReserveAlertTimeTx(ctx context.Context, tx pgx.Tx, c AlertTimeGrantRequest) error {
 	if err := s.alertEnabled(); err != nil {
 		return err
