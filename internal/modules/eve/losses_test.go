@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 	"glorynavy.local/seat/internal/modules/eve/internal/store"
 	"net/http"
@@ -97,11 +98,35 @@ func TestLossSyncProgressReplayFenceAndRetention(t *testing.T) {
 	}
 	publish := func(v syncResult) {
 		t.Helper()
-		claim, e := q.ClaimSync(ctx, store.ClaimSyncParams{ID: target.ID, Generation: target.Generation, ActiveJobID: target.ActiveJobID})
+		// Each published batch advances or clears the target lease. Refresh the
+		// target before claiming the next batch instead of reusing the initial
+		// snapshot after a completed pass.
+		current := target
+		candidates, listErr := q.ListCharacterSync(ctx, ch.ID)
+		if listErr != nil {
+			t.Fatal(listErr)
+		}
+		for _, candidate := range candidates {
+			if candidate.Resource == "killmails" {
+				current = candidate
+				break
+			}
+		}
+		if !current.ActiveJobID.Valid {
+			jobID := current.CompletedJobID
+			if !jobID.Valid {
+				jobID = pgtype.Int8{Int64: 900000, Valid: true}
+			}
+			if e := q.SetSyncJob(ctx, store.SetSyncJobParams{ID: current.ID, ActiveJobID: jobID}); e != nil {
+				t.Fatal(e)
+			}
+			current.ActiveJobID = jobID
+		}
+		claim, e := q.ClaimSync(ctx, store.ClaimSyncParams{ID: current.ID, Generation: current.Generation, ActiveJobID: current.ActiveJobID})
 		if e != nil {
 			t.Fatal(e)
 		}
-		e = s.finish(ctx, claim, cred, target.ActiveJobID.Int64, v, nil)
+		e = s.finish(ctx, claim, cred, current.ActiveJobID.Int64, v, nil)
 		var snooze *river.JobSnoozeError
 		if e != nil && !errors.As(e, &snooze) {
 			t.Fatal(e)
