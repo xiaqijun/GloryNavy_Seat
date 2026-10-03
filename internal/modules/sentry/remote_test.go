@@ -137,6 +137,34 @@ func TestHTTPRemoteListAlertDeliveries(t *testing.T) {
 	}
 }
 
+func TestHTTPRemoteSetAlertConsumptionEnabled(t *testing.T) {
+	var gotAuth, gotIdempotency string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/integrations/seat/alert-consumption" || r.Method != http.MethodPut {
+			t.Fatalf("request = %s %s", r.Method, r.URL.Path)
+		}
+		gotAuth = r.Header.Get("Authorization")
+		gotIdempotency = r.Header.Get("Idempotency-Key")
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		if body["enabled"] != true {
+			t.Fatalf("enabled payload = %#v", body["enabled"])
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"enabled": true})
+	}))
+	defer server.Close()
+	token := strings.Repeat("x", 32)
+	r := &HTTPRemote{BaseURL: server.URL, Token: token, Client: server.Client()}
+	if err := r.SetAlertConsumptionEnabled(context.Background(), true, "operation-1"); err != nil {
+		t.Fatal(err)
+	}
+	if gotAuth != "Bearer "+token || gotIdempotency != "operation-1" {
+		t.Fatalf("headers auth=%q idempotency=%q", gotAuth, gotIdempotency)
+	}
+}
+
 func TestHTTPRemoteListMonitorContributions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/integrations/seat/monitor-contributions" || r.URL.Query().Get("after") != "cursor-1" || r.URL.Query().Get("limit") != "20" {

@@ -14,6 +14,13 @@ Seat API:
 - `PUT /api/v1/sentry/alert-pricing`: site administrators may save the compatible price version, pricing unit, coin price, per-grant cap, and lifetime. The request carries the current `version`; conflicts return 409 and changes are audited.
 - `GET/PUT /api/v1/sentry/time-pricing`: read or save the hourly alert price, monitoring reward price, and `charging_enabled`; only site administrators may write, and the switch and prices share optimistic version protection.
 
+When `charging_enabled` is saved, the Seat server calls the warning service's
+`PUT /api/v1/integrations/seat/alert-consumption` before committing the local price transaction,
+using the same service token and an idempotency key. Sentry persists the gate in
+`seat_integration_settings`; a remote failure prevents the local switch from being committed,
+and a local transaction failure triggers a best-effort remote rollback. The warning service environment
+variable is only the first-start default for a new database and is no longer the page-level switch.
+
 Alert grants use the Sentry v2 seconds-authorization projection. Seat freezes `price_version`, `unit_seconds`, and `unit_price_minor`, reserves and settles Nutshell Coins locally, and returns that frozen snapshot to Seat callers. The downstream request contains only the operation/grant/account identifiers, optional key ID, `reserved_seconds`, expiry, and `protocol_version: 2`; v1 price fields remain supported only for historical compatibility.
 
 The create endpoint returns a conflict when the account already has a non-revoked key. The page calls it automatically only when no current card exists; click the card's “Refresh key” button when a replacement is needed.
@@ -27,8 +34,12 @@ SENTRY_INTEGRATION_URL=https://sentry.example.com
 SENTRY_INTEGRATION_TOKEN=<server-only-token-at-least-32-chars>
 ```
 
-EVE Sentry now exposes `POST /api/v1/integrations/seat/keys`, `DELETE /api/v1/integrations/seat/keys/{key_id}`, and the alert event, delivery, and monitor-contribution read/write and reconciliation endpoints. Calls use a dedicated Bearer credential and `Idempotency-Key`; Seat sends the operation ID, key/account IDs, key hash, prefix, permissions, and protocol version, never the plaintext secret. Sentry stores only the hash and handles retries by `operation_id`; identical content replays the record and changed content returns a conflict. Production uses `https://seat.kisectool.com` as the HTTPS origin and must route the entire `/api/v1/integrations/seat/` prefix to host 114; the service credential remains in restricted server environment files and is not documented, browser-visible, or placed in River payloads. Real member create/revoke and error-contract acceptance remain pending.
+EVE Sentry now exposes `POST /api/v1/integrations/seat/keys`, `DELETE /api/v1/integrations/seat/keys/{key_id}`,
+`PUT /api/v1/integrations/seat/alert-consumption`, and the alert event, delivery, and monitor-contribution read/write and reconciliation endpoints.
+Calls use a dedicated Bearer credential and `Idempotency-Key`; Seat sends the operation ID, key/account IDs, key hash, prefix, permissions, and protocol version, never the plaintext secret.
+Sentry stores only the hash and handles retries by `operation_id`; identical content replays the record and changed content returns a conflict.
+Production uses `https://seat.kisectool.com` as the HTTPS origin and must route the entire `/api/v1/integrations/seat/` prefix to host 114; the service credential remains in restricted server environment files and is not documented, browser-visible, or placed in River payloads.
 
 Sentry M1 adds an explicit one-to-one `auth_external_accounts` binding: a Seat `account_id` is not a Sentry local user ID and must be bound by a trusted management flow. `EVE_SENTRY_SERVER_SEAT_AUTH_MODE` defaults to `off`; `shadow` audits validation and denies requests, while `enforce` creates a business principal only for the `monitor`/`alert` endpoint allowlists. Unbound, revoked, disabled, or out-of-scope requests are rejected consistently. Seat has not enabled this mode, and production interoperability is not yet verified; a key being issued does not prove that a warning client can already connect.
 
-This phase does not read screenshots, online time, quality scores, or alert events. Actual alert charging is controlled by the persisted `sentry_alert_pricing.charging_enabled` switch and remains off by default. `SENTRY_ALERT_CONSUMPTION_ENABLED` is retained only for compatible configuration validation and is no longer the page-level switch. Monitoring rewards and alert billing remain staged in the [EVE Sentry integration plan](../plans/eve-sentry-integration.zh-CN.md). Key issuance or price configuration being available does not mean the warning client or usage settlement is complete.
+This phase does not read screenshots, online time, quality scores, or alert events. Actual alert charging is controlled by the Seat page switch and the warning service's persisted gate, remaining off by default. `SENTRY_ALERT_CONSUMPTION_ENABLED` is retained only for compatible configuration validation and is no longer the page-level switch. Monitoring rewards and alert billing remain staged in the [EVE Sentry integration plan](../plans/eve-sentry-integration.zh-CN.md). Key issuance or price configuration being available does not mean the warning client or usage settlement is complete.

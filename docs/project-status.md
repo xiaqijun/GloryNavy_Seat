@@ -1,5 +1,10 @@
 # 项目状态
 
+## 已修复：收费开关同步预警端门禁（2026-10-03）
+
+管理员在 `/sentry` 保存收费开关时，Seat 会使用服务端集成令牌调用预警端
+`PUT /api/v1/integrations/seat/alert-consumption`。预警端将门禁持久化到自己的数据库，服务重启后继续生效；远端同步失败时 Seat 不提交本地开关，事务失败会尝试恢复远端原状态。生产环境变量只作为新库初始化默认值。
+
 ## 已修复：预警对账入口（2026-10-03）
 
 公网 OpenResty 已将 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry；此前只有密钥子路径被转发，投递、事件和监控贡献对账请求误入 Seat API 并返回 404。`nginx -t`、平滑 reload 和带生产服务令牌的三个只读接口（`monitor-contributions`、`alert-deliveries`、`alert-events`）均已返回 200；Seat 的 River 对账任务已恢复为 scheduled，无新的 `sentry remote integration unavailable` 错误。当前仍没有真实扣币/奖励记录，EVE Sentry 收费消费开关未打开。

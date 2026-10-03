@@ -118,6 +118,13 @@ type AlertRemote interface {
 	ListAlertDeliveries(context.Context, string, int) (AlertDeliveryPage, error)
 }
 
+// AlertConsumptionRemote synchronizes Seat's persisted charging switch with
+// the warning service's durable consumption gate. It is separate from
+// AlertRemote so existing reconciliation fakes remain source-compatible.
+type AlertConsumptionRemote interface {
+	SetAlertConsumptionEnabled(context.Context, bool, string) error
+}
+
 // MonitorRemote reads the server-confirmed primary monitor intervals exported
 // by EVE Sentry. It never accepts client supplied duration or reward values.
 type MonitorContribution struct {
@@ -313,6 +320,37 @@ func (c *HTTPRemote) RevokeAlertGrant(ctx context.Context, grantID, operationID 
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("sentry remote alert grant revoke: %w", ErrRemoteUnavailable)
+	}
+	return nil
+}
+
+func (c *HTTPRemote) SetAlertConsumptionEnabled(ctx context.Context, enabled bool, operationID string) error {
+	if c == nil || c.Client == nil || strings.TrimSpace(operationID) == "" {
+		return ErrRemoteUnavailable
+	}
+	body, err := json.Marshal(map[string]any{"enabled": enabled})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.BaseURL+"/api/v1/integrations/seat/alert-consumption", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	setJSONHeaders(req, c.Token, operationID)
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return ErrRemoteUnavailable
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("sentry remote alert consumption setting: %w", ErrRemoteUnavailable)
+	}
+	var out struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<10)).Decode(&out); err != nil || out.Enabled != enabled {
+		return ErrRemoteUnavailable
 	}
 	return nil
 }

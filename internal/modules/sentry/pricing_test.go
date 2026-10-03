@@ -22,6 +22,22 @@ type pricingFixture struct {
 	member  string
 }
 
+type pricingSyncRemote struct {
+	values []bool
+	err    error
+}
+
+func (r *pricingSyncRemote) Create(context.Context, ProvisionRequest) (RemoteKey, error) {
+	return RemoteKey{}, nil
+}
+
+func (r *pricingSyncRemote) Revoke(context.Context, string, string) error { return nil }
+
+func (r *pricingSyncRemote) SetAlertConsumptionEnabled(_ context.Context, enabled bool, _ string) error {
+	r.values = append(r.values, enabled)
+	return r.err
+}
+
 func newPricingFixture(t *testing.T) pricingFixture {
 	t.Helper()
 	pool := testutil.Database(t)
@@ -171,6 +187,37 @@ func TestTimePricingAdminControlsChargingSwitch(t *testing.T) {
 	}
 	if saved.ChargingEnabled {
 		t.Fatalf("switch remained enabled after disable: %#v", saved)
+	}
+}
+
+func TestTimePricingSynchronizesWarningGate(t *testing.T) {
+	f := newPricingFixture(t)
+	syncRemote := &pricingSyncRemote{}
+	f.service.Remote = syncRemote
+	ctx := context.Background()
+	enabled := true
+	if _, err := f.service.EditTimePricing(ctx, f.admin, TimePricingEdit{
+		AlertHourlyPriceMinor:    125,
+		MonitorHourlyRewardMinor: 75,
+		Version:                  0,
+		ChargingEnabled:          &enabled,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(syncRemote.values) != 1 || !syncRemote.values[0] {
+		t.Fatalf("warning gate sync calls = %#v", syncRemote.values)
+	}
+	disabled := false
+	if _, err := f.service.EditTimePricing(ctx, f.admin, TimePricingEdit{
+		AlertHourlyPriceMinor:    125,
+		MonitorHourlyRewardMinor: 75,
+		Version:                  1,
+		ChargingEnabled:          &disabled,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(syncRemote.values) != 2 || syncRemote.values[1] {
+		t.Fatalf("warning gate disable sync calls = %#v", syncRemote.values)
 	}
 }
 

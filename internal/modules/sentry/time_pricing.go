@@ -60,7 +60,7 @@ func (s *Service) ReadTimePricing(ctx context.Context, user string) (TimePricing
 	return out, nil
 }
 
-func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricingEdit) (TimePricing, error) {
+func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricingEdit) (result TimePricing, retErr error) {
 	if s.Pool == nil || s.Administrator == nil {
 		return TimePricing{}, pgx.ErrNoRows
 	}
@@ -74,6 +74,40 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 	if e.Version < 0 || e.AlertHourlyPriceMinor < 1 || e.AlertHourlyPriceMinor > 1000000000000 || e.MonitorHourlyRewardMinor < 0 || e.MonitorHourlyRewardMinor > 1000000000000 {
 		return TimePricing{}, ErrAlertPricingInvalid
 	}
+	var currentVersion int64
+	if err = s.Pool.QueryRow(ctx, `SELECT coalesce(max(version),0) FROM sentry_time_pricing`).Scan(&currentVersion); err != nil {
+		return TimePricing{}, err
+	}
+	if currentVersion != e.Version {
+		return TimePricing{}, ErrAlertPricingConflict
+	}
+	var currentEnabled bool
+	if err = s.Pool.QueryRow(ctx, `SELECT charging_enabled FROM sentry_alert_pricing WHERE id=1`).Scan(&currentEnabled); errors.Is(err, pgx.ErrNoRows) {
+		currentEnabled = false
+	} else if err != nil {
+		return TimePricing{}, err
+	}
+	enabled := currentEnabled
+	if e.ChargingEnabled != nil {
+		enabled = *e.ChargingEnabled
+	}
+	consumptionRemote, canSyncConsumption := s.Remote.(AlertConsumptionRemote)
+	remoteSynced := false
+	if canSyncConsumption && e.ChargingEnabled != nil && enabled != currentEnabled {
+		operationID := fmt.Sprintf("seat-alert-consumption-v%d-%t", e.Version+1, enabled)
+		if err = consumptionRemote.SetAlertConsumptionEnabled(ctx, enabled, operationID); err != nil {
+			return TimePricing{}, err
+		}
+		remoteSynced = true
+	}
+	defer func() {
+		if remoteSynced && retErr != nil {
+			rollbackID := fmt.Sprintf("seat-alert-consumption-rollback-v%d-%t", e.Version+1, currentEnabled)
+			if rollbackErr := consumptionRemote.SetAlertConsumptionEnabled(context.Background(), currentEnabled, rollbackID); rollbackErr != nil {
+				retErr = fmt.Errorf("%w (remote rollback failed: %v)", retErr, rollbackErr)
+			}
+		}
+	}()
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return TimePricing{}, err
@@ -92,17 +126,16 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 	p := s.alertPolicy()
 	var old AlertGrantPolicy
 	var ttl, oldVersion int64
-	var currentEnabled bool
-	err = tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,charging_enabled FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&old.PriceVersion, &old.UnitSeconds, &old.UnitPriceMinor, &old.MaxGrantSeconds, &ttl, &oldVersion, &currentEnabled)
+	var persistedEnabled bool
+	err = tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,charging_enabled FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&old.PriceVersion, &old.UnitSeconds, &old.UnitPriceMinor, &old.MaxGrantSeconds, &ttl, &oldVersion, &persistedEnabled)
 	if err == nil {
 		old.GrantTTL = time.Duration(ttl) * time.Second
 		p = old
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return TimePricing{}, err
 	}
-	enabled := currentEnabled
-	if e.ChargingEnabled != nil {
-		enabled = *e.ChargingEnabled
+	if err == nil && persistedEnabled != currentEnabled {
+		return TimePricing{}, ErrAlertPricingConflict
 	}
 	if p.MaxGrantSeconds <= 0 {
 		p.MaxGrantSeconds = 3600
@@ -124,7 +157,7 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 	if err != nil {
 		return TimePricing{}, err
 	}
-	before := pricingFromPolicy(old, oldVersion > 0, currentEnabled, true, oldVersion, time.Time{})
+	before := pricingFromPolicy(old, oldVersion > 0, persistedEnabled, true, oldVersion, time.Time{})
 	after := pricingFromPolicy(p, true, enabled, true, oldVersion+1, stamp)
 	if _, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing_audit(actor_id,previous_version,version,before_snapshot,after_snapshot) VALUES($1,$2,$3,$4,$5)`, user, oldVersion, oldVersion+1, before, after); err != nil {
 		return TimePricing{}, err
