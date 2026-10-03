@@ -1,5 +1,9 @@
 # 项目状态
 
+## 已发布：批量结算已发合同归入已处理（2026-10-03）
+
+生产前后端已切换至 `v0.1.0-contract-batch-approval-history-20261003`。批量合同已同步、等待主角色接取时返回 `delivery_status=awaiting_acceptance`，审批中心与单合同保持一致移入“已处理”；批次 #6 仍保持 `pending`、三项均为等待接收角色完成合同，完成数仍为 0，避免把“已发出”误记为已完成。未同步、内容不匹配或其他异常继续留在待发放/异常视图。本轮无 Goose/River 新迁移；应用 ready、`NRestarts=0`、Goose 66，公网首页/登录 200、静态入口和 OpenResty `nginx -t` 通过。
+
 ## 已发布：预警仅按认证心跳在线时长计费（2026-10-03）
 
 预警收费的新结算来源已收敛为 EVE Sentry 服务端接收的连续认证客户端心跳区间，
@@ -8,6 +12,13 @@
 客户端在线区间导出、Seat 游标对账和幂等结算已随 `v0.1.0-sentry-heartbeat-time-20261003-r2`
 发布生产；Seat Goose 66 已执行。应用服务 ready，公网首页/登录 200，OpenResty 配置检查通过。
 生产真实心跳、价格和果壳币流水仍需现场验收，不能把部署成功等同于真实扣币已验收。
+
+## 已发布：监控奖励密钥匹配与合并结算（2026-10-03）
+
+Seat 已切换至 `v0.1.0-sentry-monitor-reward-batch-20261003`。监控贡献使用 EVE Sentry
+返回的远端密钥 ID 匹配 Seat 的 `remote_key_id`，不再误把远端 ID 当成本地行 ID；每个监控区间仍保存独立证据，
+同一对账页按账号合并为一次果壳币入账，重复执行保持幂等。已重置对账游标回放历史有效区间，生产已观察到 5,908
+条奖励证据和 60 条合并币账记录，共 618 个最小币单位；应用 ready、生产币账查询和公网静态入口检查通过。
 
 ## 已发布：批量结算合同标题同步修复（2026-10-03）
 
@@ -40,7 +51,7 @@ worker 和批次详情读取均按本站账号当前主角色重新解析接收�
 
 ## 已修复：预警对账入口（2026-10-03）
 
-公网 OpenResty 已将 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry；此前只有密钥子路径被转发，投递、事件和监控贡献对账请求误入 Seat API 并返回 404。`nginx -t`、平滑 reload 和带生产服务令牌的三个只读接口（`monitor-contributions`、`alert-deliveries`、`alert-events`）均已返回 200；Seat 的 River 对账任务已恢复为 scheduled，无新的 `sentry remote integration unavailable` 错误。当前仍没有真实扣币/奖励记录，收费门禁已通过同步接口与 Seat 当前开关对齐。
+公网 OpenResty 已将 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry；此前只有密钥子路径被转发，投递、事件和监控贡献对账请求误入 Seat API 并返回 404。`nginx -t`、平滑 reload 和带生产服务令牌的三个只读接口（`monitor-contributions`、`alert-deliveries`、`alert-events`）均已返回 200；Seat 的 River 对账任务已恢复为 scheduled，无新的 `sentry remote integration unavailable` 错误。收费门禁已通过同步接口与 Seat 当前开关对齐。
 
 ## 已发布：预警消费与收费配置（2026-10-03）
 

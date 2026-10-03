@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 批量结算已发合同归入已处理（2026-10-03）
+
+已发布 `v0.1.0-contract-batch-approval-history-20261003`。批量合同已同步但等待主角色接取时，后端返回 `delivery_status=awaiting_acceptance`，审批中心将其从“待发放”移到“已处理”，详情仍显示“等待领取合同”；合同未同步、内容不匹配或其他异常不改变原分类。批次 #6 生产数据仍为 `pending`、3 项待处理、完成数 0，三项错误均为“等待接收角色完成合同”。本轮无 Goose/River 新迁移，生产 Goose 66；应用 `active/ready`、`NRestarts=0`，公网前端 `current`、首页/登录 200、容器静态入口和 OpenResty `nginx -t` 检查通过。
+
 ## 预警在线时长收费改造（已发布，2026-10-03）
 
 本轮新增 Goose 66 `sentry_client_usage_reconcile_state`，并要求同时发布 EVE Sentry
@@ -9,6 +13,11 @@
 `d77eab7`。生产 Goose 66 已执行；应用 ready、公网首页/登录 200、OpenResty
 `nginx -t` 通过。真实心跳、正式价格和 exchange 币流水仍需现场验收，部署成功不代表
 真实扣币已验收。
+
+随后发布 Seat `v0.1.0-sentry-monitor-reward-batch-20261003`，修复监控贡献以远端密钥 ID
+匹配 Seat 本地密钥的问题；每段在线证据独立保存，同一对账页和账号的奖励合并为一次币账入账。
+回放历史游标后生产已核到 5,908 条奖励证据、60 条合并币账记录（共 618 个最小币单位）。
+应用 ready、公网首页 200、静态站点切换和 OpenResty `nginx -t` 已通过。
 
 ## 批量结算合同标题同步修复（2026-10-03）
 
