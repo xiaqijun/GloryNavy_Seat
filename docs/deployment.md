@@ -1,24 +1,8 @@
 # Linux 生产部署
 
-## 预警收费状态图标（2026-10-03）
+## 预警消费与收费配置（2026-10-03）
 
-公网静态前端已切换至 `v0.1.0-sentry-charging-icon-inline-20261003`。收费状态从价格区域移到“配置收费”按钮内，以启用/停用图标显示并保留无障碍名称；本轮未修改应用后端、数据库或收费开关。公网首页/登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。
-
-## 预警收费前端开关（2026-10-03）
-
-已发布 `v0.1.0-sentry-charging-toggle-20261003`。应用机与公网 1Panel 静态前端已原子切换，生产 Goose 64 已执行；`glorynavy` 为 `active`、`/health/ready` 返回 ready、重启次数为 0。切换前备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-charging-toggle-20261003-20261003T082128Z.{dump,env}`。公网首页和登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。收费开关默认关闭；真实监控客户端证据、管理员价格复核和真实果壳币账务仍待现场验收。
-
-## 监控时长奖励与双小时价格（2026-10-03）
-
-已发布 `v0.1.0-sentry-monitor-rewards-20261003`。应用机与公网 1Panel 静态前端已原子切换；应用机 Goose 63、River 迁移、`glorynavy active` 和 `/health/ready` 通过。切换前激活脚本已生成数据库与配置备份：`/var/backups/glorynavy/before-v0.1.0-sentry-monitor-rewards-20261003-20261003T053256Z.{dump,env}`。公网首页和登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。收费开关保持关闭；真实监控客户端证据、管理员价格复核和真实果壳币奖励账务仍待现场验收。
-
-## 预警收费配置弹窗（2026-10-03）
-
-公网静态前端已切换至 `v0.1.0-sentry-consumption-panel-20261003`，后端继续运行 `v0.1.0-sentry-v2-billing-20261003`。余额、花费和价格规则收进同一个消费面板，编辑仍在“配置收费”弹窗中完成；前端构建、容器静态入口、OpenResty `nginx -t` 和正式首页检查通过。没有后端、数据库或收费开关变更。
-
-## 预警 v2 授权与收费规则配置（2026-10-03）
-
-已发布 `v0.1.0-sentry-v2-billing-20261003`。应用机与公网 1Panel 静态站点均已原子切换，生产 Goose 62、River 迁移和应用 `active/ready` 检查通过；应用机备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-v2-billing-20261003-20261002T173836Z.{dump,env}`。Sentry v2 下游请求只包含秒数授权和有效期，Seat 保留本地冻结价格与果壳币账务；管理员可在 `/sentry` 配置价格规则，但收费开关仍由 `SENTRY_ALERT_CONSUMPTION_ENABLED` 控制，当前未设置并按默认值 `false` 运行。公网首页/登录 200、匿名受保护接口 401、容器静态入口和 OpenResty `nginx -t` 通过。隔离生产账号和真实币账现场验收未完成，不能据此开启收费。
+后端 `v0.1.0-sentry-charging-toggle-20261003`（Goose 64）和公网前端 `v0.1.0-sentry-charging-icon-inline-20261003` 已生产切换。页面提供余额、按小时价格、累计净消费、监控奖励和收费配置；收费状态图标嵌入配置按钮，默认关闭。应用 ready、首页/登录 200、匿名价格接口 401、静态入口及 OpenResty 检查通过。真实监控证据、价格复核和果壳币实账仍待现场验收。
 
 ## 预警空消费账单响应修复（2026-10-02）
 
