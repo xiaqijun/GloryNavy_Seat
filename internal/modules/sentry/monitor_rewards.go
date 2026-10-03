@@ -55,18 +55,13 @@ func (w *monitorRewardWorker) Work(ctx context.Context, _ *river.Job[monitorRewa
 	if err != nil {
 		return err
 	}
-	for _, contribution := range page.Contributions {
-		if err := s.settleMonitorContribution(ctx, contribution); errors.Is(err, errMonitorRewardUnpriced) {
-			return river.JobSnooze(time.Hour)
-		} else if err != nil {
-			return err
-		}
+	next := monitorContributionPageCursor(page)
+	if err := s.settleMonitorContributions(ctx, page.Contributions, cursor, next); errors.Is(err, errMonitorRewardUnpriced) {
+		return river.JobSnooze(time.Hour)
+	} else if err != nil {
+		return err
 	}
 	if len(page.Contributions) > 0 {
-		next := strings.TrimSpace(page.NextCursor)
-		if next == "" {
-			next = page.Contributions[len(page.Contributions)-1].CreatedAt + "|" + page.Contributions[len(page.Contributions)-1].ContributionID
-		}
 		if err := s.saveMonitorCursor(ctx, next); err != nil {
 			return err
 		}
@@ -96,64 +91,127 @@ type monitorPolicyRow struct {
 	Version   int64
 }
 
+func monitorContributionPageCursor(page MonitorContributionPage) string {
+	next := strings.TrimSpace(page.NextCursor)
+	if next == "" && len(page.Contributions) > 0 {
+		last := page.Contributions[len(page.Contributions)-1]
+		next = last.CreatedAt + "|" + last.ContributionID
+	}
+	return next
+}
+
 func (s *Service) settleMonitorContribution(ctx context.Context, c MonitorContribution) error {
-	if strings.TrimSpace(c.ContributionID) == "" || c.DurationSeconds <= 0 || c.DurationSeconds > 86400 {
-		return ErrInvalid
-	}
-	start, err := time.Parse(time.RFC3339Nano, c.StartedAt)
-	if err != nil {
-		return ErrInvalid
-	}
-	end, err := time.Parse(time.RFC3339Nano, c.EndedAt)
-	if err != nil || !end.After(start) || end.Sub(start)%time.Second != 0 || int64(end.Sub(start)/time.Second) != c.DurationSeconds {
-		return ErrInvalid
-	}
-	evidence, _ := json.Marshal(c.Evidence)
-	if len(evidence) == 0 {
-		evidence = []byte(`{}`)
+	return s.settleMonitorContributions(ctx, []MonitorContribution{c}, "", c.ContributionID)
+}
+
+type monitorPayout struct {
+	accountID string
+	amount    int64
+}
+
+// settleMonitorContributions records every interval but combines all rewards
+// from one reconciliation page into one wallet credit per account. This keeps
+// evidence granular while avoiding one coin-ledger row for every heartbeat.
+func (s *Service) settleMonitorContributions(ctx context.Context, contributions []MonitorContribution, cursor, next string) error {
+	if len(contributions) == 0 {
+		return nil
 	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	var exists bool
-	err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sentry_monitor_rewards WHERE contribution_id=$1)`, c.ContributionID).Scan(&exists)
-	if err != nil {
-		return err
+
+	remainders := make(map[string]int64)
+	payouts := make(map[string]int64)
+	for _, c := range contributions {
+		payout, err := s.settleMonitorContributionTx(ctx, tx, c, remainders)
+		if err != nil {
+			return err
+		}
+		if payout.accountID != "" && payout.amount > 0 {
+			payouts[payout.accountID] += payout.amount
+		}
 	}
-	if exists {
-		return nil
+	for accountID, numerator := range remainders {
+		if _, err = tx.Exec(ctx, `UPDATE sentry_monitor_remainders SET numerator=$2 WHERE account_id=$1`, accountID, numerator); err != nil {
+			return err
+		}
+	}
+	for accountID, amount := range payouts {
+		batchID := stableUUID("monitor-batch|" + cursor + "|" + next + "|" + accountID)
+		reference := "sentry-monitor-batch:" + batchID
+		if err = s.MonitorRewardFunding.CreditMonitorRewardTx(ctx, tx, accountID, reference, batchID, amount); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+func (s *Service) settleMonitorContributionTx(ctx context.Context, tx pgx.Tx, c MonitorContribution, remainders map[string]int64) (monitorPayout, error) {
+	if strings.TrimSpace(c.ContributionID) == "" || c.DurationSeconds <= 0 || c.DurationSeconds > 86400 {
+		return monitorPayout{}, ErrInvalid
+	}
+	start, err := time.Parse(time.RFC3339Nano, c.StartedAt)
+	if err != nil {
+		return monitorPayout{}, ErrInvalid
+	}
+	end, err := time.Parse(time.RFC3339Nano, c.EndedAt)
+	if err != nil || !end.After(start) || end.Sub(start)%time.Second != 0 || int64(end.Sub(start)/time.Second) != c.DurationSeconds {
+		return monitorPayout{}, ErrInvalid
+	}
+	evidence, _ := json.Marshal(c.Evidence)
+	if len(evidence) == 0 {
+		evidence = []byte(`{}`)
+	}
+	var existingState string
+	err = tx.QueryRow(ctx, `SELECT state FROM sentry_monitor_rewards WHERE contribution_id=$1`, c.ContributionID).Scan(&existingState)
+	exists := err == nil
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return monitorPayout{}, err
+	}
+	if exists && existingState != "excluded" {
+		return monitorPayout{}, nil
 	}
 	account := strings.TrimSpace(c.AccountID)
 	keyID := strings.TrimSpace(c.KeyID)
 	var accountID string
 	if _, err := uuidText(account); err == nil && keyID != "" {
-		err = tx.QueryRow(ctx, `SELECT account_id::text FROM sentry_keys WHERE id=$1 AND account_id=$2 AND 'monitor'=ANY(permissions)`, keyID, account).Scan(&accountID)
+		// The Sentry client authenticates with the remote key ID. Seat stores
+		// that value in sentry_keys.remote_key_id while its local row ID is a
+		// different UUID; resolve the row by the remote ID before crediting.
+		err = tx.QueryRow(ctx, `SELECT account_id::text FROM sentry_keys WHERE remote_key_id=$1 AND account_id=$2 AND 'monitor'=ANY(permissions) AND status='active'`, keyID, account).Scan(&accountID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Keep compatibility with locally generated contribution fixtures
+			// that may carry the Seat row ID instead of the remote key ID.
+			err = tx.QueryRow(ctx, `SELECT account_id::text FROM sentry_keys WHERE id=$1 AND account_id=$2 AND 'monitor'=ANY(permissions) AND status='active'`, keyID, account).Scan(&accountID)
+		}
 	}
 	if accountID == "" || strings.TrimSpace(c.Eligibility) != "eligible" {
-		_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,NULL,$2,$3,$4,$5,$6,$7,'excluded',0,0,$8,$9,'{}')`, c.ContributionID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, monitorFingerprint(c), evidence)
-		if err == nil {
-			err = tx.Commit(ctx)
+		if !exists {
+			_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,NULL,$2,$3,$4,$5,$6,$7,'excluded',0,0,$8,$9,'{}')`, c.ContributionID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, monitorFingerprint(c), evidence)
 		}
-		return err
+		return monitorPayout{}, err
 	}
 	policies, err := s.monitorPolicies(ctx, tx, end)
 	if err != nil {
-		return err
+		return monitorPayout{}, err
 	}
 	if len(policies) == 0 { // No configured reward price: retain evidence but do not invent a zero-priced payout.
-		return errMonitorRewardUnpriced
+		return monitorPayout{}, errMonitorRewardUnpriced
 	}
-	var remainder int64
-	err = tx.QueryRow(ctx, `SELECT numerator FROM sentry_monitor_remainders WHERE account_id=$1 FOR UPDATE`, accountID).Scan(&remainder)
-	if errors.Is(err, pgx.ErrNoRows) {
-		if _, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,numerator) VALUES($1,0) ON CONFLICT DO NOTHING`, accountID); err != nil {
-			return err
+	remainder, loaded := remainders[accountID]
+	if !loaded {
+		err = tx.QueryRow(ctx, `SELECT numerator FROM sentry_monitor_remainders WHERE account_id=$1 FOR UPDATE`, accountID).Scan(&remainder)
+		if errors.Is(err, pgx.ErrNoRows) {
+			if _, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,numerator) VALUES($1,0) ON CONFLICT DO NOTHING`, accountID); err != nil {
+				return monitorPayout{}, err
+			}
+			remainder = 0
+		} else if err != nil {
+			return monitorPayout{}, err
 		}
-		remainder = 0
-	} else if err != nil {
-		return err
+		remainders[accountID] = remainder
 	}
 	total := remainder
 	priceSnapshot := make([]map[string]any, 0, len(policies))
@@ -172,30 +230,27 @@ func (s *Service) settleMonitorContribution(ctx context.Context, c MonitorContri
 			continue
 		}
 		if seconds > math.MaxInt64/p.Reward {
-			return ErrInvalid
+			return monitorPayout{}, ErrInvalid
 		}
 		total += seconds * p.Reward
 		if total < 0 {
-			return ErrInvalid
+			return monitorPayout{}, ErrInvalid
 		}
 		credited += total / 3600
 		total %= 3600
 		priceSnapshot = append(priceSnapshot, map[string]any{"version": p.Version, "effective_at": p.Effective.UTC().Format(time.RFC3339Nano), "hourly_reward_minor": p.Reward, "seconds": seconds})
 	}
-	if _, err = tx.Exec(ctx, `UPDATE sentry_monitor_remainders SET numerator=$2 WHERE account_id=$1`, accountID, total); err != nil {
-		return err
-	}
-	requestKey := stableUUID(c.ContributionID)
-	if credited > 0 {
-		if err = s.MonitorRewardFunding.CreditMonitorRewardTx(ctx, tx, accountID, "sentry-monitor:"+c.ContributionID, requestKey, credited); err != nil {
-			return err
-		}
-	}
+	remainders[accountID] = total
 	snapshot, _ := json.Marshal(priceSnapshot)
-	if _, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'rewarded',$9,$10,$11,$12,$13)`, c.ContributionID, accountID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot); err != nil {
-		return err
+	if exists {
+		_, err = tx.Exec(ctx, `UPDATE sentry_monitor_rewards SET account_id=$2,remote_key_id=$3,client_id=$4,system_name=$5,started_at=$6,ended_at=$7,duration_seconds=$8,state='rewarded',numerator=$9,coins_minor=$10,fingerprint=$11,evidence=$12,price_snapshot=$13 WHERE contribution_id=$1`, c.ContributionID, accountID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
+	} else {
+		_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'rewarded',$9,$10,$11,$12,$13)`, c.ContributionID, accountID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
 	}
-	return tx.Commit(ctx)
+	if err != nil {
+		return monitorPayout{}, err
+	}
+	return monitorPayout{accountID: accountID, amount: credited}, nil
 }
 
 func (s *Service) monitorPolicies(ctx context.Context, tx pgx.Tx, end time.Time) ([]monitorPolicyRow, error) {
