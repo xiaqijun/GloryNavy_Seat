@@ -2,7 +2,7 @@ import { msg, getLocale } from "@/lib/i18n";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2 } from "lucide-react";
+import { RadioTower, RefreshCw, Copy, Coins, Clock3, Settings2, CircleCheck, CircleOff } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
@@ -178,6 +178,15 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         </div>
         <div className="sentry-usage-actions">
           {keyActions}
+          {pricing.data && (
+            <span
+              className={`sentry-charging-indicator ${pricing.data.charging_enabled ? "is-on" : "is-off"}`}
+              aria-label={pricing.data.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
+              title={pricing.data.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
+            >
+              {pricing.data.charging_enabled ? <CircleCheck size={18} aria-hidden="true" /> : <CircleOff size={18} aria-hidden="true" />}
+            </span>
+          )}
           {pricing.data?.can_edit && !pricingEditing && <Button variant="outline" onClick={() => setPricingEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
           <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
             <RefreshCw size={18} aria-hidden="true" />
@@ -264,14 +273,7 @@ function AlertPricingPanel({ pricing, csrf, editing, setEditing }: { pricing: ap
   const valid = /^\d+(\.\d{1,2})?$/.test(alertPrice) && Number(alertPrice) > 0 && Number(alertPrice) <= 10000000000 &&
     /^\d+(\.\d{1,2})?$/.test(monitorPrice) && Number(monitorPrice) >= 0 && Number(monitorPrice) <= 10000000000;
   return (
-    <div className="sentry-pricing-inline">
-      <div className="sentry-pricing-inline-heading">
-        <div className="sentry-pricing-actions">
-          <span className={`sentry-pricing-status ${pricing.charging_enabled ? "is-on" : "is-off"}`}>
-            {pricing.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
-          </span>
-        </div>
-      </div>
+    <>
       {editing && pricing.can_edit && (
         <FormDialog
           title={msg("预警收费配置")}
@@ -291,7 +293,7 @@ function AlertPricingPanel({ pricing, csrf, editing, setEditing }: { pricing: ap
           {save.isError && <p role="alert">{save.error.message}</p>}
         </FormDialog>
       )}
-    </div>
+    </>
   );
 }
 
