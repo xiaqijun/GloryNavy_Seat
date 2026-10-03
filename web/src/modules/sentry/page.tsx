@@ -133,23 +133,17 @@ function Workspace({ csrf }: { csrf: string }) {
 
 function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: ReactNode }) {
   const [before, setBefore] = useState("");
-  const [state, setState] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
   const usage = useQuery({
     queryKey: ["sentry", "alert-usage"],
     queryFn: ({ signal }) => api.usage(signal),
     refetchInterval: 60_000,
   });
   const page = useQuery({
-    queryKey: ["sentry", "alert-consumptions", before, state, from, to],
+    queryKey: ["sentry", "alert-consumptions", before],
     queryFn: ({ signal }) =>
       api.consumptions(
         {
           before,
-          state,
-          from: from ? new Date(`${from}T00:00:00`).toISOString() : "",
-          to: to ? new Date(`${to}T23:59:59.999`).toISOString() : "",
         },
         signal,
       ),
@@ -170,10 +164,6 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     void usage.refetch();
     void page.refetch();
     void rewards.refetch();
-  };
-  const setFilter = (setter: (value: string) => void, value: string) => {
-    setter(value);
-    setBefore("");
   };
   const hourlyPrice = (minor?: number) => minor && minor > 0 ? `${coins(minor)} ${msg("币")}/${msg("小时")}` : "—";
   return (
@@ -223,38 +213,21 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
       ) : (
         <p className="sentry-usage-loading" role="status">{msg("正在读取收费配置")}</p>
       )}
-      <div className="sentry-usage-toolbar" aria-label={msg("筛选消费记录")}>
-        <label>
-          <span>{msg("状态")}</span>
-          <select value={state} onChange={(event) => setFilter(setState, event.target.value)}>
-            <option value="">{msg("全部")}</option>
-            <option value="reserved">{msg("暂占")}</option>
-            <option value="settled">{msg("已结算")}</option>
-            <option value="released">{msg("已释放")}</option>
-            <option value="refunded">{msg("已退款")}</option>
-          </select>
-        </label>
-        <label><span>{msg("开始日期")}</span><input type="date" value={from} onChange={(event) => setFilter(setFrom, event.target.value)} /></label>
-        <label><span>{msg("结束日期")}</span><input type="date" value={to} onChange={(event) => setFilter(setTo, event.target.value)} /></label>
-      </div>
       {page.isError || rewards.isError ? (
         <p className="sentry-usage-error" role="alert">{(page.error || rewards.error)?.message}</p>
-      ) : page.isPending ? (
+      ) : page.isPending || rewards.isPending ? (
         <p className="sentry-usage-loading" role="status">{msg("正在读取")}</p>
       ) : !page.data.items.length && !rewards.data?.items.length ? (
-        <p className="sentry-usage-empty">{msg("暂无预警消费记录")}</p>
+        <p className="sentry-usage-empty">{msg("暂无消费或奖励记录")}</p>
       ) : (
-        <>
-          {page.data.items.length > 0 && <div className="sentry-consumption-list">
-            {page.data.items.map((item) => <ConsumptionRow key={item.id} item={item} />)}
-          </div>}
-          {rewards.data?.items.length ? <div className="sentry-reward-history">
-            <h3>{msg("监控奖励记录")}</h3>
-            <div className="sentry-consumption-list">
-              {rewards.data.items.map((item) => <MonitorRewardRow key={item.contribution_id} item={item} />)}
-            </div>
-          </div> : null}
-        </>
+        <div className="sentry-consumption-list">
+          {[...
+            page.data.items.map((item) => ({ kind: "consumption" as const, at: item.started_at, item })),
+            ...(rewards.data?.items ?? []).map((item) => ({ kind: "reward" as const, at: item.started_at, item })),
+          ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).map((record) => record.kind === "reward"
+            ? <MonitorRewardRow key={`reward:${record.item.contribution_id}`} item={record.item} />
+            : <ConsumptionRow key={`consumption:${record.item.id}`} item={record.item} />)}
+        </div>
       )}
       {(before || page.data?.next_cursor) && (
         <div className="sentry-usage-pagination">

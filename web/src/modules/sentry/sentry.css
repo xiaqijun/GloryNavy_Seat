@@ -23,13 +23,7 @@
 .sentry-usage-metric small { color: var(--muted); font-size: 12px; font-weight: 500; }
 .sentry-usage-asof, .sentry-usage-loading, .sentry-usage-empty, .sentry-usage-error { margin: 0; color: var(--muted); font-size: 13px; }
 .sentry-usage-error { color: var(--destructive); }
-.sentry-usage-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
-.sentry-usage-toolbar label { display: grid; gap: 5px; min-width: 140px; color: var(--muted); font-size: 12px; }
-.sentry-usage-toolbar select, .sentry-usage-toolbar input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; }
-.sentry-usage-toolbar select:focus-visible, .sentry-usage-toolbar input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .sentry-consumption-list { display: grid; gap: 10px; }
-.sentry-reward-history { display: grid; gap: 10px; margin-top: 18px; }
-.sentry-reward-history h3 { margin: 0; font-size: 15px; }
 .sentry-consumption-row { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .sentry-consumption-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .sentry-consumption-main > div:first-child, .sentry-consumption-amount { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
@@ -63,7 +57,6 @@
   .sentry-key-actions .button-motion { flex: 0 1 auto; }
   .sentry-usage-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sentry-consumption-main { align-items: flex-start; flex-direction: column; gap: 8px; }
-  .sentry-usage-toolbar label { flex: 1 1 130px; }
   .sentry-pricing-form { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 420px) {
