@@ -1,12 +1,25 @@
 # Linux 生产部署
 
-## 预警在线时长收费改造（未发布，2026-10-03）
+## 预警在线时长收费改造（已发布，2026-10-03）
 
 本轮新增 Goose 66 `sentry_client_usage_reconcile_state`，并要求同时发布 EVE Sentry
 的 `seat_client_usage` 导出与 Seat 的客户端在线区间对账 worker。新 worker 只按认证心跳
 在线秒数和小时价格结算；旧事件/投递/ACK worker 不再调度新收费，旧队列任务会被取消。
-发布前必须先备份、执行 `npm run db:migrate`，确认两端 CI/Go 检查通过，再用真实心跳和
-exchange 币流水完成验收；本节不代表已经推送生产。
+本轮已发布 Seat `v0.1.0-sentry-heartbeat-time-20261003-r2` 与 EVE Sentry
+`d77eab7`。生产 Goose 66 已执行；应用 ready、公网首页/登录 200、OpenResty
+`nginx -t` 通过。真实心跳、正式价格和 exchange 币流水仍需现场验收，部署成功不代表
+真实扣币已验收。
+
+## 批量结算合同标题同步修复（2026-10-03）
+
+已发布后端 `v0.1.0-contract-batch-title-sync-20261003`，公网前端使用同批次静态产物。EVE 合同标题最多保存 50
+个字符，批量结算的 `BATCH-YYYYMMDD-UUID` 编号可能被游戏截断；同步查询现兼容完整编号
+和确定性的前 50 个字符，并继续校验当前主角色、发放方、整数 ISK、物品集合和合同状态。
+应用与公网静态站点已原子切换；生产 Goose 66 已由并行 Sentry 发布登记，本轮 River 无新增迁移。批次 #6 已从
+“等待合并合同同步”更新为“等待接收角色完成合同”，证明该合同已经同步；当前仍需主角色
+在游戏中接取并完成合同。应用切换前备份为
+`/var/backups/glorynavy/before-v0.1.0-contract-batch-title-sync-20261003-20261003T133223Z.{dump,env}`；
+应用 `active/ready`、重启次数 0、公网首页/登录和 OpenResty `nginx -t` 均通过。
 
 ## 批量结算主角色名称显示（2026-10-03）
 
