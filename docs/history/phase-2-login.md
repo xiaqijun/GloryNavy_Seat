@@ -1,10 +1,10 @@
 # EVE 身份登录交付记录
 
-> 历史阶段 / 方案记录：保留当时决策和测试结果，本文不是当前能力清单或最新部署指令。当前状态见[项目状态](project-status.md)，尚未完成事项见[待办](backlog.md)。
+> 历史阶段 / 方案记录：保留当时决策和测试结果，本文不是当前能力清单或最新部署指令。当前状态见[项目状态](../project-status.md)，尚未完成事项见[待办](../backlog.md)。
 
-> 历史交付记录：以下范围、迁移版本与测试结果对应当时阶段。当前状态见[项目状态](project-status.md)，当前运行步骤见[开发指南](development.md)，后续变化见[变更记录](../CHANGELOG.md)。
+> 历史交付记录：以下范围、迁移版本与测试结果对应当时阶段。当前状态见[项目状态](../project-status.md)，当前运行步骤见[开发指南](../development.md)，后续变化见[变更记录](../../CHANGELOG.md)。
 
-这是最初身份登录阶段的历史记录。后续已配置本机凭据并实现职务授权；当前状态见 [军团权限指南](integrations/seat-authorization.zh-CN.md)，不再按本文的空 scope 范围运行。
+这是最初身份登录阶段的历史记录。后续已配置本机凭据并实现职务授权；当前状态见 [军团权限指南](../integrations/seat-authorization.zh-CN.md)，不再按本文的空 scope 范围运行。
 
 日期：2026-09-14。本次按“先做 ESI 登录”完成 EVE SSO 身份登录代码，尚无真实开发者应用凭据。
 
@@ -36,4 +36,4 @@
 
 用户尚未创建开发者应用；真实 CCP 授权界面、所注册应用的 PKCE 配合、真实角色回调仍待凭据配置后验证。测试提供方和测试签名不等于真实联调通过。
 
-本次不请求私有 ESI scope，也不持久化 EVE token；长期令牌加密与刷新/撤销、QQ/KOOK 资料补全门禁、完整军团 RBAC、角色关联、机器人和游戏数据同步待后续实施。Cookie/Origin、直接对端 IP 限流及生产代理约束见 [中文配置](integrations/eve-login.zh-CN.md) / [English setup](integrations/eve-login.en.md)。未验证 Docker、PostgreSQL 18、Linux 运行、远程 CI 或生产负载。
+本次不请求私有 ESI scope，也不持久化 EVE token；长期令牌加密与刷新/撤销、QQ/KOOK 资料补全门禁、完整军团 RBAC、角色关联、机器人和游戏数据同步待后续实施。Cookie/Origin、直接对端 IP 限流及生产代理约束见 [中文配置](../integrations/eve-login.zh-CN.md) / [English setup](../integrations/eve-login.en.md)。未验证 Docker、PostgreSQL 18、Linux 运行、远程 CI 或生产负载。

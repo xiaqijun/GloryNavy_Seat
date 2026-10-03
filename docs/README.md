@@ -1,6 +1,6 @@
 # 项目文档
 
-接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥申请已配置生产，监控证据/奖励/扣费待实施）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，按用户要求暂缓实施）。
+接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥、监控奖励和收费配置已生产，真实证据与实账验收待完成）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，按用户要求暂缓实施）。
 
 GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台。更新：2026-09-23。
 
@@ -60,15 +60,9 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 
 ## 历史、调研与方案
 
-[历史目录与清理说明](history/README.md) / [截至 2026-09-23 的交付记录](history/project-status-through-2026-09-23.md)。历史“未发布”“待联调”描述属于当时状态，不直接作为当前待办。
+[历史目录与清理说明](history/README.md) / [截至 2026-09-23 的交付记录](history/project-status-through-2026-09-23.md)。阶段验收、早期技术调研、PAP 草案和配装排版调研均已集中到 `docs/history/`，只作为来源和决策证据；历史“未发布”“待联调”不直接作为当前待办。
 
-| 类别 | 文档 |
-| --- | --- |
-| 初始阶段验收 | [工程底座](phase-1.md)、[登录](phase-2-login.md)、[权限](phase-3-authorization.md) |
-| 技术与 SeAT 调研 | [SeAT](seat-research-2026-09-13.md)、[数据库](database-access-research-2026-09-13.md)、[同步](integrations/seat-esi-sync.zh-CN.md)、[PAP](drafts/attendance/pap.md) |
-| 已实施的方案依据 | [首页](plans/corporation-homepage-2026-09-23.md)、[审批中心](plans/approval-center.md)、[福利实施](plans/welfare-roadmap-2026-09-16.md)、[原细则分析](plans/welfare-system.md)、[同步首期](integrations/esi-sync-plan.zh-CN.md) |
-| 待实施集成方案 | [EVE Sentry 本站侧接入](plans/eve-sentry-integration.zh-CN.md) |
-| 配装布局调研 | [同类项目](ui/fittings-research-2026-09-15.md) |
+当前仍需查阅的方案仅保留在 `docs/plans/`，集成行为以 `docs/integrations/` 为准。
 
 ## 文档职责
 

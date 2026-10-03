@@ -9,7 +9,7 @@
 | 后端 | Go 1.27.1、net/http + chi v5 | 版本以 `go.mod` 为准，模块化单体，显式注册 |
 | 数据库 | PostgreSQL；生产 18.6，本机独立开发实例 16 | 本地与生产分库，镜像/端口见部署与开发指南 |
 | SQL | pgx v5 + sqlc | 无 ORM；每模块私有 SQL/store，跨模块经宿主服务注入 |
-| 迁移 | Goose + River 独立迁移线 | `npm run db:migrate` 处理两条线；当前生产 Goose 46 |
+| 迁移 | Goose + River 独立迁移线 | `npm run db:migrate` 处理两条线；当前生产 Goose 64 |
 | 后台任务 | River 0.47.0 + PostgreSQL | 角色同步、业务核验等共用宿主持久队列；幂等、租约与发布 fence |
 | 前端 | React 19.2.8、TypeScript 6.0.2、Vite 8.3.0 | CSR 静态产物；Node >=24.15.0 用于开发/构建 |
 | 路由与请求 | React Router 7.18.3、TanStack Query 5.102.8 | 页面懒加载、查询缓存与失效；URL 保存主要筛选 |
@@ -25,7 +25,7 @@
 
 ## 数据与模块
 
-已编译模块：system、identity、eve、access、community、attendance、exchange、fittings、skills、wallet、market、welfare、approval、sentry。启用清单由 `MODULES` 显式配置，不等于所有模块在每个环境都已启用。未设置时采用 `internal/config/config.go` 的默认值；示例配置可能启用更多模块，保留原环境清单后按依赖追加。sentry 密钥申请第一阶段已完成本地两端 HTTP 与 PostgreSQL 联调，生产凭据和部署仍待执行。
+已编译模块：system、identity、eve、access、community、attendance、exchange、fittings、skills、wallet、market、welfare、approval、sentry。启用清单由 `MODULES` 显式配置，不等于所有模块在每个环境都已启用。未设置时采用 `internal/config/config.go` 的默认值；示例配置可能启用更多模块，保留原环境清单后按依赖追加。sentry 密钥、监控奖励和收费配置已完成生产部署；收费开关默认关闭，真实证据与实账验收见[项目状态](project-status.md)。
 
 ESI 统一处理令牌刷新、缓存、共享限流、超时与同步任务。上游响应缓存到期才重新抓取；页面优先读本地快照，不逐项请求 ESI。SDE 数据库保存物品/星系名称，配装前置技能、技能类别与术语还有固定构建的参考数据，不宣称已导入全量 Dogma。详见[ESI](integrations/esi-client.zh-CN.md)、[SDE](integrations/sde-names.zh-CN.md)。
 
@@ -49,4 +49,4 @@ Go slog、请求 ID、River 状态、ESI 观测和应用慢查询日志已具备
 - QQ/KOOK 手填与完整度门禁已实现，后续机器人只经业务适配器确认身份；平台 OAuth 不是现有需求。
 - 联盟 PAP 当前只支持管理员手动兑换，军团 PAP 支持手动/自动。联盟自动兑换是明确待做需求，不能混称已完成。
 
-架构边界见[模块架构](architecture.md)和[开发约定](module-development.md)。初始选型依据保留在[数据库调研](database-access-research-2026-09-13.md)和[SeAT 调研](seat-research-2026-09-13.md)，不以历史建议覆盖当前实现。
+架构边界见[模块架构](architecture.md)和[开发约定](module-development.md)。初始选型依据保留在[数据库调研](history/database-access-research-2026-09-13.md)和[SeAT 调研](history/seat-research-2026-09-13.md)，不以历史建议覆盖当前实现。

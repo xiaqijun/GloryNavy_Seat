@@ -52,7 +52,7 @@ SOFTWARE.
 
 ## EVEShipFit 模拟引擎与配装数据
 
-2026-09-15 配装页新增的舰船 render 图片由 CCP Image Service（`images.evetech.net/types/{type_id}/render`）提供；装备图标仍复用已有 EveImage。`web/src/modules/fittings/group-names.json` 来自官方 SDE 3503375 的 `groups.jsonl`，归属沿用 CCP 原始数据声明，可用 `scripts/fitting-group-names.py` 重建。页面布局参考游戏、Pyfa 与 EVE Ship Fit，组件为本项目实现，没有复制上述工具的界面代码或分发其截图；[调研记录](ui/fittings-research-2026-09-15.md)保留参考链接。
+2026-09-15 配装页新增的舰船 render 图片由 CCP Image Service（`images.evetech.net/types/{type_id}/render`）提供；装备图标仍复用已有 EveImage。`web/src/modules/fittings/group-names.json` 来自官方 SDE 3503375 的 `groups.jsonl`，归属沿用 CCP 原始数据声明，可用 `scripts/fitting-group-names.py` 重建。页面布局参考游戏、Pyfa 与 EVE Ship Fit，组件为本项目实现，没有复制上述工具的界面代码或分发其截图；[调研记录](history/fittings-research-2026-09-15.md)保留参考链接。
 
 舰船模拟采用 [Dogma engine](https://github.com/EVEShipFit/dogma-engine) 10.3.0（MIT）与 [SDE patched](https://github.com/EVEShipFit/sde-patched) 2.3503375.0（上游补丁 MIT、原始 EVE 数据归 CCP）。WASM/SDE 随本站静态资产分发，保留 [引擎 LICENSE](../web/public/third-party/eveshipfit/dogma-engine/LICENSE)、[补丁 LICENSE](../web/public/third-party/eveshipfit/sde/LICENSE) 和 [CCP LICENSE.EVE](../web/public/third-party/eveshipfit/sde/LICENSE.EVE)。来源版本与更新规则见[接入说明](integrations/fittings.zh-CN.md)。不将 CCP 的数据、舰船或装备图标声明为本站原创；非 CCP 官方模拟器。
 

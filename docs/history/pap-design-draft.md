@@ -1,6 +1,6 @@
 # 集结分（PAP）设计草案
 
-2026-09-15。用户要求按集结给予集结分，参考 SeAT PAP。本文件保留调研与初始方案，已由 [Goose 24 实现](../../integrations/attendance.zh-CN.md#集结分-papgoose-24)取代；升级不自动发分。现有考勤见[运行指南](../../integrations/attendance.zh-CN.md)。
+2026-09-15。用户要求按集结给予集结分，参考 SeAT PAP。本文件保留调研与初始方案，已由 [Goose 24 实现](../integrations/attendance.zh-CN.md#集结分-papgoose-24)取代；升级不自动发分。现有考勤见[运行指南](../integrations/attendance.zh-CN.md)。
 
 ## 已核对的参考
 
