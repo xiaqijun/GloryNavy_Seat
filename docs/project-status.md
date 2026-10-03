@@ -1,5 +1,9 @@
 # 项目状态
 
+## 已修复：预警监控奖励统计前缀（2026-10-03）
+
+生产币账已按 `sentry-monitor-batch:` 写入，但消费统计仍只读取旧的 `sentry-monitor:` 前缀，导致页面奖励显示为 0。版本 `v0.1.0-sentry-reward-display-20261003-r2` 已改为显式兼容两个前缀；应用 ready、公网首页 200，生产账号统计查询已读到 920 个最小币单位。
+
 ## 已移除：GitHub Actions CI（2026-10-03）
 
 仓库不再配置 GitHub Actions 自动 CI；原 `.github/workflows/ci.yaml` 已删除。代码生成、后端测试和前端检查改由开发者在本地按 [开发指南](development.md) 和模块开发约定执行；生产部署流程不依赖该工作流。

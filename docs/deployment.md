@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警监控奖励统计修复（2026-10-03）
+
+已发布 `v0.1.0-sentry-reward-display-20261003-r2`。消费统计读取同时兼容历史 `sentry-monitor:` 和批量结算 `sentry-monitor-batch:` 前缀，修复币账已有奖励但页面显示为 0 的问题。应用 `active/ready`、生产统计查询、公网首页 200 和 OpenResty `nginx -t` 均通过。
+
 ## 批量结算已发合同归入已处理（2026-10-03）
 
 已发布 `v0.1.0-contract-batch-approval-history-20261003`。批量合同已同步但等待主角色接取时，后端返回 `delivery_status=awaiting_acceptance`，审批中心将其从“待发放”移到“已处理”，详情仍显示“等待领取合同”；合同未同步、内容不匹配或其他异常不改变原分类。批次 #6 生产数据仍为 `pending`、3 项待处理、完成数 0，三项错误均为“等待接收角色完成合同”。本轮无 Goose/River 新迁移，生产 Goose 66；应用 `active/ready`、`NRestarts=0`，公网前端 `current`、首页/登录 200、容器静态入口和 OpenResty `nginx -t` 检查通过。
