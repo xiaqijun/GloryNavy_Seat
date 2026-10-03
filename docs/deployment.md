@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## 预警对账入口修复（2026-10-03）
+
+Seat 的 `SENTRY_INTEGRATION_URL` 使用 `https://seat.kisectool.com` 同源入口。公网
+OpenResty 必须把 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry
+服务；只转发密钥子路径会让预警投递、事件和监控贡献对账请求落回 Seat API 并返回
+`404 接口不存在`。仓库来源为 [`deploy/edge-api-proxy.conf`](../deploy/edge-api-proxy.conf)，
+变更后在公网机执行容器内 `nginx -t`，通过后平滑 reload，再用带服务令牌的只读
+`monitor-contributions`、`alert-deliveries` 和 `alert-events` 请求验证 `200`。本次只
+修复路由，不打开 EVE Sentry 的收费消费开关，也不创建真实扣币数据。
+
 ## 预警消费与收费配置（2026-10-03）
 
 后端 `v0.1.0-sentry-charging-toggle-20261003`（Goose 64）和公网前端 `v0.1.0-sentry-charging-icon-inline-20261003` 已生产切换。页面提供余额、按小时价格、累计净消费、监控奖励和收费配置；收费状态图标嵌入配置按钮，默认关闭。应用 ready、首页/登录 200、匿名价格接口 401、静态入口及 OpenResty 检查通过。真实监控证据、价格复核和果壳币实账仍待现场验收。
@@ -126,7 +136,7 @@
 
 ## 当前 1Panel 管理位置（2026-09-25）
 
-在**公网机 `47.243.104.165` 的 1Panel**“网站”列表选择 `seat.kisectool.com`（代号 `zz-glorynavy-seat`）；应用机 `10.233.53.209` 的 1Panel 不托管此网站。网站类型是“静态网站”，因为公网机直接提供 React 前端文件；同一网站“配置 → 反向代理”中的 `api` 规则将 `/api/` 送往名为 `glorynavy_api` 的 Nginx 上游。这个名称不是公网域名；在该网站的“负载均衡”中可看到唯一成员为 ZeroTier 地址 `10.233.53.209:18080`，并保留 keepalive 连接复用。它不是整站反向代理网站，不能把首页转发到仅提供 API 的 `18080` 端口。生产主配置为 `/opt/1panel/www/conf.d/zz-glorynavy-seat.conf`，仓库来源为 [`deploy/edge-https.conf`](../deploy/edge-https.conf)；代理规则实际文件为 `/opt/1panel/www/sites/zz-glorynavy-seat/proxy/api.conf`，仓库来源为 [`deploy/edge-api-proxy.conf`](../deploy/edge-api-proxy.conf)；负载均衡文件为同站点的 `upstream/glorynavy_api.conf`，仓库来源为 [`deploy/edge-api-upstream.conf`](../deploy/edge-api-upstream.conf)。规则保留 `/api/` 的安全响应头与不缓存设置。修改时同步这三份仓库文件，检查 `nginx -t` 后 reload。不要重新创建同域名网站或恢复旧 `seat.kisectool.com.conf`，以免重复 server。面板站点 `/opt/1panel/www/sites/zz-glorynavy-seat/index` 是指向原 `/opt/1panel/www/sites/seat.kisectool.com/current/web` 的软链接，因此前端发布仍切换原 `current` 链接。发布包在应用机的 `releases/<版本>/web` 中也包含前端文件，但当前生效的 OpenResty 根目录不是该副本；仅切换应用机 `current` 不会更新用户看到的网页。站点访问/错误日志在面板站点 `log/` 目录，访问日志不含查询字符串或 Cookie。
+在**公网机 `47.243.104.165` 的 1Panel**“网站”列表选择 `seat.kisectool.com`（代号 `zz-glorynavy-seat`）；应用机 `10.233.53.209` 的 1Panel 不托管此网站。网站类型是“静态网站”，因为公网机直接提供 React 前端文件；同一网站“配置 → 反向代理”中的 `api` 规则将 `/api/` 送往名为 `glorynavy_api` 的 Nginx 上游。这个名称不是公网域名；在该网站的“负载均衡”中可看到唯一成员为 ZeroTier 地址 `10.233.53.209:18080`，并保留 keepalive 连接复用。它不是整站反向代理网站，不能把首页转发到仅提供 API 的 `18080` 端口。生产主配置为 `/opt/1panel/www/conf.d/zz-glorynavy-seat.conf`，仓库来源为 [`deploy/edge-https.conf`](../deploy/edge-https.conf)；代理规则实际文件为 `/opt/1panel/www/sites/zz-glorynavy-seat/proxy/api.conf`，仓库来源为 [`deploy/edge-api-proxy.conf`](../deploy/edge-api-proxy.conf)；负载均衡文件为同站点的 `upstream/glorynavy_api.conf`，仓库来源为 [`deploy/edge-api-upstream.conf`](../deploy/edge-api-upstream.conf)。规则保留 `/api/` 的安全响应头与不缓存设置；其中 `/api/v1/integrations/seat/` 先于通用 `/api/` 规则转发到 114 上的 EVE Sentry，其他 API 继续送往 `glorynavy_api`。修改时同步这三份仓库文件，检查 `nginx -t` 后 reload。不要重新创建同域名网站或恢复旧 `seat.kisectool.com.conf`，以免重复 server。面板站点 `/opt/1panel/www/sites/zz-glorynavy-seat/index` 是指向原 `/opt/1panel/www/sites/seat.kisectool.com/current/web` 的软链接，因此前端发布仍切换原 `current` 链接。发布包在应用机的 `releases/<版本>/web` 中也包含前端文件，但当前生效的 OpenResty 根目录不是该副本；仅切换应用机 `current` 不会更新用户看到的网页。站点访问/错误日志在面板站点 `log/` 目录，访问日志不含查询字符串或 Cookie。
 
 现有证书由 Certbot 管理，不要在面板里另行申请同域名证书。证书已作为手动证书登记在面板，续期钩子 [`deploy/renew-seat-certificate.sh`](../deploy/renew-seat-certificate.sh) 同步原证书目录和面板网站 `ssl/` 目录，再验证/reload OpenResty；钩子已使用现有证书执行并通过。面板手动证书记录的到期日不会随 Certbot 自动续期更新，实际服务证书以 `ssl/` 文件和 HTTPS 握手为准，续期后应更新面板记录。迁移备份位于公网机 `/root/glorynavy-deploy/1panel-site-20260925/`，含原配置、面板数据库快照与切换前生成配置。前后端版本和 Goose 48 未变。
 

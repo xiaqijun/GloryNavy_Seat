@@ -27,7 +27,7 @@ SENTRY_INTEGRATION_URL=https://sentry.example.com
 SENTRY_INTEGRATION_TOKEN=<server-only-token-at-least-32-chars>
 ```
 
-EVE Sentry 已提供 `POST /api/v1/integrations/seat/keys` 和 `DELETE /api/v1/integrations/seat/keys/{key_id}`。调用使用独立 Bearer 凭据和 `Idempotency-Key`；本站发送 `operation_id`、密钥 ID、账号 ID、密钥哈希、前缀、用途和协议版本，不发送明文。Sentry 只保存哈希并按 `operation_id` 幂等处理：相同内容返回原记录，内容变化返回冲突；未配置或不可用时本站返回“预警平台密钥服务暂未配置或不可用”。生产 HTTPS 入口仍以 `https://seat.kisectool.com` 为 origin，仅将该集成路径反代到 114；服务令牌只保存在两端受限环境文件中，不进入文档、浏览器或 River 载荷。真实创建/吊销和错误契约联调仍需现场成员验收。
+EVE Sentry 已提供 `POST /api/v1/integrations/seat/keys`、`DELETE /api/v1/integrations/seat/keys/{key_id}`，以及预警事件、投递和监控贡献的读写/对账接口。调用使用独立 Bearer 凭据和 `Idempotency-Key`；本站发送 `operation_id`、密钥 ID、账号 ID、密钥哈希、前缀、用途和协议版本，不发送明文。Sentry 只保存哈希并按 `operation_id` 幂等处理：相同内容返回原记录，内容变化返回冲突；未配置或不可用时本站返回“预警平台密钥服务暂未配置或不可用”。生产 HTTPS 入口仍以 `https://seat.kisectool.com` 为 origin，必须将整个 `/api/v1/integrations/seat/` 前缀反代到 114；服务令牌只保存在两端受限环境文件中，不进入文档、浏览器或 River 载荷。真实创建/吊销和错误契约联调仍需现场成员验收。
 
 Sentry M1 增加了独立的 `auth_external_accounts` 显式绑定：Seat `account_id` 不等同于 Sentry 的本地用户 ID，必须由受信管理流程一对一绑定。`EVE_SENTRY_SERVER_SEAT_AUTH_MODE` 默认 `off`，`shadow` 只记录校验并拒绝，`enforce` 才按 `monitor`/`alert` 白名单建立业务 principal；未绑定、已吊销、已禁用或越权请求会稳定拒绝。该能力尚未由本站开启，也未完成生产联调，不得把密钥申请页面当作预警客户端已可用的证明。
 
