@@ -7,11 +7,11 @@
 
 ## 已修复：预警对账入口（2026-10-03）
 
-公网 OpenResty 已将 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry；此前只有密钥子路径被转发，投递、事件和监控贡献对账请求误入 Seat API 并返回 404。`nginx -t`、平滑 reload 和带生产服务令牌的三个只读接口（`monitor-contributions`、`alert-deliveries`、`alert-events`）均已返回 200；Seat 的 River 对账任务已恢复为 scheduled，无新的 `sentry remote integration unavailable` 错误。当前仍没有真实扣币/奖励记录，EVE Sentry 收费消费开关未打开。
+公网 OpenResty 已将 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry；此前只有密钥子路径被转发，投递、事件和监控贡献对账请求误入 Seat API 并返回 404。`nginx -t`、平滑 reload 和带生产服务令牌的三个只读接口（`monitor-contributions`、`alert-deliveries`、`alert-events`）均已返回 200；Seat 的 River 对账任务已恢复为 scheduled，无新的 `sentry remote integration unavailable` 错误。当前仍没有真实扣币/奖励记录，收费门禁已通过同步接口与 Seat 当前开关对齐。
 
 ## 已发布：预警消费与收费配置（2026-10-03）
 
-生产后端为 `v0.1.0-sentry-charging-toggle-20261003`（Goose 64），公网前端为 `v0.1.0-sentry-charging-icon-inline-20261003`。`/sentry` 展示果壳币余额、按小时预警价格、累计净消费和监控奖励；管理员在“配置收费”弹窗中设置两个价格和收费开关，状态图标嵌入配置按钮。收费默认关闭，关闭时不创建新的预警授权，已有授权仍可对账、结算、释放或退款。应用 ready、首页/登录 200、匿名受保护接口 401、静态入口和 OpenResty 检查通过；真实监控证据、价格复核和果壳币实账仍待现场验收。
+生产后端为 `v0.1.0-sentry-gate-sync-20261003`，公网前端继续使用 `v0.1.0-sentry-charging-icon-inline-20261003`。`/sentry` 展示果壳币余额、按小时预警价格、累计净消费和监控奖励；管理员在“配置收费”弹窗中设置两个价格和收费开关，状态图标嵌入配置按钮。发布默认关闭；本次部署后已用生产服务令牌将预警端持久化门禁同步为开启，与 Seat 当前开关一致。应用 ready、首页/登录 200、匿名受保护接口 401、静态入口和 OpenResty 检查通过；真实监控证据、价格复核和果壳币实账仍待现场验收。
 
 ## 已发布：预警空消费账单响应修复（2026-10-02）
 

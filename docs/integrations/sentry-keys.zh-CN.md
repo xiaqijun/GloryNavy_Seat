@@ -40,6 +40,6 @@ Sentry 只保存哈希并按 `operation_id` 幂等处理：相同内容返回原
 
 Sentry M1 增加了独立的 `auth_external_accounts` 显式绑定：Seat `account_id` 不等同于 Sentry 的本地用户 ID，必须由受信管理流程一对一绑定。`EVE_SENTRY_SERVER_SEAT_AUTH_MODE` 默认 `off`，`shadow` 只记录校验并拒绝，`enforce` 才按 `monitor`/`alert` 白名单建立业务 principal；未绑定、已吊销、已禁用或越权请求会稳定拒绝。该能力尚未由本站开启，也未完成生产联调，不得把密钥申请页面当作预警客户端已可用的证明。
 
-本阶段不读取截图、在线时长、质量分或预警事件；实际预警扣费由 Seat 页面开关和预警端持久化门禁共同控制，生产默认关闭。
+本阶段不读取截图、在线时长、质量分或预警事件；实际预警扣费由 Seat 页面开关和预警端持久化门禁共同控制，发布默认关闭，当前生产状态以两端同步结果为准。
 `SENTRY_ALERT_CONSUMPTION_ENABLED` 仅保留为兼容配置校验，不再是页面开关。监控奖励和预警计费继续按
 [EVE Sentry 接入方案](../plans/eve-sentry-integration.zh-CN.md) 分期实施。密钥申请或收费规则配置可用不等同于预警客户端鉴权或消费闭环已完成。
