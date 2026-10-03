@@ -24,9 +24,9 @@ func AlertIntervalID(d AlertDelivery) string {
 	return strings.Join([]string{d.ChargeEventID, fmt.Sprintf("%d", d.Revision), d.StartedAt, d.EndedAt}, ":")
 }
 
-// ReconcileAlertDelivery reserves the exact interval in exchange and then
-// applies the remote terminal state. Repeating the same delivery is safe when
-// the injected exchange implementation preserves its request-key idempotency.
+// ReconcileAlertDelivery is retained for historical replay tooling only.
+// Production billing no longer calls it: new charges come exclusively from
+// authenticated client heartbeat intervals.
 func ReconcileAlertDelivery(ctx context.Context, settlement AlertIntervalSettlement, d AlertDelivery) error {
 	if settlement == nil || strings.TrimSpace(d.GrantID) == "" || strings.TrimSpace(d.DeliveryID) == "" || strings.TrimSpace(d.ChargeEventID) == "" || d.Revision <= 0 || d.DurationSeconds <= 0 {
 		return ErrInvalidAlertDelivery

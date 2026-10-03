@@ -158,6 +158,33 @@ type MonitorRemote interface {
 	ListMonitorContributions(context.Context, string, int) (MonitorContributionPage, error)
 }
 
+// ClientUsage is an authenticated online interval derived from consecutive
+// server-accepted client heartbeats. Seat owns pricing and coin settlement.
+type ClientUsage struct {
+	UsageID         string `json:"usage_id"`
+	AccountID       string `json:"account_id"`
+	KeyID           string `json:"key_id"`
+	ClientID        string `json:"client_id"`
+	StartedAt       string `json:"started_at"`
+	EndedAt         string `json:"ended_at"`
+	DurationSeconds int64  `json:"duration_seconds"`
+	CreatedAt       string `json:"created_at"`
+}
+
+type ClientUsagePage struct {
+	Usage                      []ClientUsage `json:"usage"`
+	NextCursor                 string        `json:"next_cursor"`
+	CommittedWatermark         string        `json:"committed_watermark"`
+	EarliestAvailableWatermark string        `json:"earliest_available_watermark"`
+	HasMore                    bool          `json:"has_more"`
+	ProtocolVersion            int64         `json:"protocol_version"`
+	RuleVersion                string        `json:"rule_version"`
+}
+
+type ClientUsageRemote interface {
+	ListClientUsage(context.Context, string, int) (ClientUsagePage, error)
+}
+
 type HTTPRemote struct {
 	BaseURL string
 	Token   string
@@ -437,6 +464,37 @@ func (c *HTTPRemote) ListMonitorContributions(ctx context.Context, cursor string
 		return out, ErrRemoteUnavailable
 	}
 	if len(out.Contributions) > limit {
+		return out, ErrRemoteUnavailable
+	}
+	return out, nil
+}
+
+func (c *HTTPRemote) ListClientUsage(ctx context.Context, cursor string, limit int) (ClientUsagePage, error) {
+	var out ClientUsagePage
+	if c == nil || c.Client == nil || limit < 1 || limit > 500 {
+		return out, ErrRemoteUnavailable
+	}
+	u := c.BaseURL + "/api/v1/integrations/seat/client-usage?limit=" + url.QueryEscape(fmt.Sprintf("%d", limit))
+	if strings.TrimSpace(cursor) != "" {
+		u += "&after=" + url.QueryEscape(cursor)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return out, err
+	}
+	setJSONHeaders(req, c.Token, "")
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return out, ErrRemoteUnavailable
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return out, fmt.Errorf("sentry remote client usage: %w", ErrRemoteUnavailable)
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 512<<10)).Decode(&out); err != nil || out.ProtocolVersion != 1 {
+		return out, ErrRemoteUnavailable
+	}
+	if len(out.Usage) > limit {
 		return out, ErrRemoteUnavailable
 	}
 	return out, nil

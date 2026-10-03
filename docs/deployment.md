@@ -1,5 +1,29 @@
 # Linux 生产部署
 
+## 预警在线时长收费改造（未发布，2026-10-03）
+
+本轮新增 Goose 66 `sentry_client_usage_reconcile_state`，并要求同时发布 EVE Sentry
+的 `seat_client_usage` 导出与 Seat 的客户端在线区间对账 worker。新 worker 只按认证心跳
+在线秒数和小时价格结算；旧事件/投递/ACK worker 不再调度新收费，旧队列任务会被取消。
+发布前必须先备份、执行 `npm run db:migrate`，确认两端 CI/Go 检查通过，再用真实心跳和
+exchange 币流水完成验收；本节不代表已经推送生产。
+
+## 批量结算主角色名称显示（2026-10-03）
+
+已发布 `v0.1.0-contract-batch-recipient-name-20261003`。批次详情的合同接收人改为当前主角色名称；后端仍保留角色 ID 供合同核验，浏览器不再把 ID 当作接收人展示。批次名称改动本身无新增迁移；发布包同步执行了工作区已有的 Goose 65，River 无新增迁移。应用机与公网 1Panel 静态站点已原子切换，应用服务 active/ready、`NRestarts=0`，备份为 `/var/backups/glorynavy/before-v0.1.0-contract-batch-recipient-name-20261003-20261003T120711Z.{dump,env}`；公网前端上一版本保留为 `releases/v0.1.0-contract-batch-main-recipient-20261003`。首页/登录 200、批量结算详情匿名 401、容器静态入口和 OpenResty `nginx -t` 通过。
+
+## 批量结算历史主角色修复（2026-10-03）
+
+已发布 `v0.1.0-contract-batch-main-recipient-20261003`。应用机
+`/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；本轮无
+Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站账号当前主角色，
+历史批次即使保存过多个角色 ID，也只扫描、显示并发放给主角色。应用机服务
+`active/ready`、数据库服务 active、重启次数 0；切换前备份为
+`/var/backups/glorynavy/before-v0.1.0-contract-batch-main-recipient-20261003-20261003T111827Z.{dump,env}`。
+公网前端上一版本保留为 `releases/v0.1.0-sentry-charging-icon-inline-20261003`；
+容器静态入口、OpenResty `nginx -t`、首页/登录 200，批量结算详情匿名访问 401。
+真实管理员登录后的批次 #6 页面和游戏合同交付仍需现场复核。
+
 ## 预警对账入口修复（2026-10-03）
 
 Seat 的 `SENTRY_INTEGRATION_URL` 使用 `https://seat.kisectool.com` 同源入口。公网

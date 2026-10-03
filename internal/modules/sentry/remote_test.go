@@ -182,3 +182,21 @@ func TestHTTPRemoteListMonitorContributions(t *testing.T) {
 		t.Fatalf("page=%+v err=%v", page, err)
 	}
 }
+
+func TestHTTPRemoteListClientUsage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/integrations/seat/client-usage" || r.URL.Query().Get("after") != "cursor-1" || r.URL.Query().Get("limit") != "20" {
+			t.Fatalf("request = %s", r.URL.String())
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"usage": []any{map[string]any{
+			"usage_id": "u-1", "account_id": "a-1", "key_id": "k-1", "client_id": "client-1",
+			"started_at": "2026-10-01T00:00:00Z", "ended_at": "2026-10-01T00:00:30Z", "duration_seconds": 30, "created_at": "2026-10-01T00:00:31Z",
+		}}, "next_cursor": "cursor-2", "protocol_version": 1, "rule_version": "client-heartbeat.v1"})
+	}))
+	defer server.Close()
+	r := &HTTPRemote{BaseURL: server.URL, Token: strings.Repeat("x", 32), Client: server.Client()}
+	page, err := r.ListClientUsage(context.Background(), "cursor-1", 20)
+	if err != nil || len(page.Usage) != 1 || page.Usage[0].DurationSeconds != 30 || page.Usage[0].AccountID != "a-1" {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+}

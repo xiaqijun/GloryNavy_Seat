@@ -1,5 +1,28 @@
 # 项目状态
 
+## 开发中：预警仅按认证心跳在线时长计费（2026-10-03）
+
+预警收费的新结算来源已收敛为 EVE Sentry 服务端接收的连续认证客户端心跳区间，
+按有效在线秒数乘当前小时价格结算。旧的预警事件/投递/ACK 对账 worker 不再创建新
+收费任务；历史事件、投递和消费记录仍可查询但不再进入新结算，旧队列任务会被取消。代码已补齐
+客户端在线区间导出、Seat 游标对账和幂等结算，但本轮尚未发布生产，仍需 Go/CI、双端
+迁移和真实心跳与币账验收后再部署。
+
+## 已发布：批量结算显示主角色名称（2026-10-03）
+
+生产前后端已切换至 `v0.1.0-contract-batch-recipient-name-20261003`。批次详情新增当前主角色名称投影，合同核验仍使用角色 ID；批次 #6 的接收人字段显示角色名称，不再显示用户/角色 ID。批次名称改动本身无新增迁移；发布时执行了工作区已有 Goose 65，River 无新增迁移。应用 `active/ready`、`NRestarts=0`，切换前备份为 `/var/backups/glorynavy/before-v0.1.0-contract-batch-recipient-name-20261003-20261003T120711Z.{dump,env}`。公网首页/登录 200、匿名批次详情 401、容器入口和 OpenResty `nginx -t` 已通过，上一前端保留为 `v0.1.0-contract-batch-main-recipient-20261003`。
+
+## 已发布：批量结算历史主角色修复（2026-10-03）
+
+生产前后端已切换至 `v0.1.0-contract-batch-main-recipient-20261003`。批量结算
+worker 和批次详情读取均按本站账号当前主角色重新解析接收人；历史批次即使存有
+多个角色 ID，也只扫描、显示并发放给主角色。应用与数据库服务 `active/ready`，
+`NRestarts=0`，无 Goose/River 新迁移。应用机切换前备份为
+`/var/backups/glorynavy/before-v0.1.0-contract-batch-main-recipient-20261003-20261003T111827Z.{dump,env}`；
+公网前端上一版本为 `v0.1.0-sentry-charging-icon-inline-20261003`。公网首页/登录
+200、批量结算详情匿名 401、容器入口和 OpenResty `nginx -t` 已通过；真实管理员
+批次 #6 页面和游戏合同交付仍待现场验收。
+
 ## 已修复：收费开关同步预警端门禁（2026-10-03）
 
 管理员在 `/sentry` 保存收费开关时，Seat 会使用服务端集成令牌调用预警端

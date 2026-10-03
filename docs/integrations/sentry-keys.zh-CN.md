@@ -10,9 +10,13 @@
 - `POST /api/v1/sentry/keys`：创建密钥，JSON 为 `{name, permissions, request_key}`，其中 `permissions` 只能包含 `monitor`、`alert`，`request_key` 为 UUID 幂等键。
 - `POST /api/v1/sentry/keys/{id}/rotate`：更新当前密钥。服务端保留本站卡片 ID，生成新的远端密钥并直接吊销旧远端密钥；成功响应包含一次性 `secret`，不接受名称或用途变更。
 - `DELETE /api/v1/sentry/keys/{id}`：吊销本站记录对应的远端密钥。
-- `GET /api/v1/sentry/alert-pricing`：读取当前预警计价规则，返回果壳币最小单位、计价秒数、授权上限/有效期和 `charging_enabled`；不把时间当作余额。
-- `PUT /api/v1/sentry/alert-pricing`：仅站点管理员可写入兼容价格版本、计价单位、每单位果壳币价格、单次授权上限和有效期；请求需带当前 `version`，冲突返回 409，修改写入审计。
+- `GET /api/v1/sentry/alert-pricing`：读取历史预警授权计价投影；新收费不按事件或投递次数触发。
+- `PUT /api/v1/sentry/alert-pricing`：保留给历史授权记录和审计，不用于新的在线时长收费配置。
 - `GET/PUT /api/v1/sentry/time-pricing`：读取或保存按小时的预警消费价格、监控奖励价格和 `charging_enabled`；仅站点管理员可写入，开关与价格使用同一版本冲突保护，关闭时不创建新的收费授权。
+
+新收费只读取预警端导出的 `GET /api/v1/integrations/seat/client-usage`：每条记录是
+同一认证客户端相邻有效心跳之间的服务端确认在线区间，Seat 按区间秒数和当前小时价格
+幂等结算。预警事件、投递和 ACK 记录可以继续被接收和查询，但不再作为新的收费来源。
 
 保存 `charging_enabled` 时，Seat 服务端会在提交本地价格事务前调用预警端的
 `PUT /api/v1/integrations/seat/alert-consumption`，请求为 `{"enabled":true|false}`，使用同一

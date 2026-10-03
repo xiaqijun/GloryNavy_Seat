@@ -97,6 +97,7 @@ type Service struct {
 	Pool                 *pgxpool.Pool
 	Remote               Remote
 	AlertRemote          AlertRemote
+	ClientUsageRemote    ClientUsageRemote
 	MonitorRemote        MonitorRemote
 	AlertSettlement      AlertIntervalSettlement
 	AlertEnabled         bool
@@ -106,13 +107,13 @@ type Service struct {
 	MonitorRewardFunding MonitorRewardFunding
 	Administrator        func(context.Context, string) (bool, error)
 	policyMu             sync.RWMutex
-	alertQueue           *river.Client[pgx.Tx]
 }
 
 func New(pool *pgxpool.Pool, remote Remote) *Service {
 	alerts, _ := remote.(AlertRemote)
 	monitor, _ := remote.(MonitorRemote)
-	return &Service{Pool: pool, Remote: remote, AlertRemote: alerts, MonitorRemote: monitor}
+	usage, _ := remote.(ClientUsageRemote)
+	return &Service{Pool: pool, Remote: remote, AlertRemote: alerts, MonitorRemote: monitor, ClientUsageRemote: usage}
 }
 
 // MonitorRewardFunding is the host-owned coin ledger boundary. The sentry
@@ -443,17 +444,22 @@ func (s *Service) RevokeAlertGrant(ctx context.Context, account, grantID, reques
 	return s.AlertFunding.ReleaseAlertGrant(ctx, grantID, opID)
 }
 
-// Extension registers the durable Sentry delivery reconciliation worker with
-// the shared River runtime. It remains opt-in until pricing and production
-// evidence have been verified by the host.
+// Extension registers the only active Sentry billing workers with the shared
+// River runtime. Alert delivery/event reconciliation is retained only as a
+// tombstone worker so jobs created by older releases are cancelled safely;
+// it never reads delivery rows or creates charges. New charging is derived
+// exclusively from authenticated client heartbeat intervals.
 func (s *Service) Extension(enabled bool) jobs.Extension {
-	a := alertReconcileExtension(s, enabled)
+	a := alertReconcileExtension(s)
 	m := monitorRewardExtension(s, enabled)
+	u := clientUsageExtension(s, enabled)
 	return jobs.Extension{
 		Register: func(workers *river.Workers) []*river.PeriodicJob {
-			return append(a.Register(workers), m.Register(workers)...)
+			jobs := a.Register(workers)
+			jobs = append(jobs, m.Register(workers)...)
+			return append(jobs, u.Register(workers)...)
 		},
-		Bind: func(queue *river.Client[pgx.Tx]) { a.Bind(queue); m.Bind(queue) },
+		Bind: func(queue *river.Client[pgx.Tx]) { a.Bind(queue); m.Bind(queue); u.Bind(queue) },
 	}
 }
 
