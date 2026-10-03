@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警收费前端开关（2026-10-03）
+
+已发布 `v0.1.0-sentry-charging-toggle-20261003`。应用机与公网 1Panel 静态前端已原子切换，生产 Goose 64 已执行；`glorynavy` 为 `active`、`/health/ready` 返回 ready、重启次数为 0。切换前备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-charging-toggle-20261003-20261003T082128Z.{dump,env}`。公网首页和登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。收费开关默认关闭；真实监控客户端证据、管理员价格复核和真实果壳币账务仍待现场验收。
+
 ## 监控时长奖励与双小时价格（2026-10-03）
 
 已发布 `v0.1.0-sentry-monitor-rewards-20261003`。应用机与公网 1Panel 静态前端已原子切换；应用机 Goose 63、River 迁移、`glorynavy active` 和 `/health/ready` 通过。切换前激活脚本已生成数据库与配置备份：`/var/backups/glorynavy/before-v0.1.0-sentry-monitor-rewards-20261003-20261003T053256Z.{dump,env}`。公网首页和登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。收费开关保持关闭；真实监控客户端证据、管理员价格复核和真实果壳币奖励账务仍待现场验收。
