@@ -1,6 +1,5 @@
 -- Module: sentry. Versioned administrator-managed pricing for alert usage.
--- The deployment switch remains environment-controlled; this table only
--- supplies the price snapshot used by newly created grants.
+-- The administrator-controlled charging switch is added by Goose 64.
 -- +goose Up
 CREATE TABLE sentry_alert_pricing (
     id smallint PRIMARY KEY CHECK (id = 1),

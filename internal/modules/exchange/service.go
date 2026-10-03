@@ -45,8 +45,10 @@ type Service struct {
 	// unit. PAP uses one; fractional sources may use a finer scale.
 	SourceScales map[string]int64
 	AllowNew     bool
-	// AllowAlertConsumption is deliberately disabled by the host until the
-	// Sentry time-usage contract and production pricing have been accepted.
+	// AllowAlertConsumption indicates that the Sentry/exchange integration is
+	// available. The administrator's durable on/off switch is owned by sentry;
+	// keeping this capability enabled lets existing grants be reconciled and
+	// released after charging is switched off.
 	AllowAlertConsumption bool
 }
 

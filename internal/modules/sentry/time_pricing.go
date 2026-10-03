@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// TimePricing exposes only the two business prices. Allowance bounds remain
+// TimePricing exposes the two business prices and the administrator switch. Allowance bounds remain
 // internal delivery controls, and each new alert grant freezes its own price.
 type TimePricing struct {
 	AlertHourlyPriceMinor    int64      `json:"alert_hourly_price_minor"`
@@ -24,11 +24,15 @@ type TimePricingEdit struct {
 	AlertHourlyPriceMinor    int64 `json:"alert_hourly_price_minor"`
 	MonitorHourlyRewardMinor int64 `json:"monitor_hourly_reward_minor"`
 	Version                  int64 `json:"version"`
+	ChargingEnabled          *bool `json:"charging_enabled,omitempty"`
 }
 
 func (s *Service) ReadTimePricing(ctx context.Context, user string) (TimePricing, error) {
-	out := TimePricing{ChargingEnabled: s.AlertEnabled}
-	var err error
+	enabled, err := s.alertChargingEnabled(ctx)
+	if err != nil {
+		return TimePricing{}, err
+	}
+	out := TimePricing{ChargingEnabled: enabled}
 	if s.Administrator != nil {
 		out.CanEdit, err = s.Administrator(ctx, user)
 		if err != nil {
@@ -88,12 +92,17 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 	p := s.alertPolicy()
 	var old AlertGrantPolicy
 	var ttl, oldVersion int64
-	err = tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&old.PriceVersion, &old.UnitSeconds, &old.UnitPriceMinor, &old.MaxGrantSeconds, &ttl, &oldVersion)
+	var currentEnabled bool
+	err = tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,charging_enabled FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&old.PriceVersion, &old.UnitSeconds, &old.UnitPriceMinor, &old.MaxGrantSeconds, &ttl, &oldVersion, &currentEnabled)
 	if err == nil {
 		old.GrantTTL = time.Duration(ttl) * time.Second
 		p = old
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return TimePricing{}, err
+	}
+	enabled := currentEnabled
+	if e.ChargingEnabled != nil {
+		enabled = *e.ChargingEnabled
 	}
 	if p.MaxGrantSeconds <= 0 {
 		p.MaxGrantSeconds = 3600
@@ -111,12 +120,12 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 	if err = tx.QueryRow(ctx, `INSERT INTO sentry_time_pricing(version,alert_hourly_price_minor,monitor_hourly_reward_minor,updated_by) VALUES($1,$2,$3,$4) RETURNING effective_at`, version+1, e.AlertHourlyPriceMinor, e.MonitorHourlyRewardMinor, user).Scan(&stamp); err != nil {
 		return TimePricing{}, err
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing(id,price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_by) VALUES(1,$1,3600,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET price_version=EXCLUDED.price_version,unit_seconds=3600,unit_price_minor=EXCLUDED.unit_price_minor,version=EXCLUDED.version,updated_by=EXCLUDED.updated_by,updated_at=now()`, p.PriceVersion, p.UnitPriceMinor, p.MaxGrantSeconds, int64(p.GrantTTL/time.Second), oldVersion+1, user)
+	_, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing(id,price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,charging_enabled,updated_by) VALUES(1,$1,3600,$2,$3,$4,$5,$6,$7) ON CONFLICT(id) DO UPDATE SET price_version=EXCLUDED.price_version,unit_seconds=3600,unit_price_minor=EXCLUDED.unit_price_minor,version=EXCLUDED.version,charging_enabled=EXCLUDED.charging_enabled,updated_by=EXCLUDED.updated_by,updated_at=now()`, p.PriceVersion, p.UnitPriceMinor, p.MaxGrantSeconds, int64(p.GrantTTL/time.Second), oldVersion+1, enabled, user)
 	if err != nil {
 		return TimePricing{}, err
 	}
-	before := pricingFromPolicy(old, oldVersion > 0, s.AlertEnabled, true, oldVersion, time.Time{})
-	after := pricingFromPolicy(p, true, s.AlertEnabled, true, oldVersion+1, stamp)
+	before := pricingFromPolicy(old, oldVersion > 0, currentEnabled, true, oldVersion, time.Time{})
+	after := pricingFromPolicy(p, true, enabled, true, oldVersion+1, stamp)
 	if _, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing_audit(actor_id,previous_version,version,before_snapshot,after_snapshot) VALUES($1,$2,$3,$4,$5)`, user, oldVersion, oldVersion+1, before, after); err != nil {
 		return TimePricing{}, err
 	}
@@ -124,5 +133,5 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 		return TimePricing{}, err
 	}
 	s.setAlertPolicy(p)
-	return TimePricing{e.AlertHourlyPriceMinor, e.MonitorHourlyRewardMinor, version + 1, true, s.AlertEnabled, &stamp}, nil
+	return TimePricing{AlertHourlyPriceMinor: e.AlertHourlyPriceMinor, MonitorHourlyRewardMinor: e.MonitorHourlyRewardMinor, Version: version + 1, CanEdit: true, ChargingEnabled: enabled, UpdatedAt: &stamp}, nil
 }

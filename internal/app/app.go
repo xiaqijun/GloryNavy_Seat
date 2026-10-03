@@ -135,8 +135,8 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	attendanceModule.Service.AlliancePAP = attendance.AlliancePAPConfig{URL: auth.WinterCoPAPURL, AuthFile: auth.WinterCoPAPAuthFile}
 	attendanceModule.Service.Battle = reader
 	attendanceModule.Service.Names = staticData
-	alertConsumptionEnabled := auth.AlertConsumptionEnabled && slices.Contains(enabled, "sentry") && slices.Contains(enabled, "exchange") && slices.Contains(enabled, "eve") && auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != ""
-	exchangeService := &exchange.Service{Pool: pool, Administrator: accessService.IsAdministrator, Names: staticData, SearchTypes: staticData.SearchTypes, Sources: map[string]string{}, SourceScales: map[string]int64{}, AllowNew: slices.Contains(enabled, "exchange"), AllowAlertConsumption: alertConsumptionEnabled}
+	alertConsumptionCapability := slices.Contains(enabled, "sentry") && slices.Contains(enabled, "exchange") && slices.Contains(enabled, "eve") && auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != ""
+	exchangeService := &exchange.Service{Pool: pool, Administrator: accessService.IsAdministrator, Names: staticData, SearchTypes: staticData.SearchTypes, Sources: map[string]string{}, SourceScales: map[string]int64{}, AllowNew: slices.Contains(enabled, "exchange"), AllowAlertConsumption: alertConsumptionCapability}
 	if slices.Contains(enabled, "attendance") {
 		exchangeService.Sources["pap"] = "PAP 集结分"
 		exchangeService.Sources["alliance_pap"] = "联盟 PAP"
@@ -230,7 +230,10 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	sentryService := sentry.New(pool, sentryRemote)
 	sentryService.Administrator = accessService.IsAdministrator
-	sentryService.AlertEnabled = alertConsumptionEnabled && slices.Contains(enabled, "exchange") && sentryService.AlertRemote != nil
+	// The legacy environment value is still parsed for configuration
+	// compatibility; the actual on/off state is persisted in
+	// sentry_alert_pricing and changed by an administrator from the Sentry page.
+	sentryService.AlertEnabled = alertConsumptionCapability && sentryService.AlertRemote != nil
 	sentryService.AlertPolicy = sentry.AlertGrantPolicy{PriceVersion: auth.AlertPriceVersion, UnitSeconds: auth.AlertUnitSeconds, UnitPriceMinor: auth.AlertUnitPriceMinor, MaxGrantSeconds: auth.AlertMaxGrantSeconds, GrantTTL: auth.AlertGrantTTL}
 	if pool != nil {
 		if err := sentryService.LoadAlertPricing(context.Background(), sentryService.AlertPolicy); err != nil {

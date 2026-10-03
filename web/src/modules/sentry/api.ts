@@ -213,5 +213,5 @@ export const updatePricing = (
 
 export const updateTimePricing = (
   csrf: string,
-  value: Pick<TimePricing, "alert_hourly_price_minor" | "monitor_hourly_reward_minor" | "version">,
+  value: Pick<TimePricing, "alert_hourly_price_minor" | "monitor_hourly_reward_minor" | "version" | "charging_enabled">,
 ) => mutate("/api/v1/sentry/time-pricing", csrf, "PUT", value) as Promise<TimePricing>;

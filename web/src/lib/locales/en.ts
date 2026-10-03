@@ -1323,6 +1323,7 @@ export const english: Record<string, string> = {
   配置收费: "Configure charging",
   正在读取收费配置: "Loading charging configuration",
   保存收费配置: "Save charging configuration",
+  启用预警收费: "Enable alert charging",
   计价单位: "Pricing unit",
   每单位价格: "Price per unit",
   授权上限: "Grant limit",

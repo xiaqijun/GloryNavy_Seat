@@ -50,6 +50,9 @@
 .sentry-pricing-status.is-off { color: var(--muted); background: var(--color-accent); }
 .sentry-pricing-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .sentry-pricing-form label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
+.sentry-pricing-switch { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px !important; min-height: 44px; color: var(--foreground) !important; font-size: 14px !important; grid-column: 1 / -1; }
+.sentry-pricing-switch input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+.sentry-pricing-switch input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .sentry-pricing-form input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; }
 .sentry-pricing-form input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .sentry-pricing-form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }

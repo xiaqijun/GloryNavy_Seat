@@ -146,7 +146,7 @@ npm --prefix web run preview:local
 | `TEST_DATABASE_URL` | Go 数据库集成测试使用的独立开发/测试库 |
 | `PLAYWRIGHT_CHROMIUM_EXECUTABLE` | 浏览器测试使用已安装 Chrome 时提供绝对路径 |
 | `SENTRY_INTEGRATION_URL` / `SENTRY_INTEGRATION_TOKEN` | 可选的后端到 EVE Sentry 密钥投影地址与服务凭据；必须成对配置，HTTPS origin（本地回环可用 HTTP），Token 至少 32 字符；不下发前端 |
-| `SENTRY_ALERT_CONSUMPTION_ENABLED` | 默认为 `false`；仅在 Sentry 时间区间、生产费率、使用证据和 exchange 对账验收后设为 `true`，且要求 `MODULES` 同时包含 `sentry`、`exchange`、`eve` |
+| `SENTRY_ALERT_CONSUMPTION_ENABLED` | 兼容配置校验，默认为 `false`；实际收费开关持久化在 `sentry_alert_pricing.charging_enabled`，由管理员在 `/sentry` 前端配置；要求 `MODULES` 同时包含 `sentry`、`exchange`、`eve` 才具备收费能力 |
 | `SENTRY_ALERT_PRICE_VERSION` | 启用预警收费时必填的冻结费率版本；无默认值 |
 | `SENTRY_ALERT_UNIT_SECONDS` / `SENTRY_ALERT_UNIT_PRICE_MINOR` | 启用预警收费时必填的时间单位秒数与每单位果壳币最小单位价格；无默认值 |
 | `SENTRY_ALERT_MAX_GRANT_SECONDS` / `SENTRY_ALERT_GRANT_TTL` | 启用预警收费时必填的单次授权上限与授权有效期；无默认值 |

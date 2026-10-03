@@ -135,6 +135,45 @@ func TestAlertPricingRejectsNonAdminAndStaleVersions(t *testing.T) {
 	}
 }
 
+func TestTimePricingAdminControlsChargingSwitch(t *testing.T) {
+	f := newPricingFixture(t)
+	ctx := context.Background()
+	enabled := true
+	saved, err := f.service.EditTimePricing(ctx, f.admin, TimePricingEdit{
+		AlertHourlyPriceMinor:    125,
+		MonitorHourlyRewardMinor: 75,
+		Version:                  0,
+		ChargingEnabled:          &enabled,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !saved.ChargingEnabled || saved.Version != 1 {
+		t.Fatalf("saved time pricing = %#v", saved)
+	}
+	read, err := f.service.ReadTimePricing(ctx, f.member)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !read.ChargingEnabled || read.AlertHourlyPriceMinor != 125 || read.MonitorHourlyRewardMinor != 75 || read.CanEdit {
+		t.Fatalf("read time pricing = %#v", read)
+	}
+
+	disabled := false
+	saved, err = f.service.EditTimePricing(ctx, f.admin, TimePricingEdit{
+		AlertHourlyPriceMinor:    125,
+		MonitorHourlyRewardMinor: 75,
+		Version:                  1,
+		ChargingEnabled:          &disabled,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.ChargingEnabled {
+		t.Fatalf("switch remained enabled after disable: %#v", saved)
+	}
+}
+
 func TestAlertPricingConcurrentFirstSaveHasOneConflict(t *testing.T) {
 	f := newPricingFixture(t)
 	ctx := context.Background()

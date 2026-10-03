@@ -7511,7 +7511,7 @@ paths:
     get:
       operationId: sentryReadTimePricing
       summary: Read the two hourly Sentry prices
-      description: Returns alert consumption and monitor reward prices in Nutshell Coin minor units. The deployment charging switch is read-only here.
+      description: Returns alert consumption and monitor reward prices in Nutshell Coin minor units and the persisted administrator charging switch.
       security: [{SessionCookie: []}]
       responses:
         '200':
@@ -7526,8 +7526,8 @@ paths:
         '401': {description: No active session}
     put:
       operationId: sentryUpdateTimePricing
-      summary: Update the two hourly Sentry prices
-      description: Site administrators only. Version protects concurrent edits; the new price applies from its save time and does not rewrite existing alert grants.
+      summary: Update the two hourly Sentry prices and charging switch
+      description: Site administrators only. Version protects concurrent edits; the new prices apply from their save time and do not rewrite existing alert grants. Disabling charging blocks new alert grants while existing grants remain reconcilable.
       security: [{SessionCookie: []}]
       parameters:
         - {$ref: '#/components/parameters/CSRFToken'}
@@ -7546,7 +7546,7 @@ paths:
                 required: [data]
                 properties:
                   data: {$ref: '#/components/schemas/SentryTimePricing'}
-        '400': {description: Invalid price values}
+        '400': {description: Invalid price or switch values}
         '401': {description: No active session}
         '403': {description: Site administrator required}
         '409': {description: Pricing version conflict}
@@ -7846,16 +7846,17 @@ components:
         monitor_hourly_reward_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000}
         version: {type: integer, format: int64, minimum: 0}
         can_edit: {type: boolean}
-        charging_enabled: {type: boolean}
+        charging_enabled: {type: boolean, description: Persisted administrator switch; false by default.}
         updated_at: {type: string, format: date-time}
     SentryTimePricingEdit:
       type: object
       additionalProperties: false
-      required: [alert_hourly_price_minor, monitor_hourly_reward_minor, version]
+      required: [alert_hourly_price_minor, monitor_hourly_reward_minor, version, charging_enabled]
       properties:
         alert_hourly_price_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000000}
         monitor_hourly_reward_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000}
         version: {type: integer, format: int64, minimum: 0}
+        charging_enabled: {type: boolean, description: Persisted administrator switch.}
     SentryAlertPricing:
       type: object
       additionalProperties: false
@@ -7868,7 +7869,7 @@ components:
         grant_ttl_seconds: {type: integer, format: int64, minimum: 0, maximum: 2678400}
         version: {type: integer, format: int64, minimum: 0, description: Optimistic concurrency version; zero means no persisted policy yet.}
         configured: {type: boolean, description: True when the administrator has saved a persisted policy.}
-        charging_enabled: {type: boolean, description: Deployment switch state; this endpoint does not change it.}
+        charging_enabled: {type: boolean, description: Persisted administrator switch state.}
         can_edit: {type: boolean, description: True only for a site administrator.}
         updated_at: {type: string, format: date-time}
     SentryAlertPricingEdit:

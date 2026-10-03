@@ -247,11 +247,13 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.TimePricing; csrf: 
   const client = useQueryClient();
   const [alertPrice, setAlertPrice] = useState((pricing.alert_hourly_price_minor / 100).toFixed(2));
   const [monitorPrice, setMonitorPrice] = useState((pricing.monitor_hourly_reward_minor / 100).toFixed(2));
+  const [chargingEnabled, setChargingEnabled] = useState(pricing.charging_enabled);
   const save = useMutation({
     mutationFn: () => api.updateTimePricing(csrf, {
       alert_hourly_price_minor: Math.round(Number(alertPrice) * 100),
       monitor_hourly_reward_minor: Math.round(Number(monitorPrice) * 100),
       version: pricing.version,
+      charging_enabled: chargingEnabled,
     }),
     onSuccess: () => {
       setEditing(false);
@@ -281,6 +283,10 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.TimePricing; csrf: 
           className="sentry-pricing-form"
           onSubmit={() => save.mutate()}
         >
+          <label className="sentry-pricing-switch">
+            <input type="checkbox" checked={chargingEnabled} onChange={(event) => setChargingEnabled(event.target.checked)} />
+            <span>{msg("启用预警收费")}</span>
+          </label>
           <label><span>{msg("预警消费价格（果壳币/小时）")}</span><input autoFocus type="number" min={0.01} max={10000000000} step={0.01} value={alertPrice} onChange={(event) => setAlertPrice(event.target.value)} required /></label>
           <label><span>{msg("监控奖励价格（果壳币/小时）")}</span><input type="number" min={0} max={10000000000} step={0.01} value={monitorPrice} onChange={(event) => setMonitorPrice(event.target.value)} required /></label>
           {save.isError && <p role="alert">{save.error.message}</p>}

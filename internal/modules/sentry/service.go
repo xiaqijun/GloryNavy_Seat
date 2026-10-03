@@ -148,6 +148,30 @@ func (s *Service) setAlertPolicy(policy AlertGrantPolicy) {
 	s.policyMu.Unlock()
 }
 
+// alertChargingEnabled combines the deployment capability with the persisted
+// administrator switch. The capability is deliberately kept separate: a
+// disabled switch must stop new reservations while still allowing existing
+// grants to be reconciled and released.
+func (s *Service) alertChargingEnabled(ctx context.Context) (bool, error) {
+	if !s.AlertEnabled {
+		return false, nil
+	}
+	if s.Pool == nil {
+		// Keep in-memory service fixtures useful while the production service
+		// always reads the durable switch below.
+		return true, nil
+	}
+	var enabled bool
+	err := s.Pool.QueryRow(ctx, `SELECT charging_enabled FROM sentry_alert_pricing WHERE id=1`).Scan(&enabled)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return enabled, nil
+}
+
 // currentAlertPolicy refreshes the process-local bootstrap policy from the
 // singleton row. This keeps a multi-instance deployment consistent when an
 // administrator saves a rule through another API process.
@@ -194,8 +218,8 @@ func policyFromEdit(edit AlertPricingEdit) AlertGrantPolicy {
 }
 
 // LoadAlertPricing applies the persisted policy when one exists. The
-// environment policy remains the bootstrap fallback for old databases and is
-// still required by the deployment when charging is enabled.
+// environment policy remains the bootstrap fallback for old databases; the
+// durable charging switch is read separately from sentry_alert_pricing.
 func (s *Service) LoadAlertPricing(ctx context.Context, fallback AlertGrantPolicy) error {
 	if s.Pool == nil {
 		s.setAlertPolicy(fallback)
@@ -227,8 +251,12 @@ func (s *Service) ReadAlertPricing(ctx context.Context, user string) (AlertPrici
 			return AlertPricing{}, err
 		}
 	}
+	enabled, err := s.alertChargingEnabled(ctx)
+	if err != nil {
+		return AlertPricing{}, err
+	}
 	if s.Pool == nil {
-		return pricingFromPolicy(s.alertPolicy(), false, s.AlertEnabled, canEdit, 0, time.Time{}), nil
+		return pricingFromPolicy(s.alertPolicy(), false, enabled, canEdit, 0, time.Time{}), nil
 	}
 	if _, err := s.currentAlertPolicy(ctx); err != nil {
 		return AlertPricing{}, err
@@ -236,9 +264,9 @@ func (s *Service) ReadAlertPricing(ctx context.Context, user string) (AlertPrici
 	var p AlertGrantPolicy
 	var ttl, version int64
 	var updated time.Time
-	err := s.Pool.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at FROM sentry_alert_pricing WHERE id=1`).Scan(&p.PriceVersion, &p.UnitSeconds, &p.UnitPriceMinor, &p.MaxGrantSeconds, &ttl, &version, &updated)
+	err = s.Pool.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at FROM sentry_alert_pricing WHERE id=1`).Scan(&p.PriceVersion, &p.UnitSeconds, &p.UnitPriceMinor, &p.MaxGrantSeconds, &ttl, &version, &updated)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return pricingFromPolicy(s.alertPolicy(), false, s.AlertEnabled, canEdit, 0, time.Time{}), nil
+		return pricingFromPolicy(s.alertPolicy(), false, enabled, canEdit, 0, time.Time{}), nil
 	}
 	if err != nil {
 		return AlertPricing{}, err
@@ -247,7 +275,7 @@ func (s *Service) ReadAlertPricing(ctx context.Context, user string) (AlertPrici
 	if !policyValid(p) {
 		return AlertPricing{}, ErrAlertPricingInvalid
 	}
-	return pricingFromPolicy(p, true, s.AlertEnabled, canEdit, version, updated), nil
+	return pricingFromPolicy(p, true, enabled, canEdit, version, updated), nil
 }
 
 func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertPricingEdit) (AlertPricing, error) {
@@ -282,7 +310,8 @@ func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertP
 	var current AlertGrantPolicy
 	var ttl, currentVersion int64
 	var updated time.Time
-	rowErr := tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&current.PriceVersion, &current.UnitSeconds, &current.UnitPriceMinor, &current.MaxGrantSeconds, &ttl, &currentVersion, &updated)
+	var chargingEnabled bool
+	rowErr := tx.QueryRow(ctx, `SELECT price_version,unit_seconds,unit_price_minor,max_grant_seconds,grant_ttl_seconds,version,updated_at,charging_enabled FROM sentry_alert_pricing WHERE id=1 FOR UPDATE`).Scan(&current.PriceVersion, &current.UnitSeconds, &current.UnitPriceMinor, &current.MaxGrantSeconds, &ttl, &currentVersion, &updated, &chargingEnabled)
 	if errors.Is(rowErr, pgx.ErrNoRows) {
 		if edit.Version != 0 {
 			return AlertPricing{}, ErrAlertPricingConflict
@@ -305,8 +334,8 @@ func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertP
 	if err != nil {
 		return AlertPricing{}, err
 	}
-	before := map[string]any{"price_version": current.PriceVersion, "unit_seconds": current.UnitSeconds, "unit_price_minor": current.UnitPriceMinor, "max_grant_seconds": current.MaxGrantSeconds, "grant_ttl_seconds": int64(current.GrantTTL / time.Second), "version": currentVersion}
-	after := map[string]any{"price_version": policy.PriceVersion, "unit_seconds": policy.UnitSeconds, "unit_price_minor": policy.UnitPriceMinor, "max_grant_seconds": policy.MaxGrantSeconds, "grant_ttl_seconds": edit.GrantTTLSeconds, "version": nextVersion}
+	before := map[string]any{"price_version": current.PriceVersion, "unit_seconds": current.UnitSeconds, "unit_price_minor": current.UnitPriceMinor, "max_grant_seconds": current.MaxGrantSeconds, "grant_ttl_seconds": int64(current.GrantTTL / time.Second), "version": currentVersion, "charging_enabled": chargingEnabled}
+	after := map[string]any{"price_version": policy.PriceVersion, "unit_seconds": policy.UnitSeconds, "unit_price_minor": policy.UnitPriceMinor, "max_grant_seconds": policy.MaxGrantSeconds, "grant_ttl_seconds": edit.GrantTTLSeconds, "version": nextVersion, "charging_enabled": chargingEnabled}
 	if _, err = tx.Exec(ctx, `INSERT INTO sentry_alert_pricing_audit(actor_id,previous_version,version,before_snapshot,after_snapshot) VALUES($1,$2,$3,$4,$5)`, user, currentVersion, nextVersion, before, after); err != nil {
 		return AlertPricing{}, err
 	}
@@ -314,7 +343,11 @@ func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertP
 		return AlertPricing{}, err
 	}
 	s.setAlertPolicy(policy)
-	return pricingFromPolicy(policy, true, s.AlertEnabled, true, nextVersion, time.Now().UTC()), nil
+	enabled, err := s.alertChargingEnabled(ctx)
+	if err != nil {
+		return AlertPricing{}, err
+	}
+	return pricingFromPolicy(policy, true, enabled, true, nextVersion, time.Now().UTC()), nil
 }
 
 // CreateAlertGrant reserves coins locally in Seat and projects only a frozen
@@ -323,7 +356,11 @@ func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertP
 // second allowance. Seat remains the sole pricing/coin authority.
 func (s *Service) CreateAlertGrant(ctx context.Context, account, keyID, requestKey string, reservedSeconds int64) (AlertGrant, error) {
 	var out AlertGrant
-	if !s.AlertEnabled || s.AlertRemote == nil || s.AlertFunding == nil {
+	enabled, err := s.alertChargingEnabled(ctx)
+	if err != nil {
+		return out, err
+	}
+	if !enabled || s.AlertRemote == nil || s.AlertFunding == nil {
 		return out, ErrAlertDisabled
 	}
 	policy, err := s.currentAlertPolicy(ctx)
