@@ -28,6 +28,8 @@
 .sentry-usage-toolbar select, .sentry-usage-toolbar input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; }
 .sentry-usage-toolbar select:focus-visible, .sentry-usage-toolbar input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .sentry-consumption-list { display: grid; gap: 10px; }
+.sentry-reward-history { display: grid; gap: 10px; margin-top: 18px; }
+.sentry-reward-history h3 { margin: 0; font-size: 15px; }
 .sentry-consumption-row { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .sentry-consumption-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .sentry-consumption-main > div:first-child, .sentry-consumption-amount { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }

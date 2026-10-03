@@ -33,6 +33,7 @@ func (h Handler) Module() module.Definition {
 			{Method: http.MethodDelete, Path: "/alert-grants/{id}", Permission: "sentry.self", Handler: http.HandlerFunc(h.revokeAlertGrant)},
 			{Method: http.MethodGet, Path: "/alert-usage", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertUsage)},
 			{Method: http.MethodGet, Path: "/alert-consumptions", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertConsumptions)},
+			{Method: http.MethodGet, Path: "/monitor-rewards", Permission: "sentry.self", Handler: http.HandlerFunc(h.monitorRewards)},
 			{Method: http.MethodGet, Path: "/alert-pricing", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertPricing)},
 			{Method: http.MethodPut, Path: "/alert-pricing", Permission: "sentry.manage", Handler: http.HandlerFunc(h.editAlertPricing)},
 			{Method: http.MethodGet, Path: "/time-pricing", Permission: "sentry.self", Handler: http.HandlerFunc(h.timePricing)},
@@ -124,6 +125,11 @@ func (h Handler) alertConsumptions(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := h.Service.ReadAlertConsumptions(r.Context(), h.User(r), before, state, from, to, limit)
 	h.respond(w, r, page, err)
+}
+
+func (h Handler) monitorRewards(w http.ResponseWriter, r *http.Request) {
+	rewards, err := h.Service.ReadMonitorRewards(r.Context(), h.User(r), 50)
+	h.respond(w, r, rewards, err)
 }
 
 func (h Handler) list(w http.ResponseWriter, r *http.Request) {

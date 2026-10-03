@@ -70,6 +70,16 @@ export type AlertConsumptionPage = {
   as_of: string;
 };
 
+export type MonitorRewardRecord = {
+  contribution_id: string;
+  started_at: string;
+  ended_at: string;
+  duration_seconds: number;
+  coins_minor: number;
+  system_name: string;
+};
+export type MonitorRewardPage = { items: MonitorRewardRecord[]; as_of: string };
+
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";
 const isKey = (v: unknown): v is Key =>
@@ -148,6 +158,13 @@ const isConsumptionPage = (v: unknown): v is AlertConsumptionPage =>
   Array.isArray(v.items) &&
   v.items.every(isConsumption);
 
+const isMonitorReward = (v: unknown): v is MonitorRewardRecord =>
+  object(v) && typeof v.contribution_id === "string" && typeof v.started_at === "string" &&
+  typeof v.ended_at === "string" && Number.isSafeInteger(v.duration_seconds) && Number(v.duration_seconds) > 0 &&
+  Number.isSafeInteger(v.coins_minor) && Number(v.coins_minor) > 0 && typeof v.system_name === "string";
+const isMonitorRewardPage = (v: unknown): v is MonitorRewardPage =>
+  object(v) && typeof v.as_of === "string" && Array.isArray(v.items) && v.items.every(isMonitorReward);
+
 export const list = (signal?: AbortSignal) =>
   getData("/api/v1/sentry/keys", isKeys, signal);
 
@@ -182,6 +199,9 @@ export const consumptions = (
     signal,
   );
 };
+
+export const monitorRewards = (signal?: AbortSignal) =>
+  getData("/api/v1/sentry/monitor-rewards", isMonitorRewardPage, signal);
 
 async function mutate(path: string, csrf: string, method: string, body?: unknown) {
   const r = await apiFetch(path, {

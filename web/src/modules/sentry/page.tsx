@@ -160,10 +160,16 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     queryFn: ({ signal }) => api.timePricing(signal),
     refetchInterval: 60_000,
   });
+  const rewards = useQuery({
+    queryKey: ["sentry", "monitor-rewards"],
+    queryFn: ({ signal }) => api.monitorRewards(signal),
+    refetchInterval: 60_000,
+  });
   const [pricingEditing, setPricingEditing] = useState(false);
   const refresh = () => {
     void usage.refetch();
     void page.refetch();
+    void rewards.refetch();
   };
   const setFilter = (setter: (value: string) => void, value: string) => {
     setter(value);
@@ -187,7 +193,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
           ) : pricing.data ? (
             <ChargingIndicator enabled={pricing.data.charging_enabled} />
           ) : null}
-          <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
+          <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching || rewards.isFetching} onClick={refresh}>
             <RefreshCw size={18} aria-hidden="true" />
           </IconAction>
         </div>
@@ -231,16 +237,24 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         <label><span>{msg("开始日期")}</span><input type="date" value={from} onChange={(event) => setFilter(setFrom, event.target.value)} /></label>
         <label><span>{msg("结束日期")}</span><input type="date" value={to} onChange={(event) => setFilter(setTo, event.target.value)} /></label>
       </div>
-      {page.isError ? (
-        <p className="sentry-usage-error" role="alert">{page.error.message}</p>
+      {page.isError || rewards.isError ? (
+        <p className="sentry-usage-error" role="alert">{(page.error || rewards.error)?.message}</p>
       ) : page.isPending ? (
         <p className="sentry-usage-loading" role="status">{msg("正在读取")}</p>
-      ) : !page.data.items.length ? (
+      ) : !page.data.items.length && !rewards.data?.items.length ? (
         <p className="sentry-usage-empty">{msg("暂无预警消费记录")}</p>
       ) : (
-        <div className="sentry-consumption-list">
-          {page.data.items.map((item) => <ConsumptionRow key={item.id} item={item} />)}
-        </div>
+        <>
+          {page.data.items.length > 0 && <div className="sentry-consumption-list">
+            {page.data.items.map((item) => <ConsumptionRow key={item.id} item={item} />)}
+          </div>}
+          {rewards.data?.items.length ? <div className="sentry-reward-history">
+            <h3>{msg("监控奖励记录")}</h3>
+            <div className="sentry-consumption-list">
+              {rewards.data.items.map((item) => <MonitorRewardRow key={item.contribution_id} item={item} />)}
+            </div>
+          </div> : null}
+        </>
       )}
       {(before || page.data?.next_cursor) && (
         <div className="sentry-usage-pagination">
@@ -323,4 +337,13 @@ function ConsumptionRow({ item }: { item: api.AlertConsumption }) {
       <details className="sentry-consumption-details"><summary>{msg("查看记录详情")}</summary><dl><div><dt>{msg("区间编号")}</dt><dd>{item.interval_id}</dd></div><div><dt>{msg("授权编号")}</dt><dd>{item.grant_id}</dd></div>{item.price_version && <div><dt>{msg("价格版本")}</dt><dd>{item.price_version}</dd></div>}</dl></details>
     </article>
   );
+}
+
+function MonitorRewardRow({ item }: { item: api.MonitorRewardRecord }) {
+  return <article className="sentry-consumption-row is-reward">
+    <div className="sentry-consumption-main">
+      <div><strong>{date(item.started_at)}</strong><span>{duration(item.duration_seconds)} · {item.system_name}</span></div>
+      <div className="sentry-consumption-amount"><strong className="is-returned">+{coins(item.coins_minor)} {msg("币")}</strong><span className="sentry-consumption-state is-settled">{msg("已奖励")}</span></div>
+    </div>
+  </article>;
 }
