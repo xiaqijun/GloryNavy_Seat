@@ -178,16 +178,15 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         </div>
         <div className="sentry-usage-actions">
           {keyActions}
-          {pricing.data && (
-            <span
-              className={`sentry-charging-indicator ${pricing.data.charging_enabled ? "is-on" : "is-off"}`}
-              aria-label={pricing.data.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
-              title={pricing.data.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
-            >
-              {pricing.data.charging_enabled ? <CircleCheck size={18} aria-hidden="true" /> : <CircleOff size={18} aria-hidden="true" />}
-            </span>
-          )}
-          {pricing.data?.can_edit && !pricingEditing && <Button variant="outline" onClick={() => setPricingEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
+          {pricing.data?.can_edit && !pricingEditing ? (
+            <Button variant="outline" onClick={() => setPricingEditing(true)}>
+              <Settings2 aria-hidden="true" />
+              {msg("配置收费")}
+              <ChargingIndicator enabled={pricing.data.charging_enabled} />
+            </Button>
+          ) : pricing.data ? (
+            <ChargingIndicator enabled={pricing.data.charging_enabled} />
+          ) : null}
           <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
             <RefreshCw size={18} aria-hidden="true" />
           </IconAction>
@@ -249,6 +248,15 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         </div>
       )}
     </section>
+  );
+}
+
+function ChargingIndicator({ enabled }: { enabled: boolean }) {
+  const label = enabled ? msg("收费已启用") : msg("收费开关未启用");
+  return (
+    <span className={`sentry-charging-indicator ${enabled ? "is-on" : "is-off"}`} aria-label={label} title={label}>
+      {enabled ? <CircleCheck size={16} aria-hidden="true" /> : <CircleOff size={16} aria-hidden="true" />}
+    </span>
   );
 }
 

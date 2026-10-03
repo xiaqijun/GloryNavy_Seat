@@ -5,8 +5,8 @@
 .sentry-brand { display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; background: var(--color-accent); color: var(--primary); }
 .sentry-brand { width: 44px; height: 44px; }
 .sentry-usage-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-width: 0; }
-.sentry-charging-indicator { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 9px; background: var(--color-accent); }
-.sentry-charging-indicator.is-on { color: var(--success, #15803d); background: color-mix(in srgb, var(--success, #16a34a) 13%, transparent); }
+.sentry-charging-indicator { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 2px; }
+.sentry-charging-indicator.is-on { color: var(--success, #15803d); }
 .sentry-charging-indicator.is-off { color: var(--muted); }
 .sentry-key-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .sentry-key-actions .button-motion { flex: 0 0 auto; }
