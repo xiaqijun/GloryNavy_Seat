@@ -17,6 +17,7 @@ type AlertUsageSummary struct {
 	AlertSettledMinor  int64     `json:"alert_settled_minor"`
 	AlertReleasedMinor int64     `json:"alert_released_minor"`
 	AlertRefundedMinor int64     `json:"alert_refunded_minor"`
+	MonitorRewardMinor int64     `json:"monitor_reward_minor"`
 	AsOf               time.Time `json:"as_of"`
 }
 

@@ -94,22 +94,32 @@ type Key struct {
 }
 
 type Service struct {
-	Pool             *pgxpool.Pool
-	Remote           Remote
-	AlertRemote      AlertRemote
-	AlertSettlement  AlertIntervalSettlement
-	AlertEnabled     bool
-	AlertPolicy      AlertGrantPolicy
-	AlertFunding     AlertGrantFunding
-	AlertUsageReader AlertUsageReader
-	Administrator    func(context.Context, string) (bool, error)
-	policyMu         sync.RWMutex
-	alertQueue       *river.Client[pgx.Tx]
+	Pool                 *pgxpool.Pool
+	Remote               Remote
+	AlertRemote          AlertRemote
+	MonitorRemote        MonitorRemote
+	AlertSettlement      AlertIntervalSettlement
+	AlertEnabled         bool
+	AlertPolicy          AlertGrantPolicy
+	AlertFunding         AlertGrantFunding
+	AlertUsageReader     AlertUsageReader
+	MonitorRewardFunding MonitorRewardFunding
+	Administrator        func(context.Context, string) (bool, error)
+	policyMu             sync.RWMutex
+	alertQueue           *river.Client[pgx.Tx]
 }
 
 func New(pool *pgxpool.Pool, remote Remote) *Service {
 	alerts, _ := remote.(AlertRemote)
-	return &Service{Pool: pool, Remote: remote, AlertRemote: alerts}
+	monitor, _ := remote.(MonitorRemote)
+	return &Service{Pool: pool, Remote: remote, AlertRemote: alerts, MonitorRemote: monitor}
+}
+
+// MonitorRewardFunding is the host-owned coin ledger boundary. The sentry
+// module supplies a stable evidence reference and amount; exchange owns the
+// actual wallet row and idempotency constraint.
+type MonitorRewardFunding interface {
+	CreditMonitorRewardTx(context.Context, pgx.Tx, string, string, string, int64) error
 }
 
 // SetAlertSettlement installs the host's exchange boundary without importing
@@ -400,7 +410,14 @@ func (s *Service) RevokeAlertGrant(ctx context.Context, account, grantID, reques
 // the shared River runtime. It remains opt-in until pricing and production
 // evidence have been verified by the host.
 func (s *Service) Extension(enabled bool) jobs.Extension {
-	return alertReconcileExtension(s, enabled)
+	a := alertReconcileExtension(s, enabled)
+	m := monitorRewardExtension(s, enabled)
+	return jobs.Extension{
+		Register: func(workers *river.Workers) []*river.PeriodicJob {
+			return append(a.Register(workers), m.Register(workers)...)
+		},
+		Bind: func(queue *river.Client[pgx.Tx]) { a.Bind(queue); m.Bind(queue) },
+	}
 }
 
 func normalizePermissions(values []string) ([]string, error) {
@@ -699,8 +716,12 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM sentry_keys WHERE account_id=$1`, source).Scan(&keys); err != nil {
 		return nil, err
 	}
+	var monitorRewards int64
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM sentry_monitor_rewards WHERE account_id=$1`, source).Scan(&monitorRewards); err != nil {
+		return nil, err
+	}
 	if !apply {
-		return json.Marshal(map[string]any{"keys": keys})
+		return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards})
 	}
 	if _, err := tx.Exec(ctx, `UPDATE sentry_keys SET account_id=$2,updated_at=now() WHERE account_id=$1`, source, target); err != nil {
 		return nil, err
@@ -708,5 +729,14 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if _, err := tx.Exec(ctx, `UPDATE sentry_key_events SET account_id=$2 WHERE account_id=$1`, source, target); err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{"keys": keys})
+	if _, err := tx.Exec(ctx, `UPDATE sentry_monitor_rewards SET original_account_id=coalesce(original_account_id,account_id),account_id=$2 WHERE account_id=$1`, source, target); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,numerator) SELECT $2,numerator FROM sentry_monitor_remainders WHERE account_id=$1 ON CONFLICT(account_id) DO UPDATE SET numerator=sentry_monitor_remainders.numerator+EXCLUDED.numerator`, source, target); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM sentry_monitor_remainders WHERE account_id=$1`, source); err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards})
 }

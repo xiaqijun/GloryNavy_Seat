@@ -23,6 +23,7 @@ export type AlertUsage = {
   alert_settled_minor: number;
   alert_released_minor: number;
   alert_refunded_minor: number;
+  monitor_reward_minor: number;
   as_of: string;
 };
 
@@ -36,6 +37,15 @@ export type AlertPricing = {
   configured: boolean;
   charging_enabled: boolean;
   can_edit: boolean;
+  updated_at?: string;
+};
+
+export type TimePricing = {
+  alert_hourly_price_minor: number;
+  monitor_hourly_reward_minor: number;
+  version: number;
+  can_edit: boolean;
+  charging_enabled: boolean;
   updated_at?: string;
 };
 
@@ -86,6 +96,7 @@ const isUsage = (v: unknown): v is AlertUsage =>
     "alert_settled_minor",
     "alert_released_minor",
     "alert_refunded_minor",
+    "monitor_reward_minor",
   ].every((key) => Number.isSafeInteger(v[key]) && Number(v[key]) >= 0) &&
   typeof v.as_of === "string";
 
@@ -146,6 +157,17 @@ export const usage = (signal?: AbortSignal) =>
 export const pricing = (signal?: AbortSignal) =>
   getData("/api/v1/sentry/alert-pricing", isPricing, signal);
 
+const isTimePricing = (v: unknown): v is TimePricing =>
+  object(v) &&
+  Number.isSafeInteger(v.alert_hourly_price_minor) && Number(v.alert_hourly_price_minor) >= 0 &&
+  Number.isSafeInteger(v.monitor_hourly_reward_minor) && Number(v.monitor_hourly_reward_minor) >= 0 &&
+  Number.isSafeInteger(v.version) &&
+  typeof v.can_edit === "boolean" && typeof v.charging_enabled === "boolean" &&
+  (v.updated_at === undefined || typeof v.updated_at === "string");
+
+export const timePricing = (signal?: AbortSignal) =>
+  getData("/api/v1/sentry/time-pricing", isTimePricing, signal);
+
 export const consumptions = (
   params: { before?: string; state?: string; from?: string; to?: string },
   signal?: AbortSignal,
@@ -188,3 +210,8 @@ export const updatePricing = (
   csrf: string,
   value: Pick<AlertPricing, "price_version" | "unit_seconds" | "unit_price_minor" | "max_grant_seconds" | "grant_ttl_seconds" | "version">,
 ) => mutate("/api/v1/sentry/alert-pricing", csrf, "PUT", value) as Promise<AlertPricing>;
+
+export const updateTimePricing = (
+  csrf: string,
+  value: Pick<TimePricing, "alert_hourly_price_minor" | "monitor_hourly_reward_minor" | "version">,
+) => mutate("/api/v1/sentry/time-pricing", csrf, "PUT", value) as Promise<TimePricing>;

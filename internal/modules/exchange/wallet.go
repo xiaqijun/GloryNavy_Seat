@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,34 @@ import (
 type Award struct {
 	Reference, AccountID string
 	Previous, Units      int64
+}
+
+// CreditMonitorRewardTx credits a server-confirmed monitoring contribution.
+// The reference and request key are stable across retries, so a lost worker
+// response cannot create a second wallet entry.
+func (s *Service) CreditMonitorRewardTx(ctx context.Context, tx pgx.Tx, account, reference, requestKey string, amount int64) error {
+	if amount <= 0 || amount > 1000000000000 || strings.TrimSpace(reference) == "" {
+		return ErrInvalid
+	}
+	actor, err := uuid(account)
+	if err != nil {
+		return err
+	}
+	key, err := uuid(requestKey)
+	if err != nil {
+		return err
+	}
+	if s.LockAccounts != nil {
+		if err = s.LockAccounts(ctx, tx, []string{account}); err != nil {
+			return err
+		}
+	}
+	q := store.New(tx)
+	if err = q.LockAccount(ctx, account); err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO exchange_coin_ledger(account_id,kind,reference,request_key,delta,reason) VALUES($1,'source',$2,$3,$4,$5) ON CONFLICT(kind,reference,request_key) DO NOTHING`, actor, reference, key, amount, "监控时长奖励")
+	return err
 }
 
 func (s *Service) ReconcileTx(ctx context.Context, tx pgx.Tx, source, key, reason string, awards []Award) error {

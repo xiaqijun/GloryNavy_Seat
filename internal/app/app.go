@@ -241,6 +241,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.SetAlertFunding(sentryBoundary)
 	sentryService.SetAlertSettlement(sentryBoundary)
 	sentryService.SetAlertUsageReader(&sentryAlertUsageReader{exchange: exchangeService})
+	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
 		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled))

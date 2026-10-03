@@ -118,6 +118,39 @@ type AlertRemote interface {
 	ListAlertDeliveries(context.Context, string, int) (AlertDeliveryPage, error)
 }
 
+// MonitorRemote reads the server-confirmed primary monitor intervals exported
+// by EVE Sentry. It never accepts client supplied duration or reward values.
+type MonitorContribution struct {
+	ContributionID    string         `json:"contribution_id"`
+	AccountID         string         `json:"account_id"`
+	KeyID             string         `json:"key_id"`
+	ClientID          string         `json:"client_id"`
+	SystemID          any            `json:"system_id"`
+	SystemName        string         `json:"system_name"`
+	PrimaryGeneration int64          `json:"primary_generation"`
+	StartedAt         string         `json:"started_at"`
+	EndedAt           string         `json:"ended_at"`
+	DurationSeconds   int64          `json:"duration_seconds"`
+	RuleVersion       string         `json:"rule_version"`
+	Eligibility       string         `json:"eligibility"`
+	Evidence          map[string]any `json:"evidence"`
+	CreatedAt         string         `json:"created_at"`
+}
+
+type MonitorContributionPage struct {
+	Contributions              []MonitorContribution `json:"contributions"`
+	NextCursor                 string                `json:"next_cursor"`
+	CommittedWatermark         string                `json:"committed_watermark"`
+	EarliestAvailableWatermark string                `json:"earliest_available_watermark"`
+	HasMore                    bool                  `json:"has_more"`
+	ProtocolVersion            int64                 `json:"protocol_version"`
+	RuleVersion                string                `json:"rule_version"`
+}
+
+type MonitorRemote interface {
+	ListMonitorContributions(context.Context, string, int) (MonitorContributionPage, error)
+}
+
 type HTTPRemote struct {
 	BaseURL string
 	Token   string
@@ -335,6 +368,37 @@ func (c *HTTPRemote) ListAlertDeliveries(ctx context.Context, cursor string, lim
 		return out, fmt.Errorf("sentry remote alert deliveries: %w", ErrRemoteUnavailable)
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 128<<10)).Decode(&out); err != nil || out.ProtocolVersion != 1 {
+		return out, ErrRemoteUnavailable
+	}
+	return out, nil
+}
+
+func (c *HTTPRemote) ListMonitorContributions(ctx context.Context, cursor string, limit int) (MonitorContributionPage, error) {
+	var out MonitorContributionPage
+	if c == nil || c.Client == nil || limit < 1 || limit > 500 {
+		return out, ErrRemoteUnavailable
+	}
+	u := c.BaseURL + "/api/v1/integrations/seat/monitor-contributions?limit=" + url.QueryEscape(fmt.Sprintf("%d", limit))
+	if strings.TrimSpace(cursor) != "" {
+		u += "&after=" + url.QueryEscape(cursor)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return out, err
+	}
+	setJSONHeaders(req, c.Token, "")
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return out, ErrRemoteUnavailable
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return out, fmt.Errorf("sentry remote monitor contributions: %w", ErrRemoteUnavailable)
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 512<<10)).Decode(&out); err != nil || out.ProtocolVersion != 1 {
+		return out, ErrRemoteUnavailable
+	}
+	if len(out.Contributions) > limit {
 		return out, ErrRemoteUnavailable
 	}
 	return out, nil

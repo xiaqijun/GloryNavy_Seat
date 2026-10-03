@@ -18,6 +18,7 @@ type AlertUsageSummary struct {
 	AlertSettledMinor  int64
 	AlertReleasedMinor int64
 	AlertRefundedMinor int64
+	MonitorRewardMinor int64
 	AsOf               time.Time
 }
 
@@ -66,8 +67,9 @@ SELECT
   coalesce((SELECT sum(reserved_minor-settled_minor-released_minor) FROM exchange_alert_grants WHERE account_id=$1 AND state='active'),0) AS alert_reserved_minor,
   coalesce((SELECT sum(coins_minor) FROM exchange_alert_charges WHERE account_id=$1 AND state='settled'),0) AS alert_settled_minor,
   coalesce((SELECT sum(released_minor) FROM exchange_alert_grants WHERE account_id=$1),0) AS alert_released_minor,
-  coalesce((SELECT sum(coins_minor) FROM exchange_alert_charges WHERE account_id=$1 AND state='refunded'),0) AS alert_refunded_minor`
-	if err := tx.QueryRow(ctx, query, id).Scan(&out.AvailableMinor, &out.AlertReservedMinor, &out.AlertSettledMinor, &out.AlertReleasedMinor, &out.AlertRefundedMinor); err != nil {
+	coalesce((SELECT sum(coins_minor) FROM exchange_alert_charges WHERE account_id=$1 AND state='refunded'),0) AS alert_refunded_minor,
+  coalesce((SELECT sum(delta) FROM exchange_coin_ledger WHERE account_id=$1 AND kind='source' AND reference LIKE 'sentry-monitor:%'),0) AS monitor_reward_minor`
+	if err := tx.QueryRow(ctx, query, id).Scan(&out.AvailableMinor, &out.AlertReservedMinor, &out.AlertSettledMinor, &out.AlertReleasedMinor, &out.AlertRefundedMinor, &out.MonitorRewardMinor); err != nil {
 		return out, err
 	}
 	if err := tx.Commit(ctx); err != nil {

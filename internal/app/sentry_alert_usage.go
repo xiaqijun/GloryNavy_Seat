@@ -24,6 +24,7 @@ func (r *sentryAlertUsageReader) AlertUsage(ctx context.Context, account string)
 		AvailableMinor: row.AvailableMinor, AlertReservedMinor: row.AlertReservedMinor,
 		AlertSettledMinor: row.AlertSettledMinor, AlertReleasedMinor: row.AlertReleasedMinor,
 		AlertRefundedMinor: row.AlertRefundedMinor, AsOf: row.AsOf,
+		MonitorRewardMinor: row.MonitorRewardMinor,
 	}, nil
 }
 

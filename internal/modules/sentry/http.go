@@ -35,8 +35,27 @@ func (h Handler) Module() module.Definition {
 			{Method: http.MethodGet, Path: "/alert-consumptions", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertConsumptions)},
 			{Method: http.MethodGet, Path: "/alert-pricing", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertPricing)},
 			{Method: http.MethodPut, Path: "/alert-pricing", Permission: "sentry.manage", Handler: http.HandlerFunc(h.editAlertPricing)},
+			{Method: http.MethodGet, Path: "/time-pricing", Permission: "sentry.self", Handler: http.HandlerFunc(h.timePricing)},
+			{Method: http.MethodPut, Path: "/time-pricing", Permission: "sentry.manage", Handler: http.HandlerFunc(h.editTimePricing)},
 		},
 	}
+}
+
+func (h Handler) timePricing(w http.ResponseWriter, r *http.Request) {
+	pricing, err := h.Service.ReadTimePricing(r.Context(), h.User(r))
+	h.respond(w, r, pricing, err)
+}
+
+func (h Handler) editTimePricing(w http.ResponseWriter, r *http.Request) {
+	var body TimePricingEdit
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF {
+		h.respond(w, r, nil, ErrAlertPricingInvalid)
+		return
+	}
+	pricing, err := h.Service.EditTimePricing(r.Context(), h.User(r), body)
+	h.respond(w, r, pricing, err)
 }
 
 func (h Handler) alertPricing(w http.ResponseWriter, r *http.Request) {

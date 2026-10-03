@@ -136,3 +136,21 @@ func TestHTTPRemoteListAlertDeliveries(t *testing.T) {
 		t.Fatalf("page=%+v err=%v", page, err)
 	}
 }
+
+func TestHTTPRemoteListMonitorContributions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/integrations/seat/monitor-contributions" || r.URL.Query().Get("after") != "cursor-1" || r.URL.Query().Get("limit") != "20" {
+			t.Fatalf("request = %s", r.URL.String())
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"contributions": []any{map[string]any{
+			"contribution_id": "c-1", "account_id": "a-1", "key_id": "k-1", "client_id": "client-1", "system_name": "Jita", "primary_generation": 2,
+			"started_at": "2026-10-01T00:00:00Z", "ended_at": "2026-10-01T00:00:30Z", "duration_seconds": 30, "eligibility": "eligible", "evidence": map[string]any{"server_confirmed": true}, "created_at": "2026-10-01T00:00:31Z",
+		}}, "next_cursor": "cursor-2", "protocol_version": 1, "rule_version": "primary-presence.v1"})
+	}))
+	defer server.Close()
+	r := &HTTPRemote{BaseURL: server.URL, Token: strings.Repeat("x", 32), Client: server.Client()}
+	page, err := r.ListMonitorContributions(context.Background(), "cursor-1", 20)
+	if err != nil || len(page.Contributions) != 1 || page.Contributions[0].DurationSeconds != 30 || page.Contributions[0].Eligibility != "eligible" {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+}

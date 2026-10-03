@@ -156,8 +156,8 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     refetchInterval: 60_000,
   });
   const pricing = useQuery({
-    queryKey: ["sentry", "alert-pricing"],
-    queryFn: ({ signal }) => api.pricing(signal),
+    queryKey: ["sentry", "time-pricing"],
+    queryFn: ({ signal }) => api.timePricing(signal),
     refetchInterval: 60_000,
   });
   const refresh = () => {
@@ -168,6 +168,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     setter(value);
     setBefore("");
   };
+  const priceValue = pricing.data && pricing.data.alert_hourly_price_minor > 0 ? `${coins(pricing.data.alert_hourly_price_minor)} ${msg("币")}/${msg("小时")}` : "—";
   return (
     <section className="sentry-usage" aria-labelledby="sentry-usage-title">
       <div className="sentry-usage-heading">
@@ -190,10 +191,9 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         <>
           <div className="sentry-usage-summary">
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("可用果壳币")} value={coins(usage.data.available_minor)} />
-            <UsageMetric icon={<Clock3 aria-hidden="true" />} label={msg("预警暂占")} value={coins(usage.data.alert_reserved_minor)} />
+            <UsageMetric icon={<Clock3 aria-hidden="true" />} label={msg("预警消费价格")} value={priceValue} unit="" />
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("预警累计净消费")} value={coins(usage.data.alert_settled_minor)} />
-            <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("预警已释放")} value={coins(usage.data.alert_released_minor)} />
-            <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("预警累计退款")} value={coins(usage.data.alert_refunded_minor)} />
+            <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("监控奖励")} value={coins(usage.data.monitor_reward_minor)} />
           </div>
           <p className="sentry-usage-asof">{msg("统计时间")}：{date(usage.data.as_of)}</p>
         </>
@@ -242,34 +242,25 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
   );
 }
 
-function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf: string }) {
+function AlertPricingPanel({ pricing, csrf }: { pricing: api.TimePricing; csrf: string }) {
   const [editing, setEditing] = useState(false);
   const client = useQueryClient();
-  const [priceVersion, setPriceVersion] = useState(pricing.price_version);
-  const [unitSeconds, setUnitSeconds] = useState(String(pricing.unit_seconds));
-  const [unitPrice, setUnitPrice] = useState((pricing.unit_price_minor / 100).toFixed(2));
-  const [maxGrantSeconds, setMaxGrantSeconds] = useState(String(pricing.max_grant_seconds));
-  const [ttlSeconds, setTtlSeconds] = useState(String(pricing.grant_ttl_seconds));
+  const [alertPrice, setAlertPrice] = useState((pricing.alert_hourly_price_minor / 100).toFixed(2));
+  const [monitorPrice, setMonitorPrice] = useState((pricing.monitor_hourly_reward_minor / 100).toFixed(2));
   const save = useMutation({
-    mutationFn: () => api.updatePricing(csrf, {
-      price_version: priceVersion.trim(),
-      unit_seconds: Number(unitSeconds),
-      unit_price_minor: Math.round(Number(unitPrice) * 100),
-      max_grant_seconds: Number(maxGrantSeconds),
-      grant_ttl_seconds: Number(ttlSeconds),
+    mutationFn: () => api.updateTimePricing(csrf, {
+      alert_hourly_price_minor: Math.round(Number(alertPrice) * 100),
+      monitor_hourly_reward_minor: Math.round(Number(monitorPrice) * 100),
       version: pricing.version,
     }),
     onSuccess: () => {
       setEditing(false);
-      void client.invalidateQueries({ queryKey: ["sentry", "alert-pricing"] });
+      void client.invalidateQueries({ queryKey: ["sentry", "time-pricing"] });
+      void client.invalidateQueries({ queryKey: ["sentry", "alert-usage"] });
     },
   });
-  const valid = priceVersion.trim() !== "" &&
-    Number.isSafeInteger(Number(unitSeconds)) && Number(unitSeconds) > 0 && Number(unitSeconds) <= 86400 &&
-    /^\d+(\.\d{1,2})?$/.test(unitPrice) && Number(unitPrice) > 0 && Number(unitPrice) <= 10000000000 &&
-    Number.isSafeInteger(Number(maxGrantSeconds)) && Number(maxGrantSeconds) > 0 && Number(maxGrantSeconds) <= 2678400 &&
-    Number.isSafeInteger(Number(ttlSeconds)) && Number(ttlSeconds) >= 60 && Number(ttlSeconds) <= 2678400;
-  const hasPolicy = pricing.unit_seconds > 0 && pricing.unit_price_minor > 0 && pricing.max_grant_seconds > 0 && pricing.grant_ttl_seconds >= 60;
+  const valid = /^\d+(\.\d{1,2})?$/.test(alertPrice) && Number(alertPrice) > 0 && Number(alertPrice) <= 10000000000 &&
+    /^\d+(\.\d{1,2})?$/.test(monitorPrice) && Number(monitorPrice) >= 0 && Number(monitorPrice) <= 10000000000;
   return (
     <div className="sentry-pricing-inline">
       <div className="sentry-pricing-inline-heading">
@@ -279,11 +270,6 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
           </span>
           {pricing.can_edit && !editing && <Button variant="outline" onClick={() => setEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
         </div>
-      </div>
-      <div className="sentry-usage-summary sentry-pricing-summary">
-        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Clock3 aria-hidden="true" /></span><span>{msg("计价单位")}</span><strong>{hasPolicy ? `${pricing.unit_seconds}${msg("秒")}` : "—"}</strong></div>
-        <div className="sentry-usage-metric sentry-pricing-metric"><span className="sentry-usage-metric-icon"><Coins aria-hidden="true" /></span><span>{msg("每单位价格")}</span><strong>{hasPolicy ? `${coins(pricing.unit_price_minor)} ${msg("币")}` : "—"}</strong></div>
-        <small>{pricing.configured ? `${msg("版本")}：${pricing.price_version}` : hasPolicy ? msg("尚未保存独立收费配置，当前使用部署默认值") : msg("尚未配置预警收费规则")}</small>
       </div>
       {editing && pricing.can_edit && (
         <FormDialog
@@ -295,11 +281,8 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
           className="sentry-pricing-form"
           onSubmit={() => save.mutate()}
         >
-          <label><span>{msg("价格版本")}</span><input autoFocus value={priceVersion} onChange={(event) => setPriceVersion(event.target.value)} maxLength={80} required /></label>
-          <label><span>{msg("计价单位（秒）")}</span><input type="number" min={1} max={86400} value={unitSeconds} onChange={(event) => setUnitSeconds(event.target.value)} required /></label>
-          <label><span>{msg("每单位价格（果壳币）")}</span><input type="number" min={0.01} max={10000000000} step={0.01} value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} required /></label>
-          <label><span>{msg("单次授权上限（秒）")}</span><input type="number" min={1} max={2678400} value={maxGrantSeconds} onChange={(event) => setMaxGrantSeconds(event.target.value)} required /></label>
-          <label><span>{msg("授权有效期（秒）")}</span><input type="number" min={60} max={2678400} value={ttlSeconds} onChange={(event) => setTtlSeconds(event.target.value)} required /></label>
+          <label><span>{msg("预警消费价格（果壳币/小时）")}</span><input autoFocus type="number" min={0.01} max={10000000000} step={0.01} value={alertPrice} onChange={(event) => setAlertPrice(event.target.value)} required /></label>
+          <label><span>{msg("监控奖励价格（果壳币/小时）")}</span><input type="number" min={0} max={10000000000} step={0.01} value={monitorPrice} onChange={(event) => setMonitorPrice(event.target.value)} required /></label>
           {save.isError && <p role="alert">{save.error.message}</p>}
         </FormDialog>
       )}
@@ -307,8 +290,8 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.AlertPricing; csrf:
   );
 }
 
-function UsageMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return <div className="sentry-usage-metric"><span className="sentry-usage-metric-icon">{icon}</span><span>{label}</span><strong>{value} <small>{msg("币")}</small></strong></div>;
+function UsageMetric({ icon, label, value, unit = msg("币") }: { icon: ReactNode; label: string; value: string; unit?: string }) {
+  return <div className="sentry-usage-metric"><span className="sentry-usage-metric-icon">{icon}</span><span>{label}</span><strong>{value}{unit && <small> {unit}</small>}</strong></div>;
 }
 
 function ConsumptionRow({ item }: { item: api.AlertConsumption }) {

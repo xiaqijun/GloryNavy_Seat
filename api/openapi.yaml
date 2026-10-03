@@ -7507,6 +7507,49 @@ paths:
                   data: {$ref: '#/components/schemas/SentryAlertPricing'}
         '401': {description: No active session}
         '503': {description: Pricing storage unavailable}
+  /api/v1/sentry/time-pricing:
+    get:
+      operationId: sentryReadTimePricing
+      summary: Read the two hourly Sentry prices
+      description: Returns alert consumption and monitor reward prices in Nutshell Coin minor units. The deployment charging switch is read-only here.
+      security: [{SessionCookie: []}]
+      responses:
+        '200':
+          description: Current hourly prices
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/SentryTimePricing'}
+        '401': {description: No active session}
+    put:
+      operationId: sentryUpdateTimePricing
+      summary: Update the two hourly Sentry prices
+      description: Site administrators only. Version protects concurrent edits; the new price applies from its save time and does not rewrite existing alert grants.
+      security: [{SessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SentryTimePricingEdit'}
+      responses:
+        '200':
+          description: Hourly prices saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/SentryTimePricing'}
+        '400': {description: Invalid price values}
+        '401': {description: No active session}
+        '403': {description: Site administrator required}
+        '409': {description: Pricing version conflict}
     put:
       operationId: sentryUpdateAlertPricing
       summary: Update the alert charging policy
@@ -7785,14 +7828,34 @@ components:
     SentryAlertUsageSummary:
       type: object
       additionalProperties: false
-      required: [available_minor, alert_reserved_minor, alert_settled_minor, alert_released_minor, alert_refunded_minor, as_of]
+      required: [available_minor, alert_reserved_minor, alert_settled_minor, alert_released_minor, alert_refunded_minor, monitor_reward_minor, as_of]
       properties:
         available_minor: {type: integer, format: int64, description: Available Nutshell Coins; may be negative while a deficit is being covered.}
         alert_reserved_minor: {type: integer, format: int64, minimum: 0, description: Coins currently held for alert intervals.}
         alert_settled_minor: {type: integer, format: int64, minimum: 0, description: Net settled alert consumption.}
         alert_released_minor: {type: integer, format: int64, minimum: 0, description: Coins released from unused alert reservations.}
         alert_refunded_minor: {type: integer, format: int64, minimum: 0, description: Coins refunded for settled alert intervals.}
+        monitor_reward_minor: {type: integer, format: int64, minimum: 0, description: Coins credited from server-confirmed monitor time.}
         as_of: {type: string, format: date-time}
+    SentryTimePricing:
+      type: object
+      additionalProperties: false
+      required: [alert_hourly_price_minor, monitor_hourly_reward_minor, version, can_edit, charging_enabled]
+      properties:
+        alert_hourly_price_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000}
+        monitor_hourly_reward_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000}
+        version: {type: integer, format: int64, minimum: 0}
+        can_edit: {type: boolean}
+        charging_enabled: {type: boolean}
+        updated_at: {type: string, format: date-time}
+    SentryTimePricingEdit:
+      type: object
+      additionalProperties: false
+      required: [alert_hourly_price_minor, monitor_hourly_reward_minor, version]
+      properties:
+        alert_hourly_price_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000000}
+        monitor_hourly_reward_minor: {type: integer, format: int64, minimum: 0, maximum: 1000000000000}
+        version: {type: integer, format: int64, minimum: 0}
     SentryAlertPricing:
       type: object
       additionalProperties: false
