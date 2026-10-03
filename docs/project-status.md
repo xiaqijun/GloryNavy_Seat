@@ -1,5 +1,9 @@
 # 项目状态
 
+## 已移除：GitHub Actions CI（2026-10-03）
+
+仓库不再配置 GitHub Actions 自动 CI；原 `.github/workflows/ci.yaml` 已删除。代码生成、后端测试和前端检查改由开发者在本地按 [开发指南](development.md) 和模块开发约定执行；生产部署流程不依赖该工作流。
+
 ## 已发布：批量结算已发合同归入已处理（2026-10-03）
 
 生产前后端已切换至 `v0.1.0-contract-batch-approval-history-20261003`。批量合同已同步、等待主角色接取时返回 `delivery_status=awaiting_acceptance`，审批中心与单合同保持一致移入“已处理”；批次 #6 仍保持 `pending`、三项均为等待接收角色完成合同，完成数仍为 0，避免把“已发出”误记为已完成。未同步、内容不匹配或其他异常继续留在待发放/异常视图。本轮无 Goose/River 新迁移；应用 ready、`NRestarts=0`、Goose 66，公网首页/登录 200、静态入口和 OpenResty `nginx -t` 通过。

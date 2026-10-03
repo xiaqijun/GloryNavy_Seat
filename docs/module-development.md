@@ -58,7 +58,7 @@ Goose 25 兑换边界：exchange 私有表保存币权益、流水、奖励与�
 4. `Permission` 使用本模块前缀，例如 `community.profile.read`；`Public` 默认 false。未启用 identity 时受保护接口不能启动。已启用时宿主验证会话并委托 access；新能力必须登记策略，对象接口必须解析服务端目标再做范围检查。不要用 Public 或仅 access.self 绕过业务授权；参考 access 的 summary handler。
 5. 在 `internal/app/app.go` 明确创建并注册模块；在 `MODULES` 启动清单加入其 ID 和依赖。先校验启用关系，再为未来需要后台资源的模块启动生命周期；当前 Definition 本身只描述路由，不会自动启动任务。
 6. 查询放入模块内的 `internal/store/queries`，sqlc 输出到同一个私有 store。根 `migrations` 新增带模块归属注释的 Goose 迁移，并在 `sqlc.yaml` 增加对应生成块。不得编辑已生成 `.sql.go`，不得把草稿迁移加入发布列表。
-7. 更新 `api/openapi.yaml`，覆盖服务规则、权限拒绝、对象范围、依赖错误及实际数据库行为。`npm run db:generate` 后提交生成文件；CI 检查整个 `internal/modules` 的生成一致性。
+7. 更新 `api/openapi.yaml`，覆盖服务规则、权限拒绝、对象范围、依赖错误及实际数据库行为。`npm run db:generate` 后提交生成文件；提交前在本地执行相同的生成一致性检查，确认整个 `internal/modules` 无未提交生成差异。
 
 宿主统一提供请求编号、JSON 响应、日志、数据库池与鉴权包装。HTTP handler 使用 `httpapi.Respond/Failure`，可通过 `httpapi.RequestID` 关联日志；敏感参数、凭据和令牌不能进入日志。
 
