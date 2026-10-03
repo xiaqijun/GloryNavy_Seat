@@ -2,7 +2,7 @@
 
 ## 监控奖励明细展示（2026-10-04）
 
-已发布 `v0.1.0-sentry-reward-history-20261004-r1`，同时更新 Seat 后端和公网前端，新增受保护的 `GET /api/v1/sentry/monitor-rewards` 本人明细读取。生产已核对 972 条有币奖励记录、合计 972 个最小币单位；匿名请求返回 401，应用 ready、公网首页 200 和 OpenResty `nginx -t` 通过。
+已发布 `v0.1.0-sentry-reward-history-20261004-r4`，同时更新 Seat 后端和公网前端，新增受保护的 `GET /api/v1/sentry/monitor-rewards` 本人明细读取，并将相邻同客户端、同星系奖励区间合并展示。生产已核对 994 条有币奖励记录、合计 994 个最小币单位；匿名请求返回 401，应用 ready、公网首页 200 和 OpenResty `nginx -t` 通过。
 
 ## 预警小时价格展示与连续区间合并（2026-10-03）
 
