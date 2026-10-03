@@ -108,6 +108,25 @@ func TestAlertUsageReadModelKeepsCoinStatesSeparate(t *testing.T) {
 	}
 }
 
+func TestAlertUsageIncludesBatchedMonitorRewards(t *testing.T) {
+	s, _, _ := rewardFixture(t)
+	ctx := context.Background()
+	if _, err := s.Pool.Exec(ctx, `INSERT INTO exchange_coin_ledger(account_id,kind,reference,request_key,delta,reason) VALUES
+		($1,'source',$2,$3,2,'监控时长奖励'),
+		($1,'source',$4,$5,7,'监控时长奖励')`, manager,
+		"sentry-monitor:legacy", rewardKey(110),
+		"sentry-monitor-batch:batch-1", rewardKey(111)); err != nil {
+		t.Fatal(err)
+	}
+	usage, err := s.AlertUsage(ctx, manager)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if usage.MonitorRewardMinor != 9 {
+		t.Fatalf("monitor reward total: got %d, want 9", usage.MonitorRewardMinor)
+	}
+}
+
 func TestAlertTimeConsumptionDisabledByDefault(t *testing.T) {
 	s, _, _ := rewardFixture(t)
 	err := s.ReserveAlertTime(context.Background(), AlertTimeGrantRequest{ID: rewardKey(80), AccountID: manager, RequestKey: rewardKey(81), UnitSeconds: 1, UnitPriceMinor: 1, ReservedSeconds: 1, ExpiresAt: time.Now().UTC().Add(time.Hour)})
