@@ -160,6 +160,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     queryFn: ({ signal }) => api.timePricing(signal),
     refetchInterval: 60_000,
   });
+  const [pricingEditing, setPricingEditing] = useState(false);
   const refresh = () => {
     void usage.refetch();
     void page.refetch();
@@ -177,6 +178,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         </div>
         <div className="sentry-usage-actions">
           {keyActions}
+          {pricing.data?.can_edit && !pricingEditing && <Button variant="outline" onClick={() => setPricingEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
           <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching} onClick={refresh}>
             <RefreshCw size={18} aria-hidden="true" />
           </IconAction>
@@ -195,7 +197,6 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("预警累计净消费")} value={coins(usage.data.alert_settled_minor)} />
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("监控奖励")} value={coins(usage.data.monitor_reward_minor)} />
           </div>
-          <p className="sentry-usage-asof">{msg("统计时间")}：{date(usage.data.as_of)}</p>
         </>
       ) : (
         <p className="sentry-usage-loading" role="status">{msg("正在读取")}</p>
@@ -203,7 +204,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
       {pricing.isError ? (
         <p className="sentry-usage-error" role="alert">{pricing.error.message}</p>
       ) : pricing.data ? (
-        <AlertPricingPanel key={`${pricing.data.version}:${pricing.data.updated_at ?? ""}`} pricing={pricing.data} csrf={csrf} />
+        <AlertPricingPanel key={`${pricing.data.version}:${pricing.data.updated_at ?? ""}`} pricing={pricing.data} csrf={csrf} editing={pricingEditing} setEditing={setPricingEditing} />
       ) : (
         <p className="sentry-usage-loading" role="status">{msg("正在读取收费配置")}</p>
       )}
@@ -242,8 +243,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
   );
 }
 
-function AlertPricingPanel({ pricing, csrf }: { pricing: api.TimePricing; csrf: string }) {
-  const [editing, setEditing] = useState(false);
+function AlertPricingPanel({ pricing, csrf, editing, setEditing }: { pricing: api.TimePricing; csrf: string; editing: boolean; setEditing: (value: boolean) => void }) {
   const client = useQueryClient();
   const [alertPrice, setAlertPrice] = useState((pricing.alert_hourly_price_minor / 100).toFixed(2));
   const [monitorPrice, setMonitorPrice] = useState((pricing.monitor_hourly_reward_minor / 100).toFixed(2));
@@ -270,7 +270,6 @@ function AlertPricingPanel({ pricing, csrf }: { pricing: api.TimePricing; csrf: 
           <span className={`sentry-pricing-status ${pricing.charging_enabled ? "is-on" : "is-off"}`}>
             {pricing.charging_enabled ? msg("收费已启用") : msg("收费开关未启用")}
           </span>
-          {pricing.can_edit && !editing && <Button variant="outline" onClick={() => setEditing(true)}><Settings2 aria-hidden="true" />{msg("配置收费")}</Button>}
         </div>
       </div>
       {editing && pricing.can_edit && (
