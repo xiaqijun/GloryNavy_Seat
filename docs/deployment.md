@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警收费状态图标（2026-10-03）
+
+公网静态前端已切换至 `v0.1.0-sentry-charging-icon-20261003`。收费状态从价格区域移到消费标题行，以启用/停用图标显示并保留无障碍名称；本轮未修改应用后端、数据库或收费开关。公网首页/登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。
+
 ## 预警收费前端开关（2026-10-03）
 
 已发布 `v0.1.0-sentry-charging-toggle-20261003`。应用机与公网 1Panel 静态前端已原子切换，生产 Goose 64 已执行；`glorynavy` 为 `active`、`/health/ready` 返回 ready、重启次数为 0。切换前备份为 `/var/backups/glorynavy/before-v0.1.0-sentry-charging-toggle-20261003-20261003T082128Z.{dump,env}`。公网首页和登录 200、匿名价格接口 401、静态入口及 OpenResty `nginx -t` 通过。收费开关默认关闭；真实监控客户端证据、管理员价格复核和真实果壳币账务仍待现场验收。
