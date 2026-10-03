@@ -59,7 +59,11 @@ func (w *clientUsageWorker) Work(ctx context.Context, _ *river.Job[clientUsageRe
 	if err != nil {
 		return err
 	}
-	for _, usage := range page.Usage {
+	policy, err := s.currentAlertPolicy(ctx)
+	if err != nil {
+		return err
+	}
+	for _, usage := range mergeContinuousClientUsage(page.Usage, policy.MaxGrantSeconds) {
 		if err := s.settleClientUsage(ctx, usage); err != nil {
 			return err
 		}
@@ -78,6 +82,42 @@ func (w *clientUsageWorker) Work(ctx context.Context, _ *river.Job[clientUsageRe
 		return river.JobSnooze(time.Second)
 	}
 	return river.JobSnooze(time.Minute)
+}
+
+// mergeContinuousClientUsage keeps the raw remote evidence in Sentry while
+// sending one billing interval to exchange for a continuous online run. This
+// prevents a heartbeat-sized page from becoming a row (and a separately
+// rounded charge) for every short sample. The batch key is deterministic, so
+// a worker retry cannot create a second charge for the same page.
+func mergeContinuousClientUsage(usages []ClientUsage, maxSeconds int64) []ClientUsage {
+	if len(usages) < 2 {
+		return usages
+	}
+	if maxSeconds <= 0 {
+		maxSeconds = 31 * 24 * 60 * 60
+	}
+	out := make([]ClientUsage, 0, len(usages))
+	for _, usage := range usages {
+		if len(out) == 0 {
+			out = append(out, usage)
+			continue
+		}
+		last := &out[len(out)-1]
+		start, startErr := time.Parse(time.RFC3339Nano, usage.StartedAt)
+		end, endErr := time.Parse(time.RFC3339Nano, last.EndedAt)
+		continuous := startErr == nil && endErr == nil && end.Equal(start)
+		sameSource := last.AccountID == usage.AccountID && last.KeyID == usage.KeyID && last.ClientID == usage.ClientID
+		withinGrant := last.DurationSeconds > 0 && usage.DurationSeconds > 0 && last.DurationSeconds <= maxSeconds-usage.DurationSeconds
+		if !continuous || !sameSource || !withinGrant {
+			out = append(out, usage)
+			continue
+		}
+		last.EndedAt = usage.EndedAt
+		last.DurationSeconds += usage.DurationSeconds
+		last.CreatedAt = usage.CreatedAt
+		last.UsageID = stableUUID("sentry-client-usage-batch:" + last.UsageID + ":" + usage.UsageID)
+	}
+	return out
 }
 
 func (s *Service) clientUsageCursor(ctx context.Context) (string, error) {

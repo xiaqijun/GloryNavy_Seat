@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,6 +42,37 @@ type AlertConsumptionPage struct {
 	Items      []AlertConsumption
 	NextCursor int64
 	AsOf       time.Time
+}
+
+// mergeAlertConsumptions folds adjacent settled/reserved records that use the
+// same frozen price. Exchange keeps each source interval for idempotency and
+// audit, while the member read model presents one continuous online run.
+func mergeAlertConsumptions(items []AlertConsumption) []AlertConsumption {
+	if len(items) < 2 {
+		return items
+	}
+	out := make([]AlertConsumption, 0, len(items))
+	for _, item := range items {
+		if len(out) == 0 {
+			out = append(out, item)
+			continue
+		}
+		newer := &out[len(out)-1]
+		if newer.StartedAt.Equal(item.EndedAt) && newer.State == item.State &&
+			newer.UnitSeconds == item.UnitSeconds && newer.UnitPriceMinor == item.UnitPriceMinor &&
+			newer.PriceVersion == item.PriceVersion {
+			item.EndedAt = newer.EndedAt
+			item.DurationSeconds += newer.DurationSeconds
+			item.CoinsMinor += newer.CoinsMinor
+			item.ID = newer.ID
+			item.GrantID = newer.GrantID
+			item.IntervalID = "merged:" + strconv.FormatInt(item.ID, 10)
+			out[len(out)-1] = item
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
 }
 
 // AlertUsage reads the exchange-owned balance and alert ledgers in one
@@ -117,7 +149,16 @@ LIMIT $6`
 	if to != nil {
 		toArg = *to
 	}
-	rows, err := s.Pool.Query(ctx, query, id, before, state, fromArg, toArg, limit+1)
+	// Read enough raw intervals to collapse heartbeat-sized records into a
+	// useful page. The source rows remain individually auditable in storage.
+	fetchLimit := limit * 100
+	if fetchLimit < limit+1 {
+		fetchLimit = limit + 1
+	}
+	if fetchLimit > 10000 {
+		fetchLimit = 10000
+	}
+	rows, err := s.Pool.Query(ctx, query, id, before, state, fromArg, toArg, fetchLimit+1)
 	if err != nil {
 		return out, err
 	}
@@ -132,8 +173,15 @@ LIMIT $6`
 	if err := rows.Err(); err != nil {
 		return out, err
 	}
+	rawHasMore := len(out.Items) > fetchLimit
+	if rawHasMore {
+		out.Items = out.Items[:fetchLimit]
+	}
+	out.Items = mergeAlertConsumptions(out.Items)
 	if len(out.Items) > limit {
 		out.Items = out.Items[:limit]
+		out.NextCursor = out.Items[len(out.Items)-1].ID
+	} else if rawHasMore && len(out.Items) > 0 {
 		out.NextCursor = out.Items[len(out.Items)-1].ID
 	}
 	out.AsOf = time.Now().UTC()

@@ -1340,6 +1340,7 @@ export const english: Record<string, string> = {
   预警暂占: "Alert reserved",
   预警累计净消费: "Total alert spent",
   预警消费价格: "Alert usage price",
+  监控奖励价格: "Monitoring reward price",
   监控奖励: "Monitoring rewards",
   "预警消费价格（果壳币/小时）": "Alert usage price (Nutshell Coins/hour)",
   "监控奖励价格（果壳币/小时）": "Monitoring reward (Nutshell Coins/hour)",

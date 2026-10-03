@@ -108,6 +108,18 @@ func TestAlertUsageReadModelKeepsCoinStatesSeparate(t *testing.T) {
 	}
 }
 
+func TestMergeAlertConsumptionsCombinesContinuousFrozenPrice(t *testing.T) {
+	start := time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC)
+	items := []AlertConsumption{
+		{ID: 2, StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 3, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+		{ID: 1, StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 2, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+	}
+	merged := mergeAlertConsumptions(items)
+	if len(merged) != 1 || merged[0].ID != 2 || merged[0].DurationSeconds != 20 || merged[0].CoinsMinor != 5 || !merged[0].StartedAt.Equal(start) || !merged[0].EndedAt.Equal(start.Add(20*time.Second)) {
+		t.Fatalf("merged consumption: %+v", merged)
+	}
+}
+
 func TestAlertUsageIncludesBatchedMonitorRewards(t *testing.T) {
 	s, _, _ := rewardFixture(t)
 	ctx := context.Background()

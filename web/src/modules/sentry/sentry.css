@@ -15,7 +15,7 @@
 .sentry-usage-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .sentry-usage-heading h2 { margin: 0; font-size: 20px; font-weight: 650; }
 .sentry-usage-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
-.sentry-usage-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.sentry-usage-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .sentry-usage-metric { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; row-gap: 4px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .sentry-usage-metric-icon { display: grid; place-items: center; width: 32px; height: 32px; grid-row: span 2; border-radius: 9px; background: var(--color-accent); color: var(--primary); }
 .sentry-usage-metric > span:not(.sentry-usage-metric-icon) { color: var(--muted); font-size: 12px; }

@@ -169,7 +169,7 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
     setter(value);
     setBefore("");
   };
-  const priceValue = pricing.data && pricing.data.alert_hourly_price_minor > 0 ? `${coins(pricing.data.alert_hourly_price_minor)} ${msg("币")}/${msg("小时")}` : "—";
+  const hourlyPrice = (minor?: number) => minor && minor > 0 ? `${coins(minor)} ${msg("币")}/${msg("小时")}` : "—";
   return (
     <section className="sentry-usage" aria-labelledby="sentry-usage-title">
       <div className="sentry-usage-heading">
@@ -201,7 +201,8 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         <>
           <div className="sentry-usage-summary">
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("可用果壳币")} value={coins(usage.data.available_minor)} />
-            <UsageMetric icon={<Clock3 aria-hidden="true" />} label={msg("预警消费价格")} value={priceValue} unit="" />
+            <UsageMetric icon={<Clock3 aria-hidden="true" />} label={msg("预警消费价格")} value={hourlyPrice(pricing.data?.alert_hourly_price_minor)} unit="" />
+            <UsageMetric icon={<Clock3 aria-hidden="true" />} label={msg("监控奖励价格")} value={hourlyPrice(pricing.data?.monitor_hourly_reward_minor)} unit="" />
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("预警累计净消费")} value={coins(usage.data.alert_settled_minor)} />
             <UsageMetric icon={<Coins aria-hidden="true" />} label={msg("监控奖励")} value={coins(usage.data.monitor_reward_minor)} />
           </div>
