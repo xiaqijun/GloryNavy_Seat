@@ -2267,7 +2267,7 @@ export const english: Record<string, string> = {
   显示密钥: "Show key",
   隐藏密钥: "Hide key",
   "密钥仅在本次生成或刷新后可显示": "The key can only be shown after it is generated or refreshed in this session",
-  完整密钥仅在生成或刷新后可用: "The full key is available only after generation or refresh",
+  "旧密钥未保存完整内容，请手动更新一次，之后可随时复制": "This legacy key has no saved plaintext. Update it manually once to enable copying at any time.",
   密钥已复制: "Key copied",
   当前浏览器不支持复制: "This browser does not support copying",
   客户端密钥: "Client key",

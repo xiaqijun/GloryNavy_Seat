@@ -1,11 +1,13 @@
 # EVE Sentry keys and time billing
 
-Seat owns key creation/rotation, account ownership, hourly prices, and the administrator charging switch. Plaintext is returned only by create or manual rotation and is never stored in the database, browser storage, URL, or logs. The page exposes copy and rotate actions and never rotates automatically.
+Seat owns key creation/rotation, account ownership, hourly prices, and the administrator charging switch. Plaintext is encrypted at rest with a key derived from the server `EVE_TOKEN_KEY` and returned only in the protected list response for the owning account; it is never stored in browser storage, URLs, or logs. The page exposes copy and rotate actions and never rotates automatically.
+
+Keys created before this migration have no recoverable plaintext and require one manual update; updated keys can be copied at any time.
 
 ## API
 
 - `GET/POST /api/v1/sentry/keys`: read or create the current account key.
-- `POST /api/v1/sentry/keys/{id}/rotate`: manually rotate a key and return one-time plaintext.
+- `POST /api/v1/sentry/keys/{id}/rotate`: manually update a key, store the encrypted plaintext, and return the full content; the list can return it for later copying.
 - `GET/PUT /api/v1/sentry/time-pricing`: administrators read or save alert and monitoring reward prices (Nutshell Coin/hour) and the charging switch.
 - `GET /api/v1/sentry/alert-usage` and `GET /api/v1/sentry/alert-consumptions`: read account-level balance, spending, and reward records.
 

@@ -2,6 +2,8 @@ package sentry
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -9,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"sync"
@@ -23,6 +26,7 @@ import (
 
 var (
 	ErrInvalid              = errors.New("invalid sentry key request")
+	ErrSecretKey            = errors.New("sentry key encryption key unavailable")
 	ErrConflict             = errors.New("sentry key state conflict")
 	ErrAlertDisabled        = errors.New("sentry alert consumption is disabled")
 	ErrAlertPricingConflict = errors.New("sentry alert pricing version conflict")
@@ -101,6 +105,8 @@ type Service struct {
 	AlertUsageReader     AlertUsageReader
 	MonitorRewardFunding MonitorRewardFunding
 	Administrator        func(context.Context, string) (bool, error)
+	secretMu             sync.RWMutex
+	secretBox            cipher.AEAD
 	policyMu             sync.RWMutex
 }
 
@@ -108,6 +114,62 @@ func New(pool *pgxpool.Pool, remote Remote) *Service {
 	monitor, _ := remote.(MonitorRemote)
 	usage, _ := remote.(ClientUsageRemote)
 	return &Service{Pool: pool, Remote: remote, MonitorRemote: monitor, ClientUsageRemote: usage}
+}
+
+// SetSecretKey derives the key-at-rest cipher from the server's EVE token key.
+// The derived key never leaves the process or reaches browser responses.
+func (s *Service) SetSecretKey(encoded string) error {
+	encoded = strings.TrimSpace(encoded)
+	s.secretMu.Lock()
+	defer s.secretMu.Unlock()
+	if encoded == "" {
+		s.secretBox = nil
+		return nil
+	}
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil || len(raw) != 32 {
+		return ErrSecretKey
+	}
+	derived := sha256.Sum256(append([]byte("glorynavy:sentry-key-secret:v1:"), raw...))
+	block, err := aes.NewCipher(derived[:])
+	if err != nil {
+		return err
+	}
+	s.secretBox, err = cipher.NewGCM(block)
+	return err
+}
+
+func (s *Service) secretCipher() cipher.AEAD {
+	s.secretMu.RLock()
+	defer s.secretMu.RUnlock()
+	return s.secretBox
+}
+
+func (s *Service) sealSecret(id, secret string) ([]byte, error) {
+	box := s.secretCipher()
+	if box == nil {
+		return nil, ErrSecretKey
+	}
+	nonce := make([]byte, box.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+	return box.Seal(nonce, nonce, []byte(secret), []byte("sentry.key.secret.v1:"+id)), nil
+}
+
+func (s *Service) openSecret(id string, raw []byte) (string, error) {
+	if len(raw) == 0 {
+		return "", nil
+	}
+	box := s.secretCipher()
+	if box == nil || len(raw) < box.NonceSize() {
+		return "", ErrSecretKey
+	}
+	plain, err := box.Open(nil, raw[:box.NonceSize()], raw[box.NonceSize():], []byte("sentry.key.secret.v1:"+id))
+	if err != nil {
+		return "", ErrSecretKey
+	}
+	return string(plain), nil
 }
 
 // MonitorRewardFunding is the host-owned coin ledger boundary. The sentry
@@ -420,7 +482,7 @@ func (s *Service) List(ctx context.Context, account string) ([]Key, error) {
 	// A Seat account owns one current warning key. Historical revoked rows stay
 	// in the database for audit, but the member-facing view only returns the
 	// current card.
-	rows, err := s.Pool.Query(ctx, `SELECT id::text,name,key_prefix,permissions,status,remote_key_id,remote_version,created_at::text,updated_at::text,COALESCE(revoked_at::text,''),last_error FROM sentry_keys WHERE account_id=$1 AND status <> 'revoked' ORDER BY created_at DESC LIMIT 1`, account)
+	rows, err := s.Pool.Query(ctx, `SELECT id::text,name,key_prefix,permissions,status,remote_key_id,remote_version,created_at::text,updated_at::text,COALESCE(revoked_at::text,''),last_error,secret_ciphertext FROM sentry_keys WHERE account_id=$1 AND status <> 'revoked' ORDER BY created_at DESC LIMIT 1`, account)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +490,12 @@ func (s *Service) List(ctx context.Context, account string) ([]Key, error) {
 	out := []Key{}
 	for rows.Next() {
 		var k Key
-		if err := rows.Scan(&k.ID, &k.Name, &k.Prefix, &k.Permissions, &k.Status, &k.RemoteID, &k.Version, &k.CreatedAt, &k.UpdatedAt, &k.RevokedAt, &k.LastError); err != nil {
+		var ciphertext []byte
+		if err := rows.Scan(&k.ID, &k.Name, &k.Prefix, &k.Permissions, &k.Status, &k.RemoteID, &k.Version, &k.CreatedAt, &k.UpdatedAt, &k.RevokedAt, &k.LastError, &ciphertext); err != nil {
+			return nil, err
+		}
+		k.Secret, err = s.openSecret(k.ID, ciphertext)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, k)
@@ -454,12 +521,17 @@ func (s *Service) Create(ctx context.Context, account, name string, rawPermissio
 	var existing Key
 	var existingAccount string
 	var existingHash []byte
-	if err = s.Pool.QueryRow(ctx, `SELECT account_id::text,id::text,name,key_prefix,key_hash,permissions,status,COALESCE(remote_key_id,''),remote_version,created_at::text,updated_at::text,COALESCE(revoked_at::text,''),last_error FROM sentry_keys WHERE operation_id=$1`, opID).Scan(&existingAccount, &existing.ID, &existing.Name, &existing.Prefix, &existingHash, &existing.Permissions, &existing.Status, &existing.RemoteID, &existing.Version, &existing.CreatedAt, &existing.UpdatedAt, &existing.RevokedAt, &existing.LastError); err == nil {
+	var existingCiphertext []byte
+	if err = s.Pool.QueryRow(ctx, `SELECT account_id::text,id::text,name,key_prefix,key_hash,permissions,status,COALESCE(remote_key_id,''),remote_version,created_at::text,updated_at::text,COALESCE(revoked_at::text,''),last_error,secret_ciphertext FROM sentry_keys WHERE operation_id=$1`, opID).Scan(&existingAccount, &existing.ID, &existing.Name, &existing.Prefix, &existingHash, &existing.Permissions, &existing.Status, &existing.RemoteID, &existing.Version, &existing.CreatedAt, &existing.UpdatedAt, &existing.RevokedAt, &existing.LastError, &existingCiphertext); err == nil {
 		if existingAccount != account {
 			return Key{}, ErrConflict
 		}
 		if existing.Name != name || !slices.Equal(existing.Permissions, permissions) {
 			return Key{}, ErrConflict
+		}
+		existing.Secret, err = s.openSecret(existing.ID, existingCiphertext)
+		if err != nil {
+			return Key{}, err
 		}
 		if (existing.Status == "creating" || existing.Status == "sync_error") && existing.RemoteID == "" {
 			if len(existingHash) != sha256.Size {
@@ -503,9 +575,13 @@ func (s *Service) Create(ctx context.Context, account, name string, rawPermissio
 	if err != nil {
 		return Key{}, err
 	}
+	secretCiphertext, err := s.sealSecret(keyID, secret)
+	if err != nil {
+		return Key{}, err
+	}
 	// Record the local intent before crossing the service boundary. A lost
 	// response remains visible as creating/sync_error and can be reconciled.
-	if _, err = s.Pool.Exec(ctx, `INSERT INTO sentry_keys(id,account_id,operation_id,name,key_prefix,key_hash,permissions,status) VALUES($1,$2,$3,$4,$5,$6,$7,'creating')`, keyID, account, opID, name, prefix, digest, permissions); err != nil {
+	if _, err = s.Pool.Exec(ctx, `INSERT INTO sentry_keys(id,account_id,operation_id,name,key_prefix,key_hash,permissions,status,secret_ciphertext) VALUES($1,$2,$3,$4,$5,$6,$7,'creating',$8)`, keyID, account, opID, name, prefix, digest, permissions, secretCiphertext); err != nil {
 		return Key{}, err
 	}
 	if _, err = s.Pool.Exec(ctx, `INSERT INTO sentry_key_events(key_id,account_id,action) VALUES($1,$2,'creating')`, keyID, account); err != nil {
@@ -566,6 +642,10 @@ func (s *Service) Rotate(ctx context.Context, account, id string) (Key, error) {
 	if err != nil {
 		return Key{}, err
 	}
+	secretCiphertext, err := s.sealSecret(id, secret)
+	if err != nil {
+		return Key{}, err
+	}
 	if _, err = s.Pool.Exec(ctx, `UPDATE sentry_keys SET status='revoking',last_error='',updated_at=now() WHERE id=$1 AND account_id=$2 AND status='active'`, id, account); err != nil {
 		return Key{}, err
 	}
@@ -595,7 +675,7 @@ func (s *Service) Rotate(ctx context.Context, account, id string) (Key, error) {
 		}
 		return Key{}, ErrRemoteUnavailable
 	}
-	if _, err = s.Pool.Exec(ctx, `UPDATE sentry_keys SET operation_id=$2,remote_key_id=$3,key_prefix=$4,key_hash=$5,permissions=$6,remote_version=$7,status='active',last_error='',revoked_at=NULL,updated_at=now() WHERE id=$1 AND account_id=$8`, id, newOp, remote.ID, prefix, digest, old.Permissions, remote.Version, account); err != nil {
+	if _, err = s.Pool.Exec(ctx, `UPDATE sentry_keys SET operation_id=$2,remote_key_id=$3,key_prefix=$4,key_hash=$5,permissions=$6,remote_version=$7,status='active',last_error='',revoked_at=NULL,secret_ciphertext=$8,updated_at=now() WHERE id=$1 AND account_id=$9`, id, newOp, remote.ID, prefix, digest, old.Permissions, remote.Version, secretCiphertext, account); err != nil {
 		_, _ = s.Pool.Exec(ctx, `UPDATE sentry_keys SET status='sync_error',last_error='预警平台已更新，本地记录待核对',updated_at=now() WHERE id=$1 AND account_id=$2`, id, account)
 		return Key{}, err
 	}

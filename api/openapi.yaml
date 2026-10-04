@@ -7808,7 +7808,7 @@ components:
         updated_at: {type: string, format: date-time}
         revoked_at: {type: string, format: date-time}
         last_error: {type: string}
-        secret: {type: string, writeOnly: true, description: Full secret is returned only by a successful create response and is never returned by list.}
+        secret: {type: string, readOnly: true, description: Full secret is returned to the owning account by create, rotate and protected list responses when encrypted plaintext is available. Legacy hash-only keys require one manual rotation.}
     SentryKeyList:
       type: object
       additionalProperties: false

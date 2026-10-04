@@ -37,9 +37,8 @@ export default function SentryPage() {
 function Workspace({ csrf }: { csrf: string }) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  // The API intentionally returns the plaintext only from create/rotate. Keep
-  // each returned value in page memory so a query refresh cannot make the
-  // copy action depend on the last-rendered card.
+  // Keep the protected list response in page memory so copying remains
+  // available after a query refresh; create/rotate responses update it too.
   const [secrets, setSecrets] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const autoCreateStarted = useRef(false);
@@ -69,6 +68,16 @@ function Workspace({ csrf }: { csrf: string }) {
   });
   const items = q.data?.items || [];
   useEffect(() => {
+    if (!items.length) return;
+    setSecrets((values) => {
+      const next = { ...values };
+      for (const key of items) {
+        if (key.secret) next[key.id] = key.secret;
+      }
+      return next;
+    });
+  }, [items]);
+  useEffect(() => {
     if (!q.isLoading && !q.isError && items.length === 0 && !create.isPending && !autoCreateStarted.current) {
       autoCreateStarted.current = true;
       create.mutate();
@@ -83,11 +92,6 @@ function Workspace({ csrf }: { csrf: string }) {
   };
 
   const refreshKey = (id: string) => {
-    setSecrets((values) => {
-      const next = { ...values };
-      delete next[id];
-      return next;
-    });
     setCopied(false);
     rotate.mutate(id);
   };
@@ -107,12 +111,12 @@ function Workspace({ csrf }: { csrf: string }) {
   };
 
   const copyCardSecret = (id: string) => {
-    const value = secrets[id];
+    const value = items.find((key) => key.id === id)?.secret || secrets[id];
     if (value) {
       void copySecret(value);
       return;
     }
-    toast.info(msg("完整密钥仅在生成或刷新后可用"));
+    toast.info(msg("旧密钥未保存完整内容，请手动更新一次，之后可随时复制"));
   };
 
   return (

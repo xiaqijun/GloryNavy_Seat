@@ -229,6 +229,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		sentryRemote = remote
 	}
 	sentryService := sentry.New(pool, sentryRemote)
+	if err := sentryService.SetSecretKey(auth.TokenKey); err != nil {
+		return nil, err
+	}
 	sentryService.Administrator = accessService.IsAdministrator
 	// The legacy environment value is still parsed for configuration
 	// compatibility; the actual on/off state is persisted in

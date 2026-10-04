@@ -1,6 +1,8 @@
 package sentry
 
 import (
+	"bytes"
+	"encoding/base64"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +32,28 @@ func TestNewSecretHasPrefixAndDigestShape(t *testing.T) {
 	}
 	if !strings.HasPrefix(secret, "eve_") || len(digest) != 32 || prefix != secret[:12] {
 		t.Fatalf("secret metadata invalid: secret prefix=%q digest=%d prefix=%q", secret[:4], len(digest), prefix)
+	}
+}
+
+func TestSecretCipherRoundTrip(t *testing.T) {
+	s := New(nil, nil)
+	key := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
+	if err := s.SetSecretKey(key); err != nil {
+		t.Fatalf("SetSecretKey() error = %v", err)
+	}
+	ciphertext, err := s.sealSecret("key-1", "eve_test-secret")
+	if err != nil {
+		t.Fatalf("sealSecret() error = %v", err)
+	}
+	if bytes.Contains(ciphertext, []byte("eve_test-secret")) {
+		t.Fatal("ciphertext contains plaintext secret")
+	}
+	got, err := s.openSecret("key-1", ciphertext)
+	if err != nil || got != "eve_test-secret" {
+		t.Fatalf("openSecret() = %q, %v", got, err)
+	}
+	if _, err := s.openSecret("other-key", ciphertext); err != ErrSecretKey {
+		t.Fatalf("openSecret() with wrong id error = %v, want ErrSecretKey", err)
 	}
 }
 
