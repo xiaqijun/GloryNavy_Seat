@@ -305,7 +305,7 @@ function UsageRecordRow({ item }: { item: UsageRecord }) {
     <div className="sentry-consumption-main">
       <div><strong>{date(item.started_at)}</strong><span>{duration(item.duration_seconds)} · {item.system_name}</span></div>
       <div className="sentry-consumption-amount">
-        {item.charge_minor > 0 && <strong>−{coins(item.charge_minor)} {msg("币")}</strong>}
+        {item.charge_minor > 0 && <strong className={item.charge_returned ? "is-returned" : ""}>{item.charge_returned ? "+" : "−"}{coins(item.charge_minor)} {msg("币")}</strong>}
         {item.reward_minor > 0 && <strong className="is-returned">+{coins(item.reward_minor)} {msg("币")}</strong>}
         {label && <span className={`sentry-consumption-state is-${item.charge_state}`}>{label}</span>}
         {item.reward_minor > 0 && <span className="sentry-consumption-state is-settled">{msg("已奖励")}</span>}
