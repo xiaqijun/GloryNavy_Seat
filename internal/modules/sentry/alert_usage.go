@@ -3,6 +3,7 @@ package sentry
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -62,10 +63,16 @@ func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
 	for _, item := range items {
 		if len(out) > 0 {
 			newer := &out[len(out)-1]
-			if newer.StartedAt.Equal(item.EndedAt) && newer.ClientID == item.ClientID && newer.SystemID == item.SystemID && newer.SystemName == item.SystemName {
+			// Client IDs can change when the primary monitor reconnects. The
+			// member-facing view groups contiguous evidence by stable system,
+			// while the raw contribution rows retain the client boundary.
+			if newer.StartedAt.Equal(item.EndedAt) && monitorSystemKey(*newer) == monitorSystemKey(item) {
 				item.EndedAt = newer.EndedAt
 				item.DurationSeconds += newer.DurationSeconds
 				item.CoinsMinor += newer.CoinsMinor
+				if item.SystemName == "" {
+					item.SystemName = newer.SystemName
+				}
 				item.ContributionID = "merged:" + item.ContributionID
 				out[len(out)-1] = item
 				continue
@@ -80,6 +87,15 @@ func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
 		}
 	}
 	return positive
+}
+
+func monitorSystemKey(item MonitorRewardRecord) string {
+	id := strings.ToLower(strings.TrimSpace(item.SystemID))
+	id = strings.TrimPrefix(id, "legacy:")
+	if id != "" {
+		return id
+	}
+	return "name:" + strings.ToLower(strings.TrimSpace(item.SystemName))
 }
 
 type MonitorRewardPage struct {

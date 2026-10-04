@@ -17,3 +17,15 @@ func TestMergeMonitorRewardsKeepsContinuousTotal(t *testing.T) {
 		t.Fatalf("merged rewards: %+v", merged)
 	}
 }
+
+func TestMergeMonitorRewardsBridgesClientAndLegacySystemBoundaries(t *testing.T) {
+	start := time.Date(2026, 10, 4, 0, 0, 0, 0, time.UTC)
+	items := []MonitorRewardRecord{
+		{ContributionID: "new", ClientID: "client-2", SystemID: "S-KSWL", SystemName: "S-KSWL", StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 2},
+		{ContributionID: "old", ClientID: "client-1", SystemID: "legacy:s-kswl", SystemName: "S-KSWL", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 1},
+	}
+	merged := mergeMonitorRewards(items)
+	if len(merged) != 1 || merged[0].DurationSeconds != 20 || merged[0].CoinsMinor != 3 {
+		t.Fatalf("merged client/system boundary: %+v", merged)
+	}
+}
