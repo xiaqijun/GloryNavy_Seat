@@ -79,6 +79,12 @@ const settlementStates: Record<string, string> = {
   partial: msg("批次部分完成"),
   failed: msg("批次失败"),
 };
+const settlementStatusLabel = (batch: settlement.SettlementBatch) =>
+  batch.delivery_status === "awaiting_acceptance"
+    ? progress.awaiting_acceptance
+    : settlementStates[batch.state] || batch.state;
+const settlementIsProcessed = (batch: settlement.SettlementBatch) =>
+  batch.state === "completed" || batch.delivery_status === "awaiting_acceptance";
 const actionLabels: Record<string, string> = {
   approve: msg("已批准"),
   reject: msg("已驳回"),
@@ -174,7 +180,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
   const batches = useQuery({
     queryKey: ["welfare", "settlements", user],
     queryFn: ({ signal }) => settlement.list(signal),
-    enabled: context.data?.allowed === true && tab === "fulfillment",
+    enabled: context.data?.allowed === true && (tab === "fulfillment" || tab === "history"),
     refetchInterval: 10000,
     staleTime: 5000,
     refetchOnWindowFocus: false,
@@ -235,10 +241,18 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
   };
   const visibleBatches =
     tab === "fulfillment"
+      ? (batches.data?.items ?? []).filter((batch) => !settlementIsProcessed(batch))
+      : tab === "history"
+        ? (batches.data?.items ?? []).filter(settlementIsProcessed)
+        : [];
+  // Keep source records out of ordinary fulfillment rows for the whole batch
+  // lifetime, even after an awaiting-acceptance batch moves to Processed.
+  const batchedSourceBatches =
+    tab === "fulfillment"
       ? (batches.data?.items ?? []).filter((batch) => batch.state !== "completed")
-      : [];
+      : visibleBatches;
   const batchedKeys = new Set(
-    visibleBatches.flatMap((batch) =>
+    batchedSourceBatches.flatMap((batch) =>
       (batch.entries ?? []).map((entry) => `${entry.source}:${entry.source_id}`),
     ),
   );
@@ -640,6 +654,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
                 <SettlementTableRow
                   key={`batch:${batch.id}`}
                   batch={batch}
+                  selectable={tab === "fulfillment"}
                   mainAccount={
                     (q.data?.items ?? [])
                       .filter((item) =>
@@ -893,22 +908,31 @@ function WelfareDetail({
 
 function SettlementTableRow({
   batch,
+  selectable,
   mainAccount,
   onOpen,
 }: {
   batch: settlement.SettlementBatch;
+  selectable: boolean;
   mainAccount: string;
   onOpen: () => void;
 }) {
   const amount = batch.isk_minor > 0 ? formatMinor(batch.isk_minor) : "";
   return (
     <tr className="approval-batch-table-row">
-      <td className="approval-select-cell">
-        <span className="approval-batch-glyph" title={msg("批量结算")}>
-          <Layers3 size={16} aria-hidden="true" />
-        </span>
-      </td>
+      {selectable && (
+        <td className="approval-select-cell">
+          <span className="approval-batch-glyph" title={msg("批量结算")}>
+            <Layers3 size={16} aria-hidden="true" />
+          </span>
+        </td>
+      )}
       <td>
+        {!selectable && (
+          <span className="approval-batch-glyph" title={msg("批量结算")}>
+            <Layers3 size={16} aria-hidden="true" />
+          </span>
+        )}
         <strong>{msg("批量结算")}</strong>
         <small>#{batch.id}</small>
       </td>
@@ -931,7 +955,7 @@ function SettlementTableRow({
       </td>
       <td>
         <span className="approval-status">
-          {settlementStates[batch.state] || batch.state}
+          {settlementStatusLabel(batch)}
         </span>
         <small>
           {batch.completed_count}/{batch.total_count}
@@ -1012,16 +1036,16 @@ function SettlementDetail({
   }
   const batch = q.data.batch;
   const amount = batch.isk_minor > 0 ? formatMinor(batch.isk_minor) : "";
-  const recipients = batch.recipient_ids.join(", ");
+  const recipients = batch.recipient_names?.join(", ") || "—";
   return (
     <Modal title={msg("批量结算")} close={close} size="compact">
       <div className="approval-settlement-detail">
         <div className="approval-settlement-heading">
           <strong>{batch.settlement_reference || `#${batch.id}`}</strong>
-          <span className="approval-status">{settlementStates[batch.state] || batch.state}</span>
+          <span className="approval-status">{settlementStatusLabel(batch)}</span>
         </div>
         <div className="approval-settlement-copy-grid">
-          <BatchCopyField label={msg("合同接收角色 ID")} value={recipients} />
+          <BatchCopyField label={msg("合同接收角色")} value={recipients} />
           <BatchCopyField label={msg("支付金额 / ISK")} value={amount} />
           <BatchCopyField label={msg("合同结算 ID")} value={batch.settlement_reference || ""} />
           {batch.contract_id && <BatchCopyField label={msg("游戏合同 ID")} value={batch.contract_id} />}

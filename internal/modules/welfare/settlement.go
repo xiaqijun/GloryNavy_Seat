@@ -30,6 +30,41 @@ type SettlementBatchView struct {
 	Items []store.SettlementItem `json:"items"`
 }
 
+// settlementBatchForRead keeps legacy aggregate batches from exposing the
+// old multi-character recipient snapshot. The stored snapshot remains
+// untouched for audit purposes; the current main character is the only
+// recipient shown and used for a merged contract.
+func (s *Service) settlementBatchForRead(ctx context.Context, b store.SettlementBatch) (store.SettlementBatch, error) {
+	if b.SettlementReference == "" || b.AccountID == "" {
+		return b, nil
+	}
+	if s.MainCharacterID != nil {
+		recipients, err := s.settlementRecipients(ctx, b)
+		if err != nil && !errors.Is(err, ErrSettlementUnsupported) {
+			return b, err
+		}
+		if err == nil {
+			b.RecipientIDs, err = json.Marshal(recipients)
+			if err != nil {
+				return b, err
+			}
+		}
+	}
+	if s.MainCharacterName != nil {
+		name, err := s.MainCharacterName(ctx, b.AccountID)
+		if err != nil {
+			return b, err
+		}
+		if strings.TrimSpace(name) != "" {
+			b.RecipientNames, err = json.Marshal([]string{name})
+			if err != nil {
+				return b, err
+			}
+		}
+	}
+	return b, nil
+}
+
 func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input SettlementInput) (SettlementBatchView, error) {
 	var out SettlementBatchView
 	if e := s.admin(ctx, actor); e != nil {
@@ -106,6 +141,10 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 	}
 	// Replays return the original batch and never enqueue a second settlement.
 	if existing, e := store.SettlementBatchByRequestKey(ctx, s.Pool, actor, input.RequestKey); e == nil {
+		existing, e = s.settlementBatchForRead(ctx, existing)
+		if e != nil {
+			return out, e
+		}
 		items, itemErr := store.SettlementItems(ctx, s.Pool, existing.ID)
 		return SettlementBatchView{Batch: existing, Items: items}, itemErr
 	} else if !errors.Is(e, pgx.ErrNoRows) {
@@ -131,6 +170,10 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 	if e = tx.Commit(ctx); e != nil {
 		return out, e
 	}
+	b, e = s.settlementBatchForRead(ctx, b)
+	if e != nil {
+		return out, e
+	}
 	items, e := store.SettlementItems(ctx, s.Pool, b.ID)
 	return SettlementBatchView{Batch: b, Items: items}, e
 }
@@ -150,7 +193,14 @@ func (s *Service) SettlementBatch(ctx context.Context, actor string, id int64) (
 	if e != nil {
 		return SettlementBatchView{}, e
 	}
+	b, e = s.settlementBatchForRead(ctx, b)
+	if e != nil {
+		return SettlementBatchView{}, e
+	}
 	items, e := store.SettlementItems(ctx, s.Pool, id)
+	if e == nil {
+		b.DeliveryStatus = store.SettlementDeliveryStatus(b.TotalCount, items)
+	}
 	return SettlementBatchView{Batch: b, Items: items}, e
 }
 

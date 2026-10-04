@@ -17,20 +17,8 @@ func (a *sentryAlertSettlement) ReserveAlertTime(ctx context.Context, grantID, a
 	return a.exchange.ReserveAlertTime(ctx, exchange.AlertTimeGrantRequest{ID: grantID, AccountID: accountID, RequestKey: requestKey, PriceVersion: priceVersion, UnitSeconds: unitSeconds, UnitPriceMinor: unitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt})
 }
 
-func (a *sentryAlertSettlement) ReleaseAlertGrant(ctx context.Context, grantID, requestKey string) error {
-	return a.exchange.ReleaseAlertGrant(ctx, grantID, requestKey)
-}
-
-func (a *sentryAlertSettlement) AlertGrantAccount(ctx context.Context, grantID string) (string, error) {
-	return a.exchange.AlertGrantAccount(ctx, grantID)
-}
-
-func (a *sentryAlertSettlement) AlertGrantExpiresAt(ctx context.Context, grantID string) (time.Time, error) {
-	return a.exchange.AlertGrantExpiresAt(ctx, grantID)
-}
-
-func (a *sentryAlertSettlement) AlertGrantPricing(ctx context.Context, grantID string) (string, int64, int64, int64, time.Time, error) {
-	return a.exchange.AlertGrantPricing(ctx, grantID)
+func (a *sentryAlertSettlement) ReserveAlertTimeForSystem(ctx context.Context, grantID, accountID, requestKey, systemID, priceVersion string, unitSeconds, unitPriceMinor, reservedSeconds int64, expiresAt time.Time) error {
+	return a.exchange.ReserveAlertTime(ctx, exchange.AlertTimeGrantRequest{ID: grantID, AccountID: accountID, SystemID: systemID, RequestKey: requestKey, PriceVersion: priceVersion, UnitSeconds: unitSeconds, UnitPriceMinor: unitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt})
 }
 
 func (a *sentryAlertSettlement) ReserveAlertInterval(ctx context.Context, grantID, intervalID, requestKey string, startedAt, endedAt time.Time) error {
@@ -41,12 +29,4 @@ func (a *sentryAlertSettlement) ReserveAlertInterval(ctx context.Context, grantI
 
 func (a *sentryAlertSettlement) SettleAlertInterval(ctx context.Context, grantID, intervalID, requestKey string) error {
 	return a.exchange.SettleAlertTime(ctx, grantID, intervalID, requestKey)
-}
-
-func (a *sentryAlertSettlement) ReleaseAlertInterval(ctx context.Context, grantID, intervalID, requestKey string) error {
-	return a.exchange.ReleaseAlertInterval(ctx, grantID, intervalID, requestKey)
-}
-
-func (a *sentryAlertSettlement) RefundAlertInterval(ctx context.Context, grantID, intervalID, requestKey string) error {
-	return a.exchange.RefundAlertTime(ctx, grantID, intervalID, requestKey)
 }

@@ -29,6 +29,8 @@ type SettlementBatch struct {
 	ISKMinor            int64            `json:"isk_minor"`
 	Items               json.RawMessage  `json:"items"`
 	RecipientIDs        json.RawMessage  `json:"recipient_ids"`
+	RecipientNames      json.RawMessage  `json:"recipient_names,omitempty"`
+	DeliveryStatus      string           `json:"delivery_status,omitempty"`
 	ContractID          *int64           `json:"contract_id,omitempty"`
 	ContractRecipientID *int64           `json:"contract_recipient_id,omitempty"`
 	Entries             []SettlementItem `json:"entries,omitempty"`
@@ -44,6 +46,29 @@ type SettlementItem struct {
 	LastError string    `json:"last_error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// SettlementAwaitingAcceptance is the public delivery status used when the
+// merged game contract is present and only the recipient's acceptance is
+// still pending. It keeps the batch list consistent with single-contract
+// records, which use the same status in the approval history view.
+const SettlementAwaitingAcceptance = "awaiting_acceptance"
+
+const SettlementAwaitingAcceptanceError = "等待接收角色完成合同"
+
+// SettlementDeliveryStatus derives the list-level status from item progress.
+// Aggregate batches are processed as one transaction, so every item must be
+// waiting for acceptance before the batch moves to history.
+func SettlementDeliveryStatus(total int, entries []SettlementItem) string {
+	if total <= 0 || len(entries) != total {
+		return ""
+	}
+	for _, entry := range entries {
+		if entry.LastError != SettlementAwaitingAcceptanceError {
+			return ""
+		}
+	}
+	return SettlementAwaitingAcceptance
 }
 
 type SettlementSelection struct {
@@ -122,6 +147,7 @@ func ListSettlementBatches(ctx context.Context, db DB, limit int) ([]SettlementB
 		if out[i].Entries == nil {
 			out[i].Entries = []SettlementItem{}
 		}
+		out[i].DeliveryStatus = SettlementDeliveryStatus(out[i].TotalCount, out[i].Entries)
 	}
 	return out, nil
 }

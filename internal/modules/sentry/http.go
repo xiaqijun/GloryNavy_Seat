@@ -29,8 +29,6 @@ func (h Handler) Module() module.Definition {
 			{Method: http.MethodPost, Path: "/keys", Permission: "sentry.self", Handler: http.HandlerFunc(h.create)},
 			{Method: http.MethodPost, Path: "/keys/{id}/rotate", Permission: "sentry.self", Handler: http.HandlerFunc(h.rotate)},
 			{Method: http.MethodDelete, Path: "/keys/{id}", Permission: "sentry.self", Handler: http.HandlerFunc(h.revoke)},
-			{Method: http.MethodPost, Path: "/alert-grants", Permission: "sentry.self", Handler: http.HandlerFunc(h.createAlertGrant)},
-			{Method: http.MethodDelete, Path: "/alert-grants/{id}", Permission: "sentry.self", Handler: http.HandlerFunc(h.revokeAlertGrant)},
 			{Method: http.MethodGet, Path: "/alert-usage", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertUsage)},
 			{Method: http.MethodGet, Path: "/alert-consumptions", Permission: "sentry.self", Handler: http.HandlerFunc(h.alertConsumptions)},
 			{Method: http.MethodGet, Path: "/monitor-rewards", Permission: "sentry.self", Handler: http.HandlerFunc(h.monitorRewards)},
@@ -179,36 +177,6 @@ func (h Handler) rotate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.respondStatus(w, r, http.StatusOK, key, nil)
-}
-
-func (h Handler) createAlertGrant(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		KeyID           string `json:"key_id"`
-		RequestKey      string `json:"request_key"`
-		ReservedSeconds int64  `json:"reserved_seconds"`
-	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
-	decoder.DisallowUnknownFields()
-	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF {
-		h.respond(w, r, nil, ErrInvalid)
-		return
-	}
-	grant, err := h.Service.CreateAlertGrant(r.Context(), h.User(r), body.KeyID, body.RequestKey, body.ReservedSeconds)
-	h.respondStatus(w, r, http.StatusCreated, grant, err)
-}
-
-func (h Handler) revokeAlertGrant(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		RequestKey string `json:"request_key"`
-	}
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
-	decoder.DisallowUnknownFields()
-	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF {
-		h.respond(w, r, nil, ErrInvalid)
-		return
-	}
-	err := h.Service.RevokeAlertGrant(r.Context(), h.User(r), chi.URLParam(r, "id"), body.RequestKey)
-	h.respond(w, r, map[string]bool{"revoked": err == nil}, err)
 }
 
 func (h Handler) respond(w http.ResponseWriter, r *http.Request, data any, err error) {

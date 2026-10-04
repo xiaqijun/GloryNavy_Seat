@@ -13,6 +13,7 @@ import (
 type AlertGrant struct {
 	ID              pgtype.UUID
 	AccountID       pgtype.UUID
+	SystemID        string
 	RequestKey      pgtype.UUID
 	PriceVersion    string
 	UnitSeconds     int64
@@ -31,6 +32,7 @@ type AlertCharge struct {
 	ID              int64
 	GrantID         pgtype.UUID
 	AccountID       pgtype.UUID
+	SystemID        string
 	IntervalID      string
 	StartedAt       time.Time
 	EndedAt         time.Time
@@ -39,15 +41,15 @@ type AlertCharge struct {
 	State           string
 }
 
-const findAlertGrantByRequest = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state FROM exchange_alert_grants WHERE account_id=$1 AND request_key=$2`
+const findAlertGrantByRequest = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state,system_id FROM exchange_alert_grants WHERE account_id=$1 AND request_key=$2`
 
 func (q *Queries) FindAlertGrantByRequest(ctx context.Context, accountID, requestKey pgtype.UUID) (AlertGrant, error) {
 	return scanAlertGrant(q.db.QueryRow(ctx, findAlertGrantByRequest, accountID, requestKey))
 }
 
-const lockAlertGrant = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state FROM exchange_alert_grants WHERE id=$1 FOR UPDATE`
+const lockAlertGrant = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state,system_id FROM exchange_alert_grants WHERE id=$1 FOR UPDATE`
 
-const findAlertGrant = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state FROM exchange_alert_grants WHERE id=$1`
+const findAlertGrant = `SELECT id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,released_seconds,settled_seconds,released_minor,settled_minor,expires_at,state,system_id FROM exchange_alert_grants WHERE id=$1`
 
 func (q *Queries) AlertGrant(ctx context.Context, id pgtype.UUID) (AlertGrant, error) {
 	return scanAlertGrant(q.db.QueryRow(ctx, findAlertGrant, id))
@@ -59,14 +61,14 @@ func (q *Queries) LockAlertGrant(ctx context.Context, id pgtype.UUID) (AlertGran
 
 func scanAlertGrant(row pgx.Row) (AlertGrant, error) {
 	var g AlertGrant
-	err := row.Scan(&g.ID, &g.AccountID, &g.RequestKey, &g.PriceVersion, &g.UnitSeconds, &g.UnitPriceMinor, &g.ReservedSeconds, &g.ReservedMinor, &g.ReleasedSeconds, &g.SettledSeconds, &g.ReleasedMinor, &g.SettledMinor, &g.ExpiresAt, &g.State)
+	err := row.Scan(&g.ID, &g.AccountID, &g.RequestKey, &g.PriceVersion, &g.UnitSeconds, &g.UnitPriceMinor, &g.ReservedSeconds, &g.ReservedMinor, &g.ReleasedSeconds, &g.SettledSeconds, &g.ReleasedMinor, &g.SettledMinor, &g.ExpiresAt, &g.State, &g.SystemID)
 	return g, err
 }
 
-const createAlertGrant = `INSERT INTO exchange_alert_grants(id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+const createAlertGrant = `INSERT INTO exchange_alert_grants(id,account_id,request_key,price_version,unit_seconds,unit_price_minor,reserved_seconds,reserved_minor,expires_at,system_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`
 
-func (q *Queries) CreateAlertGrant(ctx context.Context, id, accountID, requestKey pgtype.UUID, priceVersion string, unitSeconds, unitPriceMinor, reservedSeconds, reservedMinor int64, expiresAt time.Time) error {
-	_, err := q.db.Exec(ctx, createAlertGrant, id, accountID, requestKey, priceVersion, unitSeconds, unitPriceMinor, reservedSeconds, reservedMinor, expiresAt)
+func (q *Queries) CreateAlertGrant(ctx context.Context, id, accountID, requestKey pgtype.UUID, priceVersion string, unitSeconds, unitPriceMinor, reservedSeconds, reservedMinor int64, expiresAt time.Time, systemID string) error {
+	_, err := q.db.Exec(ctx, createAlertGrant, id, accountID, requestKey, priceVersion, unitSeconds, unitPriceMinor, reservedSeconds, reservedMinor, expiresAt, systemID)
 	return err
 }
 
@@ -89,18 +91,18 @@ func (q *Queries) AlertIntervalOverlap(ctx context.Context, grantID pgtype.UUID,
 	return exists, err
 }
 
-const findAlertCharge = `SELECT id,grant_id,account_id,interval_id,started_at,ended_at,duration_seconds,coins_minor,state FROM exchange_alert_charges WHERE grant_id=$1 AND interval_id=$2 FOR UPDATE`
+const findAlertCharge = `SELECT id,grant_id,account_id,interval_id,started_at,ended_at,duration_seconds,coins_minor,state,system_id FROM exchange_alert_charges WHERE grant_id=$1 AND interval_id=$2 FOR UPDATE`
 
 func (q *Queries) LockAlertCharge(ctx context.Context, grantID pgtype.UUID, intervalID string) (AlertCharge, error) {
 	var c AlertCharge
-	err := q.db.QueryRow(ctx, findAlertCharge, grantID, intervalID).Scan(&c.ID, &c.GrantID, &c.AccountID, &c.IntervalID, &c.StartedAt, &c.EndedAt, &c.DurationSeconds, &c.CoinsMinor, &c.State)
+	err := q.db.QueryRow(ctx, findAlertCharge, grantID, intervalID).Scan(&c.ID, &c.GrantID, &c.AccountID, &c.IntervalID, &c.StartedAt, &c.EndedAt, &c.DurationSeconds, &c.CoinsMinor, &c.State, &c.SystemID)
 	return c, err
 }
 
-const createAlertCharge = `INSERT INTO exchange_alert_charges(grant_id,account_id,interval_id,started_at,ended_at,duration_seconds,coins_minor,reserve_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
+const createAlertCharge = `INSERT INTO exchange_alert_charges(grant_id,account_id,interval_id,started_at,ended_at,duration_seconds,coins_minor,reserve_key,system_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
-func (q *Queries) CreateAlertCharge(ctx context.Context, grantID, accountID pgtype.UUID, intervalID string, startedAt, endedAt time.Time, durationSeconds, coinsMinor int64, reserveKey pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, createAlertCharge, grantID, accountID, intervalID, startedAt, endedAt, durationSeconds, coinsMinor, reserveKey)
+func (q *Queries) CreateAlertCharge(ctx context.Context, grantID, accountID pgtype.UUID, intervalID string, startedAt, endedAt time.Time, durationSeconds, coinsMinor int64, reserveKey pgtype.UUID, systemID string) error {
+	_, err := q.db.Exec(ctx, createAlertCharge, grantID, accountID, intervalID, startedAt, endedAt, durationSeconds, coinsMinor, reserveKey, systemID)
 	return err
 }
 

@@ -34,6 +34,7 @@ type AlertConsumption struct {
 	UnitPriceMinor  int64     `json:"unit_price_minor"`
 	PriceVersion    string    `json:"price_version,omitempty"`
 	ExpiresAt       time.Time `json:"expires_at"`
+	SystemID        string    `json:"system_id,omitempty"`
 }
 
 type AlertConsumptionPage struct {
@@ -52,6 +53,7 @@ type MonitorRewardRecord struct {
 	EndedAt         time.Time `json:"ended_at"`
 	DurationSeconds int64     `json:"duration_seconds"`
 	CoinsMinor      int64     `json:"coins_minor"`
+	SystemID        string    `json:"system_id,omitempty"`
 	SystemName      string    `json:"system_name"`
 }
 
@@ -60,7 +62,7 @@ func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
 	for _, item := range items {
 		if len(out) > 0 {
 			newer := &out[len(out)-1]
-			if newer.StartedAt.Equal(item.EndedAt) && newer.ClientID == item.ClientID && newer.SystemName == item.SystemName {
+			if newer.StartedAt.Equal(item.EndedAt) && newer.ClientID == item.ClientID && newer.SystemID == item.SystemID && newer.SystemName == item.SystemName {
 				item.EndedAt = newer.EndedAt
 				item.DurationSeconds += newer.DurationSeconds
 				item.CoinsMinor += newer.CoinsMinor
@@ -117,7 +119,7 @@ func (s *Service) ReadMonitorRewards(ctx context.Context, account string, limit 
 		limit = 30
 	}
 	rows, err := s.Pool.Query(ctx, `
-SELECT contribution_id,client_id,started_at,ended_at,duration_seconds,coins_minor,system_name
+SELECT contribution_id,client_id,started_at,ended_at,duration_seconds,coins_minor,system_id,system_name
 FROM sentry_monitor_rewards
 WHERE account_id=$1 AND state='rewarded'
 ORDER BY ended_at DESC, contribution_id DESC
@@ -128,7 +130,7 @@ LIMIT 10000`, id)
 	defer rows.Close()
 	for rows.Next() {
 		var item MonitorRewardRecord
-		if err := rows.Scan(&item.ContributionID, &item.ClientID, &item.StartedAt, &item.EndedAt, &item.DurationSeconds, &item.CoinsMinor, &item.SystemName); err != nil {
+		if err := rows.Scan(&item.ContributionID, &item.ClientID, &item.StartedAt, &item.EndedAt, &item.DurationSeconds, &item.CoinsMinor, &item.SystemID, &item.SystemName); err != nil {
 			return out, err
 		}
 		out.Items = append(out.Items, item)

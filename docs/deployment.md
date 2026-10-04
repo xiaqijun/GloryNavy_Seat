@@ -1,35 +1,24 @@
 # Linux 生产部署
 
-## 监控奖励明细展示（2026-10-04）
+## Sentry 与批量结算统一发布（2026-10-04）
 
-已发布 `v0.1.0-sentry-reward-history-20261004-r4`，同时更新 Seat 后端和公网前端，新增受保护的 `GET /api/v1/sentry/monitor-rewards` 本人明细读取，并将相邻同客户端、同星系奖励区间合并展示。生产已核对 994 条有币奖励记录、合计 994 个最小币单位；匿名请求返回 401，应用 ready、公网首页 200 和 OpenResty `nginx -t` 通过。
+已将当前最新 Sentry 时间计费代码和批量结算修复合并为 `v0.1.0-sentry-batch-unified-20261004`，应用与公网前端统一切换到同一版本。收费只读取认证客户端在线区间，监控奖励只读取主节点贡献区间；事件、投递、ACK、授权释放和退款路径已清理。Goose/River 保持 66，无新增迁移；应用 ready、服务无重启、公网首页 200、受保护接口 401 和 OpenResty `nginx -t` 均通过。
 
-## 预警小时价格展示与连续区间合并（2026-10-03）
+## 批量结算修复版本恢复（2026-10-04）
 
-已发布 `v0.1.0-sentry-continuous-billing-20261003-r2`，同时更新 Seat 后端和公网静态前端。页面统计卡显示预警消费小时价格与监控奖励小时价格；Seat 对账 worker 将同账号、密钥、客户端的相邻认证心跳合并后按秒计价，消费查询再按冻结价格合并连续记录。无新增 Goose/River 迁移；应用 ready、公网首页 200、匿名受保护接口 401 和 OpenResty `nginx -t` 已通过。
+并行 Sentry 发布曾将应用和公网前端覆盖到不含批量合同兼容逻辑的版本，#6 因此短暂回到“等待合并合同同步”。现已恢复应用 `v0.1.0-contract-batch-approval-history-20261003` 和前端 `v0.1.0-contract-batch-row-alignment-20261003`；#6 已重新识别游戏合同并进入“等待接收角色完成合同”，三条来源记录继续隐藏。生产健康检查、公网首页和匿名 401 均通过。
 
-## 预警监控奖励统计修复（2026-10-03）
+## 批量结算行列对齐修复（2026-10-03）
 
-已发布 `v0.1.0-sentry-reward-display-20261003-r2`。消费统计读取同时兼容历史 `sentry-monitor:` 和批量结算 `sentry-monitor-batch:` 前缀，修复币账已有奖励但页面显示为 0 的问题。应用 `active/ready`、生产统计查询、公网首页 200 和 OpenResty `nginx -t` 均通过。
+已仅更新公网静态前端至 `v0.1.0-contract-batch-row-alignment-20261003`。批量结算行按当前页签是否有选择列对齐表头，已处理页签的类型、申请人、项目、金额、状态和时间不再整体错位。后端、Goose、River 和应用服务未改；前端 `current`、首页 200、容器入口和 OpenResty `nginx -t` 通过。
+
+## 批量结算来源去重修复（2026-10-03）
+
+已仅更新公网静态前端至 `v0.1.0-contract-batch-queue-dedupe-20261003`。已进入批量结算的来源记录在批次生命周期内继续从普通“待发放”列表隐藏；批次移到“已处理”后不会再次显示三条来源记录。后端、Goose、River 和应用服务未改；前端 `current`、首页 200、容器入口和 OpenResty `nginx -t` 通过。
 
 ## 批量结算已发合同归入已处理（2026-10-03）
 
 已发布 `v0.1.0-contract-batch-approval-history-20261003`。批量合同已同步但等待主角色接取时，后端返回 `delivery_status=awaiting_acceptance`，审批中心将其从“待发放”移到“已处理”，详情仍显示“等待领取合同”；合同未同步、内容不匹配或其他异常不改变原分类。批次 #6 生产数据仍为 `pending`、3 项待处理、完成数 0，三项错误均为“等待接收角色完成合同”。本轮无 Goose/River 新迁移，生产 Goose 66；应用 `active/ready`、`NRestarts=0`，公网前端 `current`、首页/登录 200、容器静态入口和 OpenResty `nginx -t` 检查通过。
-
-## 预警在线时长收费改造（已发布，2026-10-03）
-
-本轮新增 Goose 66 `sentry_client_usage_reconcile_state`，并要求同时发布 EVE Sentry
-的 `seat_client_usage` 导出与 Seat 的客户端在线区间对账 worker。新 worker 只按认证心跳
-在线秒数和小时价格结算；旧事件/投递/ACK worker 不再调度新收费，旧队列任务会被取消。
-本轮已发布 Seat `v0.1.0-sentry-heartbeat-time-20261003-r2` 与 EVE Sentry
-`d77eab7`。生产 Goose 66 已执行；应用 ready、公网首页/登录 200、OpenResty
-`nginx -t` 通过。真实心跳、正式价格和 exchange 币流水仍需现场验收，部署成功不代表
-真实扣币已验收。
-
-随后发布 Seat `v0.1.0-sentry-monitor-reward-batch-20261003`，修复监控贡献以远端密钥 ID
-匹配 Seat 本地密钥的问题；每段在线证据独立保存，同一对账页和账号的奖励合并为一次币账入账。
-回放历史游标后生产已核到 5,908 条奖励证据、60 条合并币账记录（共 618 个最小币单位）。
-应用 ready、公网首页 200、静态站点切换和 OpenResty `nginx -t` 已通过。
 
 ## 批量结算合同标题同步修复（2026-10-03）
 
@@ -57,24 +46,6 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 公网前端上一版本保留为 `releases/v0.1.0-sentry-charging-icon-inline-20261003`；
 容器静态入口、OpenResty `nginx -t`、首页/登录 200，批量结算详情匿名访问 401。
 真实管理员登录后的批次 #6 页面和游戏合同交付仍需现场复核。
-
-## 预警对账入口修复（2026-10-03）
-
-Seat 的 `SENTRY_INTEGRATION_URL` 使用 `https://seat.kisectool.com` 同源入口。公网
-OpenResty 必须把 `/api/v1/integrations/seat/` 整个前缀转发到 114 上的 EVE Sentry
-服务；只转发密钥子路径会让预警投递、事件和监控贡献对账请求落回 Seat API 并返回
-`404 接口不存在`。仓库来源为 [`deploy/edge-api-proxy.conf`](../deploy/edge-api-proxy.conf)，
-变更后在公网机执行容器内 `nginx -t`，通过后平滑 reload，再用带服务令牌的只读
-`monitor-contributions`、`alert-deliveries` 和 `alert-events` 请求验证 `200`。本次只
-修复路由，不打开 EVE Sentry 的收费消费开关，也不创建真实扣币数据。
-
-## 预警消费与收费配置（2026-10-03）
-
-后端 `v0.1.0-sentry-charging-toggle-20261003`（Goose 64）和公网前端 `v0.1.0-sentry-charging-icon-inline-20261003` 已生产切换。页面提供余额、按小时价格、累计净消费、监控奖励和收费配置；收费状态图标嵌入配置按钮，默认关闭。应用 ready、首页/登录 200、匿名价格接口 401、静态入口及 OpenResty 检查通过。真实监控证据、价格复核和果壳币实账仍待现场验收。
-
-## 预警空消费账单响应修复（2026-10-02）
-
-生产前端已切换至 `v0.1.0-sentry-key-actions-20261002`，随后后端切换至 `v0.1.0-sentry-consumption-empty-20261002`。后端预警消费查询在没有记录时返回空数组，前端不再把合法空态判为响应格式异常；本轮无 Goose/River 新迁移，收费开关保持关闭。应用 `active/ready`、公网首页与登录 200、匿名模块和系统状态 401、静态容器入口及 OpenResty `nginx -t` 通过。前端上一版本和应用切换前备份均保留，可按现有回退约束恢复。
 
 ## 联盟 PAP 历史月份未兑换补兑（2026-10-02）
 
@@ -107,18 +78,6 @@ OpenResty 必须把 `/api/v1/integrations/seat/` 整个前缀转发到 114 上�
 ## 合同批量结算等待态修复（2026-09-30）
 
 已发布 `v0.1.0-contract-batch-retry-20260930`。批量结算在合同未接取或明细未同步时保留等待项，只有福利案件完成或兑换订单进入 `fulfilled` 才计入完成数；无 Goose/River 新迁移。应用机和公网静态前端已原子切换，应用就绪、公网首页/登录和匿名鉴权检查通过。
-
-## 预警密钥单层卡片（2026-09-30）
-
-已发布 `v0.1.0-sentry-single-card-20260930`。本次仅更新预警密钥页面的静态布局，应用 API 无行为变化、无 Goose/River 新迁移；应用机就绪、公网 OpenResty 配置和正式首页检查通过。
-
-## 预警密钥自动准备（2026-09-30）
-
-已发布 `v0.1.0-sentry-auto-key-20260930`。应用机 API 与公网静态前端已原子切换；本版本无 Goose/River 新迁移。每个本站账号只显示一张当前预警密钥卡片，首次打开页面自动准备默认密钥，已有密钥可通过“更新密钥”轮换；服务端先创建新远端密钥、再吊销旧远端密钥，失败时尝试回滚。切换前数据库与配置由激活脚本备份，应用服务 `active`/`ready`，公网首页、登录、匿名 401 和 OpenResty `nginx -t` 检查通过。真实成员轮换与远端双步确认仍需现场验收；上一前端版本保留为 `v0.1.0-sentry-key-rotate-20260930`。
-
-## 预警平台密钥直连重试（2026-09-30）
-
-已发布 `v0.1.0-sentry-api-retry-20260930`。应用机与公网前端均已切换，Goose/River 无新增迁移；激活脚本完成数据库与配置备份，应用服务 `active`/`ready`、重启次数为 0。密钥创建、创建结果不明后的重试、吊销和吊销重试均直接调用 EVE Sentry API；同一创建 `request_key` 与吊销操作保持幂等。上一版前端保留为 `/root/glorynavy-deploy/v0.1.0-sentry-api-retry-20260930.previous`。公网首页、登录和匿名 401 检查通过，OpenResty `nginx -t` 通过。
 
 ## QQ Bot 管理页（2026-09-30）
 
@@ -355,8 +314,3 @@ curl --fail http://10.233.53.209:18080/health/ready
 ## 2026-09-23 首页实力数字发布
 
 前后端版本 v0.1.0-public-strength-20260923-r1，Goose 保持 46，配置与会话不变。数据库/配置备份、静态资源哈希和匿名接口校验已完成，详细验收与浏览器复核限制见 [项目状态](project-status.md)。固定军团新增公开战绩/在线角色聚合，页面只保留四项名称＋数字，不显示图表和说明小字。
-## 预警收费开关同步（2026-10-03）
-
-Seat 管理员保存 `/sentry` 收费开关时，后端先用服务令牌调用 EVE Sentry 的
-`PUT /api/v1/integrations/seat/alert-consumption`，预警端持久化门禁后才提交本地价格事务。
-远端失败不会留下“页面已开启、预警端仍关闭”的半状态；发布后需验证该接口的 200 响应和预警端重启后的持久化读取。

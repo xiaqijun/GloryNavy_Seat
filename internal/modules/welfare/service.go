@@ -50,6 +50,7 @@ type Service struct {
 	Pool                *pgxpool.Pool
 	Administrator       func(context.Context, string) (bool, error)
 	MainCharacterID     func(context.Context, string) (int64, error)
+	MainCharacterName   func(context.Context, string) (string, error)
 	Corporations        func(context.Context, string) ([]Corporation, error)
 	Characters          func(context.Context, string) ([]Character, error)
 	Members             func(context.Context, string, int64) ([]Character, error)
@@ -67,7 +68,7 @@ type Service struct {
 	// ExchangeSettlementReward returns the frozen ISK/items projection for an
 	// exchange order. The host adapts the exchange module so welfare never
 	// imports its private store.
-	ExchangeSettlementReward func(context.Context, int64) (SettlementReward, error)
+	ExchangeSettlementReward     func(context.Context, int64) (SettlementReward, error)
 	ExchangeSettlementCompleteTx func(context.Context, pgx.Tx, int64, eve.DeliveryContract, string) error
 	SettlementCompleteTx         func(context.Context, pgx.Tx, int64, eve.DeliveryContract, string) error
 }

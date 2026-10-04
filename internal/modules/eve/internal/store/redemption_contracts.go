@@ -15,7 +15,11 @@ func ClaimDelivery(ctx context.Context, db DBTX, contract int64, module string, 
 	return ok, err
 }
 func RedemptionContractIDs(ctx context.Context, db DBTX, recipient int64, reference string, since time.Time) ([]int64, error) {
-	rows, err := db.Query(ctx, `SELECT contract_id FROM eve_contracts WHERE owner_kind='character' AND owner_id=$1 AND in_scope AND btrim(coalesce(payload->>'title',''))=$2 AND (payload->>'date_issued')::timestamptz >= $3 ORDER BY contract_id LIMIT 11`, recipient, reference, since)
+	// EVE limits contract titles to 50 characters. Batch references are
+	// intentionally longer, so the game can persist only their leading 50
+	// characters. Keep the exact match for shorter/legacy references and add
+	// the bounded prefix match for current batch references.
+	rows, err := db.Query(ctx, `SELECT contract_id FROM eve_contracts WHERE owner_kind='character' AND owner_id=$1 AND in_scope AND btrim(coalesce(payload->>'title','')) IN ($2, left($2, 50)) AND (payload->>'date_issued')::timestamptz >= $3 ORDER BY contract_id LIMIT 11`, recipient, reference, since)
 	if err != nil {
 		return nil, err
 	}

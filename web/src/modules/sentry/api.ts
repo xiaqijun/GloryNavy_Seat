@@ -62,6 +62,7 @@ export type AlertConsumption = {
   unit_price_minor: number;
   price_version?: string;
   expires_at: string;
+  system_id?: string;
 };
 
 export type AlertConsumptionPage = {
@@ -76,6 +77,7 @@ export type MonitorRewardRecord = {
   ended_at: string;
   duration_seconds: number;
   coins_minor: number;
+  system_id?: string;
   system_name: string;
 };
 export type MonitorRewardPage = { items: MonitorRewardRecord[]; as_of: string };
@@ -149,7 +151,8 @@ const isConsumption = (v: unknown): v is AlertConsumption =>
   Number.isSafeInteger(v.unit_price_minor) &&
   Number(v.unit_price_minor) > 0 &&
   (v.price_version === undefined || typeof v.price_version === "string") &&
-  typeof v.expires_at === "string";
+  typeof v.expires_at === "string" &&
+  (v.system_id === undefined || typeof v.system_id === "string");
 
 const isConsumptionPage = (v: unknown): v is AlertConsumptionPage =>
   object(v) &&
@@ -161,7 +164,8 @@ const isConsumptionPage = (v: unknown): v is AlertConsumptionPage =>
 const isMonitorReward = (v: unknown): v is MonitorRewardRecord =>
   object(v) && typeof v.contribution_id === "string" && typeof v.started_at === "string" &&
   typeof v.ended_at === "string" && Number.isSafeInteger(v.duration_seconds) && Number(v.duration_seconds) > 0 &&
-  Number.isSafeInteger(v.coins_minor) && Number(v.coins_minor) > 0 && typeof v.system_name === "string";
+  Number.isSafeInteger(v.coins_minor) && Number(v.coins_minor) > 0 && typeof v.system_name === "string" &&
+  (v.system_id === undefined || typeof v.system_id === "string");
 const isMonitorRewardPage = (v: unknown): v is MonitorRewardPage =>
   object(v) && typeof v.as_of === "string" && Array.isArray(v.items) && v.items.every(isMonitorReward);
 

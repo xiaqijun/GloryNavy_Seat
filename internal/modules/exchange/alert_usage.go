@@ -36,6 +36,7 @@ type AlertConsumption struct {
 	UnitPriceMinor  int64
 	PriceVersion    string
 	ExpiresAt       time.Time
+	SystemID        string
 }
 
 type AlertConsumptionPage struct {
@@ -60,7 +61,7 @@ func mergeAlertConsumptions(items []AlertConsumption) []AlertConsumption {
 		newer := &out[len(out)-1]
 		if newer.StartedAt.Equal(item.EndedAt) && newer.State == item.State &&
 			newer.UnitSeconds == item.UnitSeconds && newer.UnitPriceMinor == item.UnitPriceMinor &&
-			newer.PriceVersion == item.PriceVersion {
+			newer.PriceVersion == item.PriceVersion && newer.SystemID == item.SystemID {
 			item.EndedAt = newer.EndedAt
 			item.DurationSeconds += newer.DurationSeconds
 			item.CoinsMinor += newer.CoinsMinor
@@ -132,7 +133,7 @@ func (s *Service) AlertConsumptions(ctx context.Context, account string, before 
 	}
 	const query = `
 SELECT c.id,c.grant_id::text,c.interval_id,c.started_at,c.ended_at,c.duration_seconds,c.coins_minor,c.state,
-       g.unit_seconds,g.unit_price_minor,coalesce(g.price_version,''),g.expires_at
+       g.unit_seconds,g.unit_price_minor,coalesce(g.price_version,''),g.expires_at,c.system_id
 FROM exchange_alert_charges c
 JOIN exchange_alert_grants g ON g.id=c.grant_id
 WHERE c.account_id=$1
@@ -165,7 +166,7 @@ LIMIT $6`
 	defer rows.Close()
 	for rows.Next() {
 		var item AlertConsumption
-		if err := rows.Scan(&item.ID, &item.GrantID, &item.IntervalID, &item.StartedAt, &item.EndedAt, &item.DurationSeconds, &item.CoinsMinor, &item.State, &item.UnitSeconds, &item.UnitPriceMinor, &item.PriceVersion, &item.ExpiresAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.GrantID, &item.IntervalID, &item.StartedAt, &item.EndedAt, &item.DurationSeconds, &item.CoinsMinor, &item.State, &item.UnitSeconds, &item.UnitPriceMinor, &item.PriceVersion, &item.ExpiresAt, &item.SystemID); err != nil {
 			return out, err
 		}
 		out.Items = append(out.Items, item)

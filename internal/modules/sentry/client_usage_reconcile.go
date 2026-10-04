@@ -11,6 +11,13 @@ import (
 	platformjobs "glorynavy.local/seat/internal/platform/jobs"
 )
 
+// AlertIntervalSettlement is the narrow exchange boundary for one online
+// time interval. There is no event, delivery or ACK reconciliation path.
+type AlertIntervalSettlement interface {
+	ReserveAlertInterval(context.Context, string, string, string, time.Time, time.Time) error
+	SettleAlertInterval(context.Context, string, string, string) error
+}
+
 type clientUsageReconcileArgs struct{}
 
 func (clientUsageReconcileArgs) Kind() string { return "sentry.client-usage-reconcile.v1" }
@@ -159,8 +166,18 @@ func (s *Service) settleClientUsage(ctx context.Context, usage ClientUsage) erro
 	if candidate := ended.UTC().Add(policy.GrantTTL); candidate.After(expiresAt) {
 		expiresAt = candidate
 	}
-	if err := s.AlertFunding.ReserveAlertTime(ctx, grantID, usage.AccountID, reserveKey, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, usage.DurationSeconds, expiresAt); err != nil {
-		return err
+	var reserveErr error
+	if systemID := systemIDValue(usage.SystemID); systemID != "" {
+		funding, ok := s.AlertFunding.(AlertSystemGrantFunding)
+		if !ok {
+			return ErrRemoteUnavailable
+		}
+		reserveErr = funding.ReserveAlertTimeForSystem(ctx, grantID, usage.AccountID, reserveKey, systemID, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, usage.DurationSeconds, expiresAt)
+	} else {
+		reserveErr = s.AlertFunding.ReserveAlertTime(ctx, grantID, usage.AccountID, reserveKey, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, usage.DurationSeconds, expiresAt)
+	}
+	if reserveErr != nil {
+		return reserveErr
 	}
 	intervalKey := stableUUID("sentry-client-interval:" + usage.UsageID)
 	if err := s.AlertSettlement.ReserveAlertInterval(ctx, grantID, usage.UsageID, intervalKey, started, ended); err != nil {

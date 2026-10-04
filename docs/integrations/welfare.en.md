@@ -1,8 +1,16 @@
 # Corporation welfare
 
+## Batch recipient display (released 2026-10-03)
+
+Batch settlement details display the current main character's name as the contract recipient. The backend still verifies the in-game contract by the main character ID; multiple character IDs retained in a legacy snapshot remain internal and are not shown as the recipient.
+
+When the game contract is synchronized but still awaits acceptance by the main character, the batch uses `delivery_status=awaiting_acceptance` and moves to Processed like a single contract; it is not counted as completed until the contract finishes.
+
+EVE stores at most 50 characters in a contract title, while a `BATCH-YYYYMMDD-UUID` reference can be longer. The worker accepts the persisted first 50 characters and still verifies the main recipient, issuer, whole-ISK amount, item details, and contract state.
+
 ## Contract batch settlement (released 2026-09-30, Goose 57)
 
-Administrators can select welfare and exchange records in the approval center's fulfillment view and create a contract-settlement batch. The server accepts only the `welfare` or `exchange` source and business record ID, and uses a `request_key` for idempotency. Goose 57 freezes the aggregate ISK/item snapshot and candidate recipient characters and generates a `BATCH-YYYYMMDD-UUID` reference. The administrator creates one in-game item-exchange contract with that reference. River reads the single contract, verifies the actual recipient belongs to the Seat account, issuer, whole-ISK amount, item multiset and completion state, then updates all batch entries in one transaction. Records containing Guoke coins remain on the original single-record flow; old batches keep their per-item compatibility path.
+Administrators can select welfare and exchange records in the approval center's fulfillment view and create a contract-settlement batch. The server accepts only the `welfare` or `exchange` source and business record ID, and uses a `request_key` for idempotency. Goose 57 freezes the aggregate ISK/item snapshot and candidate recipient characters and generates a `BATCH-YYYYMMDD-UUID` reference. The administrator creates one in-game item-exchange contract for the account's current main character with that reference. River scans and verifies only the main character's contract, issuer, whole-ISK amount, item multiset and completion state, then updates all batch entries in one transaction. Legacy batches that stored multiple character IDs are resolved against the current main character at settlement time. Records containing Guoke coins remain on the original single-record flow; old batches keep their per-item compatibility path.
 
 Each item records `pending`, `processing`, `completed` or `failed` plus its attempt count. A failed item does not roll back other completed items; the batch reports `completed`, `partial` or `failed`. Failed items with attempts remaining are retried up to three times, and an administrator can manually requeue them. Create, read and retry are administrator-only; the approval center remains a read-only aggregate and writes go through the welfare batch API. Goose 57 is active in production as `v0.1.0-contract-batch-merged-20260930`; real administrator mixed-batch, contract-claim and audit-closure checks remain a live acceptance task.
 

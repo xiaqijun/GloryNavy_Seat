@@ -43,6 +43,7 @@ func (r *sentryAlertUsageReader) AlertConsumptions(ctx context.Context, account 
 			StartedAt: item.StartedAt, EndedAt: item.EndedAt, DurationSeconds: item.DurationSeconds,
 			CoinsMinor: item.CoinsMinor, State: item.State, UnitSeconds: item.UnitSeconds,
 			UnitPriceMinor: item.UnitPriceMinor, PriceVersion: item.PriceVersion, ExpiresAt: item.ExpiresAt,
+			SystemID: item.SystemID,
 		})
 	}
 	return out, nil

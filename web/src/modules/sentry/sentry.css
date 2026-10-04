@@ -27,19 +27,13 @@
 .sentry-consumption-row { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .sentry-consumption-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .sentry-consumption-main > div:first-child, .sentry-consumption-amount { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
-.sentry-consumption-main span, .sentry-consumption-meta { color: var(--muted); font-size: 13px; }
+.sentry-consumption-main span { color: var(--muted); font-size: 13px; }
 .sentry-consumption-amount strong { white-space: nowrap; }
 .sentry-consumption-amount strong.is-returned { color: var(--success, #15803d); }
 .sentry-consumption-state { padding: 3px 8px; border-radius: 999px; font-size: 12px; }
 .sentry-consumption-state.is-reserved { color: var(--warning, #b45309); background: color-mix(in srgb, var(--warning, #d97706) 13%, transparent); }
 .sentry-consumption-state.is-settled { color: var(--primary); background: var(--color-accent); }
 .sentry-consumption-state.is-released, .sentry-consumption-state.is-refunded { color: var(--success, #15803d); background: color-mix(in srgb, var(--success, #16a34a) 13%, transparent); }
-.sentry-consumption-details summary { width: fit-content; color: var(--primary); cursor: pointer; font-size: 13px; }
-.sentry-consumption-details summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.sentry-consumption-details dl { display: grid; gap: 6px; margin: 10px 0 0; }
-.sentry-consumption-details dl div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; font-size: 12px; }
-.sentry-consumption-details dt { color: var(--muted); }
-.sentry-consumption-details dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, monospace; }
 .sentry-usage-pagination { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .sentry-pricing-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .sentry-pricing-form label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }

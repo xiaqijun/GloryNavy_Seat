@@ -1,45 +1,20 @@
-# EVE Sentry warning-platform keys
+# EVE Sentry keys and time billing
 
-Status: 2026-10-03. The first Seat-side slice, one-card rotation, automatic page preparation, and inline reveal/copy card interaction are deployed in production. The Sentry service on host 114, the `seat.kisectool.com` HTTPS proxy, and the Seat server credential passed no-token 401 and authorized protocol-validation probes. Sentry's M1 ordinary-client authentication slice remains disabled by default; a real member rotation still needs field acceptance. `/sentry` also has a first read-only alert Nutshell Coin ledger for the current member; charging rules and the administrator switch are persisted in Goose 64, defaulting to off.
+Seat owns key creation/rotation, account ownership, hourly prices, and the administrator charging switch. Plaintext is returned only by create or manual rotation and is never stored in the database, browser storage, URL, or logs. The page exposes copy and rotate actions and never rotates automatically.
 
-When a member opens `/sentry`, the page automatically prepares one default key card. Each Seat account keeps one current key card; the page does not show use categories and provides no create or delete entry. The card uses a square layout, and the key area and copy button are always visible and clickable. After initial preparation or rotation, the full plaintext is shown directly in the current page memory; clicking the key area or copy button copies it. When plaintext is not available in the current session, the card stays masked and prompts the member to generate or rotate first; it never rotates automatically or tries to recover old plaintext. Rotation runs directly from the refresh button without a confirmation dialog. A successful rotation reuses the same local card with the new prefix; the new plaintext is shown only for that session. Plaintext is never stored in the database, browser storage, URL, or logs. Historical revoked rows remain in audit storage but are not repeated in the member list.
+## API
 
-Seat API:
+- `GET/POST /api/v1/sentry/keys`: read or create the current account key.
+- `POST /api/v1/sentry/keys/{id}/rotate`: manually rotate a key and return one-time plaintext.
+- `GET/PUT /api/v1/sentry/time-pricing`: administrators read or save alert and monitoring reward prices (Nutshell Coin/hour) and the charging switch.
+- `GET /api/v1/sentry/alert-usage` and `GET /api/v1/sentry/alert-consumptions`: read account-level balance, spending, and reward records.
 
-- `GET /api/v1/sentry/keys`: list the current account's keys.
-- `POST /api/v1/sentry/keys`: create a key with `{name, permissions, request_key}`; permissions are `monitor` and/or `alert`, and `request_key` is a UUID idempotency key.
-- `POST /api/v1/sentry/keys/{id}/rotate`: rotate the current key. Seat keeps the local card ID, creates a new remote key, and directly revokes the old remote key; a successful response contains a one-time `secret`. Name and uses are not changed by this operation.
-- `DELETE /api/v1/sentry/keys/{id}`: revoke the corresponding remote key.
-- `GET /api/v1/sentry/alert-pricing`: read the current alert price policy, including Nutshell Coin minor units, pricing seconds, grant cap/lifetime, and `charging_enabled`; seconds are not a balance.
-- `PUT /api/v1/sentry/alert-pricing`: site administrators may save the compatible price version, pricing unit, coin price, per-grant cap, and lifetime. The request carries the current `version`; conflicts return 409 and changes are audited.
-- `GET/PUT /api/v1/sentry/time-pricing`: read or save the hourly alert price, monitoring reward price, and `charging_enabled`; only site administrators may write, and the switch and prices share optimistic version protection.
+Saving the switch synchronizes `PUT /api/v1/integrations/seat/alert-consumption` on Sentry. A failed remote update prevents the local switch from committing.
 
-When `charging_enabled` is saved, the Seat server calls the warning service's
-`PUT /api/v1/integrations/seat/alert-consumption` before committing the local price transaction,
-using the same service token and an idempotency key. Sentry persists the gate in
-`seat_integration_settings`; a remote failure prevents the local switch from being committed,
-and a local transaction failure triggers a best-effort remote rollback. The warning service environment
-variable is only the first-start default for a new database and is no longer the page-level switch.
+## Billing rules
 
-Alert grants use the Sentry v2 seconds-authorization projection. Seat freezes `price_version`, `unit_seconds`, and `unit_price_minor`, reserves and settles Nutshell Coins locally, and returns that frozen snapshot to Seat callers. The downstream request contains only the operation/grant/account identifiers, optional key ID, `reserved_seconds`, expiry, and `protocol_version: 2`; v1 price fields remain supported only for historical compatibility.
+New charges read only Sentry's `GET /api/v1/integrations/seat/client-usage`. Each row is a server-confirmed interval between adjacent valid authenticated heartbeats; Seat settles seconds multiplied by the hourly price idempotently. Event counts, deliveries, remote prepaid grants, releases, and refunds are not billing inputs; their compatibility endpoints and historical tables were removed. Seat retains only the atomic ledger reference needed to settle each interval.
 
-The create endpoint returns a conflict when the account already has a non-revoked key. The page calls it automatically only when no current card exists; click the card's “Refresh key” button when a replacement is needed.
+Monitoring rewards read `GET /api/v1/integrations/seat/monitor-contributions`. Only the primary node of each system contributes valid online time. Multiple alert systems are metered independently and merged into the account-level coin ledger.
 
-Creation records `creating` locally before directly calling the remote API. Only a remote response containing the matching `key_id`, protocol version 1, and `active` state changes the state to `active`. A network failure leaves `sync_error` and never reports success or silently creates another key; retrying the original `request_key` directly calls the idempotent remote create endpoint again. An unchanged retry replays the original operation with HTTP 200 and never returns the plaintext again; changed content conflicts. Rotation still creates the new remote key before revoking the old one; an unconfirmed result leaves a synchronization error for later handling. The revoke API remains available to protected server compatibility and audit flows, while the member page has no revoke button and audit history is retained.
-
-Remote configuration is server-only:
-
-```dotenv
-SENTRY_INTEGRATION_URL=https://sentry.example.com
-SENTRY_INTEGRATION_TOKEN=<server-only-token-at-least-32-chars>
-```
-
-EVE Sentry now exposes `POST /api/v1/integrations/seat/keys`, `DELETE /api/v1/integrations/seat/keys/{key_id}`,
-`PUT /api/v1/integrations/seat/alert-consumption`, and the alert event, delivery, and monitor-contribution read/write and reconciliation endpoints.
-Calls use a dedicated Bearer credential and `Idempotency-Key`; Seat sends the operation ID, key/account IDs, key hash, prefix, permissions, and protocol version, never the plaintext secret.
-Sentry stores only the hash and handles retries by `operation_id`; identical content replays the record and changed content returns a conflict.
-Production uses `https://seat.kisectool.com` as the HTTPS origin and must route the entire `/api/v1/integrations/seat/` prefix to host 114; the service credential remains in restricted server environment files and is not documented, browser-visible, or placed in River payloads.
-
-Sentry M1 adds an explicit one-to-one `auth_external_accounts` binding: a Seat `account_id` is not a Sentry local user ID and must be bound by a trusted management flow. `EVE_SENTRY_SERVER_SEAT_AUTH_MODE` defaults to `off`; `shadow` audits validation and denies requests, while `enforce` creates a business principal only for the `monitor`/`alert` endpoint allowlists. Unbound, revoked, disabled, or out-of-scope requests are rejected consistently. Seat has not enabled this mode, and production interoperability is not yet verified; a key being issued does not prove that a warning client can already connect.
-
-This phase does not read screenshots, online time, quality scores, or alert events. Actual alert charging is controlled by the Seat page switch and the warning service's persisted gate; releases default to off, and production state follows the two-sided synchronization result. `SENTRY_ALERT_CONSUMPTION_ENABLED` is retained only for compatible configuration validation and is no longer the page-level switch. Monitoring rewards and alert billing remain staged in the [EVE Sentry integration plan](../plans/eve-sentry-integration.zh-CN.md). Key issuance or price configuration being available does not mean the warning client or usage settlement is complete.
+Service tokens remain server-side only and never enter the browser or documentation. The production origin remains `https://seat.kisectool.com`.

@@ -61,21 +61,17 @@ type AlertPricingEdit struct {
 	Version         int64  `json:"version"`
 }
 
-// AlertGrantFunding is the host-owned exchange boundary for prepaid alert
-// grants. The sentry module never imports exchange's private store.
+// AlertGrantFunding is the host-owned exchange boundary for online time
+// charges. The sentry module never imports exchange's private store.
 type AlertGrantFunding interface {
 	ReserveAlertTime(context.Context, string, string, string, string, int64, int64, int64, time.Time) error
-	ReleaseAlertGrant(context.Context, string, string) error
-	AlertGrantAccount(context.Context, string) (string, error)
-	AlertGrantExpiresAt(context.Context, string) (time.Time, error)
 }
 
-// AlertGrantPricingReader is an optional host boundary used when a request is
-// retried after an administrator changed the current pricing rule. The
-// exchange owns the frozen values; the sentry module must replay those values
-// instead of applying the newer rule to the same grant.
-type AlertGrantPricingReader interface {
-	AlertGrantPricing(context.Context, string) (string, int64, int64, int64, time.Time, error)
+// AlertSystemGrantFunding is the versioned extension used when a warning
+// allowance is tied to one selected solar system. Legacy integrations may
+// continue using AlertGrantFunding with an empty system attribution.
+type AlertSystemGrantFunding interface {
+	ReserveAlertTimeForSystem(context.Context, string, string, string, string, string, int64, int64, int64, time.Time) error
 }
 
 type Key struct {
@@ -96,7 +92,6 @@ type Key struct {
 type Service struct {
 	Pool                 *pgxpool.Pool
 	Remote               Remote
-	AlertRemote          AlertRemote
 	ClientUsageRemote    ClientUsageRemote
 	MonitorRemote        MonitorRemote
 	AlertSettlement      AlertIntervalSettlement
@@ -110,10 +105,9 @@ type Service struct {
 }
 
 func New(pool *pgxpool.Pool, remote Remote) *Service {
-	alerts, _ := remote.(AlertRemote)
 	monitor, _ := remote.(MonitorRemote)
 	usage, _ := remote.(ClientUsageRemote)
-	return &Service{Pool: pool, Remote: remote, AlertRemote: alerts, MonitorRemote: monitor, ClientUsageRemote: usage}
+	return &Service{Pool: pool, Remote: remote, MonitorRemote: monitor, ClientUsageRemote: usage}
 }
 
 // MonitorRewardFunding is the host-owned coin ledger boundary. The sentry
@@ -150,9 +144,7 @@ func (s *Service) setAlertPolicy(policy AlertGrantPolicy) {
 }
 
 // alertChargingEnabled combines the deployment capability with the persisted
-// administrator switch. The capability is deliberately kept separate: a
-// disabled switch must stop new reservations while still allowing existing
-// grants to be reconciled and released.
+// administrator switch. A disabled switch stops new online-time charges.
 func (s *Service) alertChargingEnabled(ctx context.Context) (bool, error) {
 	if !s.AlertEnabled {
 		return false, nil
@@ -351,115 +343,16 @@ func (s *Service) EditAlertPricing(ctx context.Context, user string, edit AlertP
 	return pricingFromPolicy(policy, true, enabled, true, nextVersion, time.Now().UTC()), nil
 }
 
-// CreateAlertGrant reserves coins locally in Seat and projects only a frozen
-// seconds allowance to Sentry (protocol v2). The request UUID is also the
-// stable grant ID, so a lost response can be retried without creating a
-// second allowance. Seat remains the sole pricing/coin authority.
-func (s *Service) CreateAlertGrant(ctx context.Context, account, keyID, requestKey string, reservedSeconds int64) (AlertGrant, error) {
-	var out AlertGrant
-	enabled, err := s.alertChargingEnabled(ctx)
-	if err != nil {
-		return out, err
-	}
-	if !enabled || s.AlertRemote == nil || s.AlertFunding == nil {
-		return out, ErrAlertDisabled
-	}
-	policy, err := s.currentAlertPolicy(ctx)
-	if err != nil {
-		return out, err
-	}
-	if strings.TrimSpace(account) == "" || strings.TrimSpace(keyID) == "" || strings.TrimSpace(requestKey) == "" || reservedSeconds <= 0 || reservedSeconds > policy.MaxGrantSeconds || policy.PriceVersion == "" || policy.UnitSeconds <= 0 || policy.UnitPriceMinor <= 0 || policy.GrantTTL <= 0 {
-		return out, ErrInvalid
-	}
-	opID, err := operationID(requestKey)
-	if err != nil {
-		return out, err
-	}
-	var remoteKeyID, status string
-	var permissions []string
-	if err = s.Pool.QueryRow(ctx, `SELECT COALESCE(remote_key_id,''),status,permissions FROM sentry_keys WHERE id=$1 AND account_id=$2`, keyID, account).Scan(&remoteKeyID, &status, &permissions); err != nil {
-		return out, err
-	}
-	if status != "active" || remoteKeyID == "" || !slices.Contains(permissions, "alert") {
-		return out, ErrConflict
-	}
-	expiresAt, err := s.AlertFunding.AlertGrantExpiresAt(ctx, opID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		expiresAt = time.Now().UTC().Add(policy.GrantTTL)
-	} else if err != nil {
-		return out, err
-	} else if reader, ok := s.AlertFunding.(AlertGrantPricingReader); ok {
-		priceVersion, unitSeconds, unitPriceMinor, frozenSeconds, frozenExpiry, readErr := reader.AlertGrantPricing(ctx, opID)
-		if readErr != nil {
-			return out, readErr
-		}
-		if frozenSeconds != reservedSeconds {
-			return out, ErrConflict
-		}
-		policy.PriceVersion = priceVersion
-		policy.UnitSeconds = unitSeconds
-		policy.UnitPriceMinor = unitPriceMinor
-		reservedSeconds = frozenSeconds
-		expiresAt = frozenExpiry
-	}
-	if err = s.AlertFunding.ReserveAlertTime(ctx, opID, account, opID, policy.PriceVersion, policy.UnitSeconds, policy.UnitPriceMinor, reservedSeconds, expiresAt); err != nil {
-		return out, err
-	}
-	grant, err := s.AlertRemote.CreateAlertGrant(ctx, AlertGrantRequest{OperationID: opID, GrantID: opID, AccountID: account, KeyID: remoteKeyID, PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor, ReservedSeconds: reservedSeconds, ExpiresAt: expiresAt, ProtocolVersion: 2})
-	if err != nil {
-		return out, err
-	}
-	// Sentry v2 intentionally omits pricing in its response. Keep Seat's
-	// frozen policy visible to callers so the API remains auditable and does
-	// not derive billing data from the downstream projection.
-	grant.PriceVersion = policy.PriceVersion
-	grant.UnitSeconds = policy.UnitSeconds
-	grant.UnitPriceMinor = policy.UnitPriceMinor
-	return grant, nil
-}
-
-// RevokeAlertGrant first revokes the remote allowance, then releases any
-// unused local reservation. Both calls are idempotent under the request UUID.
-func (s *Service) RevokeAlertGrant(ctx context.Context, account, grantID, requestKey string) error {
-	if !s.AlertEnabled || s.AlertRemote == nil || s.AlertFunding == nil {
-		return ErrAlertDisabled
-	}
-	if strings.TrimSpace(requestKey) == "" {
-		return ErrInvalid
-	}
-	opID, err := operationID(requestKey)
-	if err != nil {
-		return err
-	}
-	owner, err := s.AlertFunding.AlertGrantAccount(ctx, grantID)
-	if err != nil {
-		return err
-	}
-	if owner != account {
-		return pgx.ErrNoRows
-	}
-	if err = s.AlertRemote.RevokeAlertGrant(ctx, grantID, opID); err != nil {
-		return err
-	}
-	return s.AlertFunding.ReleaseAlertGrant(ctx, grantID, opID)
-}
-
-// Extension registers the only active Sentry billing workers with the shared
-// River runtime. Alert delivery/event reconciliation is retained only as a
-// tombstone worker so jobs created by older releases are cancelled safely;
-// it never reads delivery rows or creates charges. New charging is derived
-// exclusively from authenticated client heartbeat intervals.
+// Extension registers monitor rewards and online-time charging workers.
 func (s *Service) Extension(enabled bool) jobs.Extension {
-	a := alertReconcileExtension(s)
 	m := monitorRewardExtension(s, enabled)
 	u := clientUsageExtension(s, enabled)
 	return jobs.Extension{
 		Register: func(workers *river.Workers) []*river.PeriodicJob {
-			jobs := a.Register(workers)
-			jobs = append(jobs, m.Register(workers)...)
+			jobs := m.Register(workers)
 			return append(jobs, u.Register(workers)...)
 		},
-		Bind: func(queue *river.Client[pgx.Tx]) { a.Bind(queue); m.Bind(queue); u.Bind(queue) },
+		Bind: func(queue *river.Client[pgx.Tx]) { m.Bind(queue); u.Bind(queue) },
 	}
 }
 
@@ -775,7 +668,7 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if _, err := tx.Exec(ctx, `UPDATE sentry_monitor_rewards SET original_account_id=coalesce(original_account_id,account_id),account_id=$2 WHERE account_id=$1`, source, target); err != nil {
 		return nil, err
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,numerator) SELECT $2,numerator FROM sentry_monitor_remainders WHERE account_id=$1 ON CONFLICT(account_id) DO UPDATE SET numerator=sentry_monitor_remainders.numerator+EXCLUDED.numerator`, source, target); err != nil {
+	if _, err := tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,system_id,numerator) SELECT $2,system_id,numerator FROM sentry_monitor_remainders WHERE account_id=$1 ON CONFLICT(account_id,system_id) DO UPDATE SET numerator=sentry_monitor_remainders.numerator+EXCLUDED.numerator`, source, target); err != nil {
 		return nil, err
 	}
 	if _, err := tx.Exec(ctx, `DELETE FROM sentry_monitor_remainders WHERE account_id=$1`, source); err != nil {

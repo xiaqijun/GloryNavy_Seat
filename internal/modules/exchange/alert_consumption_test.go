@@ -18,7 +18,7 @@ func TestAlertConsumptionsEmptyPageUsesArray(t *testing.T) {
 	}
 }
 
-func TestAlertTimeReservationSettlementReleaseAndRefund(t *testing.T) {
+func TestAlertTimeReservationAndSettlement(t *testing.T) {
 	s, _, _ := rewardFixture(t)
 	s.AllowAlertConsumption = true
 	ctx := context.Background()
@@ -39,23 +39,6 @@ func TestAlertTimeReservationSettlementReleaseAndRefund(t *testing.T) {
 	sh, err := s.Shop(ctx, manager, 0)
 	if err != nil || sh.Reserved != 3 || sh.Spent != 2 {
 		t.Fatalf("after settlement: %+v, %v", sh, err)
-	}
-	if err := s.ReleaseAlertGrant(ctx, grantID, rewardKey(74)); err != nil {
-		t.Fatal(err)
-	}
-	sh, err = s.Shop(ctx, manager, 0)
-	if err != nil || sh.Reserved != 0 || sh.Spent != 2 {
-		t.Fatalf("after release: %+v, %v", sh, err)
-	}
-	if err := s.RefundAlertTime(ctx, grantID, "interval-1", rewardKey(75)); err != nil {
-		t.Fatal(err)
-	}
-	sh, err = s.Shop(ctx, manager, 0)
-	if err != nil || sh.Spent != 0 || sh.Reserved != 2 {
-		t.Fatalf("after refund: %+v, %v", sh, err)
-	}
-	if err := s.ReserveAlertInterval(ctx, AlertTimeIntervalRequest{GrantID: grantID, IntervalID: "interval-2", RequestKey: rewardKey(78), StartedAt: start, EndedAt: start.Add(2 * time.Second)}); err != nil {
-		t.Fatalf("replacement interval after refund: %v", err)
 	}
 	if err := s.ReserveAlertTime(ctx, AlertTimeGrantRequest{ID: rewardKey(76), AccountID: manager, RequestKey: rewardKey(77), UnitSeconds: 1, UnitPriceMinor: 999999999999, ReservedSeconds: 5, ExpiresAt: time.Now().UTC().Add(time.Hour)}); !errors.Is(err, ErrInsufficientCoinsMinor) {
 		t.Fatalf("expected insufficient coins, got %v", err)
@@ -91,20 +74,6 @@ func TestAlertUsageReadModelKeepsCoinStatesSeparate(t *testing.T) {
 	page, err := s.AlertConsumptions(ctx, manager, 0, "settled", nil, nil, 10)
 	if err != nil || len(page.Items) != 1 || page.Items[0].PriceVersion != "price-v1" || page.Items[0].CoinsMinor != 2 {
 		t.Fatalf("settled page: %+v, %v", page, err)
-	}
-	if err := s.ReleaseAlertGrant(ctx, grantID, rewardKey(94)); err != nil {
-		t.Fatal(err)
-	}
-	usage, err = s.AlertUsage(ctx, manager)
-	if err != nil || usage.AlertReservedMinor != 0 || usage.AlertReleasedMinor != 3 || usage.AlertSettledMinor != 2 {
-		t.Fatalf("after release: %+v, %v", usage, err)
-	}
-	if err := s.RefundAlertTime(ctx, grantID, "usage-interval", rewardKey(95)); err != nil {
-		t.Fatal(err)
-	}
-	usage, err = s.AlertUsage(ctx, manager)
-	if err != nil || usage.AlertRefundedMinor != 2 || usage.AlertSettledMinor != 0 || usage.AlertReservedMinor != 2 {
-		t.Fatalf("after refund: %+v, %v", usage, err)
 	}
 }
 

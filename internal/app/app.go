@@ -233,7 +233,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	// The legacy environment value is still parsed for configuration
 	// compatibility; the actual on/off state is persisted in
 	// sentry_alert_pricing and changed by an administrator from the Sentry page.
-	sentryService.AlertEnabled = alertConsumptionCapability && sentryService.AlertRemote != nil
+	sentryService.AlertEnabled = alertConsumptionCapability && sentryService.ClientUsageRemote != nil
 	sentryService.AlertPolicy = sentry.AlertGrantPolicy{PriceVersion: auth.AlertPriceVersion, UnitSeconds: auth.AlertUnitSeconds, UnitPriceMinor: auth.AlertUnitPriceMinor, MaxGrantSeconds: auth.AlertMaxGrantSeconds, GrantTTL: auth.AlertGrantTTL}
 	if pool != nil {
 		if err := sentryService.LoadAlertPricing(context.Background(), sentryService.AlertPolicy); err != nil {

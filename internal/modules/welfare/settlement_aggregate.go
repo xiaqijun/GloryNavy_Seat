@@ -24,13 +24,23 @@ type SettlementItemSummary struct {
 	Quantity int64 `json:"quantity,string"`
 }
 
+const eveContractTitleLimit = 50
+
+func settlementContractTitleMatches(title, reference string) bool {
+	title = strings.TrimSpace(title)
+	if title == reference {
+		return true
+	}
+	return len(reference) > eveContractTitleLimit && title == reference[:eveContractTitleLimit]
+}
+
 func settlementContractDead(status string) bool {
 	return status == "cancelled" || status == "deleted" || status == "rejected" || status == "failed" || status == "reversed"
 }
 
 func settlementContractMatches(b store.SettlementBatch, c eve.DeliveryContract, recipientIDs []int64) bool {
 	price, priceOK := new(big.Rat).SetString(c.Price)
-	if c.Type != "item_exchange" || strings.TrimSpace(c.Title) != b.SettlementReference || c.IssuerID <= 0 || !c.ItemsReady || !priceOK || price.Sign() != 0 {
+	if c.Type != "item_exchange" || !settlementContractTitleMatches(c.Title, b.SettlementReference) || c.IssuerID <= 0 || !c.ItemsReady || !priceOK || price.Sign() != 0 {
 		return false
 	}
 	allowed := false
@@ -74,13 +84,31 @@ func settlementContractMatches(b store.SettlementBatch, c eve.DeliveryContract, 
 	return true
 }
 
+// settlementRecipients returns the only character that may receive a merged
+// settlement. Older batches may still contain every selected character in
+// recipient_ids; resolving the current main character here keeps those
+// batches from scanning and potentially claiming contracts for an alt.
+func (s *Service) settlementRecipients(ctx context.Context, b store.SettlementBatch) ([]int64, error) {
+	if s.MainCharacterID == nil || b.AccountID == "" {
+		return nil, ErrSettlementUnsupported
+	}
+	mainID, err := s.MainCharacterID(ctx, b.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	if mainID <= 0 {
+		return nil, ErrSettlementUnsupported
+	}
+	return []int64{mainID}, nil
+}
+
 func (s *Service) processAggregateSettlement(ctx context.Context, b store.SettlementBatch, items []store.SettlementItem) (bool, error) {
 	if b.SettlementReference == "" {
 		return false, nil
 	}
-	var recipientIDs []int64
-	if err := json.Unmarshal(b.RecipientIDs, &recipientIDs); err != nil || len(recipientIDs) == 0 {
-		return true, ErrSettlementUnsupported
+	recipientIDs, err := s.settlementRecipients(ctx, b)
+	if err != nil {
+		return true, err
 	}
 	if s.PaymentContracts == nil || s.ClaimDelivery == nil || s.PaymentBindings == nil || s.SettlementCompleteTx == nil || s.ExchangeSettlementCompleteTx == nil {
 		return true, ErrSettlement
@@ -92,7 +120,7 @@ func (s *Service) processAggregateSettlement(ctx context.Context, b store.Settle
 			return true, err
 		}
 		for _, c := range rows {
-			if c.Title == b.SettlementReference && !settlementContractDead(c.Status) {
+			if settlementContractTitleMatches(c.Title, b.SettlementReference) && !settlementContractDead(c.Status) {
 				contracts[c.ID] = c
 			}
 		}
@@ -111,7 +139,7 @@ func (s *Service) processAggregateSettlement(ctx context.Context, b store.Settle
 		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "合同金额或物品尚未匹配")
 	}
 	if contract.Status != "finished" {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "等待接收角色完成合同")
+		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, store.SettlementAwaitingAcceptanceError)
 	}
 	completedAt, err := time.Parse(time.RFC3339, contract.Completed)
 	if err != nil || completedAt.Before(contract.Issued) || completedAt.After(time.Now().Add(time.Minute)) {

@@ -2310,7 +2310,7 @@ export const english: Record<string, string> = {
   "查看批量结算": "View batch settlement",
   "复制 {0}": "Copy {0}",
   "候选接收角色 ID": "Candidate recipient IDs",
-  "合同接收角色 ID": "Contract recipient character ID",
+  "合同接收角色": "Contract recipient character",
   "游戏合同 ID": "In-game contract ID",
   审批记录: "Approval records",
   全选同组: "Select this account group",

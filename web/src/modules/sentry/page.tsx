@@ -303,11 +303,9 @@ function ConsumptionRow({ item }: { item: api.AlertConsumption }) {
   return (
     <article className="sentry-consumption-row">
       <div className="sentry-consumption-main">
-        <div><strong>{date(item.started_at)}</strong><span>{duration(item.duration_seconds)}</span></div>
+        <div><strong>{date(item.started_at)}</strong><span>{duration(item.duration_seconds)}{item.system_id ? ` · ${item.system_id}` : ""}</span></div>
         <div className="sentry-consumption-amount"><strong className={returned ? "is-returned" : ""}>{returned ? "+" : "−"}{coins(item.coins_minor)} {msg("币")}</strong><span className={`sentry-consumption-state is-${item.state}`}>{label}</span></div>
       </div>
-      <div className="sentry-consumption-meta">{msg("计价")}：{item.unit_seconds}{msg("秒")} / {coins(item.unit_price_minor)} {msg("币")} · {msg("到期")}：{date(item.expires_at)}</div>
-      <details className="sentry-consumption-details"><summary>{msg("查看记录详情")}</summary><dl><div><dt>{msg("区间编号")}</dt><dd>{item.interval_id}</dd></div><div><dt>{msg("授权编号")}</dt><dd>{item.grant_id}</dd></div>{item.price_version && <div><dt>{msg("价格版本")}</dt><dd>{item.price_version}</dd></div>}</dl></details>
     </article>
   );
 }

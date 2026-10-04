@@ -31,6 +31,8 @@ export type SettlementBatch = {
   isk_minor: number;
   items: { type_id: string; quantity: string }[];
   recipient_ids: string[];
+  recipient_names?: string[];
+  delivery_status?: "awaiting_acceptance";
   contract_id?: string;
   contract_recipient_id?: string;
   entries?: SettlementItem[];
@@ -41,7 +43,7 @@ const str = (v: unknown): v is string => typeof v === "string";
 const isItem = (v: unknown): v is SettlementItem =>
   obj(v) && str(v.id) && str(v.batch_id) && ["welfare", "exchange"].includes(v.source) && str(v.source_id) && ["pending", "processing", "completed", "failed"].includes(v.state) && Number.isInteger(v.attempts) && str(v.created_at) && str(v.updated_at);
 const isBatch = (v: unknown): v is SettlementBatch =>
-  obj(v) && str(v.id) && str(v.request_key) && str(v.actor_id) && str(v.note) && ["pending", "processing", "completed", "partial", "failed"].includes(v.state) && Number.isInteger(v.total_count) && Number.isInteger(v.completed_count) && Number.isInteger(v.failed_count) && str(v.created_at) && str(v.next_run_at) && str(v.version) && (v.settlement_reference === undefined || str(v.settlement_reference)) && Number.isInteger(v.isk_minor) && Array.isArray(v.items) && Array.isArray(v.recipient_ids) && (v.entries === undefined || Array.isArray(v.entries) && v.entries.every(isItem));
+  obj(v) && str(v.id) && str(v.request_key) && str(v.actor_id) && str(v.note) && ["pending", "processing", "completed", "partial", "failed"].includes(v.state) && Number.isInteger(v.total_count) && Number.isInteger(v.completed_count) && Number.isInteger(v.failed_count) && str(v.created_at) && str(v.next_run_at) && str(v.version) && (v.settlement_reference === undefined || str(v.settlement_reference)) && Number.isInteger(v.isk_minor) && Array.isArray(v.items) && Array.isArray(v.recipient_ids) && (v.recipient_names === undefined || Array.isArray(v.recipient_names) && v.recipient_names.every(str)) && (v.delivery_status === undefined || v.delivery_status === "awaiting_acceptance") && (v.entries === undefined || Array.isArray(v.entries) && v.entries.every(isItem));
 const isView = (v: unknown): v is SettlementView => obj(v) && isBatch(v.batch) && Array.isArray(v.items) && v.items.every(isItem);
 export const list = (signal?: AbortSignal) => getData("/api/v1/welfare/settlements", (v): v is { items: SettlementBatch[] } => obj(v) && Array.isArray(v.items) && v.items.every(isBatch), signal);
 export const detail = (id: string, signal?: AbortSignal) => getData(`/api/v1/welfare/settlements/${encodeURIComponent(id)}`, isView, signal);

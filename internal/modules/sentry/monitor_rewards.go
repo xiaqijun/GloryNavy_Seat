@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -109,6 +110,47 @@ type monitorPayout struct {
 	amount    int64
 }
 
+// monitorSystemID normalizes the remote system identifier into the stable
+// string used by the Seat ledger. Older Sentry responses only carried a
+// display name; those records remain attributable under a legacy namespace
+// until the remote side begins sending system_id.
+func systemIDValue(value any) string {
+	switch v := value.(type) {
+	case string:
+		if id := strings.TrimSpace(v); id != "" {
+			return id
+		}
+	case float64:
+		if v > 0 && v == math.Trunc(v) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+	case json.Number:
+		if id := strings.TrimSpace(v.String()); id != "" {
+			return id
+		}
+	case int64:
+		if v > 0 {
+			return strconv.FormatInt(v, 10)
+		}
+	case int:
+		if v > 0 {
+			return strconv.Itoa(v)
+		}
+	}
+	return ""
+}
+
+func monitorSystemID(c MonitorContribution) string {
+	if id := systemIDValue(c.SystemID); id != "" {
+		return id
+	}
+	name := strings.ToLower(strings.TrimSpace(c.SystemName))
+	if name == "" {
+		return "legacy:unknown"
+	}
+	return "legacy:" + name
+}
+
 // settleMonitorContributions records every interval but combines all rewards
 // from one reconciliation page into one wallet credit per account. This keeps
 // evidence granular while avoiding one coin-ledger row for every heartbeat.
@@ -133,8 +175,12 @@ func (s *Service) settleMonitorContributions(ctx context.Context, contributions 
 			payouts[payout.accountID] += payout.amount
 		}
 	}
-	for accountID, numerator := range remainders {
-		if _, err = tx.Exec(ctx, `UPDATE sentry_monitor_remainders SET numerator=$2 WHERE account_id=$1`, accountID, numerator); err != nil {
+	for key, numerator := range remainders {
+		parts := strings.SplitN(key, "\x00", 2)
+		if len(parts) != 2 {
+			return ErrInvalid
+		}
+		if _, err = tx.Exec(ctx, `UPDATE sentry_monitor_remainders SET numerator=$3 WHERE account_id=$1 AND system_id=$2`, parts[0], parts[1], numerator); err != nil {
 			return err
 		}
 	}
@@ -175,6 +221,7 @@ func (s *Service) settleMonitorContributionTx(ctx context.Context, tx pgx.Tx, c 
 	}
 	account := strings.TrimSpace(c.AccountID)
 	keyID := strings.TrimSpace(c.KeyID)
+	systemID := monitorSystemID(c)
 	var accountID string
 	if _, err := uuidText(account); err == nil && keyID != "" {
 		// The Sentry client authenticates with the remote key ID. Seat stores
@@ -187,9 +234,19 @@ func (s *Service) settleMonitorContributionTx(ctx context.Context, tx pgx.Tx, c 
 			err = tx.QueryRow(ctx, `SELECT account_id::text FROM sentry_keys WHERE id=$1 AND account_id=$2 AND 'monitor'=ANY(permissions) AND status='active'`, keyID, account).Scan(&accountID)
 		}
 	}
-	if accountID == "" || strings.TrimSpace(c.Eligibility) != "eligible" {
+	if accountID == "" || strings.TrimSpace(c.Eligibility) != "eligible" || c.PrimaryGeneration <= 0 {
 		if !exists {
-			_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,NULL,$2,$3,$4,$5,$6,$7,'excluded',0,0,$8,$9,'{}')`, c.ContributionID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, monitorFingerprint(c), evidence)
+			_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_id,system_name,primary_generation,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,NULL,$2,$3,$4,$5,$6,$7,$8,$9,'excluded',0,0,$10,$11,'{}')`, c.ContributionID, keyID, c.ClientID, systemID, c.SystemName, c.PrimaryGeneration, start, end, c.DurationSeconds, monitorFingerprint(c), evidence)
+		}
+		return monitorPayout{}, err
+	}
+	var overlap bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sentry_monitor_rewards WHERE system_id=$1 AND state='rewarded' AND contribution_id<>$2 AND started_at < $4 AND ended_at > $3)`, systemID, c.ContributionID, start, end).Scan(&overlap); err != nil {
+		return monitorPayout{}, err
+	}
+	if overlap {
+		if !exists {
+			_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_id,system_name,primary_generation,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,NULL,$2,$3,$4,$5,$6,$7,$8,$9,'excluded',0,0,$10,$11,'{}')`, c.ContributionID, keyID, c.ClientID, systemID, c.SystemName, c.PrimaryGeneration, start, end, c.DurationSeconds, monitorFingerprint(c), evidence)
 		}
 		return monitorPayout{}, err
 	}
@@ -200,18 +257,19 @@ func (s *Service) settleMonitorContributionTx(ctx context.Context, tx pgx.Tx, c 
 	if len(policies) == 0 { // No configured reward price: retain evidence but do not invent a zero-priced payout.
 		return monitorPayout{}, errMonitorRewardUnpriced
 	}
-	remainder, loaded := remainders[accountID]
+	remainderKey := accountID + "\x00" + systemID
+	remainder, loaded := remainders[remainderKey]
 	if !loaded {
-		err = tx.QueryRow(ctx, `SELECT numerator FROM sentry_monitor_remainders WHERE account_id=$1 FOR UPDATE`, accountID).Scan(&remainder)
+		err = tx.QueryRow(ctx, `SELECT numerator FROM sentry_monitor_remainders WHERE account_id=$1 AND system_id=$2 FOR UPDATE`, accountID, systemID).Scan(&remainder)
 		if errors.Is(err, pgx.ErrNoRows) {
-			if _, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,numerator) VALUES($1,0) ON CONFLICT DO NOTHING`, accountID); err != nil {
+			if _, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_remainders(account_id,system_id,numerator) VALUES($1,$2,0) ON CONFLICT DO NOTHING`, accountID, systemID); err != nil {
 				return monitorPayout{}, err
 			}
 			remainder = 0
 		} else if err != nil {
 			return monitorPayout{}, err
 		}
-		remainders[accountID] = remainder
+		remainders[remainderKey] = remainder
 	}
 	total := remainder
 	priceSnapshot := make([]map[string]any, 0, len(policies))
@@ -240,12 +298,12 @@ func (s *Service) settleMonitorContributionTx(ctx context.Context, tx pgx.Tx, c 
 		total %= 3600
 		priceSnapshot = append(priceSnapshot, map[string]any{"version": p.Version, "effective_at": p.Effective.UTC().Format(time.RFC3339Nano), "hourly_reward_minor": p.Reward, "seconds": seconds})
 	}
-	remainders[accountID] = total
+	remainders[remainderKey] = total
 	snapshot, _ := json.Marshal(priceSnapshot)
 	if exists {
-		_, err = tx.Exec(ctx, `UPDATE sentry_monitor_rewards SET account_id=$2,remote_key_id=$3,client_id=$4,system_name=$5,started_at=$6,ended_at=$7,duration_seconds=$8,state='rewarded',numerator=$9,coins_minor=$10,fingerprint=$11,evidence=$12,price_snapshot=$13 WHERE contribution_id=$1`, c.ContributionID, accountID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
+		_, err = tx.Exec(ctx, `UPDATE sentry_monitor_rewards SET account_id=$2,remote_key_id=$3,client_id=$4,system_id=$5,system_name=$6,primary_generation=$7,started_at=$8,ended_at=$9,duration_seconds=$10,state='rewarded',numerator=$11,coins_minor=$12,fingerprint=$13,evidence=$14,price_snapshot=$15 WHERE contribution_id=$1`, c.ContributionID, accountID, keyID, c.ClientID, systemID, c.SystemName, c.PrimaryGeneration, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
 	} else {
-		_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_name,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'rewarded',$9,$10,$11,$12,$13)`, c.ContributionID, accountID, keyID, c.ClientID, c.SystemName, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
+		_, err = tx.Exec(ctx, `INSERT INTO sentry_monitor_rewards(contribution_id,account_id,remote_key_id,client_id,system_id,system_name,primary_generation,started_at,ended_at,duration_seconds,state,numerator,coins_minor,fingerprint,evidence,price_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'rewarded',$11,$12,$13,$14,$15)`, c.ContributionID, accountID, keyID, c.ClientID, systemID, c.SystemName, c.PrimaryGeneration, start, end, c.DurationSeconds, total, credited, monitorFingerprint(c), evidence, snapshot)
 	}
 	if err != nil {
 		return monitorPayout{}, err
@@ -270,7 +328,7 @@ func (s *Service) monitorPolicies(ctx context.Context, tx pgx.Tx, end time.Time)
 	return out, rows.Err()
 }
 func monitorFingerprint(c MonitorContribution) string {
-	return fmt.Sprintf("%s|%s|%s|%d|%s|%s", c.ContributionID, c.ClientID, c.SystemName, c.PrimaryGeneration, c.StartedAt, c.EndedAt)
+	return fmt.Sprintf("%s|%s|%s|%s|%d|%s|%s", c.ContributionID, c.ClientID, monitorSystemID(c), c.SystemName, c.PrimaryGeneration, c.StartedAt, c.EndedAt)
 }
 func stableUUID(raw string) string {
 	h := sha256.Sum256([]byte(raw))

@@ -29,6 +29,13 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 		}
 		return ids[account], nil
 	}
+	s.MainCharacterName = func(ctx context.Context, account string) (string, error) {
+		names, err := accounts.MainCharacterNames(ctx, []string{account})
+		if err != nil {
+			return "", err
+		}
+		return names[account], nil
+	}
 	s.MatchReward = exchange.MatchRewardDelivery
 	s.IsShip = fittings.IsShipType
 	s.LibraryReward = func(ctx context.Context, user string, corp, id, version int64) (*welfare.GrowthRewards, error) {
