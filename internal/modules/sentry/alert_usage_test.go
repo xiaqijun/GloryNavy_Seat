@@ -29,3 +29,17 @@ func TestMergeMonitorRewardsBridgesClientAndLegacySystemBoundaries(t *testing.T)
 		t.Fatalf("merged client/system boundary: %+v", merged)
 	}
 }
+
+func TestMergeMonitorRewardsGroupsInterleavedSystems(t *testing.T) {
+	start := time.Date(2026, 10, 4, 0, 0, 0, 0, time.UTC)
+	items := []MonitorRewardRecord{
+		{ContributionID: "b2", SystemID: "B", StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 2},
+		{ContributionID: "a2", SystemID: "A", StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 2},
+		{ContributionID: "b1", SystemID: "legacy:b", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 1},
+		{ContributionID: "a1", SystemID: "A", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 1},
+	}
+	merged := mergeMonitorRewards(items)
+	if len(merged) != 2 || merged[0].DurationSeconds != 20 || merged[1].DurationSeconds != 20 {
+		t.Fatalf("merged interleaved systems: %+v", merged)
+	}
+}
