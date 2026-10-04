@@ -9,6 +9,7 @@ export type UsageRecord = {
   charge_minor: number;
   reward_minor: number;
   charge_state?: api.AlertConsumption["state"];
+  charge_returned?: boolean;
 };
 
 type UsageSource = {
@@ -67,6 +68,8 @@ export function mergeUsageRecords(consumptions: api.AlertConsumption[], rewards:
       if (source.kind === "charge") {
         previous.charge_minor += source.coins_minor;
         previous.charge_state = previous.charge_state === undefined || previous.charge_state === source.state ? source.state : undefined;
+        const returned = source.state === "released" || source.state === "refunded";
+        previous.charge_returned = previous.charge_returned === undefined || previous.charge_returned === returned ? returned : undefined;
       } else {
         previous.reward_minor += source.coins_minor;
       }
@@ -82,6 +85,7 @@ export function mergeUsageRecords(consumptions: api.AlertConsumption[], rewards:
       charge_minor: source.kind === "charge" ? source.coins_minor : 0,
       reward_minor: source.kind === "reward" ? source.coins_minor : 0,
       charge_state: source.kind === "charge" ? source.state : undefined,
+      charge_returned: source.kind === "charge" ? source.state === "released" || source.state === "refunded" : undefined,
     });
     groups.set(key, group);
   }
