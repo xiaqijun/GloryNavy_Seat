@@ -3,6 +3,7 @@ package sentry
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 )
@@ -59,14 +60,16 @@ type MonitorRewardRecord struct {
 }
 
 func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
-	out := make([]MonitorRewardRecord, 0, len(items))
+	groups := make(map[string][]MonitorRewardRecord)
 	for _, item := range items {
-		if len(out) > 0 {
-			newer := &out[len(out)-1]
+		key := monitorSystemKey(item)
+		group := groups[key]
+		if len(group) > 0 {
+			newer := &group[len(group)-1]
 			// Client IDs can change when the primary monitor reconnects. The
 			// member-facing view groups contiguous evidence by stable system,
 			// while the raw contribution rows retain the client boundary.
-			if newer.StartedAt.Equal(item.EndedAt) && monitorSystemKey(*newer) == monitorSystemKey(item) {
+			if newer.StartedAt.Equal(item.EndedAt) {
 				item.EndedAt = newer.EndedAt
 				item.DurationSeconds += newer.DurationSeconds
 				item.CoinsMinor += newer.CoinsMinor
@@ -74,12 +77,20 @@ func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
 					item.SystemName = newer.SystemName
 				}
 				item.ContributionID = "merged:" + item.ContributionID
-				out[len(out)-1] = item
+				group[len(group)-1] = item
+				groups[key] = group
 				continue
 			}
 		}
-		out = append(out, item)
+		groups[key] = append(group, item)
 	}
+	out := make([]MonitorRewardRecord, 0, len(items))
+	for _, group := range groups {
+		out = append(out, group...)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].EndedAt.After(out[j].EndedAt)
+	})
 	positive := make([]MonitorRewardRecord, 0, len(out))
 	for _, item := range out {
 		if item.CoinsMinor > 0 {
