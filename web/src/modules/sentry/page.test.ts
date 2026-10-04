@@ -33,13 +33,30 @@ describe("sentry usage display projection", () => {
     expect(records[0]).toMatchObject({ duration_seconds: 20, charge_minor: 100, reward_minor: 50, system_name: "S-KSWL" });
   });
 
-  it("keeps separated time gaps as separate records", () => {
+  it("bridges a short sampling gap for the same system", () => {
     const records = mergeUsageRecords(
       [{ ...base, started_at: "2026-10-04T00:00:00Z" }],
       [{
         contribution_id: "r",
-        started_at: "2026-10-04T00:01:00Z",
-        ended_at: "2026-10-04T00:01:10Z",
+        started_at: "2026-10-04T00:00:13Z",
+        ended_at: "2026-10-04T00:00:20Z",
+        duration_seconds: 7,
+        coins_minor: 50,
+        system_id: "S-KSWL",
+        system_name: "S-KSWL",
+      }],
+    );
+    expect(records).toHaveLength(1);
+    expect(records[0].duration_seconds).toBe(20);
+  });
+
+  it("keeps long time gaps as separate records", () => {
+    const records = mergeUsageRecords(
+      [{ ...base, started_at: "2026-10-04T00:00:00Z" }],
+      [{
+        contribution_id: "r",
+        started_at: "2026-10-04T00:06:00Z",
+        ended_at: "2026-10-04T00:06:10Z",
         duration_seconds: 10,
         coins_minor: 50,
         system_id: "S-KSWL",
