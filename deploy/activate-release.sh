@@ -7,9 +7,15 @@ release=/opt/glorynavy/releases/$version
 test -d "$release"
 test -s /etc/glorynavy/seat.env
 (cd "$release" && test -s release.json)
-source_branch=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_branch"])' "$release/release.json")
-source_dirty=$(python3 -c 'import json,sys; print(str(json.load(open(sys.argv[1]))["source_dirty"]).lower())' "$release/release.json")
-if [[ "$source_branch" != "main" || "$source_dirty" != "false" ]]; then
+source_branch=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("source_branch", ""))' "$release/release.json")
+source_dirty=$(python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("source_dirty"); print("unknown" if value is None else str(value).lower())' "$release/release.json")
+if [[ -z "$source_branch" || "$source_dirty" == "unknown" ]]; then
+  if [[ "${ALLOW_LEGACY_RELEASE:-}" != "1" ]]; then
+    printf 'Refusing production activation: release has no main-branch provenance; set ALLOW_LEGACY_RELEASE=1 only for an approved historical rollback\n' >&2
+    exit 3
+  fi
+  printf 'Warning: activating historical release without branch provenance (explicit rollback override)\n' >&2
+elif [[ "$source_branch" != "main" || "$source_dirty" != "false" ]]; then
   printf 'Refusing production activation: release must be built from a clean main branch (branch=%s dirty=%s)\n' "$source_branch" "$source_dirty" >&2
   exit 3
 fi

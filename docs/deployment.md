@@ -9,7 +9,7 @@ npm run deploy:production:guard
 node scripts/build-release.mjs v0.1.0
 ```
 
-门禁会确认当前分支为 `main`、工作区干净，并且本地 `main` 与 `origin/main` 指向同一提交。构建产物的 `release.json` 会记录来源分支、提交和是否有未提交改动；应用机的激活脚本再次校验这些字段，非 `main` 或脏工作区产物会被拒绝。
+门禁会确认当前分支为 `main`、工作区干净，并且本地 `main` 与 `origin/main` 指向同一提交。构建产物的 `release.json` 会记录来源分支、提交和是否有未提交改动；应用机的激活脚本再次校验这些字段，非 `main` 或脏工作区产物会被拒绝。历史旧产物没有来源元数据时默认也拒绝，只有经过兼容性评估的应急回退才可显式设置 `ALLOW_LEGACY_RELEASE=1`。
 
 ## 预警消费与监控奖励统一流水卡片（2026-10-04）
 
