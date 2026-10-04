@@ -1,5 +1,9 @@
 # 项目状态
 
+## 已发布：建筑管理只读模块（2026-10-05）
+
+生产前后端已切换至 `v0.1.0-structures-20261005`。应用机已启用 `structures` 模块，应用 `active/ready`；公网首页返回 200，建筑接口匿名返回 401，边缘 OpenResty `nginx -t` 通过。发布前备份为应用机 `/var/backups/glorynavy/before-v0.1.0-structures-20261005-20261004T174937Z.{dump,env}`。本次发布只读建筑投影与权限边界，未开放租用、ACL/Profile、个人进入权限或游戏内写操作；Director/CEO 与受限角色的真实 ESI 建筑 payload、POS 燃料和缓存/失败场景仍待授权后现场验收，详见 [建筑 ESI 验收记录](history/structures-esi-acceptance-20261005.md)。
+
 ## 生产发布分支门禁（2026-10-04）
 
 生产部署统一从与 `origin/main` 同步且工作区干净的 `main` 构建。功能分支必须先合并并推送到 `main`；构建元数据和应用机激活脚本会再次拒绝非 `main` 或带未提交改动的产物。
