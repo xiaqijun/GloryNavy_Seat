@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeUsageRecords } from "./page";
+import { mergeUsageRecords } from "./usage-merge";
 
 const base = {
   id: "1",
