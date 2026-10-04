@@ -43,3 +43,27 @@ func TestMergeMonitorRewardsGroupsInterleavedSystems(t *testing.T) {
 		t.Fatalf("merged interleaved systems: %+v", merged)
 	}
 }
+
+func TestMergeMonitorRewardsBridgesShortSamplingGap(t *testing.T) {
+	start := time.Date(2026, 10, 4, 0, 0, 0, 0, time.UTC)
+	items := []MonitorRewardRecord{
+		{ContributionID: "new", ClientID: "ry-client", SystemID: "R-YWID", StartedAt: start.Add(13 * time.Second), EndedAt: start.Add(15 * time.Second), DurationSeconds: 2, CoinsMinor: 1},
+		{ContributionID: "old", ClientID: "ry-client", SystemID: "legacy:r-ywid", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 2},
+	}
+	merged := mergeMonitorRewards(items)
+	if len(merged) != 1 || merged[0].DurationSeconds != 12 || merged[0].CoinsMinor != 3 {
+		t.Fatalf("merged sampling gap: %+v", merged)
+	}
+}
+
+func TestMergeMonitorRewardsKeepsLongGapSeparate(t *testing.T) {
+	start := time.Date(2026, 10, 4, 0, 0, 0, 0, time.UTC)
+	items := []MonitorRewardRecord{
+		{ContributionID: "new", ClientID: "ry-client", SystemID: "R-YWID", StartedAt: start.Add(6*time.Minute + 1*time.Second), EndedAt: start.Add(6*time.Minute + 3*time.Second), DurationSeconds: 2, CoinsMinor: 1},
+		{ContributionID: "old", ClientID: "ry-client", SystemID: "R-YWID", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 2},
+	}
+	merged := mergeMonitorRewards(items)
+	if len(merged) != 2 {
+		t.Fatalf("long sampling gap must stay separate: %+v", merged)
+	}
+}

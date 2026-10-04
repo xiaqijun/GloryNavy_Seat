@@ -1,5 +1,7 @@
 import * as api from "./api";
 
+const maxUsageDisplayGapMs = 5 * 60 * 1000;
+
 export type UsageRecord = {
   system_key: string;
   system_name: string;
@@ -61,7 +63,7 @@ export function mergeUsageRecords(consumptions: api.AlertConsumption[], rewards:
     const sourceStart = Date.parse(source.started_at);
     const sourceEnd = Date.parse(source.ended_at);
     const previousEnd = previous ? Date.parse(previous.ended_at) : 0;
-    if (previous && sourceStart <= previousEnd) {
+    if (previous && sourceStart <= previousEnd + maxUsageDisplayGapMs) {
       if (sourceEnd > previousEnd) previous.ended_at = source.ended_at;
       previous.duration_seconds = Math.max(1, Math.round((Date.parse(previous.ended_at) - Date.parse(previous.started_at)) / 1000));
       if (source.kind === "reward" && source.system_name) previous.system_name = source.system_name;

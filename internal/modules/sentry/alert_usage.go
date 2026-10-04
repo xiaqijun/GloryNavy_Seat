@@ -10,6 +10,7 @@ import (
 
 var ErrAlertUsageUnavailable = errors.New("alert usage is unavailable")
 var ErrAlertUsageInvalid = errors.New("invalid alert usage query")
+const monitorDisplayGap = 5 * time.Minute
 
 // AlertUsageSummary is a read-only projection of exchange's member-facing
 // financial facts. Coins are the accounting unit; seconds explain pricing.
@@ -69,7 +70,8 @@ func mergeMonitorRewards(items []MonitorRewardRecord) []MonitorRewardRecord {
 			// Client IDs can change when the primary monitor reconnects. The
 			// member-facing view groups contiguous evidence by stable system,
 			// while the raw contribution rows retain the client boundary.
-			if newer.StartedAt.Equal(item.EndedAt) {
+			gap := newer.StartedAt.Sub(item.EndedAt)
+			if gap >= 0 && gap <= monitorDisplayGap {
 				item.EndedAt = newer.EndedAt
 				item.DurationSeconds += newer.DurationSeconds
 				item.CoinsMinor += newer.CoinsMinor
