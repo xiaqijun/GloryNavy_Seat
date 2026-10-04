@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -52,27 +53,31 @@ func mergeAlertConsumptions(items []AlertConsumption) []AlertConsumption {
 	if len(items) < 2 {
 		return items
 	}
-	out := make([]AlertConsumption, 0, len(items))
+	groups := make(map[string][]AlertConsumption)
 	for _, item := range items {
-		if len(out) == 0 {
-			out = append(out, item)
-			continue
+		key := strings.Join([]string{item.State, strconv.FormatInt(item.UnitSeconds, 10), strconv.FormatInt(item.UnitPriceMinor, 10), item.PriceVersion, item.SystemID}, "\x00")
+		group := groups[key]
+		if len(group) > 0 {
+			newer := &group[len(group)-1]
+			if newer.StartedAt.Equal(item.EndedAt) {
+				item.EndedAt = newer.EndedAt
+				item.DurationSeconds += newer.DurationSeconds
+				item.CoinsMinor += newer.CoinsMinor
+				item.ID = newer.ID
+				item.GrantID = newer.GrantID
+				item.IntervalID = "merged:" + strconv.FormatInt(item.ID, 10)
+				group[len(group)-1] = item
+				groups[key] = group
+				continue
+			}
 		}
-		newer := &out[len(out)-1]
-		if newer.StartedAt.Equal(item.EndedAt) && newer.State == item.State &&
-			newer.UnitSeconds == item.UnitSeconds && newer.UnitPriceMinor == item.UnitPriceMinor &&
-			newer.PriceVersion == item.PriceVersion && newer.SystemID == item.SystemID {
-			item.EndedAt = newer.EndedAt
-			item.DurationSeconds += newer.DurationSeconds
-			item.CoinsMinor += newer.CoinsMinor
-			item.ID = newer.ID
-			item.GrantID = newer.GrantID
-			item.IntervalID = "merged:" + strconv.FormatInt(item.ID, 10)
-			out[len(out)-1] = item
-			continue
-		}
-		out = append(out, item)
+		groups[key] = append(group, item)
 	}
+	out := make([]AlertConsumption, 0, len(items))
+	for _, group := range groups {
+		out = append(out, group...)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].ID > out[j].ID })
 	return out
 }
 

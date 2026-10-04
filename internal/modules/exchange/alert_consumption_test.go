@@ -89,6 +89,20 @@ func TestMergeAlertConsumptionsCombinesContinuousFrozenPrice(t *testing.T) {
 	}
 }
 
+func TestMergeAlertConsumptionsGroupsInterleavedSystems(t *testing.T) {
+	start := time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC)
+	items := []AlertConsumption{
+		{ID: 4, SystemID: "B", StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 2, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+		{ID: 3, SystemID: "A", StartedAt: start.Add(10 * time.Second), EndedAt: start.Add(20 * time.Second), DurationSeconds: 10, CoinsMinor: 2, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+		{ID: 2, SystemID: "B", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 1, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+		{ID: 1, SystemID: "A", StartedAt: start, EndedAt: start.Add(10 * time.Second), DurationSeconds: 10, CoinsMinor: 1, State: "settled", UnitSeconds: 3600, UnitPriceMinor: 100, PriceVersion: "v1"},
+	}
+	merged := mergeAlertConsumptions(items)
+	if len(merged) != 2 || merged[0].DurationSeconds != 20 || merged[1].DurationSeconds != 20 {
+		t.Fatalf("merged interleaved systems: %+v", merged)
+	}
+}
+
 func TestAlertUsageIncludesBatchedMonitorRewards(t *testing.T) {
 	s, _, _ := rewardFixture(t)
 	ctx := context.Background()
