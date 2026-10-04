@@ -13,7 +13,7 @@ node scripts/build-release.mjs v0.1.0
 
 ## 建筑管理只读模块（2026-10-05）
 
-已发布 `v0.1.0-structures-20261005`，提交 `fc1c16798d69e62aaefc2f20be8e1116a10161f4`。应用机和公网静态站点均已切换；应用配置启用 `structures`，服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。应用机发布前备份为 `/var/backups/glorynavy/before-v0.1.0-structures-20261005-20261004T174937Z.{dump,env}`。本版本没有新增 Goose/River 迁移；真实 ESI 建筑 payload 和 POS 燃料现场验收仍按 STRUCT-01 待办执行。
+已发布 `v0.1.0-structures-pos-fuel-json-20261005`，提交 `30cd3ccc0a805cb318e96520401281c2ef623a07`。应用机和公网静态站点均已切换；应用配置启用 `structures`，服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。应用机发布前备份为 `/var/backups/glorynavy/before-v0.1.0-structures-pos-fuel-json-20261005-20261004T190503Z.{dump,env}`。本版本没有新增 Goose/River 迁移。生产 CEO `Nuter Zero` 的真实 ESI 读取取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，缓存复用和错误军团拒绝通过；受限角色和授权失效专项仍按 STRUCT-01 待办执行。
 
 ## 预警消费与监控奖励统一流水卡片（2026-10-04）
 
