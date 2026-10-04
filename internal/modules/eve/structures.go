@@ -70,10 +70,17 @@ type starbaseListItem struct {
 }
 
 type starbaseDetail struct {
-	State       string          `json:"state"`
-	OnlineSince *time.Time      `json:"online_since"`
-	UnanchorAt  *time.Time      `json:"unanchor_at"`
-	Fuel        []StructureFuel `json:"fuels"`
+	State       string         `json:"state"`
+	OnlineSince *time.Time     `json:"online_since"`
+	UnanchorAt  *time.Time     `json:"unanchor_at"`
+	Fuel        []starbaseFuel `json:"fuels"`
+}
+
+// ESI returns numeric type IDs. Keep this wire type separate from the public
+// projection, whose IDs are encoded as strings for the API contract.
+type starbaseFuel struct {
+	TypeID   int64 `json:"type_id"`
+	Quantity int64 `json:"quantity"`
 }
 
 // ReadCorporationStructures reads the current ESI view for one corporation.
@@ -131,7 +138,11 @@ func (s *AuthorizationService) ReadCorporationStructures(ctx context.Context, ch
 			// ESI requires the POS solar-system query parameter for the detail
 			// endpoint; omitting it returns 400 even with a valid Director grant.
 			if _, e = s.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/corporations/%d/starbases/%d/?system_id=%d", corporationID, row.StarbaseID, row.SystemID), CharacterID: characterID, Generation: generation, Scopes: []string{CorporationStarbasesScope}}, &detail); e == nil {
-				fuel, state, unanchor = detail.Fuel, detail.State, detail.UnanchorAt
+				fuel = make([]StructureFuel, 0, len(detail.Fuel))
+				for _, f := range detail.Fuel {
+					fuel = append(fuel, StructureFuel{TypeID: f.TypeID, Quantity: f.Quantity})
+				}
+				state, unanchor = detail.State, detail.UnanchorAt
 			}
 			items = append(items, Structure{CorporationID: corporationID, CorporationName: a.CorporationName, Kind: "pos", ID: row.StarbaseID, TypeID: row.TypeID, SolarSystemID: row.SystemID, State: state, UnanchorsAt: unanchor, Fuel: fuel, ObservedAt: observed, SourceCharacter: characterID})
 		}
