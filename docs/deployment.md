@@ -256,6 +256,8 @@ bash /opt/glorynavy/releases/v0.1.0/deploy/activate-release.sh v0.1.0
 
 激活脚本验证校验和，安装并启动专用数据库与网络规则，停止旧 API，保存数据库 dump 和原配置，再切换活动链接。服务启动先执行 Goose 与 River 两条迁移；不跳过队列迁移。数据库镜像固定为已检查的 PostgreSQL 18.6 Alpine digest，独立 Compose project `glorynavy-production` 与 volume，避免复用其他业务库。
 
+公网静态前端也使用同一产物来源门禁。在公网机解压后执行发布包内的 `deploy/activate-edge-release.sh`；脚本会校验 `release.json`、`SHA256SUMS` 和首页 200，再原子切换站点 `current`。不要直接手工切换来自其他分支的静态目录。
+
 首次创建的生产库与本地开发库分离。若选择迁移本地业务数据，先停止本地 API/worker，备份并迁移匹配的 `EVE_TOKEN_KEY` 和数据库；不得让两边同时刷新同一批 EVE refresh token。恢复后清除旧浏览器会话与未完成的 OAuth 登录事务，再检查 River 任务恢复。此操作需按实际数据选择执行，不能假定已迁移。
 
 ## 域名、证书与反代
