@@ -72,7 +72,7 @@ type Permission struct {
 // Add business abilities here when their corresponding feature is shipped.
 // Internal SeAT mappings and stored historical grants use Catalog independently.
 func ManageableCatalog() []Permission {
-	result := []Permission{{"corporation.welfare", "福利审核与交付", "corporation"}, {"access.manage", "权限管理", "global"}, {"eve.sync.manage", "ESI 同步管理", "global"}, {"corporation.contract", "军团合同", "corporation"}, {"corporation.attendance", "军团考勤与集结分", "corporation"}, {"corporation.skills", "军团技能要求", "corporation"}, {"corporation.journal", "钱包流水", "corporation"}, {"corporation.transaction", "钱包市场交易", "corporation"}}
+	result := []Permission{{"corporation.welfare", "福利审核与交付", "corporation"}, {"access.manage", "权限管理", "global"}, {"eve.sync.manage", "ESI 同步管理", "global"}, {"corporation.structure", "建筑管理", "corporation"}, {"corporation.contract", "军团合同", "corporation"}, {"corporation.attendance", "军团考勤与集结分", "corporation"}, {"corporation.skills", "军团技能要求", "corporation"}, {"corporation.journal", "钱包流水", "corporation"}, {"corporation.transaction", "钱包市场交易", "corporation"}}
 	for i, n := range divisions {
 		result = append(result, Permission{"corporation.wallet_" + n + "_division", fmt.Sprintf("钱包分部 %d", i+1), "corporation"})
 	}

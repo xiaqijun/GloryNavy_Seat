@@ -112,7 +112,7 @@ cmd/server
   └─ internal/app                  宿主组装：连接池、服务实例、注册表、HTTP
       ├─ internal/module           纯模块契约与校验，不连接数据库
       ├─ internal/httpapi          HTTP 中间件、统一响应、公共运维接口
-      └─ internal/modules/         system、identity、eve、access、community
+      └─ internal/modules/         system、identity、eve、access、community、structures
           └─ <module>/internal/store  各模块自己的 SQL 和 sqlc 生成代码
 
 web/src/App.tsx                    公共布局、焦点管理、加载和失败状态
@@ -129,7 +129,7 @@ Go 的嵌套 `internal` 目录限制其他模块直接导入 `system/internal/st
 
 ## 注册、启用与权限
 
-1. 宿主列出已编译的模块。未设置 `MODULES` 时按 `internal/config/config.go` 默认启用 system、identity、eve、access、community、attendance、sentry；`.env.example` 的显式示例包含更多模块；system 是必需模块。access 依赖 identity/eve，sentry 依赖 identity/access。显式 `MODULES=system` 可以仅运行底座。未知、重复或依赖不完整的配置导致启动失败。
+1. 宿主列出已编译的模块。未设置 `MODULES` 时按 `internal/config/config.go` 默认启用 system、identity、eve、access、community、attendance、structures、sentry；`.env.example` 的显式示例包含更多模块；system 是必需模块。access 依赖 identity/eve，structures 依赖 identity/eve/access，sentry 依赖 identity/access。显式 `MODULES=system` 可以仅运行底座。未知、重复或依赖不完整的配置导致启动失败。
 2. 注册表检查唯一 ID、`x.y.z` 发布版本、宿主 API 版本和依赖环。当前宿主 API 为 1，依赖要求精确 API 版本；发布版本用于识别代码，不代表依赖兼容性推断。未来单独升级业务服务契约时，应新增明确版本字段，不能只修改显示版本。
 3. 按依赖先后形成模块目录及路由列表。Definition 不包含通用启动/停止回调；EVE River worker 由 Application.Run 与 server 显式管理。拓扑排序不等于通用后台插件生命周期。
 4. 模块声明相对路径，宿主加上 `/api/v1/<模块 ID>`。禁止任意路径、通配路由及重复路由；变量名不同但形状相同的路径也视为重复。

@@ -69,7 +69,7 @@ func Load() (Config, error) {
 		return c, errors.New("DB_SLOW_QUERY_MS must be between 0 and 60000")
 	}
 	c.DBSlowQuery = time.Duration(slowMS) * time.Millisecond
-	c.Modules = strings.Split(value("MODULES", "system,identity,eve,access,community,attendance,sentry"), ",")
+	c.Modules = strings.Split(value("MODULES", "system,identity,eve,access,community,attendance,structures,sentry"), ",")
 	for i := range c.Modules {
 		c.Modules[i] = strings.TrimSpace(c.Modules[i])
 	}

@@ -98,7 +98,7 @@ No account is created or chosen automatically. The command resolves an active bi
 | Endpoint | Purpose |
 | --- | --- |
 | GET `/api/v1/access/me` | Own game-role facts, site roles and administrator status |
-| GET `/api/v1/access/catalog` | Configurable abilities for delivered features; currently access.manage only |
+| GET `/api/v1/access/catalog` | Configurable abilities for delivered features, including `corporation.structure` |
 | GET `/api/v1/access/roles` | Site-role list |
 | PUT / DELETE `/api/v1/access/roles/{id}` | Save/delete a UUID role |
 | PUT / DELETE `/api/v1/access/users/{user}/roles/{id}` | Assign/remove a role for a UUID user |
@@ -119,6 +119,10 @@ Personal contract reads and GET character sync status admit administrators for o
 ### Delivered attendance capability
 
 `corporation.attendance` is now configurable with corporation/alliance filters; existing CEO/Director and current site-administrator rules apply. Fleet capture uses the organizer's own active character and ESI fleet access. Administrator member-online reads check the current flag and active bindings without expanding token/account writes. [Scope details](attendance.en.md).
+
+### Delivered structure reads
+
+`corporation.structure` is now available for read-only structure overviews. Each corporation is checked against the current character facts or site grants; the module reads Upwell structures and POS fuel details but does not expose rentals, Access List/Profile edits or game-side permission writes. See the [structure guide](structures.en.md).
 
 ## Corporation skill requirements
 

@@ -21,6 +21,7 @@ import (
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/modules/market"
 	"glorynavy.local/seat/internal/modules/sentry"
+	"glorynavy.local/seat/internal/modules/structures"
 	"glorynavy.local/seat/internal/modules/system"
 	"glorynavy.local/seat/internal/modules/welfare"
 	"log/slog"
@@ -131,6 +132,76 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		a, err := reader.Corporation(ctx, id)
 		return corpDTO(a), err
 	})
+	structureHandler := structures.Handler{User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
+	structureHandler.Read = func(ctx context.Context, user string, corporationID int64) ([]eve.Structure, error) {
+		if syncService == nil {
+			return nil, errors.New("structures unavailable")
+		}
+		owned, err := identityService.ActiveCharacters(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+		items := []eve.Structure{}
+		seen := map[int64]bool{}
+		authorizedCorp := false
+		var lastErr error
+		for _, ch := range owned {
+			a, e := reader.Get(ctx, ch.ID)
+			if e != nil {
+				lastErr = e
+				continue
+			}
+			if a.CorporationID <= 0 || (corporationID > 0 && a.CorporationID != corporationID) || seen[a.CorporationID] {
+				continue
+			}
+			target := corpDTO(a)
+			allowed, e := accessService.Can(ctx, user, "corporation.structure", target)
+			if e != nil {
+				return nil, e
+			}
+			if !allowed {
+				if corporationID > 0 {
+					return nil, pgx.ErrNoRows
+				}
+				continue
+			}
+			rows, e := syncService.ReadCorporationStructures(ctx, ch.ID, a.CorporationID)
+			if e != nil {
+				lastErr = e
+				continue
+			}
+			typeIDs := make([]int64, 0, len(rows))
+			systemIDs := make([]int64, 0, len(rows))
+			for _, row := range rows {
+				typeIDs = append(typeIDs, row.TypeID)
+				systemIDs = append(systemIDs, row.SolarSystemID)
+			}
+			typeNames := map[int64]eve.StaticTypeName{}
+			systemNames := map[int64]eve.StaticTypeName{}
+			if pool != nil {
+				typeNames, _ = staticData.TypeNames(ctx, typeIDs)
+				systemNames, _ = staticData.SolarSystemNames(ctx, systemIDs)
+			}
+			for i := range rows {
+				if n, ok := typeNames[rows[i].TypeID]; ok {
+					rows[i].TypeName = n.Name
+				}
+				if n, ok := systemNames[rows[i].SolarSystemID]; ok {
+					rows[i].SolarSystemName = n.Name
+				}
+			}
+			authorizedCorp = true
+			seen[a.CorporationID] = true
+			items = append(items, rows...)
+		}
+		if len(items) == 0 && lastErr != nil {
+			return nil, lastErr
+		}
+		if corporationID > 0 && !authorizedCorp {
+			return nil, pgx.ErrNoRows
+		}
+		return items, nil
+	}
 	attendanceModule := attendanceHandler(pool, identityService, accessService, reader)
 	attendanceModule.Service.AlliancePAP = attendance.AlliancePAPConfig{URL: auth.WinterCoPAPURL, AuthFile: auth.WinterCoPAPAuthFile}
 	attendanceModule.Service.Battle = reader
@@ -268,7 +339,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	if slices.Contains(enabled, "community") {
 		identityHandler.ProfileGate = func(ctx context.Context, user, permission string) (bool, error) {
 			switch permission {
-			case "identity.session.read", "identity.session.logout", "identity.characters.read", "identity.characters.manage", "eve.characters.manage", "eve.sync.self", "community.profile.read", "community.profile.update", "community.group.apply", "community.group.manage", "access.self":
+			case "identity.session.read", "identity.session.logout", "identity.characters.read", "identity.characters.manage", "eve.characters.manage", "eve.sync.self", "structures.self", "community.profile.read", "community.profile.update", "community.group.apply", "community.group.manage", "access.self":
 				return true, nil
 			default:
 				return communityService.Complete(ctx, user)
@@ -282,7 +353,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "community.group.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
+		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
 		}
 		if permission == "sentry.manage" {
@@ -643,7 +714,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		exchangeService.EstimateReward = marketModule.Service.EstimateItems
 	}
 	sentryHandler := sentry.Handler{Service: sentryService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService).Module()}, enabled, authorize)
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService).Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}

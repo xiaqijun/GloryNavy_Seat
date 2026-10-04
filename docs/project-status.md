@@ -265,7 +265,7 @@ Goose 48 的活动项目、奖励库快照、独立果壳币、成员截图申�
 
 本次发布保留原配置、既有奖励价格与 PAP 手动模式，不补发历史币。
 
-更新：2026-09-27。本页只记录当前能力和最近一次生产交付；历史验收移至[交付历史](history/project-status-through-2026-09-23.md)，未完成事项集中在[待办清单](backlog.md)。
+更新：2026-10-05。本页只记录当前能力和最近一次生产交付；历史验收移至[交付历史](history/project-status-through-2026-09-23.md)，未完成事项集中在[待办清单](backlog.md)。
 
 ## 当前生产
 
@@ -290,6 +290,7 @@ Goose 48 的活动项目、奖励库快照、独立果壳币、成员截图申�
 | 社区资料 | QQ 号与 KOOK 昵称手填、编辑、完整度门禁；官方 QQ 群申请码、自动审批、入群回调绑定和管理员补偿同步已发布，真实平台联调待完成 | [社区资料](integrations/community-profile.zh-CN.md) |
 | 权限与成员 | 本站 RBAC、SeAT 风格军团策略、超级管理员成员数据读取、对象范围鉴权；游戏职务与本站权限分离 | [权限](integrations/seat-authorization.zh-CN.md)、[成员](ui/members.md) |
 | ESI / SDE | River 持久同步、授权代次与发布 fence、共享缓存/限流、令牌与令牌桶观测；本地中英文物品/星系名称及独立静态参考 | [同步](integrations/esi-sync.zh-CN.md)、[SDE](integrations/sde-names.zh-CN.md) |
+| 建筑管理（本地首期，待发布） | 只读读取军团 Upwell 建筑和 POS；展示状态、服务、燃料到期/燃料仓明细与观测时间；按 `corporation.structure` 做对象权限检查，不提供租用或游戏内权限写入 | [建筑管理](integrations/structures.zh-CN.md)、[页面说明](ui/structures.md) |
 | 合同 | 个人/军团合同、物品及地点解析、筛选与 CSV 导出；管理员读取有效绑定成员数据，按业务范围排除无关联盟合同 | [合同](integrations/contracts.zh-CN.md) |
 | 钱包与估价 | 个人及军团分部余额/流水/交易；吉他 4-4 收价、中间价、售价与统一比例，粘贴或从未接取合同估价；钱包不自动认定已补损 | [钱包](integrations/wallet.zh-CN.md)、[估价](integrations/market.zh-CN.md) |
 | 军团考勤 / PAP | 本团绑定角色点名、补录、地点/舰船快照、损失确认、在线时长；PAP 多开累加、活动发分及管理员集中发放，无军团月门槛 | [考勤](integrations/attendance.zh-CN.md) |

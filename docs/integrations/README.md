@@ -16,6 +16,7 @@ Navigation updated 2026-09-23. This is not a new verification of upstream docume
 | QQ / KOOK 资料 | [中文](community-profile.zh-CN.md) / [English](community-profile.en.md) |
 | 本站权限与成员范围 | [中文](seat-authorization.zh-CN.md) / [English](seat-authorization.en.md) |
 | ESI 后台同步 | [中文](esi-sync.zh-CN.md) / [English](esi-sync.en.md) |
+| 建筑管理 / Structure management | [中文](structures.zh-CN.md) / [English](structures.en.md) |
 | ESI 客户端与令牌观测 | [中文](esi-client.zh-CN.md) / [English](esi-client.en.md) |
 | 限流窗口与预算 | [中文](esi-rate-limits.zh-CN.md) / [English](esi-rate-limits.en.md) |
 | SDE 名称与静态参考 | [中文](sde-names.zh-CN.md) / [English](sde-names.en.md) |

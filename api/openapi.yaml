@@ -7643,6 +7643,41 @@ paths:
         '409': {description: Grant has unresolved reserved intervals}
         '503': {description: Alert charging is disabled or Sentry is unavailable}
 
+  /api/v1/structures/structures:
+    get:
+      operationId: structuresOverview
+      summary: Readable corporation Upwell structures and POS
+      description: Authenticated read-only view. The server resolves the target corporation from current EVE bindings and checks corporation.structure for every corporation. Uses ESI shared cache; no game-side writes, rentals, Access List/Profile edits or personal entry controls.
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: corporation_id
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^[1-9][0-9]*$'
+      responses:
+        '200':
+          description: Current ESI projection. POS fuel rows are available when the starbase detail response is readable; Upwell buildings expose fuel_expires rather than an absolute fuel quantity.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Structure'
+        '400': {description: Invalid corporation_id}
+        '401': {description: No active session}
+        '404': {description: Corporation is outside the current object scope}
+        '503': {description: ESI authorization or upstream data unavailable}
 components:
   parameters:
     CharacterID:
@@ -7777,6 +7812,27 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
   schemas:
+    Structure:
+      type: object
+      required: [corporation_id, corporation_name, kind, id, name, type_id, solar_system_id, state, observed_at, source_character_id]
+      properties:
+        corporation_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        corporation_name: {type: string}
+        kind: {type: string, enum: [upwell, pos]}
+        id: {type: string, pattern: '^[1-9][0-9]*$'}
+        name: {type: string}
+        type_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        type_name: {type: string}
+        solar_system_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        solar_system_name: {type: string}
+        state: {type: string}
+        fuel_expires: {type: string, format: date-time, nullable: true}
+        profile_id: {type: string, pattern: '^[1-9][0-9]*$', nullable: true}
+        unanchors_at: {type: string, format: date-time, nullable: true}
+        services: {type: array, items: {type: object, properties: {name: {type: string}, state: {type: string}}}}
+        fuel: {type: array, items: {type: object, required: [type_id, quantity], properties: {type_id: {type: string}, quantity: {type: integer, minimum: 0}}}}
+        observed_at: {type: string, format: date-time}
+        source_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
     SentryKeyCreate:
       type: object
       additionalProperties: false

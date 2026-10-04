@@ -112,7 +112,7 @@ npm run access:admin -- --character 你的角色ID --revoke
 | API | 作用 |
 | --- | --- |
 | GET `/api/v1/access/me` | 当前用户职务、本站角色和管理员标志 |
-| GET `/api/v1/access/catalog` | 已交付功能的可配置权限目录，当前仅 access.manage |
+| GET `/api/v1/access/catalog` | 已交付功能的可配置权限目录，包含 `corporation.structure` 等已交付能力 |
 | GET `/api/v1/access/roles` | 本站角色列表 |
 | PUT `/api/v1/access/roles/{id}` | 创建/更新 UUID 标识的角色 |
 | DELETE `/api/v1/access/roles/{id}` | 删除角色及其授予关系 |
@@ -147,6 +147,10 @@ npm run access:admin -- --character 你的角色ID --revoke
 ### 已交付考勤能力
 
 `corporation.attendance` 已随活动/在线模块开放，可按军团与联盟授予；现有 CEO/Director 与本站管理员策略适用。名单抓取仍只使用操作者自己的有效角色且遵守游戏舰队访问权。管理员成员在线读取只检查当前站点管理员标志与有效绑定；不扩展成员令牌写操作。[完整范围](attendance.zh-CN.md)。
+
+### 已交付建筑读取
+
+`corporation.structure` 已开放只读建筑总览，按军团对象逐次检查当前角色/本站授权；读取 Upwell 建筑与 POS 燃料明细，不开放租用、Access List/Profile 或游戏内权限写入。[建筑指南](structures.zh-CN.md)。
 
 ## 军团技能要求
 

@@ -8,6 +8,8 @@
 
 钱包新增 7 个 resource 与 `eve.wallet-resource.v1`，保持共享队列、缓存、授权代次和租约/fence。停用 wallet 停止 dispatch，回退旧程序先取消该 kind。见 [钱包同步](wallet.zh-CN.md)。
 
+建筑管理首期复用同一 ESI 客户端的私有缓存和授权代次，按页面请求读取军团 structures/starbases；它暂不创建独立历史快照或 River resource。需要历史燃料曲线、定时告警或大规模预取时，再按本指南增加持久目标和 worker。
+
 
 Goose 32 本地新增 `killmails`（舰船损失）资源：welfare 启用时派发 `eve.character-killmails.v1`，共享角色队列、缓存/预算、授权代次和租约/fence。列表与待处理引用持久化，逐明细提交，整轮完成后按官方缓存到期；同步 API/页面支持状态及手动刷新。数据与回退约束见[舰船损失](character-losses.zh-CN.md)。不改原考勤损失确认流程，未发布生产。
 
