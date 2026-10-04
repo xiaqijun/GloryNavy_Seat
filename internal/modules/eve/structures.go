@@ -73,7 +73,7 @@ type starbaseDetail struct {
 	State       string          `json:"state"`
 	OnlineSince *time.Time      `json:"online_since"`
 	UnanchorAt  *time.Time      `json:"unanchor_at"`
-	Fuel        []StructureFuel `json:"fuel"`
+	Fuel        []StructureFuel `json:"fuels"`
 }
 
 // ReadCorporationStructures reads the current ESI view for one corporation.
