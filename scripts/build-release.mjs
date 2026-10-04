@@ -13,6 +13,14 @@ if (!version || !/^v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?$/.test(version)) 
 }
 const output = path.join(root, '.local/releases', version);
 if (existsSync(output)) throw new Error('Release directory already exists; use a new version suffix');
+const git = command => {
+  const result = spawnSync('git', command, { cwd: root, encoding: 'utf8', windowsHide: true });
+  if (result.status !== 0) throw new Error(`git ${command.join(' ')} failed (${result.status})`);
+  return result.stdout.trim();
+};
+const sourceBranch = git(['symbolic-ref', '--short', '-q', 'HEAD']) || 'DETACHED';
+const sourceCommit = git(['rev-parse', 'HEAD']);
+const sourceDirty = git(['status', '--porcelain']).length > 0;
 mkdirSync(path.join(output, 'bin'), { recursive: true });
 const localGo = path.join(root, '.tools/go/bin', process.platform === 'win32' ? 'go.exe' : 'go');
 const go = existsSync(localGo) ? localGo : 'go';
@@ -35,6 +43,7 @@ for (const name of ['CHANGELOG.md', 'docs/third-party-notices.md']) {
   cpSync(path.join(root, name), path.join(output, path.basename(name)));
 }
 writeFileSync(path.join(output, 'release.json'), JSON.stringify({ version, platform: 'linux/amd64',
+  source_branch: sourceBranch, source_commit: sourceCommit, source_dirty: sourceDirty,
   built_at: new Date().toISOString() }, null, 2) + '\n');
 function files(directory, prefix = '') {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {

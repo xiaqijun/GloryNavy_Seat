@@ -12,6 +12,7 @@
     "db:migrate": "node scripts/tasks.mjs migrate",
     "db:generate": "node scripts/tasks.mjs generate",
     "check": "node scripts/tasks.mjs check",
+    "deploy:production:guard": "node scripts/check-production-branch.mjs",
     "build": "node scripts/tasks.mjs build",
     "start:api": "node scripts/tasks.mjs api"
   }
