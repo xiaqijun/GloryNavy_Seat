@@ -128,7 +128,9 @@ func (s *AuthorizationService) ReadCorporationStructures(ctx context.Context, ch
 			fuel := []StructureFuel{}
 			state, unanchor := row.State, row.UnanchorAt
 			var detail starbaseDetail
-			if _, e = s.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/corporations/%d/starbases/%d/", corporationID, row.StarbaseID), CharacterID: characterID, Generation: generation, Scopes: []string{CorporationStarbasesScope}}, &detail); e == nil {
+			// ESI requires the POS solar-system query parameter for the detail
+			// endpoint; omitting it returns 400 even with a valid Director grant.
+			if _, e = s.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/corporations/%d/starbases/%d/?system_id=%d", corporationID, row.StarbaseID, row.SystemID), CharacterID: characterID, Generation: generation, Scopes: []string{CorporationStarbasesScope}}, &detail); e == nil {
 				fuel, state, unanchor = detail.Fuel, detail.State, detail.UnanchorAt
 			}
 			items = append(items, Structure{CorporationID: corporationID, CorporationName: a.CorporationName, Kind: "pos", ID: row.StarbaseID, TypeID: row.TypeID, SolarSystemID: row.SystemID, State: state, UnanchorsAt: unanchor, Fuel: fuel, ObservedAt: observed, SourceCharacter: characterID})
