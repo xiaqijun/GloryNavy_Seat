@@ -218,13 +218,6 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
       ) : (
         <p className="sentry-usage-loading" role="status">{msg("正在读取收费配置")}</p>
       )}
-      {rewards.data && (
-        <div className="sentry-reward-total" role="status">
-          <strong>{msg("奖励记录合计")}</strong>
-          <span>{coins(rewards.data.total_minor)} {msg("币")}</span>
-          <small>{msg("共 {0} 条已入账记录，下面显示最近 {1} 条", rewards.data.total_count, rewards.data.items.length)}</small>
-        </div>
-      )}
       {page.isError || rewards.isError ? (
         <p className="sentry-usage-error" role="alert">{(page.error || rewards.error)?.message}</p>
       ) : page.isPending || rewards.isPending ? (
