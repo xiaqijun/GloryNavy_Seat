@@ -2,7 +2,7 @@
 
 ## 已发布：建筑管理只读模块（2026-10-05）
 
-生产后端已切换至 `v0.1.0-structures-system-resolution-20261005`，公网静态前端保持 `v0.1.0-structures-response-fix-20261005`。应用机服务 `active/ready`，公网首页返回 200，建筑接口匿名返回 401，边缘 OpenResty `nginx -t` 通过。建筑同步现在会在星系 ID 缺失时用建筑详情补查位置；生产快照已将 `30-D5G` 解析为 `30003632`，页面再通过本地 SDE 显示星系名。Goose 69 新增 `eve_structure_snapshots`，River 新增 `corporation_structures` 目标；页面只读本地快照，生产 CEO `Nuter Zero` 已成功写入有效快照。发布前备份由激活脚本保存在应用机 `/var/backups/glorynavy/`。本次发布只读建筑投影与权限边界，未开放租用、ACL/Profile、个人进入权限或游戏内写操作。真实 ESI 数据取得 20 座 Upwell、13 座 POS 和 13 条 POS 燃料明细，落库与发布证据见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。
+生产后端已切换至 `v0.1.0-structures-system-resolution-20261005`，公网静态前端已切换至 `v0.1.0-structures-ui-groups-20261005-r1`。应用机服务 `active/ready`，公网首页返回 200，建筑接口匿名返回 401，边缘 OpenResty `nginx -t` 通过。建筑同步现在会在星系 ID 缺失时用建筑详情补查位置；生产快照已将 `30-D5G` 解析为 `30003632`，页面再通过本地 SDE 显示星系名。建筑管理页按军团和 Upwell/POS 分类，筛选器显示数量；卡片首屏保留状态、位置和类型等关键信息，POS 燃料与服务改为可展开详情，减少文字堆叠。Goose 69 新增 `eve_structure_snapshots`，River 新增 `corporation_structures` 目标；页面只读本地快照，生产 CEO `Nuter Zero` 已成功写入有效快照。发布前备份由激活脚本保存在应用机 `/var/backups/glorynavy/`。本次发布只读建筑投影与权限边界，未开放租用、ACL/Profile、个人进入权限或游戏内写操作。真实 ESI 数据取得 20 座 Upwell、13 座 POS 和 13 条 POS 燃料明细，落库与发布证据见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。
 
 ## 生产发布分支门禁（2026-10-04）
 
