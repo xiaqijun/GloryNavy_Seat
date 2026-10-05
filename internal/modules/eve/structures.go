@@ -85,8 +85,9 @@ type StructureService struct {
 }
 
 type StructureFuel struct {
-	TypeID   int64 `json:"type_id,string"`
-	Quantity int64 `json:"quantity"`
+	TypeID   int64  `json:"type_id,string"`
+	Name     string `json:"name,omitempty"`
+	Quantity int64  `json:"quantity"`
 }
 
 type structureListItem struct {

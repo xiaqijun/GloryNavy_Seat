@@ -102,17 +102,26 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 				lastErr = errors.New("structure source binding missing")
 				continue
 			}
-			typeIDs, systemIDs := []int64{}, []int64{}
+			typeIDs, systemIDs, fuelTypeIDs := []int64{}, []int64{}, []int64{}
 			for _, row := range rows {
 				typeIDs = append(typeIDs, row.TypeID)
 				systemIDs = append(systemIDs, row.SolarSystemID)
+				for _, fuel := range row.Fuel {
+					fuelTypeIDs = append(fuelTypeIDs, fuel.TypeID)
+				}
 			}
 			if names != nil && len(rows) > 0 {
 				typeNames, _ := names.TypeNames(ctx, typeIDs)
+				fuelNames, _ := names.TypeNames(ctx, fuelTypeIDs)
 				systemNames, _ := names.SolarSystemNames(ctx, systemIDs)
 				for i := range rows {
 					if n, ok := typeNames[rows[i].TypeID]; ok {
 						rows[i].TypeName = n.Name
+					}
+					for j := range rows[i].Fuel {
+						if n, ok := fuelNames[rows[i].Fuel[j].TypeID]; ok {
+							rows[i].Fuel[j].Name = n.Name
+						}
 					}
 					if n, ok := systemNames[rows[i].SolarSystemID]; ok {
 						rows[i].SolarSystemName = n.Name

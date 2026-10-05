@@ -7830,7 +7830,7 @@ components:
         profile_id: {type: string, pattern: '^[1-9][0-9]*$', nullable: true}
         unanchors_at: {type: string, format: date-time, nullable: true}
         services: {type: array, items: {type: object, properties: {name: {type: string}, state: {type: string}}}}
-        fuel: {type: array, items: {type: object, required: [type_id, quantity], properties: {type_id: {type: string}, quantity: {type: integer, minimum: 0}}}}
+        fuel: {type: array, items: {type: object, required: [type_id, quantity], properties: {type_id: {type: string}, name: {type: string}, quantity: {type: integer, minimum: 0}}}}
         observed_at: {type: string, format: date-time}
         source_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
     SentryKeyCreate:

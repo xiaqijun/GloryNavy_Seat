@@ -33,6 +33,16 @@ func (f structureTestData) ReadStructureSnapshots(context.Context) ([]eve.Struct
 	return []eve.StructureSnapshot{f.snapshot}, nil
 }
 
+type structureTestNames struct{}
+
+func (structureTestNames) TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error) {
+	return map[int64]eve.StaticTypeName{4051: {ID: 4051, Name: "氮燃料块"}}, nil
+}
+
+func (structureTestNames) SolarSystemNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error) {
+	return map[int64]eve.StaticTypeName{}, nil
+}
+
 func TestStructuresAdministratorUsesAuthorizedSourceCharacter(t *testing.T) {
 	source := eve.StructureSource{CharacterID: 2122015910, Generation: 7, CorporationID: 98530802, CorporationName: "Glory Navy", CEOID: 2122015910, OwnerHash: []byte{1, 2, 3}}
 	rows := []eve.Structure{{CorporationID: source.CorporationID, Kind: "upwell", ID: 9001}}
@@ -49,5 +59,15 @@ func TestStructuresMemberRequiresSourceBinding(t *testing.T) {
 	got, err := h.Read(context.Background(), "member", 0)
 	if err != nil || len(got) != 0 {
 		t.Fatalf("unbound member received structures: got=%v err=%v", got, err)
+	}
+}
+
+func TestStructuresResolvesPOSFuelNames(t *testing.T) {
+	source := eve.StructureSource{CharacterID: 2122015910, Generation: 7, CorporationID: 98530802, CorporationName: "Glory Navy", CEOID: 2122015910, OwnerHash: []byte{1, 2, 3}}
+	rows := []eve.Structure{{CorporationID: source.CorporationID, Kind: "pos", ID: 9001, Fuel: []eve.StructureFuel{{TypeID: 4051, Quantity: 42}}}}
+	h := structuresHandler(structureTestAccounts{}, structureTestAccess{admin: true}, structureTestData{snapshot: eve.StructureSnapshot{Source: source, Rows: rows}}, structureTestNames{})
+	got, err := h.Read(context.Background(), "site-admin", 0)
+	if err != nil || len(got) != 1 || len(got[0].Fuel) != 1 || got[0].Fuel[0].Name != "氮燃料块" {
+		t.Fatalf("POS fuel name not resolved: got=%v err=%v", got, err)
 	}
 }

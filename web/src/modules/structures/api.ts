@@ -1,7 +1,7 @@
 import { getData } from "@/lib/http";
 
 export type Service = { name: string; state: string };
-export type Fuel = { type_id: string; quantity: number };
+export type Fuel = { type_id: string; name?: string; quantity: number };
 export type Structure = {
   corporation_id: string;
   corporation_name: string;
