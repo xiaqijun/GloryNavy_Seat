@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警消耗按监控星系归因（2026-10-06）
+
+已发布 `v0.1.0-sentry-system-charge-20261006`。应用机和公网静态站点均已切换到该版本，应用 `active/ready`、公网首页 200、OpenResty `nginx -t` 通过。预警端按服务端确认的重叠监控星系拆分在线消耗，Seat 按星系聚合；无可靠归因证据的历史空 `system_id` 记录不猜测回填。无新增 Goose/River 迁移。
+
 ## 预警奖励说明卡片精简（2026-10-06）
 
 已发布 `v0.1.0-sentry-reward-card-20261006`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已切换，应用 ready、公网首页 200、OpenResty `nginx -t` 通过。预警消费页移除独立的奖励说明卡片，奖励累计仍在消费统计指标和按星系合并的流水中；无 Goose/River 迁移。
