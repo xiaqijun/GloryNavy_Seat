@@ -2,6 +2,7 @@ package eve
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -9,6 +10,45 @@ import (
 
 	"glorynavy.local/seat/internal/modules/eve/internal/store"
 )
+
+type structureObservation struct {
+	corporationID   int64
+	corporationName string
+	observedAt      time.Time
+	validUntil      time.Time
+	payload         []byte
+}
+
+func (s *SyncService) collectStructures(ctx context.Context, _ store.EveSyncTarget, c store.EveCredential) (syncResult, error) {
+	var result syncResult
+	a, err := s.auth.Get(ctx, c.CharacterID)
+	if err != nil {
+		return result, err
+	}
+	if a.CorporationID <= 0 || (a.State != "ready" && a.State != "retry") || !a.ValidUntil.After(time.Now()) {
+		return result, syncFault{Reason: "authorization_pending", Temporary: true}
+	}
+	if !slices.Contains(a.Scopes, CorporationStructuresScope) && !slices.Contains(a.Scopes, CorporationStarbasesScope) {
+		return result, syncFault{Reason: "missing_role", Temporary: true}
+	}
+	rows, err := s.auth.ReadCorporationStructures(ctx, c.CharacterID, a.CorporationID)
+	if err != nil {
+		return result, err
+	}
+	payload, err := json.Marshal(rows)
+	if err != nil {
+		return result, err
+	}
+	observed := time.Now().UTC()
+	for _, row := range rows {
+		if row.ObservedAt.After(observed) {
+			observed = row.ObservedAt
+		}
+	}
+	result.structures = &structureObservation{corporationID: a.CorporationID, corporationName: a.CorporationName, observedAt: observed, validUntil: time.Now().Add(time.Hour), payload: payload}
+	result.next = time.Now().Add(time.Hour)
+	return result, nil
+}
 
 const (
 	CorporationStarbasesScope  = "esi-corporations.read_starbases.v1"
@@ -91,6 +131,34 @@ type StructureSource struct {
 	CharacterID, Generation, CorporationID, AllianceID, CEOID int64
 	CorporationName                                           string
 	OwnerHash                                                 []byte
+}
+
+// StructureSnapshot is the database-backed building view used by the host.
+// The page layer must never call ESI directly; River refreshes these rows.
+type StructureSnapshot struct {
+	Source     StructureSource
+	Rows       []Structure
+	ObservedAt time.Time
+	ValidUntil time.Time
+}
+
+func (s *AuthorizationService) ReadStructureSnapshots(ctx context.Context) ([]StructureSnapshot, error) {
+	rows, err := store.New(s.pool).ReadStructureSnapshots(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]StructureSnapshot, 0, len(rows))
+	for _, r := range rows {
+		var items []Structure
+		if err := json.Unmarshal(r.Payload, &items); err != nil {
+			return nil, err
+		}
+		result = append(result, StructureSnapshot{
+			Source: StructureSource{CharacterID: r.CharacterID, Generation: r.Generation, CorporationID: r.CorporationID, CorporationName: r.CorporationName, AllianceID: r.AllianceID, CEOID: r.CeoID, OwnerHash: r.OwnerHash},
+			Rows:   items, ObservedAt: r.ObservedAt.Time, ValidUntil: r.ValidUntil.Time,
+		})
+	}
+	return result, nil
 }
 
 func (s *AuthorizationService) StructureSources(ctx context.Context) ([]StructureSource, error) {

@@ -736,7 +736,7 @@ SELECT c.character_id,resource,c.grant_generation,$1::text,
  CASE WHEN resource IN ('profile','authorization') THEN c.next_sync_at ELSE now() END,
  CASE WHEN scope<>'' AND NOT scope=ANY(c.scopes) THEN 'blocked' ELSE 'idle' END,
  CASE WHEN scope<>'' AND NOT scope=ANY(c.scopes) THEN 'missing_scope' ELSE '' END
-FROM eve_credentials c CROSS JOIN (VALUES ('profile',''),('authorization',''),('character_contracts','esi-contracts.read_character_contracts.v1'),('corporation_contracts','esi-contracts.read_corporation_contracts.v1')) r(resource,scope) WHERE c.character_id=$2
+FROM eve_credentials c CROSS JOIN (VALUES ('profile',''),('authorization',''),('character_contracts','esi-contracts.read_character_contracts.v1'),('corporation_contracts','esi-contracts.read_corporation_contracts.v1'),('corporation_structures','')) r(resource,scope) WHERE c.character_id=$2
 ON CONFLICT(character_id,resource) DO UPDATE SET generation=excluded.generation,display_name=excluded.display_name,
  state=excluded.state,reason=excluded.reason,active_job_id=NULL,lease_until=NULL,fence=eve_sync_targets.fence+1,failures=0,
  next_due_at=greatest(eve_sync_targets.next_due_at,now()),updated_at=now()

@@ -29,6 +29,10 @@ type authorizationArgs syncArgs
 
 func (authorizationArgs) Kind() string { return "eve.character-authorization.v1" }
 
+type structureArgs syncArgs
+
+func (structureArgs) Kind() string { return "eve.corporation-structures.v1" }
+
 type dispatchArgs struct{}
 
 func (dispatchArgs) Kind() string { return "eve.sync-dispatch.v1" }
@@ -55,6 +59,7 @@ func NewSync(pool *pgxpool.Pool, auth *AuthorizationService, logger *slog.Logger
 	river.AddWorker(workers, &dispatchWorker{s: s})
 	river.AddWorker(workers, &profileWorker{s: s})
 	river.AddWorker(workers, &authorizationWorker{s: s})
+	river.AddWorker(workers, &structureWorker{s: s})
 	river.AddWorker(workers, &onlineWorker{s: s})
 	river.AddWorker(workers, &fittingWorker{s: s})
 	river.AddWorker(workers, &lossWorker{s: s})
@@ -157,6 +162,8 @@ func (s *SyncService) enqueue(ctx context.Context, tx pgx.Tx, t store.EveSyncTar
 			args = onlineArgs{t.ID, t.Generation}
 		case "authorization":
 			args = authorizationArgs{t.ID, t.Generation}
+		case "corporation_structures":
+			args = structureArgs{t.ID, t.Generation}
 		case "killmails":
 			if !s.lossesEnabled {
 				return "disabled", nil
@@ -305,6 +312,15 @@ func (w *authorizationWorker) Work(ctx context.Context, j *river.Job[authorizati
 	return w.s.work(ctx, syncArgs(j.Args), j.ID, "authorization")
 }
 
+type structureWorker struct {
+	river.WorkerDefaults[structureArgs]
+	s *SyncService
+}
+
+func (w *structureWorker) Work(ctx context.Context, j *river.Job[structureArgs]) error {
+	return w.s.work(ctx, syncArgs(j.Args), j.ID, "corporation_structures")
+}
+
 func (s *SyncService) work(parent context.Context, args syncArgs, jobID int64, resource string) error {
 	if s.auth == nil {
 		return river.JobSnooze(time.Hour)
@@ -382,6 +398,7 @@ type syncResult struct {
 	contracts     *contractPage
 	profile       *characterProfile
 	snapshot      *esiSnapshot
+	structures    *structureObservation
 	next, content time.Time
 }
 type characterProfile struct {
@@ -420,6 +437,9 @@ func (s *SyncService) collect(ctx context.Context, t store.EveSyncTarget, c stor
 		result.next = response.ExpiresAt
 		result.content = response.ContentUpdatedAt
 		return result, nil
+	}
+	if t.Resource == "corporation_structures" {
+		return s.collectStructures(ctx, t, c)
 	}
 	if c.RolesNotBefore.Time.After(time.Now()) {
 		result.next = c.RolesNotBefore.Time
@@ -658,6 +678,12 @@ func (s *SyncService) finish(ctx context.Context, t store.EveSyncTarget, c store
 				return v
 			}
 			if err = q.SaveSnapshot(ctx, store.SaveSnapshotParams{CharacterID: t.CharacterID, OwnerHash: c.OwnerHash, CorporationID: p.CorporationID, CorporationName: p.Corporation.Name, AllianceID: p.Corporation.Alliance, CeoID: p.Corporation.CEO, Roles: clean(p.Roles.Roles), RolesAtHq: clean(p.Roles.HQ), RolesAtBase: clean(p.Roles.Base), RolesAtOther: clean(p.Roles.Other), SyncedAt: timestamp(time.Now()), ValidUntil: timestamp(next.Add(5 * time.Minute))}); err != nil {
+				return err
+			}
+		}
+		if result.structures != nil {
+			p := result.structures
+			if err = q.SaveStructureSnapshot(ctx, store.SaveStructureSnapshotParams{CharacterID: c.CharacterID, Generation: c.GrantGeneration, OwnerHash: c.OwnerHash, CorporationID: p.corporationID, CorporationName: p.corporationName, ObservedAt: timestamp(p.observedAt), ValidUntil: timestamp(p.validUntil), Payload: p.payload}); err != nil {
 				return err
 			}
 		}

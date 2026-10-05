@@ -2,7 +2,7 @@
 
 The first structure-management slice is read-only. `/structures` and `GET /api/v1/structures/structures` show corporation Upwell structures and POS objects allowed by the signed-in account's current bindings and the `corporation.structure` object permission. Pass `corporation_id` to select one corporation.
 
-The data comes from the ESI corporation structures and starbases endpoints and uses the shared ESI cache and rate limits. Upwell rows expose state, services, profile and `fuel_expires`; POS rows include fuel type IDs and quantities when the starbase detail is readable. Detail requests include the POS solar-system `system_id` required by ESI. `observed_at` is the response observation time and is not a real-time guarantee.
+The page reads the local `eve_structure_snapshots` table and never calls ESI in a user request. The `corporation_structures` River resource refreshes the snapshot through the authorized ESI character, including Upwell state, services, profile and `fuel_expires` plus POS fuel type IDs and quantities. `observed_at` is the last successful sync time and is not real-time game state.
 
 This slice does not implement rentals, billing, contracts, Access List/Profile edits, personal-entry controls, POS passwords, or other game-side writes. Those changes remain in EVE's Structure Browser. Missing authorization, changed corporation affiliation, or an unavailable ESI response is reported instead of being represented as fabricated empty data.
 

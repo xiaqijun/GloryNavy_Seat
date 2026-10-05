@@ -21,9 +21,7 @@ type structureAccess interface {
 	IsAdministrator(context.Context, string) (bool, error)
 }
 type structureData interface {
-	StructureSources(context.Context) ([]eve.StructureSource, error)
-	StructureSourceValid(context.Context, eve.StructureSource) (bool, error)
-	ReadCorporationStructures(context.Context, int64, int64) ([]eve.Structure, error)
+	ReadStructureSnapshots(context.Context) ([]eve.StructureSnapshot, error)
 }
 type structureNames interface {
 	TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error)
@@ -40,7 +38,7 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 		if err != nil {
 			return nil, err
 		}
-		sources, err := data.StructureSources(ctx)
+		snapshots, err := data.ReadStructureSnapshots(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +57,8 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 			}
 			return false, nil
 		}
-		for _, source := range sources {
+		for _, snapshot := range snapshots {
+			source := snapshot.Source
 			if seen[source.CorporationID] || (corporationID > 0 && corporationID != source.CorporationID) {
 				continue
 			}
@@ -81,20 +80,14 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 			if !bound {
 				continue
 			}
-			rows, e := data.ReadCorporationStructures(ctx, source.CharacterID, source.CorporationID)
-			if e != nil {
-				lastErr = e
-				continue
-			}
-			// Revalidate the viewer, game grant and binding after the network read.
+			rows := snapshot.Rows
+			// Snapshot rows have already been checked against the current grant
+			// generation, owner hash, role validity and freshness by the store query.
+			// Recheck the viewer binding before returning the local data.
 			bound = admin
 			if !admin {
 				bound, e = validBinding(source)
 			}
-			if e != nil {
-				return nil, e
-			}
-			valid, e := data.StructureSourceValid(ctx, source)
 			if e != nil {
 				return nil, e
 			}
@@ -105,8 +98,8 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 			if !allowed {
 				return nil, pgx.ErrNoRows
 			}
-			if !bound || !valid {
-				lastErr = errors.New("structure source changed")
+			if !bound {
+				lastErr = errors.New("structure source binding missing")
 				continue
 			}
 			typeIDs, systemIDs := []int64{}, []int64{}
