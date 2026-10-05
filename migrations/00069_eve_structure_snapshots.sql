@@ -1,3 +1,5 @@
+-- Module: eve structure snapshots.
+-- +goose Up
 CREATE TABLE eve_structure_snapshots (
   character_id bigint PRIMARY KEY REFERENCES eve_credentials(character_id) ON DELETE CASCADE,
   generation bigint NOT NULL,
@@ -18,3 +20,6 @@ SELECT c.character_id, 'corporation_structures', c.grant_generation, '', now(), 
 FROM eve_credentials c
 WHERE c.state IN ('ready', 'retry')
 ON CONFLICT (character_id, resource) DO NOTHING;
+
+-- +goose Down
+DROP TABLE eve_structure_snapshots;
