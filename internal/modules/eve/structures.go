@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 	"time"
+
+	"glorynavy.local/seat/internal/modules/eve/internal/store"
 )
 
 const (
@@ -83,6 +85,39 @@ type starbaseFuel struct {
 	Quantity int64 `json:"quantity"`
 }
 
+// StructureSource is a token-free corporation credential candidate. The host
+// must authorize the viewer and validate the current identity binding.
+type StructureSource struct {
+	CharacterID, Generation, CorporationID, AllianceID, CEOID int64
+	CorporationName                                           string
+	OwnerHash                                                 []byte
+}
+
+func (s *AuthorizationService) StructureSources(ctx context.Context) ([]StructureSource, error) {
+	rows, err := store.New(s.pool).StructureSources(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]StructureSource, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, StructureSource{r.CharacterID, r.GrantGeneration, r.CorporationID, r.AllianceID, r.CeoID, r.CorporationName, r.OwnerHash})
+	}
+	return result, nil
+}
+
+func (s *AuthorizationService) StructureSourceValid(ctx context.Context, source StructureSource) (bool, error) {
+	rows, err := s.StructureSources(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, r := range rows {
+		if r.CharacterID == source.CharacterID && r.CorporationID == source.CorporationID && r.Generation == source.Generation && slices.Equal(r.OwnerHash, source.OwnerHash) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // ReadCorporationStructures reads the current ESI view for one corporation.
 // ESI's shared cache applies the endpoint TTL (currently one hour), so this
 // method does not perform a request inside a business write transaction.
@@ -142,7 +177,8 @@ func (s *AuthorizationService) ReadCorporationStructures(ctx context.Context, ch
 				for _, f := range detail.Fuel {
 					fuel = append(fuel, StructureFuel{TypeID: f.TypeID, Quantity: f.Quantity})
 				}
-				state, unanchor = detail.State, detail.UnanchorAt
+				// State and unanchor time belong to the list response. POS detail has
+				// access settings and fuels, so it must not erase those list fields.
 			}
 			items = append(items, Structure{CorporationID: corporationID, CorporationName: a.CorporationName, Kind: "pos", ID: row.StarbaseID, TypeID: row.TypeID, SolarSystemID: row.SystemID, State: state, UnanchorsAt: unanchor, Fuel: fuel, ObservedAt: observed, SourceCharacter: characterID})
 		}

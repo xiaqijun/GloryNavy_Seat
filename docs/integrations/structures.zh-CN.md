@@ -8,7 +8,7 @@
 
 ## 权限
 
-`corporation.structure` 已登记到可配置权限目录。CEO/Director 的游戏职务或管理员/站点 RBAC 授权可通过对象级检查；前端导航不构成授权。模块权限 `structures.self` 只表示已登录，目标军团权限仍由后端逐次复核。
+`corporation.structure` 已登记到可配置权限目录。CEO/Director 的游戏职务或管理员/站点 RBAC 授权可通过对象级检查；站点管理员读取时会选择当前有效的 CEO/Director 授权作为数据源，普通成员仍只使用自己的有效绑定角色。前端导航不构成授权。模块权限 `structures.self` 只表示已登录，目标军团权限仍由后端逐次复核。
 
 ## 相关 ESI scope
 
