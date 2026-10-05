@@ -13,7 +13,7 @@ node scripts/build-release.mjs v0.1.0
 
 ## 建筑管理只读模块（2026-10-05）
 
-已发布应用与公网静态前端均为 `v0.1.0-structures-fuel-alerts-20261005-r4`。后端在同步阶段使用 `esi-universe.read_structures.v1` 补查缺失的 Upwell 星系位置，再由本地 SDE 解析名称；页面仍只读取 Goose 69 的 `eve_structure_snapshots`。建筑管理页按 SDE 实际类型在军团内分组，顶部筛选使用统一下拉控件，燃料告警汇总支持一键只看 72 小时内到期建筑，卡片统一高度，类型分组与卡片置于同一容器，POS 燃料批量显示 SDE 物品名称，并按控制塔类型和燃料数量计算耗尽时间，与 Upwell 共用燃料到期条；类型徽标固定在卡片右上角，燃料到期使用高对比度状态条，建筑 ID从首屏移除，POS 服务保留可展开详情。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。详见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
+已发布应用为 `v0.1.0-structures-fuel-alerts-20261005-r4`，公网静态前端为 `v0.1.0-structures-state-label-20261005-r5`。后端在同步阶段使用 `esi-universe.read_structures.v1` 补查缺失的 Upwell 星系位置，再由本地 SDE 解析名称；页面仍只读取 Goose 69 的 `eve_structure_snapshots`。建筑管理页按 SDE 实际类型在军团内分组，顶部筛选使用统一下拉控件，燃料告警汇总支持一键只看 72 小时内到期建筑，卡片统一高度，类型分组与卡片置于同一容器，POS 燃料批量显示 SDE 物品名称，并按控制塔类型和燃料数量计算耗尽时间，与 Upwell 共用燃料到期条；类型徽标固定在卡片右上角，燃料到期使用高对比度状态条，建筑 ID从首屏移除，POS 服务保留可展开详情。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。详见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
 
 ## 预警消费与监控奖励统一流水卡片（2026-10-04）
 

@@ -10,6 +10,7 @@ export const english: Record<string, string> = {
   "此分类暂无建筑": "No structures in this category",
   "服务": "Services",
   "燃料告警": "Fuel alerts",
+  "可攻击（护盾）": "Vulnerable (shield)",
   "有 {0} 座建筑的燃料需要关注": "{0} structures need fuel attention",
   "只看告警": "Show alerts only",
   "暂无可查看的建筑": "No readable structures",
