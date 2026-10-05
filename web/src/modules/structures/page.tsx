@@ -43,7 +43,7 @@ function Workspace() {
     types.set(key, current);
     return types;
   }, new Map<string, { label: string; count: number }>()));
-  const fuelAlerts = items.filter((item) => item.kind === "upwell" && ["warning", "critical"].includes(fuelTone(item.fuel_expires)));
+  const fuelAlerts = items.filter((item) => ["warning", "critical"].includes(fuelTone(item.fuel_expires)));
   const filtered = filter === "all" ? items : filter === "fuel_alerts" ? fuelAlerts : items.filter((item) => structureTypeKey(item) === filter);
   const filterOptions = [
     { value: "all", label: `${msg("全部")} · ${items.length}` },
@@ -94,7 +94,7 @@ function Workspace() {
           <div className="structures-grid">
             {category.items.map((item) => <article className="structure-card" key={`${item.kind}:${item.id}`}>
               <div className="structure-card-head"><div className="structure-card-title"><h3>{item.name || msg("未命名建筑")}</h3><div className="structure-location"><MapPin size={16} aria-hidden="true" /><strong>{item.solar_system_name || (item.solar_system_id === "0" ? msg("未知星系") : item.solar_system_id)}</strong></div></div><div className="structure-card-badges"><span className="structure-type-badge">{category.label}</span><span className={`structure-state state-${item.state || "unknown"}`} title={item.state || msg("未知")}>{item.state || msg("未知")}</span></div></div>
-              {item.kind === "upwell" && <div className={`structure-fuel fuel-${fuelTone(item.fuel_expires)}`}><Fuel size={17} aria-hidden="true" /><span>{msg("燃料到期")}</span><strong>{date(item.fuel_expires)}</strong></div>}
+              {item.fuel_expires && <div className={`structure-fuel fuel-${fuelTone(item.fuel_expires)}`}><Fuel size={17} aria-hidden="true" /><span>{msg("燃料到期")}</span><strong>{date(item.fuel_expires)}</strong></div>}
               {item.kind === "pos" && <details className="structure-details"><summary><Fuel size={16} aria-hidden="true" /><span>{msg("燃料仓")}</span><b>{item.fuel?.length ?? 0}</b><ChevronDown size={16} aria-hidden="true" /></summary><div className="structure-detail-body">{item.fuel?.length ? item.fuel.map((f) => <span key={`${f.type_id}:${f.quantity}`}>{f.name || f.type_id} × {f.quantity}</span>) : <span>{msg("暂无燃料明细")}</span>}</div></details>}
               {item.services && item.services.length > 0 && <details className="structure-details"><summary><ShieldCheck size={16} aria-hidden="true" /><span>{msg("服务")}</span><b>{item.services.length}</b><ChevronDown size={16} aria-hidden="true" /></summary><div className="structure-detail-body">{item.services.map((s) => <span key={s.name}>{s.name} · {s.state}</span>)}</div></details>}
             </article>)}

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/access"
@@ -69,5 +70,19 @@ func TestStructuresResolvesPOSFuelNames(t *testing.T) {
 	got, err := h.Read(context.Background(), "site-admin", 0)
 	if err != nil || len(got) != 1 || len(got[0].Fuel) != 1 || got[0].Fuel[0].Name != "氮燃料块" {
 		t.Fatalf("POS fuel name not resolved: got=%v err=%v", got, err)
+	}
+}
+
+func TestPOSFuelExpiryUsesSoonestConsumable(t *testing.T) {
+	observed := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	expires := posFuelExpiry(observed, "Caldari Control Tower Small", []eve.StructureFuel{
+		{TypeID: 4051, Quantity: 120},
+		{TypeID: 34, Quantity: 8},
+	}, map[int64]eve.StaticTypeName{
+		4051: {ID: 4051, Name: "Caldari Fuel Block"},
+		34:   {ID: 34, Name: "Caldari Starbase Charter"},
+	})
+	if expires == nil || !expires.Equal(observed.Add(8*time.Hour)) {
+		t.Fatalf("unexpected POS fuel expiry: %v", expires)
 	}
 }
