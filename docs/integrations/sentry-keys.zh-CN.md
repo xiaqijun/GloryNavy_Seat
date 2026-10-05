@@ -10,6 +10,7 @@
 - `POST /api/v1/sentry/keys/{id}/rotate`：手动更新密钥，加密保存并返回完整内容；之后列表仍可读取并复制。
 - `GET/PUT /api/v1/sentry/time-pricing`：管理员读取或保存预警价格、监控奖励价格（果壳币/小时）及收费开关。
 - `GET /api/v1/sentry/alert-usage`、`GET /api/v1/sentry/alert-consumptions`：读取账号级余额、花费和奖励流水。
+- `GET /api/v1/sentry/monitor-rewards`：读取最近奖励区间，并返回全部已入账奖励的 `total_minor` 和 `total_count`；列表只展示最近记录。
 
 收费开关保存时同步调用 Sentry 的 `PUT /api/v1/integrations/seat/alert-consumption`。远端同步失败不会提交本地开关。
 

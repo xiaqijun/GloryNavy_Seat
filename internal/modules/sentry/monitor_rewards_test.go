@@ -57,5 +57,12 @@ func TestMonitorRewardsBatchWalletCreditResolvesRemoteKey(t *testing.T) {
 	if rewarded != 2 {
 		t.Fatalf("rewarded rows = %d, want 2 evidence rows", rewarded)
 	}
+	page, err := f.service.ReadMonitorRewards(ctx, f.member, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.TotalCount != 2 || page.TotalMinor != 2 || len(page.Items) != 1 || page.Items[0].CoinsMinor != 2 {
+		t.Fatalf("reward page totals = count %d, minor %d, items %#v; want 2, 2, one merged item", page.TotalCount, page.TotalMinor, page.Items)
+	}
 	_ = localKey
 }

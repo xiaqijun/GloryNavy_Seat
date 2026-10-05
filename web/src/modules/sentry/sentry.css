@@ -23,6 +23,10 @@
 .sentry-usage-metric small { color: var(--muted); font-size: 12px; font-weight: 500; }
 .sentry-usage-asof, .sentry-usage-loading, .sentry-usage-empty, .sentry-usage-error { margin: 0; color: var(--muted); font-size: 13px; }
 .sentry-usage-error { color: var(--destructive); }
+.sentry-reward-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--color-accent) 35%, var(--card)); }
+.sentry-reward-total strong { color: var(--foreground); }
+.sentry-reward-total span { color: var(--primary); font-weight: 650; }
+.sentry-reward-total small { color: var(--muted); font-size: 12px; }
 .sentry-consumption-list { display: grid; gap: 10px; }
 .sentry-consumption-row { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
 .sentry-consumption-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

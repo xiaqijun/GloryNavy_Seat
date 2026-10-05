@@ -10,6 +10,7 @@ import (
 
 var ErrAlertUsageUnavailable = errors.New("alert usage is unavailable")
 var ErrAlertUsageInvalid = errors.New("invalid alert usage query")
+
 const monitorDisplayGap = 5 * time.Minute
 
 // AlertUsageSummary is a read-only projection of exchange's member-facing
@@ -112,8 +113,10 @@ func monitorSystemKey(item MonitorRewardRecord) string {
 }
 
 type MonitorRewardPage struct {
-	Items []MonitorRewardRecord `json:"items"`
-	AsOf  time.Time             `json:"as_of"`
+	Items      []MonitorRewardRecord `json:"items"`
+	TotalMinor int64                 `json:"total_minor"`
+	TotalCount int64                 `json:"total_count"`
+	AsOf       time.Time             `json:"as_of"`
 }
 
 type AlertUsageReader interface {
@@ -147,12 +150,18 @@ func (s *Service) ReadMonitorRewards(ctx context.Context, account string, limit 
 	if limit <= 0 || limit > 100 {
 		limit = 30
 	}
+	if err := s.Pool.QueryRow(ctx, `
+SELECT count(*) FILTER (WHERE coins_minor > 0), coalesce(sum(coins_minor), 0)
+FROM sentry_monitor_rewards
+WHERE account_id=$1 AND state='rewarded'`, id).Scan(&out.TotalCount, &out.TotalMinor); err != nil {
+		return out, err
+	}
 	rows, err := s.Pool.Query(ctx, `
 SELECT contribution_id,client_id,started_at,ended_at,duration_seconds,coins_minor,system_id,system_name
 FROM sentry_monitor_rewards
 WHERE account_id=$1 AND state='rewarded'
 ORDER BY ended_at DESC, contribution_id DESC
-LIMIT 10000`, id)
+LIMIT 100000`, id)
 	if err != nil {
 		return out, err
 	}

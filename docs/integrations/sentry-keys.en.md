@@ -10,6 +10,7 @@ Keys created before this migration have no recoverable plaintext and require one
 - `POST /api/v1/sentry/keys/{id}/rotate`: manually update a key, store the encrypted plaintext, and return the full content; the list can return it for later copying.
 - `GET/PUT /api/v1/sentry/time-pricing`: administrators read or save alert and monitoring reward prices (Nutshell Coin/hour) and the charging switch.
 - `GET /api/v1/sentry/alert-usage` and `GET /api/v1/sentry/alert-consumptions`: read account-level balance, spending, and reward records.
+- `GET /api/v1/sentry/monitor-rewards`: reads recent reward intervals and returns `total_minor` and `total_count` for all credited rewards; the list is limited to recent records.
 
 Saving the switch synchronizes `PUT /api/v1/integrations/seat/alert-consumption` on Sentry. A failed remote update prevents the local switch from committing.
 

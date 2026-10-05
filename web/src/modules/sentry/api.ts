@@ -80,7 +80,12 @@ export type MonitorRewardRecord = {
   system_id?: string;
   system_name: string;
 };
-export type MonitorRewardPage = { items: MonitorRewardRecord[]; as_of: string };
+export type MonitorRewardPage = {
+  items: MonitorRewardRecord[];
+  total_minor: number;
+  total_count: number;
+  as_of: string;
+};
 
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";
@@ -167,7 +172,14 @@ const isMonitorReward = (v: unknown): v is MonitorRewardRecord =>
   Number.isSafeInteger(v.coins_minor) && Number(v.coins_minor) > 0 && typeof v.system_name === "string" &&
   (v.system_id === undefined || typeof v.system_id === "string");
 const isMonitorRewardPage = (v: unknown): v is MonitorRewardPage =>
-  object(v) && typeof v.as_of === "string" && Array.isArray(v.items) && v.items.every(isMonitorReward);
+  object(v) &&
+  typeof v.as_of === "string" &&
+  Number.isSafeInteger(v.total_minor) &&
+  Number(v.total_minor) >= 0 &&
+  Number.isSafeInteger(v.total_count) &&
+  Number(v.total_count) >= 0 &&
+  Array.isArray(v.items) &&
+  v.items.every(isMonitorReward);
 
 export const list = (signal?: AbortSignal) =>
   getData("/api/v1/sentry/keys", isKeys, signal);

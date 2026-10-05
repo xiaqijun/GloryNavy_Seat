@@ -96,3 +96,24 @@ func TestPOSFuelExpiryTreatsUnsuffixedTowerAsLarge(t *testing.T) {
 		t.Fatalf("unexpected unsuffixed POS fuel expiry: %v", expires)
 	}
 }
+
+func TestStructuresDoesNotShowFuelExpiryForOfflinePOS(t *testing.T) {
+	source := eve.StructureSource{CharacterID: 2122015910, Generation: 7, CorporationID: 98530802, CorporationName: "Glory Navy", CEOID: 2122015910, OwnerHash: []byte{1, 2, 3}}
+	stale := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
+	rows := []eve.Structure{{CorporationID: source.CorporationID, Kind: "pos", State: "offline", ID: 9001, TypeID: 12235, FuelExpires: &stale, ObservedAt: time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC), Fuel: []eve.StructureFuel{{TypeID: 4051, Quantity: 120}}}}
+	h := structuresHandler(structureTestAccounts{}, structureTestAccess{admin: true}, structureTestData{snapshot: eve.StructureSnapshot{Source: source, Rows: rows}}, structureTestNamesWithTower{})
+	got, err := h.Read(context.Background(), "site-admin", 0)
+	if err != nil || len(got) != 1 || got[0].FuelExpires != nil {
+		t.Fatalf("offline POS should not have fuel expiry: got=%v err=%v", got, err)
+	}
+}
+
+type structureTestNamesWithTower struct{}
+
+func (structureTestNamesWithTower) TypeNames(_ context.Context, ids []int64) (map[int64]eve.StaticTypeName, error) {
+	return map[int64]eve.StaticTypeName{12235: {ID: 12235, Name: "Amarr Control Tower"}, 4051: {ID: 4051, Name: "Nitrogen Fuel Block"}}, nil
+}
+
+func (structureTestNamesWithTower) SolarSystemNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error) {
+	return map[int64]eve.StaticTypeName{}, nil
+}

@@ -1367,6 +1367,9 @@ export const english: Record<string, string> = {
   预警消费价格: "Alert usage price",
   监控奖励价格: "Monitoring reward price",
   监控奖励: "Monitoring rewards",
+  奖励记录合计: "Reward records total",
+  "共 {0} 条已入账记录，下面显示最近 {1} 条":
+    "{0} credited records in total; showing the latest {1}",
   消费或奖励记录: "Usage and reward records",
   暂无消费或奖励记录: "No usage or reward records",
   已奖励: "Rewarded",

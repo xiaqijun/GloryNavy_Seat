@@ -184,8 +184,14 @@ func structuresHandler(accounts structureAccounts, acl structureAccess, data str
 							rows[i].Fuel[j].Name = n.Name
 						}
 					}
+					// An offline control tower keeps its fuel inventory but does not
+					// consume fuel, so there is no meaningful depletion deadline.
 					if rows[i].Kind == "pos" {
-						rows[i].FuelExpires = posFuelExpiry(rows[i].ObservedAt, englishTypeNames[rows[i].TypeID].Name, rows[i].Fuel, englishFuelNames)
+						if strings.EqualFold(strings.TrimSpace(rows[i].State), "online") {
+							rows[i].FuelExpires = posFuelExpiry(rows[i].ObservedAt, englishTypeNames[rows[i].TypeID].Name, rows[i].Fuel, englishFuelNames)
+						} else {
+							rows[i].FuelExpires = nil
+						}
 					}
 					if n, ok := systemNames[rows[i].SolarSystemID]; ok {
 						rows[i].SolarSystemName = n.Name
