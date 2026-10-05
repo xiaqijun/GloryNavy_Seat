@@ -13,7 +13,7 @@ node scripts/build-release.mjs v0.1.0
 
 ## 建筑管理只读模块（2026-10-05）
 
-已发布 `v0.1.0-structures-local-snapshot-20261005-r1`。应用机和公网静态站点均已切换；Goose 69 新增 `eve_structure_snapshots`，River 新增 `corporation_structures`，页面读取本地快照而不在请求链路直连 ESI。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
+已发布 `v0.1.0-structures-local-snapshot-20261005-r1`。应用机和公网静态站点均已切换；Goose 69 新增 `eve_structure_snapshots`，River 新增 `corporation_structures`，页面读取本地快照而不在请求链路直连 ESI。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。详见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
 
 ## 预警消费与监控奖励统一流水卡片（2026-10-04）
 
