@@ -8,6 +8,9 @@
 .structures-empty p { margin: 0; color: #334155; font-weight: 600; }
 .structures-empty span { font-size: .9rem; }
 .structures-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .65rem .8rem; border: 1px solid #e2e8f0; border-radius: .85rem; background: #fff; }
+.structure-filter-select { display: inline-flex; align-items: center; gap: .55rem; color: #64748b; font-size: .8rem; font-weight: 700; }
+.structure-filter-select select { min-width: 13rem; min-height: 2.75rem; padding: .4rem 2rem .4rem .65rem; border: 1px solid #cbd5e1; border-radius: .6rem; background: #fff; color: #1e293b; font: 600 .82rem inherit; }
+.structure-filter-select select:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .structure-filters { display: flex; gap: .35rem; max-width: 100%; overflow-x: auto; padding: .1rem; }
 .structure-filters button { display: inline-flex; align-items: center; gap: .45rem; min-height: 2.75rem; padding: .45rem .7rem; border: 1px solid transparent; border-radius: .6rem; background: transparent; color: #64748b; font: 600 .82rem inherit; cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out; }
 .structure-filters button:hover { background: #f8fafc; color: #1e3a8a; }

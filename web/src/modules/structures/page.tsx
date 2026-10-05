@@ -61,11 +61,10 @@ function Workspace() {
         </Button>
       </header>
       {!q.isError && !q.isPending && items.length > 0 && <div className="structures-toolbar" aria-label={msg("建筑分类")}>
-        <div className="structure-filters" role="tablist" aria-label={msg("建筑分类")}>
-          {[["all", msg("全部"), items.length] as const, ...typeOptions.map(([key, option]) => [key, option.label, option.count] as const)].map(([key, label, count]) => <button key={key} type="button" role="tab" aria-selected={filter === key} className={filter === key ? "is-active" : ""} onClick={() => setFilter(key)}>
-            {label}<span>{count}</span>
-          </button>)}
-        </div>
+        <label className="structure-filter-select"><span>{msg("建筑分类")}</span><select value={filter} onChange={(event) => setFilter(event.target.value)}>
+          <option value="all">{msg("全部")} · {items.length}</option>
+          {typeOptions.map(([key, option]) => <option key={key} value={key}>{option.label} · {option.count}</option>)}
+        </select></label>
         <span className="structures-total"><Layers3 size={15} aria-hidden="true" />{msg("共 {0} 个建筑", filtered.length)}</span>
       </div>}
       {q.isError && <div className="structures-feedback" role="alert"><p>{q.error.message}</p><Button variant="outline" onClick={() => void q.refetch()}>{msg("重试")}</Button></div>}

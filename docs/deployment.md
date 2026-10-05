@@ -13,7 +13,7 @@ node scripts/build-release.mjs v0.1.0
 
 ## 建筑管理只读模块（2026-10-05）
 
-已发布后端 `v0.1.0-structures-system-resolution-20261005`，公网静态前端为 `v0.1.0-structures-ui-type-groups-20261005-r1`。后端在同步阶段使用 `esi-universe.read_structures.v1` 补查缺失的 Upwell 星系位置，再由本地 SDE 解析名称；页面仍只读取 Goose 69 的 `eve_structure_snapshots`。建筑管理页按 SDE 实际类型在军团内分组，筛选器带数量，类型徽标固定在卡片右上角，燃料到期使用高对比度状态条，建筑 ID从首屏移除；POS 燃料与服务保留可展开详情。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。详见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
+已发布后端 `v0.1.0-structures-system-resolution-20261005`，公网静态前端为 `v0.1.0-structures-ui-filter-20261005-r1`。后端在同步阶段使用 `esi-universe.read_structures.v1` 补查缺失的 Upwell 星系位置，再由本地 SDE 解析名称；页面仍只读取 Goose 69 的 `eve_structure_snapshots`。建筑管理页按 SDE 实际类型在军团内分组，顶部筛选使用紧凑下拉控件，类型徽标固定在卡片右上角，燃料到期使用高对比度状态条，建筑 ID从首屏移除；POS 燃料与服务保留可展开详情。服务 `active/ready`，公网首页 200、建筑接口匿名 401，OpenResty `nginx -t` 通过。生产 CEO `Nuter Zero` 的真实同步取得 20 座 Upwell、13 座 POS 及 13 条燃料明细，并已写入本地快照。详见[建筑本地快照发布记录](history/structures-local-snapshot-20261005.md)。回退前需先按 ESI 同步指南处理新 River 目标，不执行破坏性 Goose Down。
 
 ## 预警消费与监控奖励统一流水卡片（2026-10-04）
 
