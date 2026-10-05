@@ -31,3 +31,14 @@ func TestMergeContinuousClientUsageSplitsAtGrantLimit(t *testing.T) {
 		t.Fatalf("grant limit must split batches: %+v", merged)
 	}
 }
+
+func TestMergeContinuousClientUsageKeepsSystemsSeparate(t *testing.T) {
+	usages := []ClientUsage{
+		{UsageID: "u-a", AccountID: "a", KeyID: "k", ClientID: "c", SystemID: "30000142", StartedAt: "2026-10-03T00:00:00Z", EndedAt: "2026-10-03T00:00:10Z", DurationSeconds: 10},
+		{UsageID: "u-b", AccountID: "a", KeyID: "k", ClientID: "c", SystemID: "30002813", StartedAt: "2026-10-03T00:00:10Z", EndedAt: "2026-10-03T00:00:20Z", DurationSeconds: 10},
+	}
+	merged := mergeContinuousClientUsage(usages, 3600)
+	if len(merged) != 2 {
+		t.Fatalf("different system usage rows must not merge: %+v", merged)
+	}
+}

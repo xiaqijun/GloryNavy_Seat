@@ -114,8 +114,9 @@ func mergeContinuousClientUsage(usages []ClientUsage, maxSeconds int64) []Client
 		end, endErr := time.Parse(time.RFC3339Nano, last.EndedAt)
 		continuous := startErr == nil && endErr == nil && end.Equal(start)
 		sameSource := last.AccountID == usage.AccountID && last.KeyID == usage.KeyID && last.ClientID == usage.ClientID
+		sameSystem := strings.EqualFold(strings.TrimSpace(systemIDValue(last.SystemID)), strings.TrimSpace(systemIDValue(usage.SystemID)))
 		withinGrant := last.DurationSeconds > 0 && usage.DurationSeconds > 0 && last.DurationSeconds <= maxSeconds-usage.DurationSeconds
-		if !continuous || !sameSource || !withinGrant {
+		if !continuous || !sameSource || !sameSystem || !withinGrant {
 			out = append(out, usage)
 			continue
 		}
