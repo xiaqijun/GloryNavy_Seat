@@ -29,7 +29,7 @@
 .structure-corporation-head h2 { margin: 0; color: #1e293b; font-size: 1.1rem; }
 .structure-corporation-head div { display: grid; gap: .2rem; }
 .structure-corporation-head div span, .structure-corporation-head > span { color: #94a3b8; font-size: .75rem; }
-.structures-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; align-items: stretch; }
+.structures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 22rem)); gap: 1rem; align-items: stretch; justify-content: start; }
 .structure-card { display: grid; grid-template-rows: auto auto minmax(2.5rem, auto) 1fr; align-content: start; gap: .8rem; min-height: 15.5rem; height: 100%; padding: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; box-shadow: 0 3px 12px rgb(15 23 42 / 4%); }
 .structure-category { display: grid; gap: .65rem; padding: .75rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #f8fafc; }
 .structure-category + .structure-category { margin-top: .4rem; }
