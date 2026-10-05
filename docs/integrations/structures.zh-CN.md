@@ -14,4 +14,4 @@
 
 - `esi-corporations.read_structures.v1`：Upwell 建筑列表。
 - `esi-corporations.read_starbases.v1`：POS 列表和燃料详情。
-- `esi-universe.read_structures.v1`：后续解析建筑静态名称时使用；当前接口返回游戏 ID。
+- `esi-universe.read_structures.v1`：当军团建筑列表没有返回星系 ID 时，后台按建筑 ID补查位置；成功后再通过本地 SDE 显示星系名称。若角色没有该 scope 或建筑 ACL 不允许解析，则保留“未知星系”，不伪造位置。

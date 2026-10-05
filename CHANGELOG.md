@@ -5,6 +5,7 @@
 ## 未发布
 
 - 修复建筑页面对合法但未知星系 ID `"0"` 的响应校验；建筑接口不再因单个位置字段未知而显示响应格式异常。
+- 建筑同步在星系 ID 缺失时使用 `esi-universe.read_structures.v1` 按建筑 ID补查位置，页面优先显示本地 SDE 星系名称。
 
 - 建筑管理改为由 `corporation_structures` River 任务同步到本地 `eve_structure_snapshots`；页面读取本地快照并继续执行军团对象权限和角色绑定检查，不在请求链路直连 ESI。
 

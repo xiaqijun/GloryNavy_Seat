@@ -53,6 +53,7 @@ func (s *SyncService) collectStructures(ctx context.Context, _ store.EveSyncTarg
 const (
 	CorporationStarbasesScope  = "esi-corporations.read_starbases.v1"
 	CorporationStructuresScope = "esi-corporations.read_structures.v1"
+	UniverseStructuresScope    = "esi-universe.read_structures.v1"
 )
 
 // Structure is a read-only projection of an EVE corporation building. The
@@ -218,6 +219,24 @@ func (s *AuthorizationService) ReadCorporationStructures(ctx context.Context, ch
 		for _, row := range rows {
 			if row.StructureID <= 0 {
 				continue
+			}
+			if row.SolarSystemID <= 0 && slices.Contains(a.Scopes, UniverseStructuresScope) {
+				var detail struct {
+					Name          string `json:"name"`
+					SolarSystemID int64  `json:"solar_system_id"`
+					TypeID        int64  `json:"type_id"`
+				}
+				if _, e := s.esi.Request(ctx, ESIRequest{Method: "GET", Path: fmt.Sprintf("/universe/structures/%d/", row.StructureID), CharacterID: characterID, Generation: generation, Scopes: []string{UniverseStructuresScope}}, &detail); e == nil {
+					if detail.SolarSystemID > 0 {
+						row.SolarSystemID = detail.SolarSystemID
+					}
+					if row.Name == "" {
+						row.Name = detail.Name
+					}
+					if row.TypeID <= 0 {
+						row.TypeID = detail.TypeID
+					}
+				}
 			}
 			items = append(items, Structure{CorporationID: corporationID, CorporationName: a.CorporationName, Kind: "upwell", ID: row.StructureID, Name: row.Name, TypeID: row.TypeID, SolarSystemID: row.SolarSystemID, State: row.State, FuelExpires: row.FuelExpires, ProfileID: row.ProfileID, UnanchorsAt: row.UnanchorsAt, Services: row.Services, ObservedAt: observed, SourceCharacter: characterID})
 		}
