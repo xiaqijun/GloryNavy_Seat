@@ -49,6 +49,9 @@ func posFuelExpiry(observed time.Time, towerName string, fuel []eve.StructureFue
 		rate = 20
 	case strings.Contains(name, "large control tower") || strings.Contains(name, "control tower large") || strings.Contains(name, "大型控制塔"):
 		rate = 40
+	case strings.Contains(name, "control tower") || strings.Contains(name, "控制塔"):
+		// Standard and faction large towers omit the size suffix in SDE names.
+		rate = 40
 	default:
 		return nil
 	}

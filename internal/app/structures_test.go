@@ -86,3 +86,13 @@ func TestPOSFuelExpiryUsesSoonestConsumable(t *testing.T) {
 		t.Fatalf("unexpected POS fuel expiry: %v", expires)
 	}
 }
+
+func TestPOSFuelExpiryTreatsUnsuffixedTowerAsLarge(t *testing.T) {
+	observed := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	expires := posFuelExpiry(observed, "Amarr Control Tower", []eve.StructureFuel{{TypeID: 4247, Quantity: 400}}, map[int64]eve.StaticTypeName{
+		4247: {ID: 4247, Name: "Helium Fuel Block"},
+	})
+	if expires == nil || !expires.Equal(observed.Add(10*time.Hour)) {
+		t.Fatalf("unexpected unsuffixed POS fuel expiry: %v", expires)
+	}
+}
