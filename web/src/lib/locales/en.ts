@@ -2,6 +2,13 @@
 export const english: Record<string, string> = {
   "建筑管理": "Structure management",
   "查看军团 Upwell 建筑与 POS 的当前状态": "View current corporation Upwell and POS status",
+  "按类型查看军团建筑": "Browse corporation structures by type",
+  "建筑分类": "Structure category",
+  "共 {0} 个建筑": "{0} structures",
+  "最近同步": "Last synced",
+  "未知星系": "Unknown system",
+  "此分类暂无建筑": "No structures in this category",
+  "服务": "Services",
   "暂无可查看的建筑": "No readable structures",
   "需要角色拥有军团建筑读取权限，并完成 ESI 授权。": "A character with corporation structure access and ESI authorization is required.",
   "Upwell 建筑": "Upwell structure",
