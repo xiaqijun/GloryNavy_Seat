@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 预警奖励说明卡片精简（2026-10-06）
+
+已发布 `v0.1.0-sentry-reward-card-20261006`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已切换，应用 ready、公网首页 200、OpenResty `nginx -t` 通过。预警消费页移除独立的奖励说明卡片，奖励累计仍在消费统计指标和按星系合并的流水中；无 Goose/River 迁移。
+
 ## 监控奖励总额与记录口径对齐、离线 POS 燃料修复（2026-10-06）
 
 已发布 `v0.1.0-sentry-reward-total-offline-pos-20261005`。奖励记录接口新增全量 `total_minor` 与 `total_count`，页面显示累计奖励和最近记录范围；不会再把最近 50 条展示记录误解为全部奖励。应用机已 ready，公网首页 200，建筑和奖励接口匿名 401。
