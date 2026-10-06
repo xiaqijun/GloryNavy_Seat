@@ -4,6 +4,8 @@
 
 2026-09-16 更新：本地钱包已交付，ManageableCatalog 新增 corporation.journal、corporation.transaction 和 wallet 1…7 分部。读取同时检查业务能力与分部；ESI 来源角色独立校验 Accountant/Junior_Accountant/Director/CEO，分部名仅 Director/CEO。管理员可读取有效绑定成员钱包，详见 [钱包权限](wallet.zh-CN.md)。
 
+2026-10-06 本地新增贷款首期模块：`corporation.loan` 可由管理员配置给军团贷款池管理者，用于创建/管理军团出借池、审核申请及担保/抵押决定；个人出借池仍由出借账号本人管理。该能力尚未生产发布，所有贷款写操作继续执行对象、角色和本站权限检查，不能由目录条目替代鉴权。详见[贷款指南](loan.zh-CN.md)。
+
 
 Goose 32 原始损失读取限本人有效绑定角色或当前站点管理员，需核对当前绑定及军团。`corporation.welfare` 只允许依福利单据范围审核已提交证据，不开放其他成员全部原始损失。新原始记录不通过 QQ/KOOK 或同名关联；scope 移除、失效或游戏所有者变化拒绝旧证据。见[损失同步](character-losses.zh-CN.md)。
 
@@ -18,7 +20,7 @@ Goose 31 本地新增 `welfare.self` 入口与可配置 `corporation.welfare`（
 入口 `/access`，包括角色配置、成员授权、操作记录。导航使用 `/access/me` 的 `can_manage`，每个管理 API 仍独立核验 `access.manage`；管理员或含该能力的角色可管理全部平台角色和账号授权。EVE CEO/Director 不自动成为本站管理员。QQ/KOOK 资料不完整时先在“我的角色”补全，社区确认状态不影响此门禁。
 
 - 角色按 UUID 保存，`GET /roles` 返回十进制字符串 `version`。创建 PUT 必须带 `version: "0"`，更新带读取时的版本；DELETE 带 `?version=当前版本`。旧版本或已删除对象返回 409，失败不写审计。此为管理写接口的契约更新，旧调用方必须同步升级。
-- 管理目录返回已交付能力，包括权限/同步管理、合同、考勤、技能、福利以及钱包流水/交易和钱包分部；未实现的军团业务及资产分部仍不展示；底层 `Catalog` 的 SeAT 映射与历史授权兼容保持独立。页面编辑原样保留目录之外的历史授权，不默默清除。全局 `access.manage` 不接受对象过滤。
+- 管理目录返回已交付能力，包括权限/同步管理、合同、考勤、技能、福利、钱包流水/交易和钱包分部，以及本地未发布的 `corporation.loan`；未实现的军团业务及资产分部仍不展示；底层 `Catalog` 的 SeAT 映射与历史授权兼容保持独立。页面编辑原样保留目录之外的历史授权，不默默清除。全局 `access.manage` 不接受对象过滤。
 - `GET /api/v1/access/members?q=...&after=...`：按任一绑定角色名（大小写不敏感的字面子串）、精确角色 ID 或账号 UUID 搜索；每页 25 个账号，按账号 UUID 排序。返回主角色显示信息、角色数量、管理员标志及平台角色。响应 `items/next`，搜索改变时清空游标，不返回 QQ/KOOK 或认证凭据。
 - `GET /api/v1/access/audit?before=...`：每页 50 条，按事件 ID 倒序，返回 `items/next`。审计包含操作者、动作、对象 ID、时间；不宣称保存了变更前后差异或历史显示名。授予/撤销继续使用已有 PUT/DELETE 用户角色接口。
 - 管理列表由 identity 的成员目录服务和 access 的角色查询组合，私有 store 不跨模块导入。主角色仅用于展示；授予跟随本站账号，权限范围仍按具体军团判断。

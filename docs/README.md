@@ -1,6 +1,6 @@
 # 项目文档
 
-接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥、监控奖励和收费配置已生产，真实证据与实账验收待完成）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，按用户要求暂缓实施）。
+接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥、监控奖励和收费配置已生产，真实证据与实账验收待完成）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，2026-10-06 已进入本地首期实现，尚未生产发布）。
 
 GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台。更新：2026-09-23。
 
@@ -43,6 +43,7 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 | 舰船损失 | [中文](integrations/character-losses.zh-CN.md) / [English](integrations/character-losses.en.md) |
 | 福利与自动合同核验 | [中文](integrations/welfare.zh-CN.md) / [English](integrations/welfare.en.md) · [页面](ui/welfare.md) |
 | 果壳币、奖励库与兑换 | [中文](integrations/exchange.zh-CN.md) / [English](integrations/exchange.en.md) · [页面](ui/exchange.md) |
+| 军团与个人贷款 | [中文](integrations/loan.zh-CN.md) / [English](integrations/loan.en.md) · [页面](ui/loan.md) |
 | 审批中心 | [中文](integrations/approval.zh-CN.md) / [English](integrations/approval.en.md) · [页面](ui/approval.md) |
 | 工作台与系统页 | [页面](ui/system.md) |
 | 军团运营面板 | [页面](ui/operations.md) |

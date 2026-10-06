@@ -32,6 +32,7 @@ Navigation updated 2026-09-23. This is not a new verification of upstream docume
 | 福利与自动合同核验 | [中文](welfare.zh-CN.md) / [English](welfare.en.md) |
 | 果壳币、奖励库与兑换 | [中文](exchange.zh-CN.md) / [English](exchange.en.md) |
 | 审批中心 | [中文](approval.zh-CN.md) / [English](approval.en.md) |
+| 军团与个人贷款 | [中文](loan.zh-CN.md) / [English](loan.en.md) |
 | EVE Sentry 预警平台密钥 | [中文](sentry-keys.zh-CN.md) / [English](sentry-keys.en.md) |
 
 联盟 PAP 当前支持定时快照同步和管理员手动兑换，自动兑换待实现。EVE Sentry 密钥申请、远端密钥投影、时间授权/投递游标客户端、只读果壳币账单接口及受开关控制的 River 对账 worker 已在本站代码中实现；价格通过生产环境变量提供，预警扣费仍默认关闭，隔离生产账号币账验收未执行。合同自动核验已实现，但真实游戏交付验收与模拟测试分开记录。

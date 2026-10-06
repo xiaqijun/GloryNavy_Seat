@@ -19,6 +19,7 @@ import (
 	"glorynavy.local/seat/internal/modules/exchange"
 	"glorynavy.local/seat/internal/modules/fittings"
 	"glorynavy.local/seat/internal/modules/identity"
+	"glorynavy.local/seat/internal/modules/loan"
 	"glorynavy.local/seat/internal/modules/market"
 	"glorynavy.local/seat/internal/modules/sentry"
 	"glorynavy.local/seat/internal/modules/system"
@@ -283,7 +284,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "community.group.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
+		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
 		}
 		if permission == "sentry.manage" {
@@ -644,7 +645,39 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		exchangeService.EstimateReward = marketModule.Service.EstimateItems
 	}
 	sentryHandler := sentry.Handler{Service: sentryService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService).Module()}, enabled, authorize)
+	loanService := &loan.Service{Pool: pool, Characters: func(ctx context.Context, user string) ([]loan.Character, error) {
+		rows, err := identityService.ActiveCharacters(ctx, user)
+		out := make([]loan.Character, 0, len(rows))
+		for _, row := range rows {
+			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
+		}
+		return out, err
+	}, IsAdministrator: accessService.IsAdministrator}
+	loanService.CanManagePool = func(ctx context.Context, user, kind string, id int64) (bool, error) {
+		if kind != "corporation" {
+			return false, nil
+		}
+		c, err := reader.Corporation(ctx, id)
+		if err != nil {
+			return false, err
+		}
+		return accessService.Can(ctx, user, "corporation.loan", access.Corporation{ID: c.CorporationID, Name: c.CorporationName, AllianceID: c.AllianceID, CEOID: c.CEOID})
+	}
+	if eveHandler.Contracts != nil {
+		loanService.Contracts = loan.ContractAdapter{
+			ReadFunc: func(ctx context.Context, actor, kind string, owner, id int64) (loan.Contract, error) {
+				c, err := eveHandler.Contracts.ReadContract(ctx, actor, kind, owner, id)
+				if err != nil {
+					return loan.Contract{}, err
+				}
+				items, _ := json.Marshal(c.Items)
+				return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, Completed: c.Completed}, nil
+			},
+			ClaimFunc: eve.ClaimDeliveryTx,
+		}
+	}
+	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService, loanService).Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}

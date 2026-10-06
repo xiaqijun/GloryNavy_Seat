@@ -4,6 +4,26 @@ import { getData } from "@/lib/http";
 import type { Case } from "@/modules/welfare/api";
 import type { Order } from "@/modules/exchange/rewards-api";
 
+export type LoanApproval = {
+  id: string;
+  public_id: string;
+  version: string;
+  pool_id: string;
+  pool_name: string;
+  corporation_id: string;
+  borrower_account_id: string;
+  borrower_character_id: string;
+  principal_minor: number;
+  interest_minor: number;
+  total_due_minor: number;
+  installment_count: number;
+  interval_days: number;
+  first_due_at: string;
+  state: string;
+  review_note: string;
+  created_at: string;
+};
+
 export type ApprovalContext = {
   allowed: boolean;
   sources: string[];
@@ -12,7 +32,7 @@ export type ApprovalContext = {
   people: { id: string; name: string }[];
 };
 export type QueueItem = {
-  source: "welfare" | "exchange";
+  source: "welfare" | "exchange" | "loan";
   id: string;
   version: string;
   account_id: string;
@@ -29,7 +49,7 @@ export type QueueItem = {
   time: string;
   action: string;
   actions: string[];
-  payload: Case | Order;
+  payload: Case | Order | LoanApproval;
 };
 export type Queue = {
   items: QueueItem[];
@@ -72,7 +92,7 @@ const isContext = (v: unknown): v is ApprovalContext =>
   );
 export const isItem = (v: unknown): v is QueueItem =>
   object(v) &&
-  ["welfare", "exchange"].includes(String(v.source)) &&
+  ["welfare", "exchange", "loan"].includes(String(v.source)) &&
   [
     "id",
     "version",

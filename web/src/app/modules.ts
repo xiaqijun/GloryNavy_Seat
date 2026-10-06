@@ -12,6 +12,7 @@ import { communityModule } from "@/modules/community";
 import { accessModule } from "@/modules/access";
 import { sentryModule } from "@/modules/sentry";
 import { structuresModule } from "@/modules/structures";
+import { loanModule } from "@/modules/loan";
 import { registerModules } from "./module-registry";
 
 // Explicit, reviewed imports. Adding a server module does not execute remote UI code.
@@ -30,4 +31,5 @@ export const frontendModules = registerModules([
   accessModule,
   sentryModule,
   structuresModule,
+  loanModule,
 ]);

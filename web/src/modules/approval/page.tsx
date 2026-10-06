@@ -22,6 +22,7 @@ import { msg, getLocale } from "@/lib/i18n";
 import * as welfare from "@/modules/welfare/api";
 import type { Order } from "@/modules/exchange/rewards-api";
 import type { PhysicalContent } from "@/modules/exchange/catalog-api";
+import * as loan from "@/modules/loan/api";
 import { getContext, getQueue, getItem, lossQueueAmount, type QueueItem } from "./api";
 import * as settlement from "@/modules/welfare/settlement-api";
 import { useToast } from "@/components/ui/toast-context";
@@ -55,6 +56,7 @@ const kinds = [
   { value: "supercarrier", label: welfare.kinds.supercarrier },
   { value: "titan", label: welfare.kinds.titan },
   { value: "exchange", label: msg("奖励兑换") },
+  { value: "loan", label: msg("贷款") },
 ];
 const progress: Record<string, string> = {
   waiting_contract: msg("等待合同同步"),
@@ -101,7 +103,9 @@ const actionLabels: Record<string, string> = {
   cancelled: msg("已同意取消"),
 };
 const typeLabel = (v: QueueItem) =>
-  v.source === "exchange"
+  v.source === "loan"
+    ? msg("贷款")
+    : v.source === "exchange"
     ? msg("奖励兑换")
     : v.kind.startsWith("growth_")
       ? msg("成长福利")
@@ -109,7 +113,9 @@ const typeLabel = (v: QueueItem) =>
         ? msg("活动福利")
       : welfare.kinds[v.kind] || v.kind;
 const statusLabel = (v: QueueItem) =>
-  v.state === "cancel_requested"
+  v.source === "loan"
+    ? ({ submitted: msg("待审核"), approved: msg("待放款"), rejected: msg("已驳回"), active: msg("还款中"), settled: msg("已结清"), defaulted: msg("已逾期") }[v.state] || v.state)
+    : v.state === "cancel_requested"
     ? msg("取消待审核")
     : v.state === "pending" || ["approved", "executing"].includes(v.state)
       ? progress[v.status] || msg("等待合同同步")
@@ -236,7 +242,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
   };
   const done = () => {
     close();
-    for (const key of ["approval", "welfare", "exchange"])
+    for (const key of ["approval", "welfare", "exchange", "loan"])
       void client.invalidateQueries({ queryKey: [key] });
   };
   const visibleBatches =
@@ -258,9 +264,9 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
   );
   const selectable =
     tab === "fulfillment"
-      ? (q.data?.items ?? []).filter(
-          (item) => !batchedKeys.has(`${item.source}:${item.id}`),
-        )
+      ? (q.data?.items ?? [])
+          .filter((item) => item.source !== "loan" && !batchedKeys.has(`${item.source}:${item.id}`))
+          .filter((item): item is QueueItem & { source: "welfare" | "exchange" } => item.source !== "loan")
       : [];
   const selectedItems = selectable.filter((v) => selected.has(`${v.source}:${v.id}`));
   const selectedAccount = selectedItems[0]?.account_id || "";
@@ -846,6 +852,15 @@ function Detail({
         done={done}
       />
     );
+  if (q.data.source === "loan")
+    return (
+      <LoanDetail
+        item={q.data}
+        csrf={csrf}
+        close={close}
+        done={done}
+      />
+    );
   return (
     <ApprovalOrder
       item={q.data}
@@ -854,6 +869,51 @@ function Detail({
       close={close}
       done={done}
     />
+  );
+}
+
+function LoanDetail({
+  item,
+  csrf,
+  close,
+  done,
+}: {
+  item: QueueItem;
+  csrf: string;
+  close: () => void;
+  done: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const payload = item.payload as unknown as loan.Case;
+  const decide = async (state: "approved" | "rejected") => {
+    setBusy(true);
+    setMessage("");
+    try {
+      await loan.review(csrf, item.id, { state, version: Number(item.version) });
+      done();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : msg("贷款审核失败"));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal title={msg("贷款审批详情")} close={close}>
+      <div className="approval-detail-grid">
+        <div><span>{msg("编号")}</span><strong>{payload.public_id || item.reference}</strong></div>
+        <div><span>{msg("贷款池")}</span><strong>{payload.pool_name || item.title}</strong></div>
+        <div><span>{msg("本金")}</span><strong>{formatMinor(payload.principal_minor)}</strong></div>
+        <div><span>{msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
+        <div><span>{msg("期数")}</span><strong>{payload.installment_count}</strong></div>
+        <div><span>{msg("间隔天数")}</span><strong>{payload.interval_days}</strong></div>
+      </div>
+      {message && <p role="alert">{message}</p>}
+      <div className="approval-modal-actions">
+        <Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button>
+        <Button disabled={busy} onClick={() => void decide("approved")}>{msg("批准")}</Button>
+      </div>
+    </Modal>
   );
 }
 function WelfareDetail({
