@@ -120,6 +120,22 @@
   margin: 0;
   font-size: 16px;
 }
+.loan-application-entry .loan-section-head {
+  align-items: flex-start;
+}
+.loan-application-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0;
+}
+.loan-application-form .loan-dialog-note,
+.loan-application-form .loan-form-message {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.loan-form-message {
+  color: var(--destructive, #b91c1c);
+  font-size: 14px;
+}
 .loan-table-wrap {
   overflow: auto;
   margin-top: 16px;
@@ -227,7 +243,8 @@
 }
 @media (max-width: 800px) {
   .loan-credit,
-  .loan-form {
+  .loan-form,
+  .loan-application-form {
     grid-template-columns: 1fr;
   }
   .loan-title h1 {
