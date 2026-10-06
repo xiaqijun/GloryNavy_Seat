@@ -652,7 +652,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
 		}
 		return out, err
-	}, IsAdministrator: accessService.IsAdministrator}
+	}, IsAdministrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts}
 	loanService.CanManagePool = func(ctx context.Context, user, kind string, id int64) (bool, error) {
 		if kind != "corporation" {
 			return false, nil
@@ -671,11 +671,20 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 					return loan.Contract{}, err
 				}
 				items, _ := json.Marshal(c.Items)
-				return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, Completed: c.Completed}, nil
+				return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed}, nil
 			},
 			ClaimFunc: eve.ClaimDeliveryTx,
 		}
+		loanService.ReadContractTx = func(ctx context.Context, tx pgx.Tx, actor, kind string, owner, id int64) (loan.Contract, error) {
+			c, err := eveHandler.Contracts.DeliveryContractTx(ctx, tx, actor, kind, owner, id)
+			if err != nil {
+				return loan.Contract{}, err
+			}
+			items, _ := json.Marshal(c.Items)
+			return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed}, nil
+		}
 	}
+	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
 	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService, loanService).Module()}, enabled, authorize)
 	if err != nil {

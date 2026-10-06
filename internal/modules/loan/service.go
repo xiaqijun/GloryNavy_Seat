@@ -46,6 +46,7 @@ type Contract struct {
 	ForCorporation      bool
 	IssuerCorporationID int64
 	Items               json.RawMessage
+	ItemsReady          bool
 	Completed           string
 }
 type ContractReader interface {
@@ -76,14 +77,18 @@ type Service struct {
 	CanManagePool   func(context.Context, string, string, int64) (bool, error)
 	IsAdministrator func(context.Context, string) (bool, error)
 	Contracts       ContractReader
+	LockAccounts    func(context.Context, pgx.Tx, []string) error
+	ReadContractTx  func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error)
 }
 
 type PoolInput struct {
-	LenderKind    string         `json:"lender_kind"`
-	CorporationID string         `json:"corporation_id"`
-	Name          string         `json:"name"`
-	State         string         `json:"state"`
-	Config        map[string]any `json:"config"`
+	LenderKind           string         `json:"lender_kind"`
+	CorporationID        string         `json:"corporation_id"`
+	Name                 string         `json:"name"`
+	State                string         `json:"state"`
+	Config               map[string]any `json:"config"`
+	CustodianCharacterID int64          `json:"custodian_character_id"`
+	Version              int64          `json:"version"`
 }
 type ApplicationInput struct {
 	PoolID              int64  `json:"pool_id"`
@@ -145,10 +150,17 @@ func publicID(prefix string) string {
 func (s *Service) db() store.DBTX { return s.Pool }
 
 func (s *Service) Pools(ctx context.Context, user string, admin bool) ([]store.Pool, error) {
-	if admin {
-		return store.ListAllPools(ctx, s.db())
+	p, err := store.SharedPool(ctx, s.db(), false)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return []store.Pool{}, nil
 	}
-	return store.ListPools(ctx, s.db(), user)
+	if err != nil {
+		return nil, err
+	}
+	if p.State != "open" && !admin {
+		return []store.Pool{}, nil
+	}
+	return []store.Pool{p}, nil
 }
 func (s *Service) Credit(ctx context.Context, user string) (store.Credit, error) {
 	c, e := store.GetCredit(ctx, s.db(), user)
@@ -258,6 +270,9 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	if p.State != "open" {
 		return store.Case{}, ErrRule
 	}
+	if !p.IsShared {
+		return store.Case{}, ErrRule
+	}
 	if p.LenderKind == "personal" && p.LenderUserID != nil && *p.LenderUserID == actor {
 		return store.Case{}, ErrForbidden
 	}
@@ -347,6 +362,15 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 		return store.Case{}, ErrForbidden
 	}
 	if in.State == "approved" {
+		if p.IsShared {
+			summary, se := store.Summary(ctx, s.db(), p.ID)
+			if se != nil {
+				return store.Case{}, se
+			}
+			if summary.AvailableMinor < c.PrincipalMinor {
+				return store.Case{}, ErrLimit
+			}
+		}
 		cr, e := store.GetCredit(ctx, s.db(), c.BorrowerAccountID)
 		if e != nil {
 			return store.Case{}, ErrRule

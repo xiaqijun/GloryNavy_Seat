@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/httpapi"
 	"glorynavy.local/seat/internal/module"
+	"glorynavy.local/seat/internal/modules/loan/internal/store"
 )
 
 type Handler struct {
@@ -25,7 +26,7 @@ func (h Handler) Module() module.Definition {
 		fn           http.HandlerFunc
 	}{
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail},
-		{"POST", "/pools", h.poolCreate}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
+		{"POST", "/pools", h.poolCreate}, {"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision}, {"PUT", "/credit/{account}", h.creditSet},
 	} {
@@ -93,7 +94,16 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 		respond(w, r, nil, e)
 		return
 	}
-	respond(w, r, map[string]any{"pools": p, "credit": c, "administrator": admin}, nil)
+	var summary any = map[string]any{"pending_minor": int64(0), "funded_minor": int64(0), "cash_minor": int64(0), "reserved_minor": int64(0), "available_minor": int64(0)}
+	if len(p) > 0 {
+		if v, er := store.Summary(r.Context(), h.Service.Pool, p[0].ID); er == nil {
+			summary = v
+		} else {
+			respond(w, r, nil, er)
+			return
+		}
+	}
+	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin}, nil)
 }
 func (h Handler) credit(w http.ResponseWriter, r *http.Request) {
 	c, e := h.Service.Credit(r.Context(), h.User(r))
@@ -121,7 +131,47 @@ func (h Handler) poolCreate(w http.ResponseWriter, r *http.Request) {
 	if !read(w, r, &in) {
 		return
 	}
-	v, e := h.Service.CreatePool(r.Context(), h.User(r), in)
+	v, e := h.Service.configureSharedPool(r.Context(), h.User(r), in)
+	respond(w, r, v, e)
+}
+func (h Handler) contributions(w http.ResponseWriter, r *http.Request) {
+	v, e := h.Service.Contributions(r.Context(), h.User(r))
+	respond(w, r, map[string]any{"items": v}, e)
+}
+func (h Handler) contributionCreate(w http.ResponseWriter, r *http.Request) {
+	var in ContributionInput
+	if !read(w, r, &in) {
+		return
+	}
+	v, e := h.Service.AddContribution(r.Context(), h.User(r), in)
+	respond(w, r, v, e)
+}
+func (h Handler) contributionDeposit(w http.ResponseWriter, r *http.Request) {
+	id, e := number(chi.URLParam(r, "id"))
+	if e != nil {
+		respond(w, r, nil, e)
+		return
+	}
+	var in DepositInput
+	if !read(w, r, &in) {
+		return
+	}
+	v, e := h.Service.VerifyContribution(r.Context(), h.User(r), id, in)
+	respond(w, r, v, e)
+}
+func (h Handler) contributionCancel(w http.ResponseWriter, r *http.Request) {
+	id, e := number(chi.URLParam(r, "id"))
+	if e != nil {
+		respond(w, r, nil, e)
+		return
+	}
+	var in struct {
+		Version int64 `json:"version"`
+	}
+	if !read(w, r, &in) {
+		return
+	}
+	v, e := h.Service.CancelContribution(r.Context(), h.User(r), id, in.Version)
 	respond(w, r, v, e)
 }
 func (h Handler) applicationCreate(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +205,7 @@ func (h Handler) payment(w http.ResponseWriter, r *http.Request) {
 	if !read(w, r, &in) {
 		return
 	}
-	v, e := h.Service.CreatePayment(r.Context(), h.User(r), id, in)
+	v, e := h.Service.createSharedPayment(r.Context(), h.User(r), id, in)
 	respond(w, r, v, e)
 }
 func (h Handler) guarantee(w http.ResponseWriter, r *http.Request) {

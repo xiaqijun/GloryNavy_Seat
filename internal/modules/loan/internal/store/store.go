@@ -19,108 +19,110 @@ type DBTX interface {
 }
 
 type Pool struct {
-	ID            int64
-	LenderKind    string
-	LenderUserID  *string
-	CorporationID *int64
-	Name          string
-	State         string
-	Config        json.RawMessage
-	Version       int64
+	IsShared             bool            `json:"is_shared"`
+	CustodianCharacterID *int64          `json:"custodian_character_id,string"`
+	ID                   int64           `json:"id,string"`
+	LenderKind           string          `json:"lender_kind"`
+	LenderUserID         *string         `json:"lender_user_id"`
+	CorporationID        *int64          `json:"corporation_id,string"`
+	Name                 string          `json:"name"`
+	State                string          `json:"state"`
+	Config               json.RawMessage `json:"config"`
+	Version              int64           `json:"version"`
 }
 
 type Credit struct {
-	AccountID           string
-	Score               *int
-	TotalLimitMinor     int64
-	UnsecuredLimitMinor int64
-	State               string
-	RuleVersion         string
-	Reason              string
-	Version             int64
+	AccountID           string `json:"account_id"`
+	Score               *int   `json:"score"`
+	TotalLimitMinor     int64  `json:"total_limit_minor"`
+	UnsecuredLimitMinor int64  `json:"unsecured_limit_minor"`
+	State               string `json:"state"`
+	RuleVersion         string `json:"rule_version"`
+	Reason              string `json:"reason"`
+	Version             int64  `json:"version"`
 }
 
 type Case struct {
-	ID                  int64
-	PublicID            string
-	PoolID              int64
-	LenderKind          string
-	LenderUserID        *string
-	CorporationID       *int64
-	PoolName            string
-	BorrowerAccountID   string
-	BorrowerCharacterID int64
-	PrincipalMinor      int64
-	InterestMinor       int64
-	TotalDueMinor       int64
-	InstallmentCount    int
-	IntervalDays        int
-	FirstDueAt          time.Time
-	State               string
-	TermsVersion        int64
-	Version             int64
-	ReviewerID          *string
-	ReviewNote          string
-	CreatedAt           time.Time
-	AcceptedAt          *time.Time
-	FundedAt            *time.Time
-	SettledAt           *time.Time
+	ID                  int64      `json:"id,string"`
+	PublicID            string     `json:"public_id"`
+	PoolID              int64      `json:"pool_id,string"`
+	LenderKind          string     `json:"lender_kind"`
+	LenderUserID        *string    `json:"lender_user_id"`
+	CorporationID       *int64     `json:"corporation_id,string"`
+	PoolName            string     `json:"pool_name"`
+	BorrowerAccountID   string     `json:"borrower_account_id"`
+	BorrowerCharacterID int64      `json:"borrower_character_id,string"`
+	PrincipalMinor      int64      `json:"principal_minor"`
+	InterestMinor       int64      `json:"interest_minor"`
+	TotalDueMinor       int64      `json:"total_due_minor"`
+	InstallmentCount    int        `json:"installment_count"`
+	IntervalDays        int        `json:"interval_days"`
+	FirstDueAt          time.Time  `json:"first_due_at"`
+	State               string     `json:"state"`
+	TermsVersion        int64      `json:"terms_version"`
+	Version             int64      `json:"version"`
+	ReviewerID          *string    `json:"reviewer_id"`
+	ReviewNote          string     `json:"review_note"`
+	CreatedAt           time.Time  `json:"created_at"`
+	AcceptedAt          *time.Time `json:"accepted_at"`
+	FundedAt            *time.Time `json:"funded_at"`
+	SettledAt           *time.Time `json:"settled_at"`
 }
 
 type Installment struct {
-	ID                 int64
-	Sequence           int
-	DueAt              time.Time
-	PrincipalMinor     int64
-	InterestMinor      int64
-	PaidPrincipalMinor int64
-	PaidInterestMinor  int64
-	State              string
+	ID                 int64     `json:"id,string"`
+	Sequence           int       `json:"sequence"`
+	DueAt              time.Time `json:"due_at"`
+	PrincipalMinor     int64     `json:"principal_minor"`
+	InterestMinor      int64     `json:"interest_minor"`
+	PaidPrincipalMinor int64     `json:"paid_principal_minor"`
+	PaidInterestMinor  int64     `json:"paid_interest_minor"`
+	State              string    `json:"state"`
 }
 
 type Payment struct {
-	ID                   int64
-	PublicID             string
-	CaseID               int64
-	Kind                 string
-	PayerAccountID       *string
-	RecipientAccountID   *string
-	RecipientCharacterID int64
-	ExpectedMinor        int64
-	ContractKind         string
-	ContractOwnerID      int64
-	ContractID           int64
-	State                string
-	Evidence             json.RawMessage
-	Version              int64
+	ID                   int64           `json:"id,string"`
+	PublicID             string          `json:"public_id"`
+	CaseID               int64           `json:"case_id,string"`
+	Kind                 string          `json:"kind"`
+	PayerAccountID       *string         `json:"payer_account_id"`
+	RecipientAccountID   *string         `json:"recipient_account_id"`
+	RecipientCharacterID int64           `json:"recipient_character_id,string"`
+	ExpectedMinor        int64           `json:"expected_minor"`
+	ContractKind         string          `json:"contract_kind"`
+	ContractOwnerID      int64           `json:"contract_owner_id,string"`
+	ContractID           int64           `json:"contract_id,string"`
+	State                string          `json:"state"`
+	Evidence             json.RawMessage `json:"evidence"`
+	Version              int64           `json:"version"`
 }
 
 type Guarantee struct {
-	ID                 int64
-	CaseID             int64
-	GuarantorAccountID string
-	AmountMinor        int64
-	State              string
-	Version            int64
+	ID                 int64  `json:"id,string"`
+	CaseID             int64  `json:"case_id,string"`
+	GuarantorAccountID string `json:"guarantor_account_id"`
+	AmountMinor        int64  `json:"amount_minor"`
+	State              string `json:"state"`
+	Version            int64  `json:"version"`
 }
 
 type Collateral struct {
-	ID              int64
-	CaseID          int64
-	OwnerAccountID  string
-	ContractKind    string
-	ContractOwnerID int64
-	ContractID      int64
-	Items           json.RawMessage
-	ValuationMinor  int64
-	HaircutBPS      int
-	CoveredMinor    int64
-	State           string
-	Version         int64
+	ID              int64           `json:"id,string"`
+	CaseID          int64           `json:"case_id,string"`
+	OwnerAccountID  string          `json:"owner_account_id"`
+	ContractKind    string          `json:"contract_kind"`
+	ContractOwnerID int64           `json:"contract_owner_id,string"`
+	ContractID      int64           `json:"contract_id,string"`
+	Items           json.RawMessage `json:"items"`
+	ValuationMinor  int64           `json:"valuation_minor"`
+	HaircutBPS      int             `json:"haircut_bps"`
+	CoveredMinor    int64           `json:"covered_minor"`
+	State           string          `json:"state"`
+	Version         int64           `json:"version"`
 }
 
 func ListPools(ctx context.Context, db DBTX, user string) ([]Pool, error) {
-	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version FROM loan_pools WHERE state='open' AND (lender_kind='personal' AND lender_user_id=$1::uuid OR lender_kind='corporation') ORDER BY id`, user)
+	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id FROM loan_pools WHERE state='open' AND (lender_kind='personal' AND lender_user_id=$1::uuid OR lender_kind='corporation') ORDER BY id`, user)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +130,7 @@ func ListPools(ctx context.Context, db DBTX, user string) ([]Pool, error) {
 	out := []Pool{}
 	for rows.Next() {
 		var p Pool
-		if err := rows.Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version); err != nil {
+		if err := rows.Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -137,7 +139,7 @@ func ListPools(ctx context.Context, db DBTX, user string) ([]Pool, error) {
 }
 
 func ListAllPools(ctx context.Context, db DBTX) ([]Pool, error) {
-	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version FROM loan_pools WHERE state<>'closed' ORDER BY id`)
+	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id FROM loan_pools WHERE state<>'closed' ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +147,7 @@ func ListAllPools(ctx context.Context, db DBTX) ([]Pool, error) {
 	out := []Pool{}
 	for rows.Next() {
 		var p Pool
-		if err := rows.Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version); err != nil {
+		if err := rows.Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -155,13 +157,13 @@ func ListAllPools(ctx context.Context, db DBTX) ([]Pool, error) {
 
 func GetPool(ctx context.Context, db DBTX, id int64) (Pool, error) {
 	var p Pool
-	err := db.QueryRow(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version FROM loan_pools WHERE id=$1`, id).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version)
+	err := db.QueryRow(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id FROM loan_pools WHERE id=$1`, id).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
 	return p, err
 }
 
 func CreatePool(ctx context.Context, db DBTX, kind, user string, corp int64, name, state string, config json.RawMessage, actor string) (Pool, error) {
 	var p Pool
-	err := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,lender_user_id,corporation_id,name,state,config,created_by) VALUES($1, NULLIF($2,'')::uuid, NULLIF($3,0), $4,$5,$6,$7::uuid) RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version`, kind, user, corp, name, state, config, actor).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version)
+	err := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,lender_user_id,corporation_id,name,state,config,created_by) VALUES($1, NULLIF($2,'')::uuid, NULLIF($3,0), $4,$5,$6,$7::uuid) RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id`, kind, user, corp, name, state, config, actor).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
 	return p, err
 }
 
@@ -388,6 +390,6 @@ func GetCollateral(ctx context.Context, db DBTX, id int64) (Collateral, error) {
 func Audit(ctx context.Context, db DBTX, caseID int64, actor, action string, before, after any) error {
 	b, _ := json.Marshal(before)
 	a, _ := json.Marshal(after)
-	_, err := db.Exec(ctx, `INSERT INTO loan_audit(case_id,actor_id,action,before_state,after_state) VALUES($1,$2::uuid,$3,$4,$5)`, caseID, actor, action, b, a)
+	_, err := db.Exec(ctx, `INSERT INTO loan_audit(case_id,actor_id,action,before_state,after_state) VALUES(NULLIF($1,0),$2::uuid,$3,$4,$5)`, caseID, actor, action, b, a)
 	return err
 }

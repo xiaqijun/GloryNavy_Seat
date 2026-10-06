@@ -160,6 +160,34 @@
   border-radius: 10px;
   color: var(--muted);
 }
+.loan-contributions {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.loan-contribution {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+}
+.loan-contribution > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.loan-contribution strong {
+  font-size: 18px;
+}
+.loan-contribution span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.loan-contribution .loan-form {
+  margin-top: 16px;
+}
 .loan-form input::placeholder {
   color: var(--muted);
   opacity: 1;
