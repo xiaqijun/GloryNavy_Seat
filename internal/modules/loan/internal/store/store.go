@@ -47,6 +47,12 @@ type Credit struct {
 	PaidInstallments    int       `json:"paid_installments"`
 	TotalInstallments   int       `json:"total_installments"`
 	OverdueInstallments int       `json:"overdue_installments"`
+	RepaymentPoints     int       `json:"repayment_points"`
+	LeveragePoints      int       `json:"leverage_points"`
+	SecurityPoints      int       `json:"security_points"`
+	PAPPoints           int       `json:"pap_points"`
+	AssetPoints         int       `json:"asset_points"`
+	Evidence            string    `json:"evidence"`
 }
 
 type CreditSignals struct {
@@ -56,6 +62,22 @@ type CreditSignals struct {
 	PaidInstallments    int
 	TotalInstallments   int
 	OverdueInstallments int
+	OutstandingMinor    int64
+	SecurityDisputes    int
+}
+
+type CreditEvaluation struct {
+	ID                  int64
+	AccountID           string
+	PolicyVersion       string
+	Score               int
+	TotalLimitMinor     int64
+	UnsecuredLimitMinor int64
+	State               string
+	FactorScores        json.RawMessage
+	Evidence            json.RawMessage
+	EvidenceCutoff      time.Time
+	EvaluatedAt         time.Time
 }
 
 type Case struct {
@@ -114,12 +136,17 @@ type Payment struct {
 }
 
 type Guarantee struct {
-	ID                 int64  `json:"id,string"`
-	CaseID             int64  `json:"case_id,string"`
-	GuarantorAccountID string `json:"guarantor_account_id"`
-	AmountMinor        int64  `json:"amount_minor"`
-	State              string `json:"state"`
-	Version            int64  `json:"version"`
+	ID                   int64  `json:"id,string"`
+	CaseID               int64  `json:"case_id,string"`
+	GuarantorAccountID   string `json:"guarantor_account_id"`
+	GuarantorCharacterID int64  `json:"guarantor_character_id,string"`
+	AmountMinor          int64  `json:"amount_minor"`
+	State                string `json:"state"`
+	Version              int64  `json:"version"`
+	CasePublicID         string `json:"case_public_id,omitempty"`
+	BorrowerAccountID    string `json:"borrower_account_id,omitempty"`
+	BorrowerCharacterID  int64  `json:"borrower_character_id,string,omitempty"`
+	PrincipalMinor       int64  `json:"principal_minor,omitempty"`
 }
 
 type Collateral struct {
@@ -187,8 +214,38 @@ func CreditSignalsFor(ctx context.Context, db DBTX, account string) (CreditSigna
 			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid AND i.state='paid'),
 			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid),
 			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid AND i.state <> 'paid' AND i.due_at < now())
-	`, account).Scan(&s.SettledLoans, &s.ActiveLoans, &s.DefaultedLoans, &s.PaidInstallments, &s.TotalInstallments, &s.OverdueInstallments)
+			,(SELECT COALESCE(sum(principal_minor),0) FROM loan_cases WHERE borrower_account_id=$1::uuid AND state IN ('approved','funding','active','defaulted'))
+			,(SELECT count(*) FROM loan_guarantees g JOIN loan_cases c ON c.id=g.case_id WHERE g.guarantor_account_id=$1::uuid AND g.state IN ('disputed','called'))
+	`, account).Scan(&s.SettledLoans, &s.ActiveLoans, &s.DefaultedLoans, &s.PaidInstallments, &s.TotalInstallments, &s.OverdueInstallments, &s.OutstandingMinor, &s.SecurityDisputes)
 	return s, err
+}
+
+func RecordCreditEvaluation(ctx context.Context, db DBTX, e CreditEvaluation) (CreditEvaluation, error) {
+	var out CreditEvaluation
+	err := db.QueryRow(ctx, `
+        INSERT INTO loan_credit_evaluations(account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at)
+        VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        RETURNING id,account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at`,
+		e.AccountID, e.PolicyVersion, e.Score, e.TotalLimitMinor, e.UnsecuredLimitMinor, e.State, e.FactorScores, e.Evidence, e.EvidenceCutoff, e.EvaluatedAt).
+		Scan(&out.ID, &out.AccountID, &out.PolicyVersion, &out.Score, &out.TotalLimitMinor, &out.UnsecuredLimitMinor, &out.State, &out.FactorScores, &out.Evidence, &out.EvidenceCutoff, &out.EvaluatedAt)
+	return out, err
+}
+
+func SecurityAccounts(ctx context.Context, db DBTX, caseID int64) ([]string, error) {
+	rows, err := db.Query(ctx, `SELECT DISTINCT guarantor_account_id::text FROM loan_guarantees WHERE case_id=$1 AND state IN ('accepted','active') ORDER BY guarantor_account_id`, caseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
 }
 
 func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, count, interval int, first time.Time) (Case, error) {
@@ -332,18 +389,18 @@ func CasePaid(ctx context.Context, db DBTX, caseID int64) (bool, error) {
 	return ok, err
 }
 
-func AddGuarantee(ctx context.Context, db DBTX, caseID int64, guarantor string, amount int64, note string) (Guarantee, error) {
+func AddGuarantee(ctx context.Context, db DBTX, caseID int64, guarantor string, characterID int64, amount int64, note string) (Guarantee, error) {
 	var g Guarantee
-	err := db.QueryRow(ctx, `INSERT INTO loan_guarantees(case_id,guarantor_account_id,amount_minor,note) VALUES($1,$2::uuid,$3,$4) RETURNING id,case_id,guarantor_account_id,amount_minor,state,version`, caseID, guarantor, amount, note).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.AmountMinor, &g.State, &g.Version)
+	err := db.QueryRow(ctx, `INSERT INTO loan_guarantees(case_id,guarantor_account_id,guarantor_character_id,amount_minor,note) VALUES($1,$2::uuid,$3,$4,$5) RETURNING id,case_id,guarantor_account_id,COALESCE(guarantor_character_id,0),amount_minor,state,version`, caseID, guarantor, characterID, amount, note).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version)
 	return g, err
 }
 func DecideGuarantee(ctx context.Context, db DBTX, id, version int64, state string) (Guarantee, error) {
 	var g Guarantee
-	err := db.QueryRow(ctx, `UPDATE loan_guarantees SET state=$2,version=version+1,decided_at=now() WHERE id=$1 AND version=$3 RETURNING id,case_id,guarantor_account_id,amount_minor,state,version`, id, state, version).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.AmountMinor, &g.State, &g.Version)
+	err := db.QueryRow(ctx, `UPDATE loan_guarantees SET state=$2,version=version+1,decided_at=now() WHERE id=$1 AND version=$3 RETURNING id,case_id,guarantor_account_id,COALESCE(guarantor_character_id,0),amount_minor,state,version`, id, state, version).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version)
 	return g, err
 }
 func ListGuarantees(ctx context.Context, db DBTX, caseID int64) ([]Guarantee, error) {
-	rows, e := db.Query(ctx, `SELECT id,case_id,guarantor_account_id,amount_minor,state,version FROM loan_guarantees WHERE case_id=$1 ORDER BY id`, caseID)
+	rows, e := db.Query(ctx, `SELECT id,case_id,guarantor_account_id,COALESCE(guarantor_character_id,0),amount_minor,state,version FROM loan_guarantees WHERE case_id=$1 ORDER BY id`, caseID)
 	if e != nil {
 		return nil, e
 	}
@@ -351,7 +408,7 @@ func ListGuarantees(ctx context.Context, db DBTX, caseID int64) ([]Guarantee, er
 	out := []Guarantee{}
 	for rows.Next() {
 		var g Guarantee
-		if e := rows.Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.AmountMinor, &g.State, &g.Version); e != nil {
+		if e := rows.Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version); e != nil {
 			return nil, e
 		}
 		out = append(out, g)
@@ -360,8 +417,33 @@ func ListGuarantees(ctx context.Context, db DBTX, caseID int64) ([]Guarantee, er
 }
 func GetGuarantee(ctx context.Context, db DBTX, id int64) (Guarantee, error) {
 	var g Guarantee
-	err := db.QueryRow(ctx, `SELECT id,case_id,guarantor_account_id,amount_minor,state,version FROM loan_guarantees WHERE id=$1`, id).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.AmountMinor, &g.State, &g.Version)
+	err := db.QueryRow(ctx, `SELECT id,case_id,guarantor_account_id,COALESCE(guarantor_character_id,0),amount_minor,state,version FROM loan_guarantees WHERE id=$1`, id).Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version)
 	return g, err
+}
+
+func ListGuaranteesForAccount(ctx context.Context, db DBTX, account string) ([]Guarantee, error) {
+	rows, err := db.Query(ctx, `SELECT g.id,g.case_id,g.guarantor_account_id,COALESCE(g.guarantor_character_id,0),g.amount_minor,g.state,g.version,c.public_id,c.borrower_account_id,c.borrower_character_id,c.principal_minor FROM loan_guarantees g JOIN loan_cases c ON c.id=g.case_id WHERE g.guarantor_account_id=$1::uuid ORDER BY g.id DESC`, account)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Guarantee
+	for rows.Next() {
+		var g Guarantee
+		if err := rows.Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version, &g.CasePublicID, &g.BorrowerAccountID, &g.BorrowerCharacterID, &g.PrincipalMinor); err != nil {
+			return nil, err
+		}
+		out = append(out, g)
+	}
+	return out, rows.Err()
+}
+
+func ReleaseSecurity(ctx context.Context, db DBTX, caseID int64) error {
+	if _, err := db.Exec(ctx, `UPDATE loan_guarantees SET state='released',version=version+1,decided_at=now() WHERE case_id=$1 AND state IN ('accepted','active')`, caseID); err != nil {
+		return err
+	}
+	_, err := db.Exec(ctx, `UPDATE loan_collateral SET state='released',version=version+1,decided_at=now() WHERE case_id=$1 AND state IN ('approved','held')`, caseID)
+	return err
 }
 func AddCollateral(ctx context.Context, db DBTX, caseID int64, owner, kind string, contractOwner, contractID int64, items json.RawMessage, valuation int64, haircut, covered int64) (Collateral, error) {
 	var c Collateral

@@ -28,6 +28,7 @@ func (h Handler) Module() module.Definition {
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail},
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
+		{"GET", "/guarantees", h.guarantees},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "loan.self", Handler: r.fn})
@@ -225,6 +226,10 @@ func (h Handler) guaranteeDecision(w http.ResponseWriter, r *http.Request) {
 	}
 	v, e := h.Service.DecideGuarantee(r.Context(), h.User(r), id, in)
 	respond(w, r, v, e)
+}
+func (h Handler) guarantees(w http.ResponseWriter, r *http.Request) {
+	v, e := h.Service.Guarantees(r.Context(), h.User(r))
+	respond(w, r, map[string]any{"items": v}, e)
 }
 func (h Handler) collateral(w http.ResponseWriter, r *http.Request) {
 	id, e := number(chi.URLParam(r, "id"))

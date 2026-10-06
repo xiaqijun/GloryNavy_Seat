@@ -9,7 +9,7 @@ import (
 // Loan obligations and funded contributions follow the target account. The
 // original account is retained on every moved row for audit and reconciliation.
 func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target string, apply bool) (json.RawMessage, error) {
-	var contributions, cases, guarantees, collateral int64
+	var contributions, cases, guarantees, collateral, evaluations int64
 	for _, q := range []struct {
 		sql string
 		out *int64
@@ -18,6 +18,7 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 		{`SELECT count(*) FROM loan_cases WHERE borrower_account_id=$1`, &cases},
 		{`SELECT count(*) FROM loan_guarantees WHERE guarantor_account_id=$1`, &guarantees},
 		{`SELECT count(*) FROM loan_collateral WHERE owner_account_id=$1`, &collateral},
+		{`SELECT count(*) FROM loan_credit_evaluations WHERE account_id=$1`, &evaluations},
 	} {
 		if err := tx.QueryRow(ctx, q.sql, source).Scan(q.out); err != nil {
 			return nil, err
@@ -39,6 +40,9 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 		if _, err := tx.Exec(ctx, `UPDATE loan_pools SET original_account_id=coalesce(original_account_id,lender_user_id),lender_user_id=$2 WHERE lender_user_id=$1`, source, target); err != nil {
 			return nil, err
 		}
+		if _, err := tx.Exec(ctx, `UPDATE loan_credit_evaluations SET original_account_id=coalesce(original_account_id,account_id),account_id=$2 WHERE account_id=$1`, source, target); err != nil {
+			return nil, err
+		}
 	}
-	return json.Marshal(map[string]any{"contributions": contributions, "borrower_cases": cases, "guarantees": guarantees, "collateral": collateral})
+	return json.Marshal(map[string]any{"contributions": contributions, "borrower_cases": cases, "guarantees": guarantees, "collateral": collateral, "credit_evaluations": evaluations})
 }

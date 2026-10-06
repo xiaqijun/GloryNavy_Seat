@@ -412,6 +412,9 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 		}
 		if paid {
 			_, e = store.TransitionCase(ctx, tx, id, c.Version, "settled", actor, "合同已核验还款")
+			if e == nil {
+				e = store.ReleaseSecurity(ctx, tx, id)
+			}
 		} else {
 			_, e = tx.Exec(ctx, `UPDATE loan_cases SET version=version+1,updated_at=now() WHERE id=$1`, id)
 		}

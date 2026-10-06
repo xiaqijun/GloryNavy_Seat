@@ -7744,6 +7744,91 @@ paths:
       summary: List loan cases visible to the caller
       responses:
         '200': {description: Loan cases}
+  /api/v1/loan/cases/{id}:
+    get:
+      operationId: loanCaseDetail
+      security: [{SessionCookie: []}]
+      summary: Read a visible loan case and its security records
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      responses:
+        '200': {description: Loan case, installments, guarantees and collateral}
+        '403': {description: Case is outside the caller's object scope}
+  /api/v1/loan/applications:
+    post:
+      operationId: loanApplicationCreate
+      security: [{SessionCookie: []}]
+      summary: Submit a fixed-interest equal-installment loan application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanApplicationInput'}
+      responses:
+        '200': {description: Submitted loan case}
+        '409': {description: Credit, pool or terms limit}
+  /api/v1/loan/guarantees:
+    get:
+      operationId: loanGuarantees
+      security: [{SessionCookie: []}]
+      summary: List guarantees invited to the caller
+      responses:
+        '200': {description: Guarantee invitations and states}
+  /api/v1/loan/cases/{id}/guarantees:
+    post:
+      operationId: loanGuaranteeCreate
+      security: [{SessionCookie: []}]
+      summary: Invite a bound character to guarantee a loan
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanGuaranteeInput'}
+      responses:
+        '200': {description: Pending guarantee invitation}
+        '409': {description: Case state or guarantor capacity conflict}
+  /api/v1/loan/guarantees/{id}/decision:
+    post:
+      operationId: loanGuaranteeDecision
+      security: [{SessionCookie: []}]
+      summary: Accept or reject a guarantee invitation
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanDecisionInput'}
+      responses:
+        '200': {description: Guarantee decision}
+        '409': {description: Capacity, version or case conflict}
+  /api/v1/loan/cases/{id}/collateral:
+    post:
+      operationId: loanCollateralCreate
+      security: [{SessionCookie: []}]
+      summary: Register a completed item contract as proposed collateral
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanCollateralInput'}
+      responses:
+        '200': {description: Proposed collateral}
+        '409': {description: Contract evidence or valuation conflict}
+  /api/v1/loan/collateral/{id}/decision:
+    post:
+      operationId: loanCollateralDecision
+      security: [{SessionCookie: []}]
+      summary: Approve or dispute proposed collateral
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanDecisionInput'}
+      responses:
+        '200': {description: Collateral decision}
+        '409': {description: Contract, version or rule conflict}
 components:
   parameters:
     CharacterID:
@@ -7896,6 +7981,46 @@ components:
         contract_kind: {type: string, enum: [character, corporation]}
         contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
         contract_id: {type: string, pattern: '^[1-9][0-9]*$'}
+    LoanApplicationInput:
+      type: object
+      additionalProperties: false
+      required: [pool_id, borrower_character_id, principal_minor, interest_minor, installment_count, interval_days, first_due_at]
+      properties:
+        pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        borrower_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        principal_minor: {type: integer, format: int64, minimum: 100}
+        interest_minor: {type: integer, format: int64, minimum: 0}
+        installment_count: {type: integer, minimum: 1, maximum: 120}
+        interval_days: {type: integer, minimum: 1, maximum: 365}
+        first_due_at: {type: string, format: date-time}
+    LoanGuaranteeInput:
+      type: object
+      additionalProperties: false
+      required: [guarantor_character_id, amount_minor]
+      properties:
+        guarantor_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        amount_minor: {type: integer, format: int64, minimum: 100}
+        note: {type: string, maxLength: 500}
+    LoanCollateralInput:
+      type: object
+      additionalProperties: false
+      required: [owner_account_id, contract_kind, contract_owner_id, contract_id, valuation_minor, haircut_bps, covered_minor]
+      properties:
+        owner_account_id: {type: string, format: uuid}
+        contract_kind: {type: string, enum: [character, corporation]}
+        contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        contract_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        valuation_minor: {type: integer, format: int64, minimum: 1}
+        haircut_bps: {type: integer, minimum: 1, maximum: 10000}
+        covered_minor: {type: integer, format: int64, minimum: 1}
+        description: {type: string, maxLength: 500}
+    LoanDecisionInput:
+      type: object
+      additionalProperties: false
+      required: [version, state]
+      properties:
+        version: {type: integer, format: int64, minimum: 1}
+        state: {type: string, enum: [accepted, rejected, approved, disputed]}
     Structure:
       type: object
       required: [corporation_id, corporation_name, kind, id, name, type_id, solar_system_id, state, observed_at, source_character_id]

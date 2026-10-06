@@ -31,6 +31,13 @@ import (
 	"time"
 )
 
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 type AuthConfig struct {
 	Origin, ClientID, ClientSecret, TokenKey, ESIUserAgent string
 	SDEAutoUpdate                                          bool
@@ -652,7 +659,42 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
 		}
 		return out, err
-	}, IsAdministrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts}
+	}, IsAdministrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts,
+		AccountForCharacter: func(ctx context.Context, characterID int64) (string, error) {
+			// Resolve only an active binding. A historical or revoked character
+			// must not receive a guarantee invitation or reserve responsibility.
+			owner, err := identityService.UserForCharacter(ctx, characterID)
+			if err != nil {
+				return "", err
+			}
+			chars, err := identityService.ActiveCharacters(ctx, owner)
+			if err != nil {
+				return "", err
+			}
+			for _, character := range chars {
+				if character.ID == characterID {
+					return owner, nil
+				}
+			}
+			return "", pgx.ErrNoRows
+		},
+		CreditEvidence: func(ctx context.Context, user string) (loan.CreditEvidence, error) {
+			var out loan.CreditEvidence
+			if !slices.Contains(enabled, "attendance") {
+				return out, nil
+			}
+			pap, err := attendanceModule.Service.CreditPAP(ctx, user)
+			if err != nil {
+				return out, nil
+			}
+			// PAP is a capped activity signal, never a repayment proxy.
+			out.PAPPoints = minInt(5, int(pap.Points/4))
+			out.PAPAvailable = pap.Complete
+			out.PAPSnapshotID = pap.SnapshotID
+			out.EvidenceCutoff = pap.ObservedAt
+			return out, nil
+		},
+	}
 	loanService.CanManagePool = func(ctx context.Context, user, kind string, id int64) (bool, error) {
 		if kind != "corporation" {
 			return false, nil
