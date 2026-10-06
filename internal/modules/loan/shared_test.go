@@ -1,6 +1,29 @@
 package loan
 
-import "testing"
+import (
+	"testing"
+	"time"
+
+	"glorynavy.local/seat/internal/modules/loan/internal/store"
+)
+
+func TestAssessCreditUsesSystemSignals(t *testing.T) {
+	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
+	c := assessCredit("account", store.CreditSignals{SettledLoans: 2, PaidInstallments: 8, TotalInstallments: 10}, 1_000_000, now)
+	if c.Score == nil || *c.Score != 88 {
+		t.Fatalf("score=%v, want 88", c.Score)
+	}
+	if c.TotalLimitMinor != 880_000 || c.UnsecuredLimitMinor != 774_400 || c.State != "active" {
+		t.Fatalf("credit=%+v", c)
+	}
+	if !c.EvaluatedAt.Equal(now) || c.RuleVersion != "system-v1" {
+		t.Fatalf("evaluation metadata=%+v", c)
+	}
+	defaulted := assessCredit("account", store.CreditSignals{DefaultedLoans: 1}, 1_000_000, now)
+	if defaulted.State != "suspended" || defaulted.Score == nil || *defaulted.Score != 25 {
+		t.Fatalf("defaulted credit=%+v", defaulted)
+	}
+}
 
 func TestCashMatchesCustodyDirections(t *testing.T) {
 	base := Contract{Type: "item_exchange", Status: "finished", Completed: "2026-10-06T00:00:00Z", Items: []byte(`[]`), ItemsReady: true, IssuerID: 101, AcceptorID: 202}

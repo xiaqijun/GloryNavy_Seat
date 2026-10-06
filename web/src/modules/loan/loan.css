@@ -58,6 +58,15 @@
   margin-top: 8px;
   font-size: 22px;
 }
+.loan-credit-assessment {
+  margin-top: 12px;
+}
+.loan-credit-assessment small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
 .loan-notice {
   display: flex;
   align-items: center;

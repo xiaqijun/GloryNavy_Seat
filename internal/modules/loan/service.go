@@ -123,14 +123,42 @@ type DecisionInput struct {
 	Version int64  `json:"version"`
 	State   string `json:"state"`
 }
-type CreditInput struct {
-	Score               *int   `json:"score"`
-	TotalLimitMinor     int64  `json:"total_limit_minor"`
-	UnsecuredLimitMinor int64  `json:"unsecured_limit_minor"`
-	State               string `json:"state"`
-	RuleVersion         string `json:"rule_version"`
-	Reason              string `json:"reason"`
-	Version             int64  `json:"version"`
+
+const creditRuleVersion = "system-v1"
+
+type creditPoolConfig struct {
+	MaxPrincipal int64 `json:"max_principal_minor"`
+}
+
+func assessCredit(account string, signals store.CreditSignals, maxPrincipal int64, now time.Time) store.Credit {
+	score := 60
+	score += signals.SettledLoans * 8
+	if signals.TotalInstallments > 0 {
+		score += signals.PaidInstallments * 15 / signals.TotalInstallments
+	}
+	score -= signals.ActiveLoans * 4
+	score -= signals.OverdueInstallments * 12
+	score -= signals.DefaultedLoans * 35
+	if score < 0 {
+		score = 0
+	}
+	if score > 100 {
+		score = 100
+	}
+	state := "active"
+	if signals.DefaultedLoans > 0 {
+		state = "suspended"
+	}
+	total := maxPrincipal * int64(score) / 100
+	unsecured := total * int64(score) / 100
+	return store.Credit{
+		AccountID: account, Score: &score, TotalLimitMinor: total, UnsecuredLimitMinor: unsecured,
+		State: state, RuleVersion: creditRuleVersion,
+		Reason:  fmt.Sprintf("system-evaluated: settled=%d active=%d defaulted=%d paid_installments=%d/%d overdue=%d", signals.SettledLoans, signals.ActiveLoans, signals.DefaultedLoans, signals.PaidInstallments, signals.TotalInstallments, signals.OverdueInstallments),
+		Version: 1, EvaluatedAt: now, SettledLoans: signals.SettledLoans, ActiveLoans: signals.ActiveLoans,
+		DefaultedLoans: signals.DefaultedLoans, PaidInstallments: signals.PaidInstallments,
+		TotalInstallments: signals.TotalInstallments, OverdueInstallments: signals.OverdueInstallments,
+	}
 }
 
 func publicID(prefix string) string {
@@ -154,35 +182,19 @@ func (s *Service) Pools(ctx context.Context, user string, admin bool) ([]store.P
 	return []store.Pool{p}, nil
 }
 func (s *Service) Credit(ctx context.Context, user string) (store.Credit, error) {
-	c, e := store.GetCredit(ctx, s.db(), user)
-	if errors.Is(e, pgx.ErrNoRows) {
-		return store.Credit{AccountID: user, State: "unconfigured"}, nil
+	signals, err := store.CreditSignalsFor(ctx, s.db(), user)
+	if err != nil {
+		return store.Credit{}, err
 	}
-	return c, e
+	maxPrincipal := int64(0)
+	if pool, poolErr := store.SharedPool(ctx, s.db(), false); poolErr == nil {
+		var cfg creditPoolConfig
+		if json.Unmarshal(pool.Config, &cfg) == nil && cfg.MaxPrincipal > 0 {
+			maxPrincipal = cfg.MaxPrincipal
+		}
+	}
+	return assessCredit(user, signals, maxPrincipal, time.Now().UTC()), nil
 }
-func (s *Service) SetCredit(ctx context.Context, actor, account string, in CreditInput) (store.Credit, error) {
-	if s.IsAdministrator == nil {
-		return store.Credit{}, ErrForbidden
-	}
-	ok, e := s.IsAdministrator(ctx, actor)
-	if e != nil || !ok {
-		return store.Credit{}, ErrForbidden
-	}
-	if account == "" || in.Score != nil && (*in.Score < 0 || *in.Score > 100) || in.TotalLimitMinor < 0 || in.UnsecuredLimitMinor < 0 || in.UnsecuredLimitMinor > in.TotalLimitMinor || in.State != "active" && in.State != "suspended" || in.RuleVersion == "" || len(in.Reason) > 500 {
-		return store.Credit{}, ErrInvalid
-	}
-	exp := in.Version
-	if exp <= 0 {
-		exp = 1
-	}
-	explanation, _ := json.Marshal(map[string]any{"reason": in.Reason})
-	c, e := store.UpsertCredit(ctx, s.db(), account, in.Score, in.TotalLimitMinor, in.UnsecuredLimitMinor, in.State, in.RuleVersion, in.Reason, actor, exp, explanation)
-	if errors.Is(e, pgx.ErrNoRows) {
-		return store.Credit{}, ErrConflict
-	}
-	return c, e
-}
-
 func (s *Service) CreateApplication(ctx context.Context, actor string, in ApplicationInput) (store.Case, error) {
 	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || in.IntervalDays < 1 || in.IntervalDays > 365 {
 		return store.Case{}, ErrInvalid
@@ -315,7 +327,7 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 				return store.Case{}, ErrLimit
 			}
 		}
-		cr, e := store.GetCredit(ctx, s.db(), c.BorrowerAccountID)
+		cr, e := s.Credit(ctx, c.BorrowerAccountID)
 		if e != nil {
 			return store.Case{}, ErrRule
 		}

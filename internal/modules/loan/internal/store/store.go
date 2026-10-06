@@ -32,14 +32,30 @@ type Pool struct {
 }
 
 type Credit struct {
-	AccountID           string `json:"account_id"`
-	Score               *int   `json:"score"`
-	TotalLimitMinor     int64  `json:"total_limit_minor"`
-	UnsecuredLimitMinor int64  `json:"unsecured_limit_minor"`
-	State               string `json:"state"`
-	RuleVersion         string `json:"rule_version"`
-	Reason              string `json:"reason"`
-	Version             int64  `json:"version"`
+	AccountID           string    `json:"account_id"`
+	Score               *int      `json:"score"`
+	TotalLimitMinor     int64     `json:"total_limit_minor"`
+	UnsecuredLimitMinor int64     `json:"unsecured_limit_minor"`
+	State               string    `json:"state"`
+	RuleVersion         string    `json:"rule_version"`
+	Reason              string    `json:"reason"`
+	Version             int64     `json:"version"`
+	EvaluatedAt         time.Time `json:"evaluated_at"`
+	SettledLoans        int       `json:"settled_loans"`
+	ActiveLoans         int       `json:"active_loans"`
+	DefaultedLoans      int       `json:"defaulted_loans"`
+	PaidInstallments    int       `json:"paid_installments"`
+	TotalInstallments   int       `json:"total_installments"`
+	OverdueInstallments int       `json:"overdue_installments"`
+}
+
+type CreditSignals struct {
+	SettledLoans        int
+	ActiveLoans         int
+	DefaultedLoans      int
+	PaidInstallments    int
+	TotalInstallments   int
+	OverdueInstallments int
 }
 
 type Case struct {
@@ -161,20 +177,18 @@ func GetPool(ctx context.Context, db DBTX, id int64) (Pool, error) {
 	return p, err
 }
 
-func GetCredit(ctx context.Context, db DBTX, account string) (Credit, error) {
-	var c Credit
-	err := db.QueryRow(ctx, `SELECT account_id,score,total_limit_minor,unsecured_limit_minor,state,rule_version,reason,version FROM loan_credit_profiles WHERE account_id=$1::uuid`, account).Scan(&c.AccountID, &c.Score, &c.TotalLimitMinor, &c.UnsecuredLimitMinor, &c.State, &c.RuleVersion, &c.Reason, &c.Version)
-	return c, err
-}
-
-func UpsertCredit(ctx context.Context, db DBTX, account string, score *int, total, unsecured int64, state, rule, reason, actor string, version int64, explanation json.RawMessage) (Credit, error) {
-	var c Credit
-	err := db.QueryRow(ctx, `INSERT INTO loan_credit_profiles(account_id,score,total_limit_minor,unsecured_limit_minor,state,rule_version,reason,version,updated_by) VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9::uuid) ON CONFLICT(account_id) DO UPDATE SET score=EXCLUDED.score,total_limit_minor=EXCLUDED.total_limit_minor,unsecured_limit_minor=EXCLUDED.unsecured_limit_minor,state=EXCLUDED.state,rule_version=EXCLUDED.rule_version,reason=EXCLUDED.reason,version=loan_credit_profiles.version+1,updated_by=EXCLUDED.updated_by,updated_at=now() WHERE loan_credit_profiles.version=$8 RETURNING account_id,score,total_limit_minor,unsecured_limit_minor,state,rule_version,reason,version`, account, score, total, unsecured, state, rule, reason, version, actor).Scan(&c.AccountID, &c.Score, &c.TotalLimitMinor, &c.UnsecuredLimitMinor, &c.State, &c.RuleVersion, &c.Reason, &c.Version)
-	if err != nil {
-		return c, err
-	}
-	_, err = db.Exec(ctx, `INSERT INTO loan_credit_history(account_id,score,total_limit_minor,unsecured_limit_minor,state,rule_version,explanation,actor_id) VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8::uuid)`, account, score, total, unsecured, state, rule, explanation, actor)
-	return c, err
+func CreditSignalsFor(ctx context.Context, db DBTX, account string) (CreditSignals, error) {
+	var s CreditSignals
+	err := db.QueryRow(ctx, `
+		SELECT
+			(SELECT count(*) FROM loan_cases WHERE borrower_account_id=$1::uuid AND state='settled'),
+			(SELECT count(*) FROM loan_cases WHERE borrower_account_id=$1::uuid AND state IN ('approved','funding','active')),
+			(SELECT count(*) FROM loan_cases WHERE borrower_account_id=$1::uuid AND state='defaulted'),
+			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid AND i.state='paid'),
+			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid),
+			(SELECT count(*) FROM loan_installments i JOIN loan_cases c ON c.id=i.case_id WHERE c.borrower_account_id=$1::uuid AND i.state <> 'paid' AND i.due_at < now())
+	`, account).Scan(&s.SettledLoans, &s.ActiveLoans, &s.DefaultedLoans, &s.PaidInstallments, &s.TotalInstallments, &s.OverdueInstallments)
+	return s, err
 }
 
 func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, count, interval int, first time.Time) (Case, error) {

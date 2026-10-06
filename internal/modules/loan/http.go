@@ -28,7 +28,7 @@ func (h Handler) Module() module.Definition {
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail},
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
-		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision}, {"PUT", "/credit/{account}", h.creditSet},
+		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "loan.self", Handler: r.fn})
 	}
@@ -63,7 +63,7 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 	case errors.Is(e, ErrForbidden):
 		code, status, msg = "loan_forbidden", 403, "没有该贷款记录或操作权限"
 	case errors.Is(e, ErrRule):
-		code, status, msg = "loan_rule_required", 409, "贷款规则或信用配置尚未完成"
+		code, status, msg = "loan_rule_required", 409, "贷款规则或系统信用评估尚未完成"
 	case errors.Is(e, ErrLimit):
 		code, status, msg = "loan_limit_exceeded", 409, "超出贷款额度或资金池限制"
 	case errors.Is(e, ErrCoverage):
@@ -250,13 +250,5 @@ func (h Handler) collateralDecision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.Service.DecideCollateral(r.Context(), h.User(r), id, in)
-	respond(w, r, v, e)
-}
-func (h Handler) creditSet(w http.ResponseWriter, r *http.Request) {
-	var in CreditInput
-	if !read(w, r, &in) {
-		return
-	}
-	v, e := h.Service.SetCredit(r.Context(), h.User(r), chi.URLParam(r, "account"), in)
 	respond(w, r, v, e)
 }
