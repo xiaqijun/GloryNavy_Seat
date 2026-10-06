@@ -127,6 +127,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 0;
 }
+.loan-credit-form,
+.loan-contribution-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0;
+}
+.loan-credit-form .loan-form-message,
+.loan-contribution-form .loan-form-message {
+  grid-column: 1/-1;
+  margin: 0;
+}
 .loan-application-form .loan-dialog-note,
 .loan-application-form .loan-form-message {
   grid-column: 1/-1;
@@ -244,7 +254,9 @@
 @media (max-width: 800px) {
   .loan-credit,
   .loan-form,
-  .loan-application-form {
+  .loan-application-form,
+  .loan-credit-form,
+  .loan-contribution-form {
     grid-template-columns: 1fr;
   }
   .loan-title h1 {

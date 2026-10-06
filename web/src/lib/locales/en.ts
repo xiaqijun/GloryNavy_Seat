@@ -2366,6 +2366,8 @@ export const english: Record<string, string> = {
   "固定总利息按期等额分期，所有申请自动进入全站唯一贷款池。": "Fixed total interest is paid in equal installments; every application uses the single shared pool.",
   开始申请: "Start application",
   "申请会自动进入全站唯一贷款池，提交后等待评分、额度、担保或抵押审批。": "The application uses the single shared pool and waits for score, limit, guarantee, or collateral review.",
+  配置授信: "Configure credit",
+  开始出借: "Start lending",
   统一贷款池配置: "Shared loan pool configuration",
   "全站只保留一个贷款池；先配置托管角色或托管军团，再接受成员入金。": "There is one pool. Configure its custodian character or corporation before accepting deposits.",
   托管设置: "Custody settings",

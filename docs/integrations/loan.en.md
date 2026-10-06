@@ -14,6 +14,6 @@ The module exposes the authenticated `loan.self` routes described in the Chinese
 
 Pending corporation-pool applications are also exposed as the `loan` source in the approval center. The center is read-only and reuses this module's review endpoint; personal lender decisions stay on the loan page.
 
-The loan page has no shared-pool configuration panel. The pool is a fixed singleton; administrators only maintain credit policy, while any member can submit an amount. The loan application opens in a form dialog and closes after a successful submission. Corporation contributions require the corporation permission. Members can submit applications only when the shared pool is open, verified cash is available, and an active credit profile exists.
+The loan page has no shared-pool configuration panel. The pool is a fixed singleton; credit configuration, contributions, and loan applications all open in form dialogs. Administrators maintain credit policy in the credit dialog, and the loan application closes after a successful submission. Corporation contributions require the corporation permission. Members can submit applications only when the shared pool is open, verified cash is available, and an active credit profile exists.
 
 Real Tranquility contract verification, direction, partial repayment, duplicate claims, and authorization expiry still require production acceptance; deployment and module enablement are not evidence that the real contract loop is accepted.
