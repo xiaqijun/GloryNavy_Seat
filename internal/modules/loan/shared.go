@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/loan/internal/store"
@@ -111,81 +110,6 @@ func (s *Service) guardAccounts(ctx context.Context, tx pgx.Tx, ids ...string) e
 		return ErrRule
 	}
 	return s.LockAccounts(ctx, tx, ids)
-}
-func (s *Service) configureSharedPool(ctx context.Context, actor string, in PoolInput) (store.Pool, error) {
-	if s.IsAdministrator == nil {
-		return store.Pool{}, ErrForbidden
-	}
-	ok, e := s.IsAdministrator(ctx, actor)
-	if e != nil {
-		return store.Pool{}, e
-	}
-	if !ok {
-		return store.Pool{}, ErrForbidden
-	}
-	if in.LenderKind != "personal" && in.LenderKind != "corporation" || strings.TrimSpace(in.Name) == "" || len(in.Name) > 160 || in.State != "open" && in.State != "paused" {
-		return store.Pool{}, ErrInvalid
-	}
-	var cfg struct {
-		Min     int64 `json:"min_principal_minor"`
-		Max     int64 `json:"max_principal_minor"`
-		Count   int   `json:"max_installments"`
-		Haircut int   `json:"collateral_haircut_bps"`
-	}
-	raw, e := json.Marshal(in.Config)
-	if e != nil || json.Unmarshal(raw, &cfg) != nil || !validCash(cfg.Min) || !validCash(cfg.Max) || cfg.Max < cfg.Min || cfg.Count < 1 || cfg.Count > 120 || cfg.Haircut < 0 || cfg.Haircut > 10000 {
-		return store.Pool{}, ErrInvalid
-	}
-	corp := int64(0)
-	if in.LenderKind == "corporation" {
-		corp, e = strconv.ParseInt(in.CorporationID, 10, 64)
-		if e != nil || corp <= 0 {
-			return store.Pool{}, ErrInvalid
-		}
-		if s.CanManagePool == nil { return store.Pool{}, ErrForbidden }
-		ok, e = s.CanManagePool(ctx, actor, "corporation", corp)
-		if e != nil || !ok {
-			return store.Pool{}, ErrForbidden
-		}
-		if in.CustodianCharacterID != 0 {
-			return store.Pool{}, ErrInvalid
-		}
-	}
-	current, err := store.SharedPool(ctx, s.db(), false)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return store.Pool{}, err
-	}
-	if in.LenderKind == "personal" {
-		if in.CorporationID != "" {
-			return store.Pool{}, ErrInvalid
-		}
-		ok, e = s.ownsCharacter(ctx, actor, in.CustodianCharacterID)
-		if e != nil || !ok {
-			return store.Pool{}, ErrForbidden
-		}
-	}
-	if in.Version <= 0 {
-		in.Version = 1
-	}
-	tx, e := s.Pool.Begin(ctx)
-	if e != nil {
-		return store.Pool{}, e
-	}
-	defer tx.Rollback(ctx)
-	if e = s.guardAccounts(ctx, tx, actor); e != nil {
-		return store.Pool{}, e
-	}
-	out, e := store.ConfigureSharedPool(ctx, tx, actor, in.LenderKind, corp, in.CustodianCharacterID, strings.TrimSpace(in.Name), in.State, raw, in.Version)
-	if errors.Is(e, pgx.ErrNoRows) {
-		return store.Pool{}, ErrConflict
-	}
-	if e != nil {
-		return store.Pool{}, e
-	}
-	if e = store.Audit(ctx, tx, 0, actor, "pool_configured", current, out); e != nil {
-		return store.Pool{}, e
-	}
-	return out, tx.Commit(ctx)
 }
 func (s *Service) Contributions(ctx context.Context, actor string) ([]store.Contribution, error) {
 	admin := false

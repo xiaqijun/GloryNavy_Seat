@@ -37,18 +37,6 @@ func SharedPool(ctx context.Context, db DBTX, lock bool) (Pool, error) {
 	err := db.QueryRow(ctx, q).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
 	return p, err
 }
-func ConfigureSharedPool(ctx context.Context, db DBTX, actor, kind string, corp, character int64, name, state string, config json.RawMessage, version int64) (Pool, error) {
-	var p Pool
-	err := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,lender_user_id,corporation_id,custodian_character_id,name,state,config,created_by,is_shared)
- VALUES($1,CASE WHEN $1='personal' THEN $2::uuid END,NULLIF($3,0),NULLIF($4,0),$5,$6,$7,$2::uuid,true)
- ON CONFLICT(is_shared) WHERE is_shared DO UPDATE SET name=EXCLUDED.name,state=EXCLUDED.state,config=EXCLUDED.config,version=loan_pools.version+1,updated_at=now()
- WHERE loan_pools.version=$8 AND loan_pools.lender_kind=EXCLUDED.lender_kind
- AND loan_pools.lender_user_id IS NOT DISTINCT FROM EXCLUDED.lender_user_id
- AND loan_pools.corporation_id IS NOT DISTINCT FROM EXCLUDED.corporation_id
- AND loan_pools.custodian_character_id IS NOT DISTINCT FROM EXCLUDED.custodian_character_id
- RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id`, kind, actor, corp, character, name, state, config, version).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
-	return p, err
-}
 func Summary(ctx context.Context, db DBTX, id int64) (PoolSummary, error) {
 	var v PoolSummary
 	err := db.QueryRow(ctx, `SELECT

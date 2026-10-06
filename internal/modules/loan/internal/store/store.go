@@ -161,12 +161,6 @@ func GetPool(ctx context.Context, db DBTX, id int64) (Pool, error) {
 	return p, err
 }
 
-func CreatePool(ctx context.Context, db DBTX, kind, user string, corp int64, name, state string, config json.RawMessage, actor string) (Pool, error) {
-	var p Pool
-	err := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,lender_user_id,corporation_id,name,state,config,created_by) VALUES($1, NULLIF($2,'')::uuid, NULLIF($3,0), $4,$5,$6,$7::uuid) RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id`, kind, user, corp, name, state, config, actor).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
-	return p, err
-}
-
 func GetCredit(ctx context.Context, db DBTX, account string) (Credit, error) {
 	var c Credit
 	err := db.QueryRow(ctx, `SELECT account_id,score,total_limit_minor,unsecured_limit_minor,state,rule_version,reason,version FROM loan_credit_profiles WHERE account_id=$1::uuid`, account).Scan(&c.AccountID, &c.Score, &c.TotalLimitMinor, &c.UnsecuredLimitMinor, &c.State, &c.RuleVersion, &c.Reason, &c.Version)

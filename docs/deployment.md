@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 统一贷款池固定化（2026-10-06）
+
+已发布 `v0.1.0-loan-shared-pool-20261006` 与 Goose 71。贷款页移除统一贷款池创建/配置入口，借款申请自动使用全站唯一贷款池；成员提交个人/军团出借金额后，仍须完成托管合同核验才进入池现金。管理员只在贷款页维护信用评分与授信。应用 `active/ready`、公网页面和移动/桌面贷款表单已复核；真实 Tranquility 合同闭环仍待验收。
+
 ## 贷款首期部署（2026-10-06）
 
 已发布后端 `v0.1.0-loan-20261006`，公网静态前端随后切换为 `v0.1.0-loan-setup-r2-20261006`；应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；Goose 由 69 升至 70。发布前在生产数据库快照库完成 `00070_loan.sql` 预检，正式切换前备份数据库与 `/etc/glorynavy/seat.env`，备份目录为 `/var/backups/glorynavy/before-v0.1.0-loan-20261006-20261006T071228Z/`。应用 `active/ready`、公网首页与 `/loans` 200、匿名模块目录 401、OpenResty `nginx -t` 均通过。

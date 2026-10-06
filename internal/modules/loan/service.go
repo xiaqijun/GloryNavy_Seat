@@ -81,15 +81,6 @@ type Service struct {
 	ReadContractTx  func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error)
 }
 
-type PoolInput struct {
-	LenderKind           string         `json:"lender_kind"`
-	CorporationID        string         `json:"corporation_id"`
-	Name                 string         `json:"name"`
-	State                string         `json:"state"`
-	Config               map[string]any `json:"config"`
-	CustodianCharacterID int64          `json:"custodian_character_id"`
-	Version              int64          `json:"version"`
-}
 type ApplicationInput struct {
 	PoolID              int64  `json:"pool_id"`
 	BorrowerCharacterID int64  `json:"borrower_character_id"`
@@ -190,53 +181,6 @@ func (s *Service) SetCredit(ctx context.Context, actor, account string, in Credi
 		return store.Credit{}, ErrConflict
 	}
 	return c, e
-}
-
-func (s *Service) CreatePool(ctx context.Context, actor string, in PoolInput) (store.Pool, error) {
-	if in.LenderKind != "personal" && in.LenderKind != "corporation" || strings.TrimSpace(in.Name) == "" || len(in.Name) > 160 {
-		return store.Pool{}, ErrInvalid
-	}
-	state := in.State
-	if state == "" {
-		state = "paused"
-	}
-	if state != "open" && state != "paused" {
-		return store.Pool{}, ErrInvalid
-	}
-	config, _ := json.Marshal(in.Config)
-	if in.Config == nil {
-		config = []byte(`{}`)
-	}
-	corp := int64(0)
-	if in.CorporationID != "" {
-		n, e := strconv.ParseInt(in.CorporationID, 10, 64)
-		if e != nil || n <= 0 {
-			return store.Pool{}, ErrInvalid
-		}
-		corp = n
-	}
-	if in.LenderKind == "personal" {
-		if corp != 0 {
-			return store.Pool{}, ErrInvalid
-		}
-	} else {
-		if corp == 0 || s.CanManagePool == nil {
-			return store.Pool{}, ErrForbidden
-		}
-		ok, e := s.CanManagePool(ctx, actor, "corporation", corp)
-		if e != nil {
-			return store.Pool{}, e
-		}
-		if !ok {
-			return store.Pool{}, ErrForbidden
-		}
-	}
-	return store.CreatePool(ctx, s.db(), in.LenderKind, func() string {
-		if in.LenderKind == "personal" {
-			return actor
-		}
-		return ""
-	}(), corp, strings.TrimSpace(in.Name), state, config, actor)
 }
 
 func (s *Service) CreateApplication(ctx context.Context, actor string, in ApplicationInput) (store.Case, error) {

@@ -26,7 +26,7 @@ func (h Handler) Module() module.Definition {
 		fn           http.HandlerFunc
 	}{
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail},
-		{"POST", "/pools", h.poolCreate}, {"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
+		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision}, {"PUT", "/credit/{account}", h.creditSet},
 	} {
@@ -124,14 +124,6 @@ func (h Handler) detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.Service.Detail(r.Context(), h.User(r), id)
-	respond(w, r, v, e)
-}
-func (h Handler) poolCreate(w http.ResponseWriter, r *http.Request) {
-	var in PoolInput
-	if !read(w, r, &in) {
-		return
-	}
-	v, e := h.Service.configureSharedPool(r.Context(), h.User(r), in)
 	respond(w, r, v, e)
 }
 func (h Handler) contributions(w http.ResponseWriter, r *http.Request) {
