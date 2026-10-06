@@ -14,4 +14,6 @@ The module exposes the authenticated `loan.self` routes described in the Chinese
 
 Pending corporation-pool applications are also exposed as the `loan` source in the approval center. The center is read-only and reuses this module's review endpoint; personal lender decisions stay on the loan page.
 
+Administrators can use the Loan configuration panel to create personal or corporation pools and save the current account's score, total limit, unsecured limit, and rule version. Members can submit applications only when an open pool and active credit profile exist.
+
 Real Tranquility contract verification, direction, partial repayment, duplicate claims, and authorization expiry still require production acceptance; deployment and module enablement are not evidence that the real contract loop is accepted.
