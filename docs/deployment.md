@@ -4,7 +4,7 @@
 
 已发布 `v0.1.0-loan-20261006`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；Goose 由 69 升至 70。发布前在生产数据库快照库完成 `00070_loan.sql` 预检，正式切换前备份数据库与 `/etc/glorynavy/seat.env`，备份目录为 `/var/backups/glorynavy/before-v0.1.0-loan-20261006-20261006T071228Z/`。应用 `active/ready`、公网首页与 `/loan` 200、匿名模块目录 401、OpenResty `nginx -t` 均通过。
 
-本次只部署贷款代码、迁移和静态资源，生产 `MODULES` 保持原列表，未启用 `loan` 入口。真实 Tranquility 合同、分期还款、重复合同占用、担保/抵押和审批中心账号验收完成后，才可单独更新生产配置启用模块。
+本次先部署贷款代码、迁移和静态资源，随后将生产 `MODULES` 加入 `loan` 并重启应用；登录成员现在可看到财务分组下的贷款入口。信用规则、贷款池和抵押折扣仍需管理员配置，真实 Tranquility 合同、分期还款、重复合同占用、担保/抵押和审批中心账号验收继续跟进。启用开关前配置备份保存在应用机 `/var/backups/glorynavy/loan-module-enable-20261006T20261006T072436Z.env`。
 
 ## 预警消耗按监控星系归因（2026-10-06）
 
