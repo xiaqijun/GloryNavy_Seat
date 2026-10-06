@@ -1,5 +1,11 @@
 # Linux 生产部署
 
+## 贷款首期部署（2026-10-06）
+
+已发布 `v0.1.0-loan-20261006`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；Goose 由 69 升至 70。发布前在生产数据库快照库完成 `00070_loan.sql` 预检，正式切换前备份数据库与 `/etc/glorynavy/seat.env`，备份目录为 `/var/backups/glorynavy/before-v0.1.0-loan-20261006-20261006T071228Z/`。应用 `active/ready`、公网首页与 `/loan` 200、匿名模块目录 401、OpenResty `nginx -t` 均通过。
+
+本次只部署贷款代码、迁移和静态资源，生产 `MODULES` 保持原列表，未启用 `loan` 入口。真实 Tranquility 合同、分期还款、重复合同占用、担保/抵押和审批中心账号验收完成后，才可单独更新生产配置启用模块。
+
 ## 预警消耗按监控星系归因（2026-10-06）
 
 已发布 `v0.1.0-sentry-system-charge-20261006`。应用机和公网静态站点均已切换到该版本，应用 `active/ready`、公网首页 200、OpenResty `nginx -t` 通过。预警端按服务端确认的重叠监控星系拆分在线消耗，Seat 按星系聚合；无可靠归因证据的历史空 `system_id` 记录不猜测回填。无新增 Goose/River 迁移。
@@ -245,7 +251,7 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 
 ## 拓扑与目录
 
-当前前后端均为 `v0.1.0-welfare-quota-20260925`，Goose 49。旧版产物与静态 assets 保留；本轮迁移及缓存配置变更见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
+当前应用与公网静态前端均为 `v0.1.0-loan-20261006`，Goose 70。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
 
 `浏览器 → https://seat.kisectool.com → 公网 OpenResty → ZeroTier → Go API → PostgreSQL`
 
