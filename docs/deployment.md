@@ -2,7 +2,7 @@
 
 ## 贷款首期部署（2026-10-06）
 
-已发布后端 `v0.1.0-loan-20261006`，公网静态前端随后切换为 `v0.1.0-loan-setup-20261006`；应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；Goose 由 69 升至 70。发布前在生产数据库快照库完成 `00070_loan.sql` 预检，正式切换前备份数据库与 `/etc/glorynavy/seat.env`，备份目录为 `/var/backups/glorynavy/before-v0.1.0-loan-20261006-20261006T071228Z/`。应用 `active/ready`、公网首页与 `/loans` 200、匿名模块目录 401、OpenResty `nginx -t` 均通过。
+已发布后端 `v0.1.0-loan-20261006`，公网静态前端随后切换为 `v0.1.0-loan-setup-r2-20261006`；应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；Goose 由 69 升至 70。发布前在生产数据库快照库完成 `00070_loan.sql` 预检，正式切换前备份数据库与 `/etc/glorynavy/seat.env`，备份目录为 `/var/backups/glorynavy/before-v0.1.0-loan-20261006-20261006T071228Z/`。应用 `active/ready`、公网首页与 `/loans` 200、匿名模块目录 401、OpenResty `nginx -t` 均通过。
 
 本次先部署贷款代码、迁移和静态资源，随后将生产 `MODULES` 加入 `loan` 并重启应用；登录成员现在可看到财务分组下的贷款入口。信用规则、贷款池和抵押折扣仍需管理员配置，真实 Tranquility 合同、分期还款、重复合同占用、担保/抵押和审批中心账号验收继续跟进。启用开关前配置备份保存在应用机 `/var/backups/glorynavy/loan-module-enable-20261006T20261006T072436Z.env`。
 
@@ -251,7 +251,7 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 
 ## 拓扑与目录
 
-当前应用为 `v0.1.0-loan-20261006`，公网静态前端为 `v0.1.0-loan-setup-20261006`，Goose 70。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
+当前应用为 `v0.1.0-loan-20261006`，公网静态前端为 `v0.1.0-loan-setup-r2-20261006`，Goose 70。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
 
 `浏览器 → https://seat.kisectool.com → 公网 OpenResty → ZeroTier → Go API → PostgreSQL`
 
