@@ -259,7 +259,7 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 
 ## 拓扑与目录
 
-当前应用为 `v0.1.0-loan-20261006`，公网静态前端为 `v0.1.0-loan-setup-r2-20261006`，Goose 70。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
+当前应用和公网静态前端均为 `v0.1.0-loan-credit-security-20261007`，Goose 72。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
 
 `浏览器 → https://seat.kisectool.com → 公网 OpenResty → ZeroTier → Go API → PostgreSQL`
 
