@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## PLEX 月卡自动核价修复发布（2026-10-08）
+
+已发布 `v0.1.0-plex-average-20261008`。应用机与公网静态站点均已原子切换；PLEX 改查 EVE Global PLEX Market，订单簿缺边时使用 ESI 官方平均价作为中间价，普通物品的双边报价校验保持不变。无 Goose/River 新迁移；应用 `active/ready`、月卡重算、首页/登录和匿名鉴权检查通过，OpenResty `nginx -t` 通过。
+
 ## 同步资源类型响应校验修复发布（2026-10-08）
 
 已仅更新公网静态前端至 `v0.1.0-sync-shape-fix-20261008`。角色同步接口返回 `corporation_structures` 目标时，前端现在能够通过响应校验并显示“军团建筑”；后端、数据库、Goose/River 和应用服务未改。公网 `current` 已原子切换，首页/登录 200，OpenResty `nginx -t` 通过。

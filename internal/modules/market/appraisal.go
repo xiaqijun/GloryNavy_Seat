@@ -185,7 +185,9 @@ func (s *Service) estimateLines(ctx context.Context, lines []Line, ratio int) (A
 		}
 		buy, sell := amount(p.Buy, v.Quantity), amount(p.Sell, v.Quantity)
 		var mid *big.Rat
-		if buy != nil && sell != nil {
+		if p.Mid != nil {
+			mid = amount(p.Mid, v.Quantity)
+		} else if buy != nil && sell != nil {
 			mid = new(big.Rat).Quo(new(big.Rat).Add(buy, sell), big.NewRat(2, 1))
 		}
 		v.Buy = stringAmount(buy)

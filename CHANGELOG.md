@@ -2,6 +2,11 @@
 
 正式发布与发布前开发记录分开维护。生产验收详情见 `docs/project-status.md`。
 
+## v0.1.0-plex-average-20261008 — 2026-10-08
+
+- 修复 PLEX（月卡，type_id 44992）错误查询吉他 4-4 导致无法自动核价的问题：改查 EVE Global PLEX Market，订单簿缺边时使用 ESI `/markets/prices/` 官方平均价作为中间价；普通物品仍要求买卖双边报价。
+- 无新增 Goose/River 迁移；应用与公网静态站点已切换，服务就绪、月卡重算、匿名鉴权和 OpenResty 配置检查通过。
+
 ## v0.1.0-sync-shape-fix-20261008 — 2026-10-08
 
 - 补齐前端同步资源 `corporation_structures` 的类型、响应校验和中英文文案，避免角色同步接口包含军团建筑目标时误报“服务响应格式异常”。

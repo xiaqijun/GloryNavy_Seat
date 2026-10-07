@@ -58,6 +58,24 @@ func TestAppraisalParsingPricesAndMissingData(t *testing.T) {
 		t.Fatal(v.Lines)
 	}
 }
+
+func TestAppraisalUsesAuthoritativeMidpointFallback(t *testing.T) {
+	p := testutil.Database(t)
+	if _, err := p.Exec(context.Background(), `UPDATE market_settings SET ratio_bps=10000`); err != nil {
+		t.Fatal(err)
+	}
+	mid := "4712023.41"
+	s := Service{Pool: p, Prices: func(_ context.Context, id int64) (eve.MarketPrices, error) {
+		if id != 44992 {
+			t.Fatal("incorrect type", id)
+		}
+		return eve.MarketPrices{Mid: &mid}, nil
+	}}
+	v, _, err := s.EstimateItems(context.Background(), []Item{{TypeID: 44992, Quantity: 500}})
+	if err != nil || !v.Complete || v.Lines[0].Status != "ready" || v.Lines[0].Mid == nil || *v.Lines[0].Mid != "2356011705.00" || v.Totals.Mid != "2356011705.00" {
+		t.Fatal(v, err)
+	}
+}
 func TestParseRejectsInvalidLimits(t *testing.T) {
 	for _, s := range []string{"", "\n"} {
 		if _, err := parse(s); err == nil {
