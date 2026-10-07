@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 贷款申请与出借操作栏发布（2026-10-07）
+
+已发布 `v0.1.0-loan-action-bar-20261007`，应用机与公网静态站点均已原子切换，来源提交为 `0b298e4`。申请和出借按钮共用一个无卡片操作栏，原有表单弹窗和权限逻辑保持不变。应用 `active/ready`、公网首页与 `/loans` 200、匿名模块和贷款接口 401，边缘 OpenResty `nginx -t` 通过。
+
 ## 贷款担保空列表响应修复（2026-10-07）
 
 已发布 `v0.1.0-loan-guarantee-array-20261007-r2`，应用机与公网静态站点均已原子切换，来源提交为 `51fabea`。修复无待确认担保时 `GET /api/v1/loan/guarantees` 将空切片序列化为 `null` 的问题，接口现在返回 `items: []`，前端不再误报响应格式异常。Goose 72 保持不变；应用 `active/ready`、公网首页与 `/loans` 200、匿名模块和贷款接口 401，边缘 OpenResty `nginx -t` 通过。
@@ -263,7 +267,7 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 
 ## 拓扑与目录
 
-当前应用和公网静态前端均为 `v0.1.0-loan-guarantee-array-20261007-r2`，Goose 72。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
+当前应用和公网静态前端均为 `v0.1.0-loan-action-bar-20261007`，Goose 72。旧版产物与静态 assets 保留；本轮迁移及贷款模块开关边界见上文。详细验收及备份见[项目状态](project-status.md)，历次发布证据见[交付历史](history/project-status-through-2026-09-23.md)。联盟 PAP 每 30 分钟完整读取当前月快照后差量落库；支持手动与自动增量兑换，生产保留既有 manual 配置。
 
 `浏览器 → https://seat.kisectool.com → 公网 OpenResty → ZeroTier → Go API → PostgreSQL`
 
