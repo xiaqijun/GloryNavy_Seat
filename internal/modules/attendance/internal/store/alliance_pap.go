@@ -194,6 +194,28 @@ func (q *Queries) AlliancePAPAccount(ctx context.Context, accountID string) (All
 	return r, err
 }
 
+// AlliancePAPLatestAccount returns the newest complete retained alliance
+// snapshot for an account. It is used by evidence consumers when the current
+// month is temporarily unavailable but a previously published month is still
+// valid retained evidence.
+func (q *Queries) AlliancePAPLatestAccount(ctx context.Context, accountID string, since time.Time) (AlliancePAPAccountReport, error) {
+	var r AlliancePAPAccountReport
+	err := q.db.QueryRow(ctx, `
+		SELECT p.month, SUM(p.pap)::text, h.state, h.complete, h.records_total,
+		       COALESCE(h.last_synced_at, '0001-01-01'::timestamptz),
+		       COALESCE(h.last_error, ''), h.version
+		FROM attendance_alliance_pap_snapshot p
+		JOIN attendance_alliance_pap_sync_history h ON h.month=p.month
+		WHERE p.account_id=$1::uuid AND h.state='ready' AND h.complete
+		  AND p.month >= date_trunc('month', $2::timestamptz)::date
+		GROUP BY p.month,h.state,h.complete,h.records_total,h.last_synced_at,h.last_error,h.version
+		ORDER BY p.month DESC
+		LIMIT 1`, accountID, since).Scan(
+		&r.Month, &r.Points, &r.State, &r.Complete, &r.RecordsTotal, &r.LastSyncedAt, &r.LastError, &r.Version,
+	)
+	return r, err
+}
+
 func (q *Queries) AlliancePAPCharacters(ctx context.Context, accountID string) ([]AlliancePAPCharacter, error) {
 	rows, err := q.db.Query(ctx, `
 		SELECT p.character_id, p.character_name, p.pap::text
