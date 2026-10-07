@@ -1,11 +1,22 @@
 package loan
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"glorynavy.local/seat/internal/modules/loan/internal/store"
 )
+
+func TestEmptyGuaranteeListUsesArrayJSON(t *testing.T) {
+	payload, err := json.Marshal(map[string]any{"items": []store.Guarantee{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(payload); got != `{"items":[]}` {
+		t.Fatalf("empty guarantee payload=%s, want {\"items\":[]}", got)
+	}
+}
 
 func TestAssessCreditUsesSystemSignals(t *testing.T) {
 	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)

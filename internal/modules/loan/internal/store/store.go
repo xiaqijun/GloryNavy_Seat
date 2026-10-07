@@ -427,7 +427,8 @@ func ListGuaranteesForAccount(ctx context.Context, db DBTX, account string) ([]G
 		return nil, err
 	}
 	defer rows.Close()
-	var out []Guarantee
+	// Keep the JSON contract stable for callers: an empty invitation list is [] rather than null.
+	out := []Guarantee{}
 	for rows.Next() {
 		var g Guarantee
 		if err := rows.Scan(&g.ID, &g.CaseID, &g.GuarantorAccountID, &g.GuarantorCharacterID, &g.AmountMinor, &g.State, &g.Version, &g.CasePublicID, &g.BorrowerAccountID, &g.BorrowerCharacterID, &g.PrincipalMinor); err != nil {
