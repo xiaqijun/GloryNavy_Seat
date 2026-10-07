@@ -2966,6 +2966,8 @@ paths:
     {"get":{"operationId":"attendanceAlliancePAPReport","summary":"Current-month alliance PAP for the authenticated site account","description":"Reads the latest complete WinterCo snapshot imported by the attendance worker. It is separate from local corporation PAP and returns available=false while the snapshot is missing, incomplete or failed. characters contains only snapshot rows mapped to the authenticated site account.","security":[{"SessionCookie":[]}],"responses":{"200":{"description":"Alliance PAP report","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["source","month","points","available","complete","state","records_total","version","can_manage","characters"],"properties":{"source":{"type":"string","enum":["alliance"]},"month":{"type":"string","pattern":"^[0-9]{4}-[0-9]{2}$"},"points":{"type":"number","minimum":0},"available":{"type":"boolean"},"complete":{"type":"boolean"},"state":{"type":"string","enum":["idle","syncing","ready","error"]},"records_total":{"type":"integer","minimum":0},"version":{"type":"string","pattern":"^[1-9][0-9]*$"},"can_manage":{"type":"boolean"},"characters":{"type":"array","items":{"type":"object","required":["character_id","character_name","pap"],"properties":{"character_id":{"type":"integer","minimum":1},"character_name":{"type":"string"},"pap":{"type":"number","minimum":0}}}},"last_synced_at":{"type":["string","null"],"format":"date-time"}}}}}}}},"401":{"description":"No active session"},"503":{"description":"Service unavailable"}}}}
   /api/v1/attendance/alliance-pap/summary:
     {"get":{"operationId":"attendanceAlliancePAPFulfillment","summary":"Current-month alliance PAP fulfillment for site administrators","description":"Aggregates the latest complete WinterCo snapshot by distinct bound site account. All bound characters for an account are summed before checking the configured monthly target. Partial or failed snapshots return available=false and never count missing rows as failures.","security":[{"SessionCookie":[]}],"responses":{"200":{"description":"Alliance PAP fulfillment summary","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["source","month","target","eligible_accounts","achieved_accounts","rate_bps","available","state","version"],"properties":{"source":{"type":"string","enum":["alliance"]},"month":{"type":"string","pattern":"^[0-9]{4}-[0-9]{2}$"},"target":{"type":"integer","minimum":1},"eligible_accounts":{"type":"integer","minimum":0},"achieved_accounts":{"type":"integer","minimum":0},"rate_bps":{"type":"integer","minimum":0,"maximum":10000},"available":{"type":"boolean"},"state":{"type":"string","enum":["idle","syncing","ready","error"]},"last_synced_at":{"type":["string","null"],"format":"date-time"},"version":{"type":"string","pattern":"^[1-9][0-9]*$"}}}}}}}},"401":{"description":"Session required"},"404":{"description":"Site administrator required"},"503":{"description":"Unavailable"}}}}
+  /api/v1/attendance/alliance-pap/members:
+    {"get":{"operationId":"attendanceAlliancePAPMembers","summary":"Alliance PAP points grouped by member for site administrators","description":"Returns the selected complete alliance PAP snapshot grouped by currently bound site account. Multiple bound characters are summed per account; rows whose binding is no longer current are omitted. The endpoint is administrator-only and the optional month uses YYYY-MM.","security":[{"SessionCookie":[]}],"parameters":[{"name":"month","in":"query","required":false,"schema":{"type":"string","pattern":"^[0-9]{4}-[0-9]{2}$"}}],"responses":{"200":{"description":"Alliance PAP points by member","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"$ref":"#/components/schemas/AlliancePAPMembersReport"}}}}}},"401":{"description":"Session required"},"404":{"description":"Site administrator required"},"503":{"description":"Unavailable"}}}}
   /api/v1/attendance/alliance-pap/conversions:
     {"get":{"operationId":"listAlliancePAPConversions","summary":"Current site administrator: list retained alliance PAP months with unconverted points","description":"Returns complete retained monthly snapshots with pending conversion balances. The list is administrator-only and excludes months with no pending points.","security":[{"SessionCookie":[]}],"responses":{"200":{"description":"Alliance PAP conversion months","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["months"],"properties":{"months":{"type":"array","items":{"$ref":"#/components/schemas/AlliancePAPConversionMonth"}}}}}}}}},"401":{"description":"Session required"},"404":{"description":"Site administrator required"},"503":{"description":"Unavailable"}}}}
   /api/v1/attendance/alliance-pap/conversion:
@@ -10205,6 +10207,57 @@ components:
             "coins_minor": { "type": "integer", "format": "int64", "minimum": 0 },
             "unit_scale": { "type": "integer", "format": "int64", "minimum": 1 },
             "characters": { "type": "integer", "format": "int64", "minimum": 0 },
+          },
+      }
+
+    AlliancePAPMembersReport:
+      {
+        "type": "object",
+        "required": ["source", "month", "target", "available", "complete", "state", "records_total", "version", "members"],
+        "properties":
+          {
+            "source": { "type": "string", "enum": ["alliance"] },
+            "month": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}$" },
+            "target": { "type": "integer", "minimum": 1 },
+            "available": { "type": "boolean" },
+            "complete": { "type": "boolean" },
+            "state": { "type": "string", "enum": ["idle", "syncing", "ready", "error"] },
+            "records_total": { "type": "integer", "minimum": 0 },
+            "last_synced_at": { "type": ["string", "null"], "format": "date-time" },
+            "version": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+            "members":
+              {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/AlliancePAPMember" },
+              },
+          },
+      }
+
+    AlliancePAPMember:
+      {
+        "type": "object",
+        "required": ["user_id", "name", "points", "achieved", "characters"],
+        "properties":
+          {
+            "user_id": { "type": "string", "format": "uuid" },
+            "name": { "type": "string" },
+            "points": { "type": "number", "minimum": 0 },
+            "achieved": { "type": "boolean" },
+            "characters":
+              {
+                "type": "array",
+                "items":
+                  {
+                    "type": "object",
+                    "required": ["character_id", "character_name", "pap"],
+                    "properties":
+                      {
+                        "character_id": { "type": "integer", "minimum": 1 },
+                        "character_name": { "type": "string" },
+                        "pap": { "type": "number", "minimum": 0 },
+                      },
+                  },
+              },
           },
       }
 

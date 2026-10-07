@@ -32,6 +32,7 @@ func (h Handler) Module() module.Definition {
 		{"GET", "/pap", h.papReport}, {"GET", "/pap/pending", h.pendingPAP}, {"GET", "/events/{id}/pap", h.papHistory}, {"POST", "/events/{id}/pap", h.setPAP},
 		{"GET", "/alliance-pap", h.alliancePAP},
 		{"GET", "/alliance-pap/summary", h.alliancePAPSummary},
+		{"GET", "/alliance-pap/members", h.alliancePAPMembers},
 		{"GET", "/alliance-pap/conversions", h.allianceConversions},
 		{"GET", "/alliance-pap/conversion", h.allianceConversion}, {"POST", "/alliance-pap/conversion", h.allianceConversion},
 		{"GET", "/pap-requirement", h.papRequirement}, {"POST", "/pap-requirement", h.papRequirement},
@@ -50,6 +51,10 @@ func (h Handler) alliancePAP(w http.ResponseWriter, r *http.Request) {
 }
 func (h Handler) alliancePAPSummary(w http.ResponseWriter, r *http.Request) {
 	out, err := h.Service.AlliancePAPFulfillmentReport(r.Context(), h.User(r))
+	respond(w, r, out, err)
+}
+func (h Handler) alliancePAPMembers(w http.ResponseWriter, r *http.Request) {
+	out, err := h.Service.AlliancePAPMembersReport(r.Context(), h.User(r), r.URL.Query().Get("month"))
 	respond(w, r, out, err)
 }
 func (h Handler) allianceConversions(w http.ResponseWriter, r *http.Request) {

@@ -18,6 +18,7 @@ import (
 
 func attendanceHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *access.Service, reader *eve.AuthorizationService) attendance.Handler {
 	s := &attendance.Service{Pool: pool, EVE: reader, Administrator: policy.IsAdministrator}
+	s.AlliancePAPMemberNames = accounts.MainCharacterNames
 	s.Bindings = func(ctx context.Context, tx pgx.Tx, ids []int64) ([]attendance.Binding, error) {
 		rows, err := accounts.Bindings(ctx, tx, ids)
 		if err != nil {

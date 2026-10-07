@@ -50,6 +50,13 @@ type AlliancePAPAward struct {
 	PAP         string
 }
 
+type AlliancePAPMemberRow struct {
+	CharacterID   int64
+	CharacterName string
+	AccountID     pgtype.UUID
+	PAP           string
+}
+
 // AlliancePAPFulfillment counts distinct bound site accounts in the current
 // snapshot. PAP is evaluated after aggregating all roles belonging to an
 // account, so multi-character accounts are counted once.
@@ -93,6 +100,27 @@ func (q *Queries) AlliancePAPSyncHistories(ctx context.Context) ([]AlliancePAPSy
 	for rows.Next() {
 		var item AlliancePAPSyncHistory
 		if err := rows.Scan(&item.Month, &item.State, &item.Complete, &item.RecordsTotal, &item.LastSyncedAt, &item.LastError, &item.Version); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (q *Queries) AlliancePAPMemberRows(ctx context.Context, month time.Time) ([]AlliancePAPMemberRow, error) {
+	rows, err := q.db.Query(ctx, `
+		SELECT character_id, character_name, account_id, pap::text
+		FROM attendance_alliance_pap_snapshot
+		WHERE month=$1 AND account_id IS NOT NULL
+		ORDER BY account_id, pap DESC, character_name, character_id`, month)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AlliancePAPMemberRow{}
+	for rows.Next() {
+		var item AlliancePAPMemberRow
+		if err := rows.Scan(&item.CharacterID, &item.CharacterName, &item.AccountID, &item.PAP); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

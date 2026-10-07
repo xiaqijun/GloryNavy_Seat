@@ -31,6 +31,7 @@
 `/attendance?view=alliance-pap` 显示当前月总分、默认每人 3 PAP 目标、环形进度、已映射角色明细及同步状态。管理员可在明细下打开“兑换联盟 PAP”，从仍有待兑换余额的历史月份中选择月份后补兑；当前月和历史月份均按保存的完整快照结算。工作台读取同一报告。军团 PAP 来自本站点名，独立统计、无月门槛，不能用于抵联盟要求。
 
 - `GET /api/v1/attendance/alliance-pap`：已鉴权账号的联盟报告；不在请求时抓外站。
+- `GET /api/v1/attendance/alliance-pap/members?month=YYYY-MM`：当前站点管理员按成员查看所选完整月份的联盟 PAP；多角色按本站账号合计，返回前复核当前绑定，过期或未绑定行不展示。省略 `month` 时读取当前月。
 - `GET/POST /api/v1/attendance/pap-requirement`：读取/配置联盟月目标；写入仅当前站点管理员，版本与审计保护。
 - `GET /api/v1/attendance/alliance-pap/conversions`：管理员读取仍有待兑换余额的完整历史月份及各月预览摘要。
 - `GET/POST /api/v1/attendance/alliance-pap/conversion`：管理员预览/提交指定 `month=YYYY-MM` 的完整快照兑换；省略月份时兼容当前月。使用独立 `alliance_pap` 比例与来源幂等记录；重复提交不重复发币。

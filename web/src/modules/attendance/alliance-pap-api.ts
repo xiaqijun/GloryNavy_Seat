@@ -79,6 +79,63 @@ export const isAllianceReport = (v: unknown): v is AllianceReport => {
 export const getAlliancePAP = (signal?: AbortSignal) =>
   getData("/api/v1/attendance/alliance-pap", isAllianceReport, signal);
 
+export type AlliancePAPMember = {
+  user_id: string;
+  name: string;
+  points: number;
+  achieved: boolean;
+  characters: Array<{
+    character_id: number;
+    character_name: string;
+    pap: number;
+  }>;
+};
+
+export type AlliancePAPMembersReport = {
+  source: "alliance";
+  month: string;
+  target: number;
+  available: boolean;
+  complete: boolean;
+  state: "idle" | "syncing" | "ready" | "error";
+  records_total: number;
+  last_synced_at: string | null;
+  version: string;
+  members: AlliancePAPMember[];
+};
+
+export const isAlliancePAPMembersReport = (v: unknown): v is AlliancePAPMembersReport => {
+  if (!object(v)) return false;
+  const r = v as AlliancePAPMembersReport;
+  return (
+    r.source === "alliance" &&
+    typeof r.month === "string" &&
+    /^\d{4}-\d{2}$/.test(r.month) &&
+    Number.isInteger(r.target) && r.target >= 1 &&
+    typeof r.available === "boolean" &&
+    typeof r.complete === "boolean" &&
+    ["idle", "syncing", "ready", "error"].includes(r.state) &&
+    Number.isInteger(r.records_total) && r.records_total >= 0 &&
+    (r.last_synced_at === null || typeof r.last_synced_at === "string") &&
+    typeof r.version === "string" && /^[1-9]\d*$/.test(r.version) &&
+    Array.isArray(r.members) && r.members.every((member) =>
+      !!member &&
+      typeof member.user_id === "string" &&
+      typeof member.name === "string" &&
+      Number.isFinite(member.points) && member.points >= 0 &&
+      typeof member.achieved === "boolean" &&
+      Array.isArray(member.characters) && member.characters.every((character) =>
+        !!character && Number.isSafeInteger(character.character_id) && character.character_id > 0 &&
+        typeof character.character_name === "string" && character.character_name.length > 0 &&
+        Number.isFinite(character.pap) && character.pap >= 0,
+      ),
+    )
+  );
+};
+
+export const getAlliancePAPMembers = (month: string, signal?: AbortSignal) =>
+  getData(`/api/v1/attendance/alliance-pap/members?month=${encodeURIComponent(month)}`, isAlliancePAPMembersReport, signal);
+
 export type AlliancePAPConversionMonth = {
   month: string;
   version: string;

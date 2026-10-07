@@ -73,6 +73,27 @@ type AlliancePAPFulfillmentReport struct {
 	Version          int64      `json:"version,string"`
 }
 
+type AlliancePAPMembersReport struct {
+	Source       string              `json:"source"`
+	Month        string              `json:"month"`
+	Target       int32               `json:"target"`
+	Available    bool                `json:"available"`
+	Complete     bool                `json:"complete"`
+	State        string              `json:"state"`
+	RecordsTotal int32               `json:"records_total"`
+	LastSyncedAt *time.Time          `json:"last_synced_at"`
+	Version      int64               `json:"version,string"`
+	Members      []AlliancePAPMember `json:"members"`
+}
+
+type AlliancePAPMember struct {
+	UserID     string                 `json:"user_id"`
+	Name       string                 `json:"name"`
+	Points     float64                `json:"points"`
+	Achieved   bool                   `json:"achieved"`
+	Characters []AlliancePAPCharacter `json:"characters"`
+}
+
 type AlliancePAPCharacter struct {
 	CharacterID   int64   `json:"character_id"`
 	CharacterName string  `json:"character_name"`
@@ -437,6 +458,119 @@ func (s *Service) AlliancePAPFulfillmentReport(ctx context.Context, user string)
 	}
 	if out.EligibleAccounts > 0 {
 		out.RateBPS = int32((int64(out.AchievedAccounts)*10000 + int64(out.EligibleAccounts)/2) / int64(out.EligibleAccounts))
+	}
+	return out, nil
+}
+
+// AlliancePAPMembersReport returns the selected complete snapshot grouped by
+// currently bound site account. It is administrator-only and rechecks the
+// live character ownership before exposing another member's points.
+func (s *Service) AlliancePAPMembersReport(ctx context.Context, user, monthValue string) (AlliancePAPMembersReport, error) {
+	out := AlliancePAPMembersReport{Source: "alliance", State: "idle", Version: 1, Members: []AlliancePAPMember{}}
+	if _, err := uuid(user); err != nil {
+		return out, ErrInvalid
+	}
+	if s.Administrator == nil || s.Bindings == nil || s.Pool == nil {
+		return out, pgx.ErrNoRows
+	}
+	ok, err := s.Administrator(ctx, user)
+	if err != nil {
+		return out, err
+	}
+	if !ok {
+		return out, pgx.ErrNoRows
+	}
+	month, err := parseAlliancePAPMonth(monthValue)
+	if err != nil {
+		return out, err
+	}
+	out.Month = month.Format("2006-01")
+	requirement, err := store.New(s.Pool).PAPRequirement(ctx)
+	if err != nil {
+		return out, err
+	}
+	out.Target = requirement.MonthlyPoints
+	q := store.New(s.Pool)
+	nowMonth := allianceMonth(time.Now().UTC())
+	if month.Equal(nowMonth) {
+		sync, syncErr := q.AlliancePAPSync(ctx)
+		if syncErr != nil {
+			return out, syncErr
+		}
+		out.State, out.Complete, out.RecordsTotal, out.Version = sync.State, sync.Complete, sync.RecordsTotal, sync.Version
+		if sync.LastSyncedAt.Valid && sync.LastSyncedAt.Time.Year() > 1 {
+			t := sync.LastSyncedAt.Time
+			out.LastSyncedAt = &t
+		}
+		out.Available = sync.Month.Equal(month) && sync.State == "ready" && sync.Complete
+	} else {
+		histories, historyErr := q.AlliancePAPSyncHistories(ctx)
+		if historyErr != nil {
+			return out, historyErr
+		}
+		for _, history := range histories {
+			if !history.Month.Equal(month) {
+				continue
+			}
+			out.State, out.Complete, out.RecordsTotal, out.Version = history.State, history.Complete, history.RecordsTotal, history.Version
+			if history.LastSyncedAt.Valid && history.LastSyncedAt.Time.Year() > 1 {
+				t := history.LastSyncedAt.Time
+				out.LastSyncedAt = &t
+			}
+			out.Available = history.State == "ready" && history.Complete
+			break
+		}
+	}
+	if !out.Available {
+		return out, nil
+	}
+	rows, err := q.AlliancePAPMemberRows(ctx, month)
+	if err != nil {
+		return out, err
+	}
+	ids := make([]int64, 0, len(rows))
+	for _, row := range rows {
+		ids = append(ids, row.CharacterID)
+	}
+	bindings, err := s.Bindings(ctx, nil, ids)
+	if err != nil {
+		return out, err
+	}
+	bound := make(map[int64]string, len(bindings))
+	for _, binding := range bindings {
+		bound[binding.ID] = binding.UserID
+	}
+	accountRows := make(map[string]int)
+	accountIDs := make([]string, 0)
+	for _, row := range rows {
+		accountID := row.AccountID.String()
+		if bound[row.CharacterID] != accountID {
+			continue
+		}
+		if _, ok := accountRows[accountID]; !ok {
+			accountRows[accountID] = len(out.Members)
+			accountIDs = append(accountIDs, accountID)
+			out.Members = append(out.Members, AlliancePAPMember{UserID: accountID, Characters: []AlliancePAPCharacter{}})
+		}
+		index := accountRows[accountID]
+		points, parseErr := strconv.ParseFloat(row.PAP, 64)
+		if parseErr != nil {
+			return out, parseErr
+		}
+		out.Members[index].Points += points
+		out.Members[index].Characters = append(out.Members[index].Characters, AlliancePAPCharacter{CharacterID: row.CharacterID, CharacterName: row.CharacterName, PAP: points})
+	}
+	if s.AlliancePAPMemberNames != nil && len(accountIDs) > 0 {
+		names, nameErr := s.AlliancePAPMemberNames(ctx, accountIDs)
+		if nameErr != nil {
+			return out, nameErr
+		}
+		for i := range out.Members {
+			out.Members[i].Name = names[out.Members[i].UserID]
+		}
+	}
+	for i := range out.Members {
+		out.Members[i].Achieved = out.Members[i].Points >= float64(out.Target)
 	}
 	return out, nil
 }

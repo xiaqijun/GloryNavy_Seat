@@ -12,6 +12,8 @@
 
 管理员专用的 `GET /api/v1/attendance/alliance-pap/summary` 为运营面板提供联盟集结满足率：按本站有效绑定的自然人去重，同一账号的多个角色先合计，再与月度目标比较，返回达标人数、有效人数和整数 `rate_bps`。快照未完整同步或同步失败时返回 `available=false`，不把缺失角色计为未达标。
 
+管理员还可调用 `GET /api/v1/attendance/alliance-pap/members?month=YYYY-MM` 查看所选完整月份的成员积分。接口按当前有效绑定的本站账号聚合多个角色，返回成员名称、总 PAP、达标状态和角色明细；解绑、失效或归属已变化的快照行会在返回前重新核对并排除。省略月份时读取当前月，快照未完整同步时返回 `available=false`。
+
 配置变更不重写军团 PAP 流水、不发币/扣币、不限制福利，也不追溯产生惩罚；联盟数据未同步时不显示达标或差额。配置属于全局规则，无账号级余额需要合并；审计保留原操作者。
 
 本地升级需先备份数据库和配置，执行 npm run db:migrate（Goose 45 + River）并重启 API。联盟 PAP 的差量落库不需要新增迁移，旧后端不提供独立子页时前后端需成套回退；保留表和审计，不执行 Down。使用 `WINTERCO_PAP_URL` 与受限的 `WINTERCO_PAP_AUTH_FILE`，无需新增 ESI scope。认证文件优先读取 `read_token`；为兼容现有 seat-pap 文件，也接受 `api_token` 作为回退，令牌只在请求时读取，不进入任务载荷或日志。

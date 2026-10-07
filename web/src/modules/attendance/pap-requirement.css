@@ -30,6 +30,16 @@
 .pap-alliance-character strong { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
 .pap-alliance-avatar { width: 32px; height: 32px; border-radius: 8px; }
 .pap-alliance-empty { padding: 18px 0; }
+.pap-alliance-members { display: grid; gap: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.pap-alliance-members .pap-alliance-details-heading strong { display: inline-flex; align-items: center; gap: 6px; }
+.pap-alliance-member-list { display: grid; gap: 0; }
+.pap-alliance-member { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.pap-alliance-member-name { display: grid; gap: 3px; min-width: 0; }
+.pap-alliance-member-name strong { overflow-wrap: anywhere; font-size: 13px; }
+.pap-alliance-member-name small { color: var(--muted); font-size: 12px; }
+.pap-alliance-member-points { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
+.pap-alliance-member-status { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 56px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.pap-alliance-member-status.is-complete { color: var(--color-success, #15803d); }
 .pap-status { min-height: 44px; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .pap-status-error { align-items: flex-start; color: var(--color-destructive); }
 .pap-status button { flex: 0 0 auto; }
@@ -48,6 +58,8 @@
   .pap-alliance-details-heading small { white-space: normal; }
   .pap-summary-main { grid-template-columns: minmax(0, 1fr) 100px; }
   .ring-progress-shell, .ring-progress-placeholder { width: 100px; height: 100px; }
+  .pap-alliance-member { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .pap-alliance-member-status { grid-column: 2; grid-row: 2; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pap-requirement * { transition: none !important; }

@@ -61,6 +61,9 @@ type Service struct {
 	Bindings       func(context.Context, pgx.Tx, []int64) ([]Binding, error)
 	Own            func(context.Context, string) ([]Binding, error)
 	ReportBindings func(context.Context, string, string, int64) ([]Binding, error)
+	// AlliancePAPMemberNames is a host-provided display projection for already
+	// authorized account IDs. It does not grant access to member data.
+	AlliancePAPMemberNames func(context.Context, []string) (map[string]string, error)
 }
 
 type Event struct {

@@ -13,10 +13,12 @@ import { formatDate } from "./api";
 import { AllianceCoinConversion } from "./alliance-coin-conversion";
 import {
   getAlliancePAP,
+  getAlliancePAPMembers,
   getPAPRequirement,
   type Requirement,
 } from "./alliance-pap-api";
 import { EveImage } from "@/components/eve-image";
+import { AlliancePAPMembers } from "./alliance-pap-members";
 import "./pap-requirement.css";
 
 const RingProgress = lazy(() => import("@/components/charts/ring-progress"));
@@ -42,6 +44,12 @@ export function PAPRequirement({
   const alliance = useQuery({
     queryKey: ["attendance", "alliance-pap", user],
     queryFn: ({ signal }) => getAlliancePAP(signal),
+    refetchInterval: 30000,
+  });
+  const members = useQuery({
+    queryKey: ["attendance", "alliance-pap-members", user, alliance.data?.month ?? ""],
+    queryFn: ({ signal }) => getAlliancePAPMembers(alliance.data!.month, signal),
+    enabled: alliance.data?.can_manage === true && alliance.data.available,
     refetchInterval: 30000,
   });
   const save = useMutation({
@@ -195,6 +203,14 @@ export function PAPRequirement({
                   user={user}
                   csrf={session.data?.session?.csrf_token ?? ""}
                   version={alliance.data.version}
+                />
+              )}
+              {alliance.data?.can_manage && alliance.data.available && (
+                <AlliancePAPMembers
+                  report={members.data}
+                  loading={members.isLoading}
+                  error={members.error}
+                  retry={() => void members.refetch()}
                 />
               )}
             </div>
