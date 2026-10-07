@@ -23,6 +23,16 @@ func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.
 	if e != nil {
 		return reviewqueue.Page{}, e
 	}
+	return s.approvalQueue(ctx, user, f, p, limit, a)
+}
+
+// ApprovalQueueAuthorized reuses the source authorization collected by the
+// central approval queue.
+func (s *Service) ApprovalQueueAuthorized(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, a reviewqueue.Access) (reviewqueue.Page, error) {
+	return s.approvalQueue(ctx, user, f, p, limit, a)
+}
+
+func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, a reviewqueue.Access) (reviewqueue.Page, error) {
 	if !a.Allowed {
 		return reviewqueue.Page{}, pgx.ErrNoRows
 	}
@@ -75,8 +85,22 @@ func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.
 }
 
 func (s *Service) ApprovalPeople(ctx context.Context, user string) ([]string, error) {
-	if e := s.shopAdmin(ctx, user); e != nil {
+	a, e := s.ApprovalAccess(ctx, user)
+	if e != nil {
 		return nil, e
+	}
+	return s.approvalPeople(ctx, a)
+}
+
+// ApprovalPeopleAuthorized reuses the source authorization collected by the
+// central approval context.
+func (s *Service) ApprovalPeopleAuthorized(ctx context.Context, _ string, a reviewqueue.Access) ([]string, error) {
+	return s.approvalPeople(ctx, a)
+}
+
+func (s *Service) approvalPeople(ctx context.Context, a reviewqueue.Access) ([]string, error) {
+	if !a.Allowed {
+		return nil, pgx.ErrNoRows
 	}
 	rows, e := s.approvalBindings(ctx)
 	if e != nil {

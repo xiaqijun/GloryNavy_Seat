@@ -50,8 +50,12 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 			defer wg.Done()
 			result := sourceContextResult{id: source.ID}
 			result.access, result.accessError = source.Access(ctx, user)
-			if result.accessError == nil && result.access.Allowed && source.People != nil {
-				result.people, result.peopleError = source.People(ctx, user)
+			if result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
+				if source.PeopleAuthorized != nil {
+					result.people, result.peopleError = source.PeopleAuthorized(ctx, user, result.access)
+				} else {
+					result.people, result.peopleError = source.People(ctx, user)
+				}
 				result.peopleLoaded = true
 			}
 			results[i] = result
@@ -174,7 +178,11 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 			}
 			if access.Allowed {
 				result.allowed = true
-				result.page, result.queryError = source.Query(ctx, user, f, c.Position, 31)
+				if source.QueryAuthorized != nil {
+					result.page, result.queryError = source.QueryAuthorized(ctx, user, f, c.Position, 31, access)
+				} else {
+					result.page, result.queryError = source.Query(ctx, user, f, c.Position, 31)
+				}
 			}
 			results[i] = result
 		}(i, source)
@@ -278,7 +286,13 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 		if !a.Allowed {
 			return reviewqueue.Item{}, pgx.ErrNoRows
 		}
-		page, e := p.Query(ctx, user, reviewqueue.Filter{View: "history", ID: n}, reviewqueue.Position{}, 1)
+		filter := reviewqueue.Filter{View: "history", ID: n}
+		var page reviewqueue.Page
+		if p.QueryAuthorized != nil {
+			page, e = p.QueryAuthorized(ctx, user, filter, reviewqueue.Position{}, 1, a)
+		} else {
+			page, e = p.Query(ctx, user, filter, reviewqueue.Position{}, 1)
+		}
 		if e != nil {
 			return reviewqueue.Item{}, e
 		}

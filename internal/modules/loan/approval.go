@@ -47,6 +47,16 @@ func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.
 	if err != nil {
 		return reviewqueue.Page{}, err
 	}
+	return s.approvalQueue(ctx, user, f, p, limit, a)
+}
+
+// ApprovalQueueAuthorized reuses the source authorization collected by the
+// central approval queue.
+func (s *Service) ApprovalQueueAuthorized(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, a reviewqueue.Access) (reviewqueue.Page, error) {
+	return s.approvalQueue(ctx, user, f, p, limit, a)
+}
+
+func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, a reviewqueue.Access) (reviewqueue.Page, error) {
 	if !a.Allowed {
 		return reviewqueue.Page{}, pgx.ErrNoRows
 	}

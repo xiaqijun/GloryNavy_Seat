@@ -28,6 +28,17 @@ func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.
 	if e != nil {
 		return reviewqueue.Page{}, e
 	}
+	return s.approvalQueue(ctx, user, f, p, limit, access)
+}
+
+// ApprovalQueueAuthorized reuses the source authorization collected by the
+// central approval queue. The access result is still checked before any data
+// is read, while avoiding a second full corporation scope lookup.
+func (s *Service) ApprovalQueueAuthorized(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, access reviewqueue.Access) (reviewqueue.Page, error) {
+	return s.approvalQueue(ctx, user, f, p, limit, access)
+}
+
+func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int, access reviewqueue.Access) (reviewqueue.Page, error) {
 	if !access.Allowed {
 		return reviewqueue.Page{}, pgx.ErrNoRows
 	}
@@ -98,6 +109,16 @@ func (s *Service) ApprovalPeople(ctx context.Context, user string) ([]string, er
 	if e != nil {
 		return nil, e
 	}
+	return s.approvalPeople(ctx, user, a)
+}
+
+// ApprovalPeopleAuthorized reuses the source authorization collected by the
+// central approval context.
+func (s *Service) ApprovalPeopleAuthorized(ctx context.Context, user string, a reviewqueue.Access) ([]string, error) {
+	return s.approvalPeople(ctx, user, a)
+}
+
+func (s *Service) approvalPeople(ctx context.Context, user string, a reviewqueue.Access) ([]string, error) {
 	if !a.Allowed {
 		return nil, pgx.ErrNoRows
 	}

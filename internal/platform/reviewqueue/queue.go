@@ -62,5 +62,10 @@ type Source struct {
 	ID     string
 	Access func(context.Context, string) (Access, error)
 	Query  func(context.Context, string, Filter, Position, int) (Page, error)
-	People func(context.Context, string) ([]string, error)
+	// QueryAuthorized receives the access result already collected by the
+	// approval aggregator. Sources may use it to avoid repeating the same
+	// permission and scope reads before building their projection.
+	QueryAuthorized  func(context.Context, string, Filter, Position, int, Access) (Page, error)
+	People           func(context.Context, string) ([]string, error)
+	PeopleAuthorized func(context.Context, string, Access) ([]string, error)
 }

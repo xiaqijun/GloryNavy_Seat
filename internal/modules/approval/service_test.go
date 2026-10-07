@@ -112,3 +112,33 @@ func TestListSortsByID(t *testing.T) {
 		t.Fatalf("descending ID sort: %+v %v", p.Items, err)
 	}
 }
+
+func TestListReusesSourceAccessForAuthorizedQuery(t *testing.T) {
+	accessCalls, queryCalls, authorizedCalls := 0, 0, 0
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID: "welfare",
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			accessCalls++
+			return reviewqueue.Access{Allowed: true, Corporations: []reviewqueue.Option{{ID: "10"}}}, nil
+		},
+		Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+			queryCalls++
+			return reviewqueue.Page{}, nil
+		},
+		QueryAuthorized: func(_ context.Context, _ string, _ reviewqueue.Filter, _ reviewqueue.Position, _ int, access reviewqueue.Access) (reviewqueue.Page, error) {
+			authorizedCalls++
+			if !access.Allowed || len(access.Corporations) != 1 {
+				return reviewqueue.Page{}, errors.New("missing access result")
+			}
+			return reviewqueue.Page{Counts: map[string]int64{"pending": 1}}, nil
+		},
+	}}}
+
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accessCalls != 1 || queryCalls != 0 || authorizedCalls != 1 || result.Counts["pending"] != 1 {
+		t.Fatalf("access=%d query=%d authorized=%d result=%+v", accessCalls, queryCalls, authorizedCalls, result)
+	}
+}

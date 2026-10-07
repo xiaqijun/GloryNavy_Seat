@@ -287,6 +287,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
       setSelected(new Set());
       toast.success(msg("已创建批次，请按合同编号合并发放"));
       void client.invalidateQueries({ queryKey: ["approval", "queue", user] });
+      void client.invalidateQueries({ queryKey: ["welfare", "settlements", user] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : msg("批量结算失败，请重试"));
     } finally {
