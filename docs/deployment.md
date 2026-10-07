@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 同步资源类型响应校验修复发布（2026-10-08）
+
+已仅更新公网静态前端至 `v0.1.0-sync-shape-fix-20261008`。角色同步接口返回 `corporation_structures` 目标时，前端现在能够通过响应校验并显示“军团建筑”；后端、数据库、Goose/River 和应用服务未改。公网 `current` 已原子切换，首页/登录 200，OpenResty `nginx -t` 通过。
+
 ## 联盟 PAP 管理员成员积分列表发布（2026-10-08）
 
 已发布 `v0.1.0-alliance-pap-members-20261008`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；无 Goose/River 新迁移，生产 Goose 72。应用 `active/ready`、首页 200、新成员接口匿名 401、模块目录匿名 401、OpenResty `nginx -t` 通过。应用机切换前数据库与配置备份为 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-members-20261008-20261007T182116Z.{dump,env}`。真实管理员成员列表和多角色绑定边界仍按 PAP-03 现场验收。

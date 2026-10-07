@@ -2,6 +2,11 @@
 
 正式发布与发布前开发记录分开维护。生产验收详情见 `docs/project-status.md`。
 
+## v0.1.0-sync-shape-fix-20261008 — 2026-10-08
+
+- 补齐前端同步资源 `corporation_structures` 的类型、响应校验和中英文文案，避免角色同步接口包含军团建筑目标时误报“服务响应格式异常”。
+- 仅更新公网静态前端；首页/登录 200，OpenResty `nginx -t` 通过，后端与数据库未重启。
+
 ## v0.1.0-alliance-pap-members-20261008 — 2026-10-08
 
 - 发布联盟 PAP 管理员成员积分列表与 `GET /api/v1/attendance/alliance-pap/members`：按当前有效绑定账号合计多角色 PAP，显示成员名称、角色明细和达标状态；解绑或归属变化的旧快照行会被排除。无新增 Goose/River 迁移。
