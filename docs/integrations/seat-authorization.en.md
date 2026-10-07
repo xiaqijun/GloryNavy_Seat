@@ -4,7 +4,7 @@
 
 2026-09-16: local wallets are delivered. ManageableCatalog now includes corporation.journal, corporation.transaction and wallet divisions 1…7. Reads require both category and division permissions. ESI source roles are checked separately; current administrators may read active members’ wallets. See [wallet authorization](wallet.en.md).
 
-2026-10-06: the first loan module is available locally. `corporation.loan` may be assigned to an eligible corporation pool manager for corporation pool administration, application review, and guarantee/collateral decisions; a personal pool remains managed by its lender account. It is not deployed to production. Loan mutations still perform object, game-role, and site-permission checks; a catalog entry never replaces authorization. See [loan guide](loan.en.md).
+2026-10-07: the loan module is deployed in `v0.1.0-loan-guarantee-array-20261007-r2`. `corporation.loan` may be assigned to an eligible corporation pool manager for corporation pool administration, application review, and guarantee/collateral decisions; a personal pool remains managed by its lender account. Loan mutations still perform object, game-role, and site-permission checks; a catalog entry never replaces authorization. Real Tranquility contract and member/admin acceptance remain pending. See [loan guide](loan.en.md).
 
 
 Goose 32 raw loss reads require ownership of an active bound character or current site-administrator status, with corporation and binding checks. `corporation.welfare` permits review of submitted case evidence, not all other members' raw losses. Names and QQ/KOOK never establish ownership; removed scope, invalid authorization or changed game owner blocks old evidence. See [character losses](character-losses.en.md).

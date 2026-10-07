@@ -4,7 +4,7 @@
 
 2026-09-16 更新：本地钱包已交付，ManageableCatalog 新增 corporation.journal、corporation.transaction 和 wallet 1…7 分部。读取同时检查业务能力与分部；ESI 来源角色独立校验 Accountant/Junior_Accountant/Director/CEO，分部名仅 Director/CEO。管理员可读取有效绑定成员钱包，详见 [钱包权限](wallet.zh-CN.md)。
 
-2026-10-06 本地新增贷款首期模块：`corporation.loan` 可由管理员配置给军团贷款池管理者，用于创建/管理军团出借池、审核申请及担保/抵押决定；个人出借池仍由出借账号本人管理。该能力尚未生产发布，所有贷款写操作继续执行对象、角色和本站权限检查，不能由目录条目替代鉴权。详见[贷款指南](loan.zh-CN.md)。
+2026-10-07 贷款模块已随 `v0.1.0-loan-guarantee-array-20261007-r2` 发布：`corporation.loan` 可由管理员配置给军团贷款池管理者，用于军团出借管理、申请审核及担保/抵押决定；个人出借池仍由出借账号本人管理。所有贷款写操作继续执行对象、角色和本站权限检查，不能由目录条目替代鉴权。真实 Tranquility 合同和成员/管理员现场验收仍待完成。详见[贷款指南](loan.zh-CN.md)。
 
 
 Goose 32 原始损失读取限本人有效绑定角色或当前站点管理员，需核对当前绑定及军团。`corporation.welfare` 只允许依福利单据范围审核已提交证据，不开放其他成员全部原始损失。新原始记录不通过 QQ/KOOK 或同名关联；scope 移除、失效或游戏所有者变化拒绝旧证据。见[损失同步](character-losses.zh-CN.md)。
