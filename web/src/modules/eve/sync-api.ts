@@ -19,6 +19,7 @@ export interface SyncTarget {
     | "skills"
     | "skillqueue"
     | "killmails"
+    | "corporation_structures"
     | "profile"
     | "authorization"
     | "character_contracts"
@@ -77,6 +78,7 @@ export function isSyncList(v: unknown): v is SyncList {
           "skills",
           "skillqueue",
           "killmails",
+          "corporation_structures",
           "profile",
           "authorization",
           "character_contracts",
@@ -189,6 +191,7 @@ export const resourceLabel = (resource: string) =>
       skills: msg("角色技能"),
       skillqueue: msg("训练队列"),
       killmails: msg("舰船损失"),
+      corporation_structures: msg("军团建筑"),
       profile: msg("基础资料"),
       authorization: msg("ESI 授权"),
       character_contracts: msg("个人合同"),

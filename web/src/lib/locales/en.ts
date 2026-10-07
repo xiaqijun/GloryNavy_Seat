@@ -1191,6 +1191,7 @@ export const english: Record<string, string> = {
   角色技能: "Character skills",
   训练队列: "Training queue",
   舰船损失: "Ship losses",
+  军团建筑: "Corporation structures",
   基础资料: "Basic profile",
   "明细 {0} 项待处理": "{0} details to process",
   "明细 {0} 项待同步": "{0} details to sync",

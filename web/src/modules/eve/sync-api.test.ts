@@ -29,6 +29,7 @@ describe("sync contract", () => {
       "skills",
       "skillqueue",
       "killmails",
+      "corporation_structures",
       "online",
     ];
     const data = {
@@ -38,6 +39,7 @@ describe("sync contract", () => {
     expect(isSyncList(data)).toBe(true);
     expect(resourceLabel("skillqueue")).toBe("训练队列");
     expect(resourceLabel("killmails")).toBe("舰船损失");
+    expect(resourceLabel("corporation_structures")).toBe("军团建筑");
     expect(
       isSyncList({
         available: true,
