@@ -305,16 +305,16 @@ Goose 48 的活动项目、奖励库快照、独立果壳币、成员截图申�
 
 本次发布保留原配置、既有奖励价格与 PAP 手动模式，不补发历史币。
 
-更新：2026-10-05。本页只记录当前能力和最近一次生产交付；历史验收移至[交付历史](history/project-status-through-2026-09-23.md)，未完成事项集中在[待办清单](backlog.md)。
+更新：2026-10-08。本页只记录当前能力和最近一次生产交付；历史验收移至[交付历史](history/project-status-through-2026-09-23.md)，未完成事项集中在[待办清单](backlog.md)。
 
 ## 当前生产
 
 | 项目 | 当前值 |
 | --- | --- |
 | 网站 | https://seat.kisectool.com |
-| 前端版本 | `v0.1.0-approval-fix-20260928` |
-| 后端版本 | `v0.1.0-approval-fix-20260928` |
-| 数据库 | Goose 49；River 使用独立迁移线 |
+| 前端版本 | `v0.1.0-approval-auth-cache-20261008` |
+| 后端版本 | `v0.1.0-approval-auth-cache-20261008` |
+| 数据库 | Goose 72；River 使用独立迁移线 |
 | 入口 | `/` 公开军团介绍，`/login` 登录，`/workspace` 成员工作台 |
 | 游戏环境 | 国际服 Tranquility |
 | 部署 | OpenResty HTTPS / 静态资源 → ZeroTier → systemd Go 服务 → PostgreSQL |
@@ -344,6 +344,8 @@ Goose 48 的活动项目、奖励库快照、独立果壳币、成员截图申�
 “已上线”表示代码与模块已发布，不代表每个真实游戏操作均完成了端到端验收。具体缺口以待办的验收条件为准；不把历史测试数量当成本轮测试。
 
 ## 最近一次发布验证
+
+- `v0.1.0-approval-auth-cache-20261008` 已完成前后端切换，无 Goose/River 新迁移；应用服务 active、NRestarts=0、就绪状态 ready，公网首页/登录为 200，匿名模块目录和系统状态为 401，OpenResty `nginx -t` 通过。审批中心授权读取复用和批量结算缓存失效已随同一版本发布，生产加载耗时仍待真实管理员会话复测。
 
 - `v0.1.0-approval-fix-20260928` 已完成前后端切换，无 Goose/River 迁移；应用服务 active、NRestarts=0、就绪状态 ready，公网首页与 `/approvals` 为 200，匿名受保护审批接口为 401。序号排序游标、待领取合同归类的回归测试以及 Go 全量测试、前端 lint/build 均通过。
 
