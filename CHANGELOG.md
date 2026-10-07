@@ -2,9 +2,10 @@
 
 正式发布与发布前开发记录分开维护。生产验收详情见 `docs/project-status.md`。
 
-## 未发布
+## v0.1.0-alliance-pap-members-20261008 — 2026-10-08
 
-- 联盟 PAP 页面新增站点管理员成员积分列表与 `GET /api/v1/attendance/alliance-pap/members`：按当前有效绑定账号合计多角色 PAP，显示成员名称、角色明细和达标状态；解绑或归属变化的旧快照行会被排除。无新增 Goose/River 迁移。
+- 发布联盟 PAP 管理员成员积分列表与 `GET /api/v1/attendance/alliance-pap/members`：按当前有效绑定账号合计多角色 PAP，显示成员名称、角色明细和达标状态；解绑或归属变化的旧快照行会被排除。无新增 Goose/River 迁移。
+- 应用与公网静态站点已切换，应用 `active/ready`、Goose 72、首页 200、成员接口匿名 401、OpenResty `nginx -t` 通过。
 
 ## v0.1.0-approval-auth-cache-20261008 — 2026-10-08
 

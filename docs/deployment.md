@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 联盟 PAP 管理员成员积分列表发布（2026-10-08）
+
+已发布 `v0.1.0-alliance-pap-members-20261008`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；无 Goose/River 新迁移，生产 Goose 72。应用 `active/ready`、首页 200、新成员接口匿名 401、模块目录匿名 401、OpenResty `nginx -t` 通过。应用机切换前数据库与配置备份为 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-members-20261008-20261007T182116Z.{dump,env}`。真实管理员成员列表和多角色绑定边界仍按 PAP-03 现场验收。
+
 ## 审批中心读取优化发布（2026-10-08）
 
 已发布 `v0.1.0-approval-auth-cache-20261008`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；无 Goose/River 新迁移。审批上下文、列表和详情复用本次请求已取得的来源授权结果，并在创建批量结算后失效结算批次缓存。应用 `active/ready`、重启次数 0、公网首页/登录 200、匿名模块目录和系统状态 401，公网 OpenResty `nginx -t` 通过。生产加载耗时改善仍需真实管理员会话复测。
