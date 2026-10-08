@@ -204,6 +204,8 @@ export const english: Record<string, string> = {
   "{0} 个成员": "{0} members",
   "{0} 个角色": "{0} characters",
   "暂无已绑定成员联盟 PAP": "No bound members with alliance PAP",
+  "查看月份": "View month",
+  "暂无可查看的联盟 PAP 月份": "No complete alliance PAP months available",
   "兑换联盟 PAP": "Convert alliance PAP",
   "联盟 PAP 按当前月快照结算，已兑换部分不重复发币。": "Alliance PAP is settled from the current-month snapshot; converted points are not issued twice.",
   "联盟 PAP 按所选月份快照结算，已兑换部分不重复发币。": "Alliance PAP is settled from the selected month's snapshot; converted points are not issued twice.",

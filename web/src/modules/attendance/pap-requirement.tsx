@@ -14,6 +14,7 @@ import { AllianceCoinConversion } from "./alliance-coin-conversion";
 import {
   getAlliancePAP,
   getAlliancePAPMembers,
+  getAlliancePAPMemberMonths,
   getPAPRequirement,
   type Requirement,
 } from "./alliance-pap-api";
@@ -36,6 +37,7 @@ export function PAPRequirement({
   const session = useSession(settings);
   const [editing, setEditing] = useState<Requirement | null>(null);
   const [value, setValue] = useState(3);
+  const [memberMonth, setMemberMonth] = useState("");
   const q = useQuery({
     queryKey: ["attendance", "pap-requirement", user],
     queryFn: ({ signal }) => getPAPRequirement(signal),
@@ -46,10 +48,17 @@ export function PAPRequirement({
     queryFn: ({ signal }) => getAlliancePAP(signal),
     refetchInterval: 30000,
   });
+  const memberMonths = useQuery({
+    queryKey: ["attendance", "alliance-pap-member-months", user],
+    queryFn: ({ signal }) => getAlliancePAPMemberMonths(signal),
+    enabled: alliance.data?.can_manage === true,
+    refetchInterval: 30000,
+  });
+  const effectiveMemberMonth = memberMonth || memberMonths.data?.months[0] || "";
   const members = useQuery({
-    queryKey: ["attendance", "alliance-pap-members", user, alliance.data?.month ?? ""],
-    queryFn: ({ signal }) => getAlliancePAPMembers(alliance.data!.month, signal),
-    enabled: alliance.data?.can_manage === true && alliance.data.available,
+    queryKey: ["attendance", "alliance-pap-members", user, effectiveMemberMonth],
+    queryFn: ({ signal }) => getAlliancePAPMembers(effectiveMemberMonth, signal),
+    enabled: alliance.data?.can_manage === true && !!effectiveMemberMonth,
     refetchInterval: 30000,
   });
   const save = useMutation({
@@ -205,12 +214,15 @@ export function PAPRequirement({
                   version={alliance.data.version}
                 />
               )}
-              {alliance.data?.can_manage && alliance.data.available && (
+              {alliance.data?.can_manage && (
                 <AlliancePAPMembers
                   report={members.data}
-                  loading={members.isLoading}
-                  error={members.error}
-                  retry={() => void members.refetch()}
+                  loading={memberMonths.isLoading || members.isLoading}
+                  error={memberMonths.error || members.error}
+                  months={memberMonths.data?.months ?? []}
+                  month={effectiveMemberMonth}
+                  onMonthChange={setMemberMonth}
+                  retry={() => { void memberMonths.refetch(); void members.refetch(); }}
                 />
               )}
             </div>

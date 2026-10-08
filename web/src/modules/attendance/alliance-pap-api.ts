@@ -136,6 +136,14 @@ export const isAlliancePAPMembersReport = (v: unknown): v is AlliancePAPMembersR
 export const getAlliancePAPMembers = (month: string, signal?: AbortSignal) =>
   getData(`/api/v1/attendance/alliance-pap/members?month=${encodeURIComponent(month)}`, isAlliancePAPMembersReport, signal);
 
+export const getAlliancePAPMemberMonths = (signal?: AbortSignal) =>
+  getData(
+    "/api/v1/attendance/alliance-pap/member-months",
+    (v: unknown): v is { months: string[] } =>
+      object(v) && Array.isArray(v.months) && v.months.every((month) => typeof month === "string" && /^\d{4}-\d{2}$/.test(month)),
+    signal,
+  );
+
 export type AlliancePAPConversionMonth = {
   month: string;
   version: string;

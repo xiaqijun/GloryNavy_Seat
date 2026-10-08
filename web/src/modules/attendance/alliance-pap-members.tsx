@@ -7,11 +7,17 @@ export function AlliancePAPMembers({
   report,
   loading,
   error,
+  months,
+  month,
+  onMonthChange,
   retry,
 }: {
   report?: AlliancePAPMembersReport;
   loading: boolean;
   error: Error | null;
+  months: string[];
+  month: string;
+  onMonthChange: (month: string) => void;
   retry: () => void;
 }) {
   return (
@@ -24,6 +30,14 @@ export function AlliancePAPMembers({
           <small>{msg("{0} 个成员", report.members.length)}</small>
         )}
       </div>
+      {months.length > 0 && (
+        <label>
+          {msg("查看月份")}
+          <select value={month} onChange={(event) => onMonthChange(event.target.value)}>
+            {months.map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+      )}
       {loading ? (
         <span className="pap-alliance-empty" role="status">{msg("正在读取")}</span>
       ) : error ? (
@@ -31,6 +45,8 @@ export function AlliancePAPMembers({
           <span>{error.message}</span>
           <Button variant="ghost" onClick={retry}>{msg("重试")}</Button>
         </div>
+      ) : months.length === 0 ? (
+        <span className="pap-alliance-empty">{msg("暂无可查看的联盟 PAP 月份")}</span>
       ) : !report?.available || report.members.length === 0 ? (
         <span className="pap-alliance-empty">{msg("暂无已绑定成员联盟 PAP")}</span>
       ) : (

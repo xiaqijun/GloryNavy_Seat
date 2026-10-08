@@ -86,6 +86,43 @@ type AlliancePAPMembersReport struct {
 	Members      []AlliancePAPMember `json:"members"`
 }
 
+// AlliancePAPMemberMonths lists complete snapshots that administrators may
+// select when reviewing member totals.
+func (s *Service) AlliancePAPMemberMonths(ctx context.Context, user string) ([]string, error) {
+	if s.Administrator == nil || s.Pool == nil {
+		return nil, pgx.ErrNoRows
+	}
+	ok, err := s.Administrator(ctx, user)
+	if err != nil || !ok {
+		return nil, pgx.ErrNoRows
+	}
+	q := store.New(s.Pool)
+	histories, err := q.AlliancePAPSyncHistories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	months := make([]string, 0, len(histories)+1)
+	seen := make(map[string]struct{}, len(histories)+1)
+	current, err := q.AlliancePAPSync(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if current.Month.Year() >= 2020 && ((current.State == "ready" && current.Complete) || (current.State == "error" && current.RecordsTotal > 0)) {
+		value := current.Month.Format("2006-01")
+		months = append(months, value)
+		seen[value] = struct{}{}
+	}
+	for _, history := range histories {
+		value := history.Month.Format("2006-01")
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		months = append(months, value)
+		seen[value] = struct{}{}
+	}
+	return months, nil
+}
+
 type AlliancePAPMember struct {
 	UserID     string                 `json:"user_id"`
 	Name       string                 `json:"name"`
@@ -502,7 +539,10 @@ func (s *Service) AlliancePAPMembersReport(ctx context.Context, user, monthValue
 			t := sync.LastSyncedAt.Time
 			out.LastSyncedAt = &t
 		}
-		out.Available = sync.Month.Equal(month) && sync.State == "ready" && sync.Complete
+		// An upstream failure does not erase a locally retained snapshot. Admin
+		// member review may use those rows while the response still exposes the
+		// error state for the UI to surface.
+		out.Available = sync.Month.Equal(month) && ((sync.State == "ready" && sync.Complete) || (sync.State == "error" && sync.RecordsTotal > 0))
 	} else {
 		histories, historyErr := q.AlliancePAPSyncHistories(ctx)
 		if historyErr != nil {
