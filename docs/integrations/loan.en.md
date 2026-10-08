@@ -10,7 +10,7 @@ The shared pool is a fixed singleton. The module migration creates one open corp
 
 Payment verification uses the existing EVE contract cache service. Disbursement requires a finished contract, exact amount, and the borrower receiving character. Repayment may be partial and is allocated from the earliest unpaid installment while preserving principal and interest detail. One in-game contract can be claimed by only one delivery module; retries do not credit twice.
 
-The module exposes the authenticated `loan.self` routes described in the Chinese guide, including contribution submission and deposit verification. Corporation contributions and custody configuration additionally check `corporation.loan`. Goose migrations 71 and 72 add the shared-pool contribution, cash ledger, and credit evaluation tables. The page appears when `loan` is enabled in `MODULES`.
+The module exposes the authenticated `loan.self` routes described in the Chinese guide, including contribution submission and deposit verification. Corporation contributions and custody configuration additionally check `corporation.loan`. Goose migrations 71–73 add the shared-pool contribution, cash ledger, credit evaluation tables, and the fixed shared-pool seed. The page appears when `loan` is enabled in `MODULES`.
 
 Pending corporation-pool applications are also exposed as the `loan` source in the approval center. The center is read-only and reuses this module's review endpoint; personal lender decisions stay on the loan page.
 
