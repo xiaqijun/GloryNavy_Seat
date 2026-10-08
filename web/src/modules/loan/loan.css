@@ -287,6 +287,11 @@
   color: var(--muted);
   font-size: 13px;
 }
+.loan-contract-copy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .loan-contract-copy {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -294,18 +299,45 @@
   gap: 8px;
 }
 .loan-contract-copy label {
+  display: grid;
+  gap: 6px;
   min-width: 0;
+  font-size: 13px;
 }
-.loan-contract-copy input,
-.loan-contract-copy textarea {
+.loan-contract-copy.wide {
+  grid-column: 1 / -1;
+}
+.loan-contract-copy input {
   width: 100%;
-  min-height: 128px;
-  resize: vertical;
-  white-space: pre-wrap;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 13px;
+}
+.loan-contract-copy input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 .loan-contract-copy small {
   grid-column: 1 / -1;
   color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.loan-contract-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.loan-contract-manual-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 .loan-detail-dialog h3 {
   margin: 18px 0 8px;
@@ -373,6 +405,12 @@
   .loan-action-bar {
     grid-template-columns: 1fr;
     gap: 14px;
+  }
+  .loan-contract-copy-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .loan-contract-copy.wide {
+    grid-column: auto;
   }
   .loan-title h1 {
     font-size: 24px;
