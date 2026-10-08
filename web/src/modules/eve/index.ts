@@ -23,15 +23,6 @@ export const eveModule: FrontendModule = {
       load: () => import("./sync-page"),
     },
     {
-      id: "eve.login",
-      path: "/login",
-      label: msg("EVE 登录"),
-      icon: UserRound,
-      navigation: false,
-      layout: "standalone",
-      load: () => import("./login-page"),
-    },
-    {
       id: "eve.account",
       path: "/account",
       label: msg("我的角色"),

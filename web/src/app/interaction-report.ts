@@ -14,7 +14,7 @@ export const diagnosticPages = new Set([
   "/members",
   "/access",
   "/account",
-  "/login",
+  "/",
   "other",
 ]);
 export const diagnosticKinds = new Set([

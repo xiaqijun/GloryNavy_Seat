@@ -135,7 +135,7 @@ export default function Workspace() {
   if (!modules.includes("identity")) return <StatusOverview system />;
   if (session.isError) return <Failure retry={() => void session.refetch()} />;
   if (!session.data) return <p role="status">{msg("正在读取")}</p>;
-  if (!session.data.session) return <Navigate to="/login" replace />;
+  if (!session.data.session) return <Navigate to="/" replace />;
   return <Dashboard session={session.data.session} modules={modules} />;
 }
 function Dashboard({

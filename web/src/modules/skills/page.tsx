@@ -74,7 +74,7 @@ export default function SkillsPage() {
   const [params] = useSearchParams();
   if (session.isError) return <p role="alert">{session.error.message}</p>;
   if (!session.isSuccess) return <p role="status">{msg("正在读取")}</p>;
-  if (!session.data.session) return <Navigate to="/login" replace />;
+  if (!session.data.session) return <Navigate to="/" replace />;
   return (
     <Workspace
       key={session.data.session.user_id + (params.get("member") ?? "")}

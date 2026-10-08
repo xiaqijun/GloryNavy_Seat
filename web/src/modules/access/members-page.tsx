@@ -57,7 +57,7 @@ function Feedback({
 export default function MembersPage() {
   const { session, access } = useManagementAccess();
   if (session.isSuccess && !session.data.session)
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   if (session.isError || access.isError)
     return (
       <Feedback

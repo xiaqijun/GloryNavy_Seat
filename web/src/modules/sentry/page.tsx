@@ -31,7 +31,7 @@ export default function SentryPage() {
   const session = useSession();
   if (session.isError) return <p role="alert">{session.error.message}</p>;
   if (!session.data) return <p role="status">{msg("正在读取")}</p>;
-  if (!session.data.session) return <Navigate to="/login" replace />;
+  if (!session.data.session) return <Navigate to="/" replace />;
   return <Workspace csrf={session.data.session.csrf_token} />;
 }
 

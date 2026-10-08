@@ -85,7 +85,7 @@ export default function MemberApp() {
   }, [memberSession.data?.session?.user_id, visibleNavigationIds]);
   const guardHome =
     location.pathname === "/workspace" &&
-    pages.some((page) => page.id === "eve.login");
+    pages.some((page) => page.id === "eve.account");
   const homeSession = useSession(guardHome);
   const standalone =
     (guardHome && !homeSession.data?.session) ||
@@ -102,7 +102,7 @@ export default function MemberApp() {
   if (memberSession.isError)
     return <p role="alert">{memberSession.error.message}</p>;
   if (!memberSession.data) return <p role="status">{msg("正在加载")}</p>;
-  if (!memberSession.data.session) return <Navigate to="/login" replace />;
+  if (!memberSession.data.session) return <Navigate to="/" replace />;
   return (
     <div className={standalone ? "auth-shell" : "app-shell"}>
       <a className="skip-link" href="#main">
@@ -138,7 +138,7 @@ export default function MemberApp() {
             </span>
             <div className="topbar-actions">
               <LanguageSwitch />
-              {pages.some((page) => page.id === "eve.login") && (
+              {pages.some((page) => page.id === "eve.account") && (
                 <AccountEntry />
               )}
             </div>
@@ -174,7 +174,7 @@ export default function MemberApp() {
               </IconAction>
             </div>
           ) : guardHome && !homeSession.data?.session ? (
-            <Navigate to="/login" replace />
+            <Navigate to="/" replace />
           ) : administratorPage &&
             !currentPageVisible &&
             management.access.isPending ? (

@@ -30,7 +30,7 @@ export default function WalletPage() {
   const s = useSession();
   if (s.isError) return <p role="alert">{s.error.message}</p>;
   if (!s.data) return <p role="status">{msg("正在读取")}</p>;
-  if (!s.data.session) return <Navigate to="/login" replace />;
+  if (!s.data.session) return <Navigate to="/" replace />;
   return (
     <Workspace key={s.data.session.user_id} user={s.data.session.user_id} />
   );

@@ -74,7 +74,7 @@ export default function WelfarePage() {
   const s = useSession();
   if (s.isError) return <p role="alert">{s.error.message}</p>;
   if (!s.data) return <p role="status">{msg("正在读取")}</p>;
-  if (!s.data.session) return <Navigate to="/login" replace />;
+  if (!s.data.session) return <Navigate to="/" replace />;
   return (
     <Workspace user={s.data.session.user_id} csrf={s.data.session.csrf_token} />
   );

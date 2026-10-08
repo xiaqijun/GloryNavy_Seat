@@ -69,7 +69,7 @@ function Feedback({
 export default function ContractsPage() {
   const session = useSession();
   if (session.isSuccess && !session.data.session)
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   if (session.isError)
     return (
       <Feedback error={session.error} retry={() => void session.refetch()} />

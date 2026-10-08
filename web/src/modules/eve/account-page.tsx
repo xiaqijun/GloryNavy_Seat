@@ -43,7 +43,7 @@ export default function AccountPage() {
     onSuccess: async () => {
       await client.cancelQueries();
       client.clear();
-      window.location.replace("/login");
+      window.location.replace("/");
     },
   });
   const session = auth.data?.session;
@@ -80,7 +80,7 @@ export default function AccountPage() {
       ) {
         await client.cancelQueries();
         client.clear();
-        window.location.replace("/login");
+        window.location.replace("/");
         return;
       }
       await client.invalidateQueries({ queryKey: ["identity"] });
@@ -151,7 +151,7 @@ export default function AccountPage() {
       </div>
     </div>
   );
-  if (auth.isSuccess && !session) return <Navigate to="/login" replace />;
+  if (auth.isSuccess && !session) return <Navigate to="/" replace />;
   return (
     <div className="account-page">
       <div className="page-heading">

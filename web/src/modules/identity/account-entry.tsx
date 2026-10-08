@@ -11,7 +11,7 @@ export function AccountEntry() {
     query.data?.session?.character.name;
   return (
     <IconAction label={name ? msg("账号：{0}", name) : msg("EVE 登录")} asChild>
-      <Link to={name ? "/account" : "/login"}>
+      <Link to={name ? "/account" : "/"}>
         {name ? <UserRound aria-hidden="true" /> : <LogIn aria-hidden="true" />}
       </Link>
     </IconAction>

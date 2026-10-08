@@ -37,7 +37,7 @@ import "./sync.css";
 export default function SyncPage() {
   const { session, access } = useManagementAccess();
   if (session.isSuccess && !session.data.session)
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   if (session.isError || access.isError)
     return (
       <div className="sync-feedback" role="alert">

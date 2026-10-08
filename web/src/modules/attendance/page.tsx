@@ -84,7 +84,7 @@ export default function AttendancePage() {
       <Feedback error={session.error} retry={() => void session.refetch()} />
     );
   if (!session.isSuccess) return <Feedback />;
-  if (!session.data.session) return <Navigate to="/login" replace />;
+  if (!session.data.session) return <Navigate to="/" replace />;
   return (
     <Workspace
       user={session.data.session.user_id}

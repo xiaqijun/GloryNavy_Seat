@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useSession } from "@/modules/identity";
 import { EveSignInButton } from "@/modules/eve/login-components";
+import { useLoginError } from "@/modules/eve/use-login-error";
 import { msg } from "@/lib/i18n";
 import "./landing.css";
 import {
@@ -20,6 +21,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 export default function LandingPage() {
   const root = useRef<HTMLDivElement>(null);
   const session = useSession();
+  const loginError = useLoginError();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
     "idle",
   );
@@ -168,6 +170,11 @@ export default function LandingPage() {
           </nav>
           <div className="landing-account">
             <LanguageSwitch />
+            {loginError && (
+              <p className="landing-login-error" role="alert">
+                {loginError}
+              </p>
+            )}
             {session.data?.session ? (
               <Link className="landing-login" to="/workspace">
                 {msg("进入工作台")}

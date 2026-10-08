@@ -41,7 +41,7 @@ import "./management.css";
 export default function ManagementPage() {
   const { session, access, allowed } = useManagementAccess();
   if (session.isSuccess && !session.data.session)
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   if (session.isError || access.isError)
     return (
       <Feedback

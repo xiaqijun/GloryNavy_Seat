@@ -37,7 +37,7 @@ export default function FittingsPage() {
   const [p] = useSearchParams();
   if (s.isError) return <p role="alert">{s.error.message}</p>;
   if (!s.isSuccess) return <p role="status">{msg("正在读取")}</p>;
-  if (!s.data.session) return <Navigate to="/login" replace />;
+  if (!s.data.session) return <Navigate to="/" replace />;
   return (
     <Library
       key={s.data.session.user_id + (p.get("member") ?? "")}

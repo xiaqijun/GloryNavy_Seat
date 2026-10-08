@@ -72,6 +72,17 @@
 .landing-account {
   gap: 12px;
 }
+.landing-login-error {
+  max-width: 260px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  background: #450a0a99;
+  color: #fecaca;
+  font-size: 12px;
+  line-height: 18px;
+}
 .landing-account .language-switch {
   color: #fff;
 }

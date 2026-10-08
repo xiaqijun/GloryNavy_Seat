@@ -210,7 +210,7 @@ function financeTrendPoints(items: walletApi.FinanceTrendPoint[], field: "net" |
 
 export default function OperationsPage() {
   const { session, access } = useManagementAccess();
-  if (session.isSuccess && !session.data.session) return <Navigate to="/login" replace />;
+  if (session.isSuccess && !session.data.session) return <Navigate to="/" replace />;
   if (session.isError || access.isError)
     return <Feedback error={session.error ?? access.error ?? undefined} />;
   if (!access.isSuccess || !session.data?.session) return <Feedback />;
