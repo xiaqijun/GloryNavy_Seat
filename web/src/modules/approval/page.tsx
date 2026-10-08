@@ -181,7 +181,6 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     refetchInterval: 30000,
     staleTime: 15000,
     refetchOnWindowFocus: false,
-    placeholderData: keepPreviousData,
   });
   const batches = useQuery({
     queryKey: ["welfare", "settlements", user],
