@@ -1,6 +1,7 @@
 import { Check, UsersRound } from "lucide-react";
 import { getLocale, msg } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import type { AlliancePAPMembersReport } from "./alliance-pap-api";
 
 export function AlliancePAPMembers({
@@ -31,12 +32,14 @@ export function AlliancePAPMembers({
         )}
       </div>
       {months.length > 0 && (
-        <label>
-          {msg("查看月份")}
-          <select value={month} onChange={(event) => onMonthChange(event.target.value)}>
-            {months.map((value) => <option key={value} value={value}>{value}</option>)}
-          </select>
-        </label>
+        <div className="pap-alliance-member-month">
+          <Select
+            label={msg("查看月份")}
+            value={month}
+            onValueChange={onMonthChange}
+            options={months.map((value) => ({ value, label: value }))}
+          />
+        </div>
       )}
       {loading ? (
         <span className="pap-alliance-empty" role="status">{msg("正在读取")}</span>

@@ -32,6 +32,8 @@
 .pap-alliance-empty { padding: 18px 0; }
 .pap-alliance-members { display: grid; gap: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
 .pap-alliance-members .pap-alliance-details-heading strong { display: inline-flex; align-items: center; gap: 6px; }
+.pap-alliance-member-month { display: flex; justify-content: flex-start; }
+.pap-alliance-member-month .ui-select-trigger { min-width: 132px; }
 .pap-alliance-member-list { display: grid; gap: 0; }
 .pap-alliance-member { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .pap-alliance-member-name { display: grid; gap: 3px; min-width: 0; }
