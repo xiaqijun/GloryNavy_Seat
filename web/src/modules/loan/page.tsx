@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Check, Copy, Landmark, RefreshCw, ShieldCheck } from "lucide-react";
+import { Check, ChevronRight, Copy, Landmark, RefreshCw, ShieldCheck } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/form-dialog";
-import { msg } from "@/lib/i18n";
+import { Modal } from "@/components/ui/dialog";
+import { IconAction } from "@/components/ui/icon-action";
+import { getLocale, msg } from "@/lib/i18n";
 import { getCharacters, useSession, type BoundCharacter } from "@/modules/identity";
 import * as api from "./api";
 import "./loan.css";
@@ -38,7 +40,7 @@ function Workspace({ csrf, userId }: { csrf: string; userId: string }) {
     {context.data?.credit && <><section className="loan-credit loan-credit-assessment"><div><span>{msg("系统信用评分")}</span><strong>{context.data.credit.score ?? "—"}/100</strong><small>{msg("系统自动评估")}</small></div><div><span>{msg("系统总额度")}</span><strong>{money(context.data.credit.total_limit_minor)}</strong><small>{msg("按评估结果动态计算")}</small></div><div><span>{msg("系统无担保额度")}</span><strong>{money(context.data.credit.unsecured_limit_minor)}</strong><small>{msg("按评估结果动态计算")}</small></div></section><section className="loan-credit-factors" aria-label={msg("评分因子")}><div><span>{msg("履约")}</span><strong>{context.data.credit.repayment_points ?? 0}/55</strong></div><div><span>{msg("负债压力")}</span><strong>{context.data.credit.leverage_points ?? 0}/20</strong></div><div><span>{msg("担保/抵押履历")}</span><strong>{context.data.credit.security_points ?? 0}/10</strong></div><div><span>{msg("PAP 辅助")}</span><strong>{context.data.credit.pap_points ?? 0}/5</strong></div><div><span>{msg("资产规模辅助")}</span><strong>{context.data.credit.asset_points ?? 0}/10</strong></div></section></>}
     {context.data?.credit.state !== "active" && <div className="loan-notice" role="status"><ShieldCheck size={18} aria-hidden="true" /><span>{msg("系统信用评估尚未通过，审批前需要完成履约评估。")}</span></div>}
     <div className="loan-action-bar" aria-label={msg("贷款")}><div className="loan-action-option"><div><strong>{msg("提交出借额度")}</strong><p>{msg("出借方先提交额度，再创建转入统一托管方的 ISK 合同；完成核验后才计入可放贷余额。")}</p></div><Button variant="outline" onClick={() => { setContributionMessage(""); setContributionOpen(true); }} disabled={pools.length === 0 || characterOptions.length === 0}>{msg("开始出借")}</Button></div><div className="loan-action-option"><div><strong>{msg("提交贷款申请")}</strong><p>{msg("固定总利息按期等额分期，所有申请自动进入全站唯一贷款池。")}</p></div><Button onClick={() => { setMessage(""); setApplicationOpen(true); }} disabled={context.isPending || pools.length === 0 || characterOptions.length === 0}>{msg("开始申请")}</Button></div>{contributionMessage && !contributionOpen && <p className="loan-form-message" role="status">{contributionMessage}</p>}{message && !applicationOpen && <p className="loan-form-message" role="alert">{message}</p>}{contributionOpen && <FormDialog title={msg("提交出借额度")} close={() => { if (!contributionBusy) setContributionOpen(false); }} busy={contributionBusy} submitLabel={msg("提交出借额度")} disabled={pools.length === 0 || characterOptions.length === 0} className="loan-form loan-contribution-form" onSubmit={contribute}><label>{msg("出借类型")}<select autoFocus value={contributionKind} onChange={(e) => setContributionKind(e.target.value as "personal" | "corporation")}><option value="personal">{msg("个人")}</option><option value="corporation">{msg("军团")}</option></select></label><CharacterSelect label={msg("出借角色")} characters={characterOptions} value={contributionCharacter || characterOptions[0]?.id || ""} onChange={setContributionCharacter} />{contributionKind === "corporation" && <label>{msg("出借军团 ID")}<input value={contributionCorporation} onChange={(e) => setContributionCorporation(e.target.value)} inputMode="numeric" required /></label>}<label>{msg("出借额度（ISK）")}<input value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} inputMode="decimal" required /></label>{contributionMessage && <p className="loan-form-message" role="alert">{contributionMessage}</p>}</FormDialog>}{applicationOpen && <FormDialog title={msg("提交贷款申请")} close={() => { if (!applicationBusy) setApplicationOpen(false); }} busy={applicationBusy} submitLabel={msg("提交申请")} disabled={pools.length === 0 || characterOptions.length === 0} className="loan-form loan-application-form" onSubmit={submit}><p className="loan-dialog-note">{msg("申请会自动进入全站唯一贷款池，提交后等待评分、额度、担保或抵押审批。")}</p><CharacterSelect label={msg("收款角色")} characters={characterOptions} value={character || characterOptions[0]?.id || ""} onChange={setCharacter} autoFocus /><label>{msg("本金（ISK）")}<input value={principal} onChange={(e) => setPrincipal(e.target.value)} inputMode="decimal" required /></label><label>{msg("总利息（ISK）")}<input value={interest} onChange={(e) => setInterest(e.target.value)} inputMode="decimal" required /></label><label>{msg("期数")}<input value={count} onChange={(e) => setCount(e.target.value)} inputMode="numeric" required /></label><label>{msg("间隔天数")}<input value={interval} onChange={(e) => setInterval(e.target.value)} inputMode="numeric" required /></label><label>{msg("首期到期时间")}<input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} required /></label>{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}</div>
-    {(contributions.data?.items.length ?? 0) > 0 && <section className="loan-list"><div className="loan-section-head"><h2>{msg("出借记录")}</h2></div><div className="loan-contributions">{contributions.data?.items.map((item) => <ContributionRow key={item.id} csrf={csrf} item={item} pool={pools[0]} characters={characterOptions} onDone={() => void Promise.all([contributions.refetch(), context.refetch()])} />)}</div></section>}
+    {(contributions.data?.items.length ?? 0) > 0 && <section className="loan-list"><div className="loan-section-head"><h2>{msg("出借记录")}</h2></div><div className="loan-deposit-list" role="list">{contributions.data?.items.map((item) => <ContributionRow key={item.id} csrf={csrf} item={item} pool={pools[0]} characters={characterOptions} onDone={() => void Promise.all([contributions.refetch(), context.refetch()])} />)}</div></section>}
     {(guarantees.data?.items.length ?? 0) > 0 && <section className="loan-list"><div className="loan-section-head"><div><h2>{msg("待我确认的担保")}</h2><p>{msg("接受担保会占用你的系统责任额度，贷款结清后自动释放。")}</p></div></div><div className="loan-contributions">{guarantees.data?.items.map((item) => <GuaranteeInvite key={item.id} csrf={csrf} item={item} onDone={() => void Promise.all([guarantees.refetch(), context.refetch()])} />)}</div></section>}
     <section className="loan-list"><div className="loan-section-head"><h2>{msg("我的贷款")}</h2></div>{list.isPending ? <p role="status">{msg("正在读取")}</p> : list.data?.items.length ? <div className="loan-table-wrap"><table><thead><tr><th>{msg("编号")}</th><th>{msg("贷款池")}</th><th>{msg("本金")}</th><th>{msg("总应还")}</th><th>{msg("状态")}</th><th>{msg("操作")}</th></tr></thead><tbody>{list.data.items.map((item) => <CaseRow key={item.id} csrf={csrf} userId={userId} item={item} administrator={Boolean(context.data?.administrator)} onDone={refresh} />)}</tbody></table></div> : <div className="loan-empty"><Landmark size={28} aria-hidden="true" /><p>{msg("暂无贷款记录")}</p></div>}</section>
   </div>;
@@ -48,20 +50,82 @@ function CharacterSelect({ label, characters, value, onChange, autoFocus = false
   return <label>{label}<select autoFocus={autoFocus} value={value} onChange={(event) => onChange(event.target.value)} required><option value="" disabled>{msg("请选择角色")}</option>{characters.map((character) => <option key={character.id} value={character.id}>{character.name}{character.is_main ? `（${msg("主角色")}）` : ""}</option>)}</select></label>;
 }
 
-function CopyField({ label, value, action, wide = false }: { label: string; value: string; action: string; wide?: boolean }) {
+function CopyField({ label, value }: { label: string; value: string }) {
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
-  return <div className={`loan-contract-copy${wide ? " wide" : ""}`}><label>{label}<input readOnly value={value} onFocus={(event) => event.currentTarget.select()} /></label><Button type="button" variant="outline" aria-label={action} title={action} disabled={!value} onClick={async () => { try { await navigator.clipboard.writeText(value); setStatus("copied"); } catch { setStatus("failed"); } }}>{status === "copied" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}</Button>{status === "copied" && <small role="status">{msg("已复制")}</small>}{status === "failed" && <small role="alert">{msg("复制失败，请手动复制")}</small>}</div>;
+  return <div className="loan-contract-copy">
+    <label>{label}<input readOnly value={value} onFocus={(event) => event.currentTarget.select()} /></label>
+    <IconAction type="button" label={msg("复制 {0}", label)} disabled={!value} onClick={async () => {
+      try { await navigator.clipboard.writeText(value); setStatus("copied"); }
+      catch { setStatus("failed"); }
+    }}>{status === "copied" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}</IconAction>
+    {status === "copied" && <small role="status">{msg("已复制")}</small>}
+    {status === "failed" && <small role="alert">{msg("复制失败，请手动复制")}</small>}
+  </div>;
 }
 
 function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: string; item: api.Contribution; pool?: api.Pool; characters: BoundCharacter[]; onDone: () => void }) {
-  const [kind, setKind] = useState<"character" | "corporation">("character"); const [owner, setOwner] = useState(""); const [contract, setContract] = useState(""); const [message, setMessage] = useState(""); const [autoBusy, setAutoBusy] = useState(false);
-  const deposit = async (event: FormEvent) => { event.preventDefault(); setMessage(""); try { await api.depositContribution(csrf, item.id, { version: item.version, contract_kind: kind, contract_owner_id: Number(owner), contract_id: Number(contract) }); onDone(); } catch (e) { setMessage(e instanceof Error ? e.message : msg("入金合同核验失败")); } };
-  const autoVerify = async () => { setAutoBusy(true); setMessage(""); try { await api.autoVerifyContribution(csrf, item.id, { version: item.version }); onDone(); } catch (e) { setMessage(e instanceof Error ? e.message : msg("自动核验未找到匹配合同")); } finally { setAutoBusy(false); } };
-  const cancel = async () => { setMessage(""); try { await api.cancelContribution(csrf, item.id, { version: item.version }); onDone(); } catch (e) { setMessage(e instanceof Error ? e.message : msg("出借额度取消失败")); } };
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<"character" | "corporation">(item.lender_kind === "corporation" ? "corporation" : "character");
+  const [owner, setOwner] = useState(item.lender_kind === "corporation" ? item.corporation_id ?? "" : item.source_character_id);
+  const [contract, setContract] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const run = async (action: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true); setMessage("");
+    try { await action(); onDone(); setOpen(false); }
+    catch (e) { setMessage(e instanceof Error ? e.message : msg("入金合同核验失败")); }
+    finally { setBusy(false); }
+  };
   const sourceName = characters.find((character) => character.id === item.source_character_id)?.name ?? item.source_character_id;
-  const recipient = pool?.corporation_id ? `${pool.name}（${msg("军团")} ID ${pool.corporation_id}）` : pool?.custodian_character_id ? `${pool.name}（${msg("个人角色")} ID ${pool.custodian_character_id}）` : pool?.name ?? msg("统一贷款池");
-  const copyAction = (label: string) => msg("复制 {0}", label);
-  return <article className="loan-contribution"><div><strong>{money(item.amount_minor)}</strong><span>{sourceName} · {item.lender_kind === "corporation" ? msg("军团出借") : msg("个人出借")} · {item.state === "funded" ? msg("已入池") : item.state === "pending" ? msg("待入金核验") : msg("已取消")}</span></div>{item.state === "pending" && <><section className="loan-contract-handoff" aria-label={msg("合同信息")}><p>{msg("请按以下信息创建完成的纯 ISK 物品交换合同；合同同步后可自动核验。")}</p><div className="loan-contract-copy-grid"><CopyField label={msg("合同类型")} value={msg("物品交换")} action={copyAction(msg("合同类型"))} /><CopyField label={msg("出借角色")} value={sourceName} action={copyAction(msg("出借角色"))} /><CopyField label={msg("金额")} value={money(item.amount_minor)} action={copyAction(msg("金额"))} /><CopyField label={msg("收款方")} value={recipient} action={copyAction(msg("收款方"))} /><CopyField label={msg("物品")} value={msg("无")} action={copyAction(msg("物品"))} /><CopyField wide label={msg("合同备注")} value={`GNV-LOAN-DEPOSIT-${item.id}`} action={copyAction(msg("合同备注"))} /></div></section><div className="loan-contract-actions"><Button type="button" onClick={() => void autoVerify()} disabled={autoBusy}>{autoBusy ? msg("正在核验") : msg("自动核验合同")}</Button><Button type="button" variant="outline" onClick={() => void cancel()}>{msg("取消")}</Button></div><form className="loan-form loan-contract-manual-form" onSubmit={deposit}><label>{msg("合同类型")}<select value={kind} onChange={(e) => setKind(e.target.value as "character" | "corporation")}><option value="character">{msg("个人角色")}</option><option value="corporation">{msg("军团")}</option></select></label><label>{msg("合同所有者 ID")}<input value={owner} onChange={(e) => setOwner(e.target.value)} inputMode="numeric" required /></label><label>{msg("合同 ID")}<input value={contract} onChange={(e) => setContract(e.target.value)} inputMode="numeric" required /></label><div className="loan-form-actions"><Button type="submit">{msg("手动核验合同")}</Button>{message && <span role="status">{message}</span>}</div></form></>}{item.state !== "pending" && message && <span role="status">{message}</span>}</article>;
+  const state = item.state === "funded" ? msg("已入池") : item.state === "pending" ? msg("待入金核验") : msg("已取消");
+  const lender = item.lender_kind === "corporation" ? msg("军团出借") : msg("个人出借");
+  const recipient = pool?.lender_kind === "corporation" ? pool.corporation_id : pool?.custodian_character_id;
+  const recipientLabel = pool?.lender_kind === "corporation" ? msg("托管军团 ID") : msg("托管角色 ID");
+  return <div role="listitem">
+    <button type="button" className="loan-deposit-row" onClick={() => { setMessage(""); setOpen(true); }} aria-haspopup="dialog">
+      <span className="loan-deposit-identity"><strong>{sourceName}</strong><small>{lender}</small></span>
+      <strong className="loan-deposit-amount">{money(item.amount_minor)}</strong>
+      <span className="loan-state">{state}</span><ChevronRight size={18} aria-hidden="true" />
+    </button>
+    {open && <Modal title={msg("出借详情")} busy={busy} close={() => setOpen(false)} className="loan-deposit-dialog"
+      footer={item.state === "pending" ? <div className="loan-form-actions">
+        <Button disabled={busy} onClick={() => void run(() => api.autoVerifyContribution(csrf, item.id, { version: item.version }))}>{busy ? msg("正在处理") : msg("自动核验合同")}</Button>
+        <Button variant="outline" disabled={busy} onClick={() => void run(() => api.cancelContribution(csrf, item.id, { version: item.version }))}>{msg("取消出借")}</Button>
+      </div> : undefined}>
+      <dl className="loan-deposit-summary">
+        <div><dt>{msg("出借角色")}</dt><dd>{sourceName}</dd></div>
+        <div><dt>{msg("出借类型")}</dt><dd>{lender}</dd></div>
+        <div><dt>{msg("金额")}</dt><dd>{money(item.amount_minor)}</dd></div>
+        <div><dt>{msg("状态")}</dt><dd>{state}</dd></div>
+        <div><dt>{msg("创建时间")}</dt><dd>{new Date(item.created_at).toLocaleString(getLocale())}</dd></div>
+        {item.contract_id && <div><dt>{msg("游戏合同 ID")}</dt><dd>{item.contract_id}</dd></div>}
+      </dl>
+      {item.state === "pending" && <>
+        <section className="loan-contract-handoff" aria-label={msg("合同信息")}>
+          <h3>{msg("合同信息")}</h3>
+          <p>{msg("物品交换合同，无物品；合同完成并同步后可核验入金。")}</p>
+          <div className="loan-contract-copy-grid">
+            <CopyField label={recipientLabel} value={recipient ?? ""} />
+            <CopyField label={msg("支付金额 / ISK")} value={String(item.amount_minor / 100)} />
+            <CopyField label={msg("合同备注")} value={"GNV-LOAN-DEPOSIT-" + item.id} />
+          </div>
+        </section>
+        <details className="loan-contract-manual">
+          <summary>{msg("手动核验合同")}</summary>
+          <form className="loan-form loan-contract-manual-form" onSubmit={(event) => {
+            event.preventDefault(); void run(() => api.depositContribution(csrf, item.id, { version: item.version, contract_kind: kind, contract_owner_id: Number(owner), contract_id: Number(contract) }));
+          }}>
+            <label>{msg("合同类型")}<select disabled={busy} value={kind} onChange={(e) => setKind(e.target.value as "character" | "corporation")}><option value="character">{msg("个人角色")}</option><option value="corporation">{msg("军团")}</option></select></label>
+            <label>{msg("合同所有者 ID")}<input disabled={busy} value={owner} onChange={(e) => setOwner(e.target.value)} inputMode="numeric" required /></label>
+            <label>{msg("合同 ID")}<input disabled={busy} value={contract} onChange={(e) => setContract(e.target.value)} inputMode="numeric" required /></label>
+            <div className="loan-form-actions"><Button disabled={busy} type="submit">{msg("手动核验合同")}</Button></div>
+          </form>
+        </details>
+      </>}
+      {message && <p className="loan-form-message" role="alert">{message}</p>}
+    </Modal>}
+  </div>;
 }
 
 function GuaranteeInvite({ csrf, item, onDone }: { csrf: string; item: api.Guarantee; onDone: () => void }) {
