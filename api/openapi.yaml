@@ -7704,20 +7704,20 @@ paths:
         '400': {description: Invalid amount or source}
         '401': {description: No active session}
         '409': {description: Pool is not configured or open}
-  /api/v1/loan/contributions/{id}/deposit:
+  /api/v1/loan/contributions/{id}/auto-verify:
     post:
-      operationId: loanContributionDeposit
+      operationId: loanContributionAutoVerify
       security: [{SessionCookie: []}]
-      summary: Verify a contribution deposit contract
+      summary: Automatically verify a contribution against recent synchronized contracts
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/LoanDepositInput'}
+            schema: {type: object, required: [version], properties: {version: {type: integer, format: int64, minimum: 1}}}
       responses:
         '200': {description: Funded contribution}
-        '409': {description: Contract, version, or global claim conflict}
+        '409': {description: No matching contract, version conflict, or global claim conflict}
   /api/v1/loan/contributions/{id}/cancel:
     post:
       operationId: loanContributionCancel
@@ -7974,15 +7974,6 @@ components:
         source_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
         corporation_id: {type: string, pattern: '^[1-9][0-9]*$'}
         amount_minor: {type: integer, format: int64, minimum: 100, description: Whole-ISK amount in hundredths; pending until a completed cash-only custodian contract is verified}
-    LoanDepositInput:
-      type: object
-      additionalProperties: false
-      required: [version, contract_kind, contract_owner_id, contract_id]
-      properties:
-        version: {type: integer, format: int64, minimum: 1}
-        contract_kind: {type: string, enum: [character, corporation]}
-        contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
-        contract_id: {type: string, pattern: '^[1-9][0-9]*$'}
     LoanApplicationInput:
       type: object
       additionalProperties: false

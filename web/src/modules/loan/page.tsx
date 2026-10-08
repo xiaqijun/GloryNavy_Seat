@@ -65,16 +65,13 @@ function CopyField({ label, value }: { label: string; value: string }) {
 
 function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: string; item: api.Contribution; pool?: api.Pool; characters: BoundCharacter[]; onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<"character" | "corporation">(item.lender_kind === "corporation" ? "corporation" : "character");
-  const [owner, setOwner] = useState(item.lender_kind === "corporation" ? item.corporation_id ?? "" : item.source_character_id);
-  const [contract, setContract] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const run = async (action: () => Promise<unknown>) => {
     if (busy) return;
     setBusy(true); setMessage("");
     try { await action(); onDone(); setOpen(false); }
-    catch (e) { setMessage(e instanceof Error ? e.message : msg("入金合同核验失败")); }
+    catch (e) { setMessage(e instanceof Error ? e.message : msg("自动核验未找到匹配合同")); }
     finally { setBusy(false); }
   };
   const sourceName = characters.find((character) => character.id === item.source_character_id)?.name ?? item.source_character_id;
@@ -111,17 +108,6 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
             <CopyField label={msg("合同备注")} value={"GNV-LOAN-DEPOSIT-" + item.id} />
           </div>
         </section>
-        <details className="loan-contract-manual">
-          <summary>{msg("手动核验合同")}</summary>
-          <form className="loan-form loan-contract-manual-form" onSubmit={(event) => {
-            event.preventDefault(); void run(() => api.depositContribution(csrf, item.id, { version: item.version, contract_kind: kind, contract_owner_id: Number(owner), contract_id: Number(contract) }));
-          }}>
-            <label>{msg("合同类型")}<select disabled={busy} value={kind} onChange={(e) => setKind(e.target.value as "character" | "corporation")}><option value="character">{msg("个人角色")}</option><option value="corporation">{msg("军团")}</option></select></label>
-            <label>{msg("合同所有者 ID")}<input disabled={busy} value={owner} onChange={(e) => setOwner(e.target.value)} inputMode="numeric" required /></label>
-            <label>{msg("合同 ID")}<input disabled={busy} value={contract} onChange={(e) => setContract(e.target.value)} inputMode="numeric" required /></label>
-            <div className="loan-form-actions"><Button disabled={busy} type="submit">{msg("手动核验合同")}</Button></div>
-          </form>
-        </details>
       </>}
       {message && <p className="loan-form-message" role="alert">{message}</p>}
     </Modal>}

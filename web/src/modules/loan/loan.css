@@ -334,11 +334,6 @@
   flex-wrap: wrap;
   margin-top: 12px;
 }
-.loan-contract-manual-form {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
 .loan-deposit-list { margin-top: 16px; }
 .loan-deposit-list > div + div { border-top: 1px solid var(--border); }
 .loan-deposit-row {
@@ -370,11 +365,6 @@
 .loan-deposit-summary dt { color: var(--muted); font-size: 13px; }
 .loan-deposit-summary dd { margin: 4px 0 0; font-size: 14px; overflow-wrap: anywhere; }
 .loan-deposit-dialog .loan-contract-copy-grid { grid-template-columns: minmax(0, 1fr); }
-.loan-contract-manual { margin-top: 20px; border-top: 1px solid var(--border); }
-.loan-contract-manual summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: 14px; }
-.loan-contract-manual summary::before { content: "+"; margin-right: 8px; }
-.loan-contract-manual[open] summary::before { content: "−"; }
-.loan-deposit-dialog .loan-contract-manual-form { grid-template-columns: minmax(0, 1fr); margin: 0; padding: 8px 0 0; border: 0; }
 .loan-deposit-dialog .loan-form-message { overflow-wrap: anywhere; }
 @media (max-width: 600px) {
   .loan-deposit-row { grid-template-columns: minmax(0, 1fr) 18px; gap: 8px 12px; }

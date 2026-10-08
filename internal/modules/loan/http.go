@@ -26,7 +26,7 @@ func (h Handler) Module() module.Definition {
 		fn           http.HandlerFunc
 	}{
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail},
-		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/deposit", h.contributionDeposit}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
+		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
@@ -137,19 +137,6 @@ func (h Handler) contributionCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.Service.AddContribution(r.Context(), h.User(r), in)
-	respond(w, r, v, e)
-}
-func (h Handler) contributionDeposit(w http.ResponseWriter, r *http.Request) {
-	id, e := number(chi.URLParam(r, "id"))
-	if e != nil {
-		respond(w, r, nil, e)
-		return
-	}
-	var in DepositInput
-	if !read(w, r, &in) {
-		return
-	}
-	v, e := h.Service.VerifyContribution(r.Context(), h.User(r), id, in)
 	respond(w, r, v, e)
 }
 func (h Handler) contributionAutoVerify(w http.ResponseWriter, r *http.Request) {
