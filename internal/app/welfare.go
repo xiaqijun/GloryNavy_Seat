@@ -219,10 +219,7 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 				accountIDs = append(accountIDs, c.AccountID)
 			}
 		}
-		mainNames, e := accounts.MainCharacterNames(ctx, accountIDs)
-		if e != nil {
-			return nil, e
-		}
+		mainNames, _ := accounts.MainCharacterNames(ctx, accountIDs)
 		for i := range out {
 			out[i].MainCharacterName = mainNames[out[i].AccountID]
 		}

@@ -142,3 +142,27 @@ func TestListReusesSourceAccessForAuthorizedQuery(t *testing.T) {
 		t.Fatalf("access=%d query=%d authorized=%d result=%+v", accessCalls, queryCalls, authorizedCalls, result)
 	}
 }
+
+func TestNameProjectionFailureDoesNotHideQueue(t *testing.T) {
+	s := &Service{
+		Names: func(context.Context, []string) (map[string]string, error) {
+			return nil, errors.New("name projection unavailable")
+		},
+		Sources: []reviewqueue.Source{{
+			ID: "exchange",
+			Access: func(context.Context, string) (reviewqueue.Access, error) {
+				return reviewqueue.Access{Allowed: true}, nil
+			},
+			Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+				return reviewqueue.Page{
+					Items: []reviewqueue.Item{{Source: "exchange", ID: 1, Account: "account-1", Recipient: "recipient-1"}},
+					Counts: map[string]int64{"pending": 1},
+				}, nil
+			},
+		}},
+	}
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(result.Items) != 1 || result.Counts["pending"] != 1 || result.Items[0].Applicant != "recipient-1" {
+		t.Fatalf("name projection failure hid queue: result=%+v err=%v", result, err)
+	}
+}

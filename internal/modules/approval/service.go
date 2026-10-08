@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -64,6 +65,7 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 	wg.Wait()
 	for _, result := range results {
 		if result.accessError != nil {
+			slog.Warn("approval source unavailable", "source", result.id, "stage", "access", "error", result.accessError)
 			out.Unavailable = append(out.Unavailable, result.id)
 			continue
 		}
@@ -73,6 +75,7 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 		out.Allowed = true
 		out.Sources = append(out.Sources, result.id)
 		if result.peopleLoaded && result.peopleError != nil {
+			slog.Warn("approval source unavailable", "source", result.id, "stage", "people", "error", result.peopleError)
 			out.Unavailable = append(out.Unavailable, result.id)
 		} else if result.peopleLoaded {
 			for _, id := range result.people {
@@ -92,15 +95,14 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 			ids = append(ids, id)
 		}
 		names, e := s.Names(ctx, ids)
-		if e != nil {
-			return out, e
-		}
-		for _, id := range ids {
-			if name := names[id]; name != "" {
-				out.People = append(out.People, reviewqueue.Option{ID: id, Name: name})
+		if e == nil {
+			for _, id := range ids {
+				if name := names[id]; name != "" {
+					out.People = append(out.People, reviewqueue.Option{ID: id, Name: name})
+				}
 			}
+			slices.SortFunc(out.People, func(a, b reviewqueue.Option) int { return strings.Compare(a.Name, b.Name) })
 		}
-		slices.SortFunc(out.People, func(a, b reviewqueue.Option) int { return strings.Compare(a.Name, b.Name) })
 	}
 	return out, nil
 }
@@ -191,6 +193,11 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 	authorized := false
 	for _, result := range results {
 		if result.accessError != nil || result.queryError != nil {
+			if result.accessError != nil {
+				slog.Warn("approval source unavailable", "source", result.id, "stage", "access", "error", result.accessError)
+			} else {
+				slog.Warn("approval source unavailable", "source", result.id, "stage", "query", "error", result.queryError)
+			}
 			out.Unavailable = append(out.Unavailable, result.id)
 			continue
 		}
@@ -250,11 +257,10 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 			ids = append(ids, i.Account)
 		}
 		names, e := s.Names(ctx, ids)
-		if e != nil {
-			return out, e
-		}
 		for i := range out.Items {
-			out.Items[i].Applicant = names[out.Items[i].Account]
+			if e == nil {
+				out.Items[i].Applicant = names[out.Items[i].Account]
+			}
 			if out.Items[i].Applicant == "" {
 				out.Items[i].Applicant = out.Items[i].Recipient
 			}
