@@ -40,6 +40,10 @@
 
 已发布 `v0.1.0-alliance-pap-members-20261008`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；无 Goose/River 新迁移，生产 Goose 72。应用 `active/ready`、首页 200、新成员接口匿名 401、模块目录匿名 401、OpenResty `nginx -t` 通过。应用机切换前数据库与配置备份为 `/var/backups/glorynavy/before-v0.1.0-alliance-pap-members-20261008-20261007T182116Z.{dump,env}`。真实管理员成员列表和多角色绑定边界仍按 PAP-03 现场验收。
 
+## 联盟 PAP 本地快照成员查看修复（2026-10-08）
+
+已发布 `v0.1.0-alliance-pap-local-snapshot-20261008`。管理员成员区新增完整快照月份选择，并在上游最近失败时继续读取本地快照；应用机与公网静态站点已原子切换。无 Goose/River 新迁移，生产 Goose 72；应用 `active/ready`、首页 200、匿名成员月份/成员接口 401、静态资源包含新接口及边缘配置检查均通过。生产当前保留 2026-10 22 条和 2026-09 74 条本地快照；真实管理员登录后的页面验收仍按 PAP-03 进行。
+
 ## 审批中心读取优化发布（2026-10-08）
 
 已发布 `v0.1.0-approval-auth-cache-20261008`。应用机 `/opt/glorynavy/current` 与公网静态站点 `current` 已原子切换；无 Goose/River 新迁移。审批上下文、列表和详情复用本次请求已取得的来源授权结果，并在创建批量结算后失效结算批次缓存。应用 `active/ready`、重启次数 0、公网首页/登录 200、匿名模块目录和系统状态 401，公网 OpenResty `nginx -t` 通过。生产加载耗时改善仍需真实管理员会话复测。
