@@ -42,3 +42,30 @@ func DeliveryContracts(ctx context.Context, db DBTX, kind string, owner, recipie
 	}
 	return out, rows.Err()
 }
+
+// LoanCashContracts returns recent finished item-exchange snapshots for an
+// already authorised contract owner. The loan module applies the exact cash
+// direction, amount and custody-party checks after this bounded lookup.
+func LoanCashContracts(ctx context.Context, db DBTX, kind string, owner int64, since time.Time) ([]json.RawMessage, error) {
+	rows, err := db.Query(ctx, `SELECT jsonb_build_object(
+ 'id',c.contract_id::text,'owner_kind',c.owner_kind,'owner_id',c.owner_id::text,
+ 'type',c.contract_type,'status',c.status,'checked_at',c.checked_at,'payload',c.payload,
+ 'items_ready',EXISTS(SELECT 1 FROM eve_contract_details d WHERE d.owner_kind=c.owner_kind AND d.owner_id=c.owner_id AND d.contract_id=c.contract_id AND d.part='items' AND d.state='ready'),
+ 'items',coalesce((SELECT jsonb_agg(jsonb_build_object('record_id',i.record_id::text,'type_id',i.type_id::text,'quantity',i.quantity::text,'included',i.is_included,'singleton',i.is_singleton,'raw_quantity',i.raw_quantity::text) ORDER BY i.record_id) FROM eve_contract_items i WHERE i.owner_kind=c.owner_kind AND i.owner_id=c.owner_id AND i.contract_id=c.contract_id),'[]'::jsonb))
+ FROM eve_contracts c
+ WHERE c.owner_kind=$1 AND c.owner_id=$2 AND c.in_scope AND c.contract_type='item_exchange' AND c.status='finished' AND c.checked_at >= $3
+ ORDER BY c.contract_id DESC LIMIT 100`, kind, owner, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []json.RawMessage{}
+	for rows.Next() {
+		var b json.RawMessage
+		if err = rows.Scan(&b); err != nil {
+			return nil, err
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}

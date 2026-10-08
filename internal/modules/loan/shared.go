@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/loan/internal/store"
@@ -282,6 +283,40 @@ func (s *Service) VerifyContribution(ctx context.Context, actor string, id int64
 		return c, e
 	}
 	return out, tx.Commit(ctx)
+}
+
+// AutoVerifyContribution searches the current account's recent synchronised
+// finished contracts, selects an exact cash-only match, and sends it through
+// the same transactional verifier used by manual verification.
+func (s *Service) AutoVerifyContribution(ctx context.Context, actor string, id, version int64) (store.Contribution, error) {
+	if id <= 0 || version <= 0 || s.Contracts == nil {
+		return store.Contribution{}, ErrInvalid
+	}
+	c, err := store.ContributionByID(ctx, s.db(), id)
+	if err != nil {
+		return c, err
+	}
+	if c.Version != version || c.State != "pending" {
+		return c, ErrConflict
+	}
+	if err = s.canContribute(ctx, actor, c); err != nil {
+		return c, err
+	}
+	p, err := store.SharedPool(ctx, s.db(), false)
+	if err != nil {
+		return c, err
+	}
+	candidates, err := s.Contracts.FindCash(ctx, actor, time.Now().UTC().Add(-14*24*time.Hour))
+	if err != nil {
+		return c, err
+	}
+	payer, receiver := contributionParty(c), custody(p)
+	for _, candidate := range candidates {
+		if cashMatches(candidate, payer, receiver, c.AmountMinor) {
+			return s.VerifyContribution(ctx, actor, id, DepositInput{Version: version, ContractKind: candidate.OwnerKind, ContractOwnerID: candidate.OwnerID, ContractID: candidate.ID})
+		}
+	}
+	return c, ErrContract
 }
 
 func (s *Service) createSharedPayment(ctx context.Context, actor string, id int64, in PaymentInput) (store.Payment, error) {

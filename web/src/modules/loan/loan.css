@@ -273,6 +273,40 @@
 .loan-contribution .loan-form {
   margin-top: 16px;
 }
+.loan-contract-handoff {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted, var(--background));
+}
+.loan-contract-handoff p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.loan-contract-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+.loan-contract-copy label {
+  min-width: 0;
+}
+.loan-contract-copy input,
+.loan-contract-copy textarea {
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+.loan-contract-copy small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
 .loan-detail-dialog h3 {
   margin: 18px 0 8px;
   font-size: 15px;

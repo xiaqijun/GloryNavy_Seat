@@ -193,6 +193,50 @@ func (h *ContractHTTP) DeliveryContracts(ctx context.Context, actor string, corp
 	}
 	return out, nil
 }
+
+// LoanCashContracts lists recent finished contract snapshots owned by the
+// current account. The loan module still performs its own exact cash-party
+// and amount validation before claiming any contract.
+func (h *ContractHTTP) LoanCashContracts(ctx context.Context, actor string, since time.Time) ([]DeliveryContract, error) {
+	owners, err := h.Owners(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
+	unique := map[string]bool{}
+	out := []DeliveryContract{}
+	for _, owner := range owners {
+		key := owner.Kind + strconv.FormatInt(owner.ID, 10)
+		if unique[key] {
+			continue
+		}
+		unique[key] = true
+		rows, e := store.LoanCashContracts(ctx, h.pool, owner.Kind, owner.ID, since)
+		if e != nil {
+			return nil, e
+		}
+		for _, raw := range rows {
+			contract, e := decodeDelivery(raw)
+			if e != nil {
+				return nil, e
+			}
+			out = append(out, contract)
+		}
+	}
+	slices.SortFunc(out, func(a, b DeliveryContract) int {
+		if a.ID > b.ID {
+			return -1
+		}
+		if a.ID < b.ID {
+			return 1
+		}
+		return 0
+	})
+	if len(out) > 100 {
+		out = out[:100]
+	}
+	return out, nil
+}
+
 func (h *ContractHTTP) nameDelivery(ctx context.Context, out []DeliveryContract) error {
 	ids := []int64{}
 	for _, c := range out {

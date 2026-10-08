@@ -51,11 +51,13 @@ type Contract struct {
 }
 type ContractReader interface {
 	Read(context.Context, string, string, int64, int64) (Contract, error)
+	FindCash(context.Context, string, time.Time) ([]Contract, error)
 	Claim(context.Context, pgx.Tx, int64, string, int64) error
 }
 type ContractAdapter struct {
-	ReadFunc  func(context.Context, string, string, int64, int64) (Contract, error)
-	ClaimFunc func(context.Context, pgx.Tx, int64, string, int64) error
+	ReadFunc     func(context.Context, string, string, int64, int64) (Contract, error)
+	FindCashFunc func(context.Context, string, time.Time) ([]Contract, error)
+	ClaimFunc    func(context.Context, pgx.Tx, int64, string, int64) error
 }
 
 func (a ContractAdapter) Read(ctx context.Context, actor, kind string, owner, id int64) (Contract, error) {
@@ -63,6 +65,12 @@ func (a ContractAdapter) Read(ctx context.Context, actor, kind string, owner, id
 		return Contract{}, ErrContract
 	}
 	return a.ReadFunc(ctx, actor, kind, owner, id)
+}
+func (a ContractAdapter) FindCash(ctx context.Context, actor string, since time.Time) ([]Contract, error) {
+	if a.FindCashFunc == nil {
+		return nil, ErrContract
+	}
+	return a.FindCashFunc(ctx, actor, since)
 }
 func (a ContractAdapter) Claim(ctx context.Context, tx pgx.Tx, id int64, module string, ref int64) error {
 	if a.ClaimFunc == nil {

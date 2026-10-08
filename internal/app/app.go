@@ -715,6 +715,18 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 				items, _ := json.Marshal(c.Items)
 				return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed}, nil
 			},
+			FindCashFunc: func(ctx context.Context, actor string, since time.Time) ([]loan.Contract, error) {
+				rows, err := eveHandler.Contracts.LoanCashContracts(ctx, actor, since)
+				if err != nil {
+					return nil, err
+				}
+				out := make([]loan.Contract, 0, len(rows))
+				for _, c := range rows {
+					items, _ := json.Marshal(c.Items)
+					out = append(out, loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed})
+				}
+				return out, nil
+			},
 			ClaimFunc: eve.ClaimDeliveryTx,
 		}
 		loanService.ReadContractTx = func(ctx context.Context, tx pgx.Tx, actor, kind string, owner, id int64) (loan.Contract, error) {
