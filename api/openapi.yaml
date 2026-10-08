@@ -7739,6 +7739,23 @@ paths:
       summary: Shared pool balance and borrower credit summary
       responses:
         '200': {description: Shared pool, balances, and credit}
+  /api/v1/loan/settings/custodian:
+    post:
+      operationId: loanCustodianUpdate
+      security: [{SessionCookie: []}]
+      summary: Set the personal EVE character that receives shared-pool contracts
+      description: Requires loan management scope. The character must be actively bound to a site account; the account, rather than the character alone, remains the permission subject.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanCustodianInput'}
+      responses:
+        '200': {description: Updated shared-pool configuration}
+        '400': {description: Invalid character or version}
+        '401': {description: No active session}
+        '403': {description: Caller cannot manage the shared pool}
+        '409': {description: Pool configuration changed}
   /api/v1/loan/cases:
     get:
       operationId: loanCases
@@ -7986,6 +8003,14 @@ components:
         installment_count: {type: integer, minimum: 1, maximum: 120}
         interval_days: {type: integer, minimum: 1, maximum: 365}
         first_due_at: {type: string, format: date-time}
+    LoanCustodianInput:
+      type: object
+      additionalProperties: false
+      required: [pool_id, character_id, version]
+      properties:
+        pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        version: {type: integer, format: int64, minimum: 1}
     LoanGuaranteeInput:
       type: object
       additionalProperties: false

@@ -8,7 +8,7 @@ export type Case = { id: string; public_id: string; pool_id: string; pool_name: 
 export type Guarantee = { id: string; case_id: string; guarantor_account_id: string; guarantor_character_id?: string; amount_minor: number; state: string; version: number; case_public_id?: string; borrower_account_id?: string; borrower_character_id?: string; principal_minor?: number };
 export type Collateral = { id: string; case_id: string; owner_account_id: string; contract_kind: string; contract_owner_id: string; contract_id: string; valuation_minor: number; haircut_bps: number; covered_minor: number; state: string; version: number; items?: unknown[] };
 export type CaseDetail = { case: Case; installments: unknown[]; guarantees: Guarantee[]; collateral: Collateral[] };
-export type Context = { pools: Pool[]; pool_summary: PoolSummary; credit: Credit; administrator: boolean };
+export type Context = { pools: Pool[]; pool_summary: PoolSummary; credit: Credit; administrator: boolean; can_manage_pool?: boolean };
 const object = (v: unknown): v is Record<string, any> => typeof v === "object" && v !== null;
 const contextData = (v: unknown): v is Context => object(v) && Array.isArray(v.pools) && object(v.credit) && typeof v.administrator === "boolean";
 const casesData = (v: unknown): v is { items: Case[] } => object(v) && Array.isArray(v.items);
@@ -24,6 +24,7 @@ export async function createApplication(csrf: string, body: Record<string, unkno
 async function mutate<T>(csrf: string, path: string, method: "POST" | "PUT", body: Record<string, unknown>, fallback: string) { const r = await apiFetch(path, { method, credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) }); const p = await r.json().catch(() => null); if (!r.ok) throw new Error(p?.error?.message ?? fallback); return p.data as T; }
 export const createContribution = (csrf: string, body: Record<string, unknown>) => mutate<Contribution>(csrf, "/api/v1/loan/contributions", "POST", body, "出借额度提交失败");
 export const cancelContribution = (csrf: string, id: string, body: Record<string, unknown>) => mutate<Contribution>(csrf, `/api/v1/loan/contributions/${encodeURIComponent(id)}/cancel`, "POST", body, "出借额度取消失败");
+export const updateCustodian = (csrf: string, body: Record<string, unknown>) => mutate<Pool>(csrf, "/api/v1/loan/settings/custodian", "POST", body, "贷款专员设置失败");
 export async function review(csrf: string, id: string, body: { state: "approved" | "rejected"; version: number; note?: string }) { const r = await apiFetch(`/api/v1/loan/cases/${encodeURIComponent(id)}/review`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) }); const p = await r.json().catch(() => null); if (!r.ok) throw new Error(p?.error?.message ?? "贷款审核失败"); return p.data as Case; }
 export const createGuarantee = (csrf: string, id: string, body: Record<string, unknown>) => mutate<Guarantee>(csrf, `/api/v1/loan/cases/${encodeURIComponent(id)}/guarantees`, "POST", body, "担保邀请失败");
 export const decideGuarantee = (csrf: string, id: string, body: Record<string, unknown>) => mutate<Guarantee>(csrf, `/api/v1/loan/guarantees/${encodeURIComponent(id)}/decision`, "POST", body, "担保决定失败");

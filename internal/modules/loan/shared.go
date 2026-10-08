@@ -63,9 +63,6 @@ func cashMatches(c Contract, payer, receiver cashParty, amount int64) bool {
 	return false
 }
 func custody(p store.Pool) cashParty {
-	if p.LenderKind == "corporation" && p.CorporationID != nil {
-		return cashParty{"corporation", *p.CorporationID}
-	}
 	if p.CustodianCharacterID != nil {
 		return cashParty{"character", *p.CustodianCharacterID}
 	}
@@ -102,9 +99,61 @@ func (s *Service) validCustody(ctx context.Context, p store.Pool) error {
 			return nil
 		}
 	} else if p.LenderKind == "corporation" && p.CorporationID != nil {
+		if p.CustodianCharacterID == nil || s.AccountForCharacter == nil {
+			return ErrRule
+		}
+		if _, e := s.AccountForCharacter(ctx, *p.CustodianCharacterID); e != nil {
+			return ErrRule
+		}
 		return nil
 	}
 	return ErrRule
+}
+
+func (s *Service) ConfigureCustodian(ctx context.Context, actor string, poolID, characterID, version int64) (store.Pool, error) {
+	if poolID <= 0 || characterID <= 0 || version <= 0 || s.AccountForCharacter == nil {
+		return store.Pool{}, ErrInvalid
+	}
+	p, err := store.SharedPool(ctx, s.db(), false)
+	if err != nil {
+		return p, err
+	}
+	if p.ID != poolID {
+		return p, ErrForbidden
+	}
+	ok, err := s.canManage(ctx, actor, p)
+	if err != nil || !ok {
+		return p, ErrForbidden
+	}
+	if _, err = s.AccountForCharacter(ctx, characterID); err != nil {
+		return p, ErrInvalid
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return p, err
+	}
+	defer tx.Rollback(ctx)
+	if err = s.guardAccounts(ctx, tx, actor); err != nil {
+		return p, err
+	}
+	locked, err := store.SharedPool(ctx, tx, true)
+	if err != nil {
+		return p, err
+	}
+	if locked.ID != poolID || locked.Version != version {
+		return p, ErrConflict
+	}
+	out, err := store.UpdateCustodian(ctx, tx, poolID, characterID, version)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return p, ErrConflict
+		}
+		return p, err
+	}
+	if err = store.Audit(ctx, tx, 0, actor, "custodian_updated", locked, out); err != nil {
+		return p, err
+	}
+	return out, tx.Commit(ctx)
 }
 func (s *Service) guardAccounts(ctx context.Context, tx pgx.Tx, ids ...string) error {
 	if s.LockAccounts == nil {
@@ -121,7 +170,21 @@ func (s *Service) Contributions(ctx context.Context, actor string) ([]store.Cont
 			return nil, e
 		}
 	}
-	return store.Contributions(ctx, s.db(), actor, admin)
+	items, err := store.Contributions(ctx, s.db(), actor, admin)
+	if err != nil || admin || s.Contracts == nil {
+		return items, err
+	}
+	// Contract snapshots are already synchronized by the EVE module. Reading
+	// contributions also advances pending deposits without requiring a UI action.
+	for i, item := range items {
+		if item.State != "pending" {
+			continue
+		}
+		if updated, verifyErr := s.AutoVerifyContribution(ctx, actor, item.ID, item.Version); verifyErr == nil {
+			items[i] = updated
+		}
+	}
+	return items, nil
 }
 func (s *Service) canContribute(ctx context.Context, actor string, c store.Contribution) error {
 	if actor != c.AccountID {

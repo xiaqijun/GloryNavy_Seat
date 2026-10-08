@@ -37,6 +37,16 @@ func SharedPool(ctx context.Context, db DBTX, lock bool) (Pool, error) {
 	err := db.QueryRow(ctx, q).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
 	return p, err
 }
+
+func UpdateCustodian(ctx context.Context, db DBTX, id, characterID, version int64) (Pool, error) {
+	var p Pool
+	err := db.QueryRow(ctx, `UPDATE loan_pools
+SET custodian_character_id=$2,version=version+1,updated_at=now()
+WHERE id=$1 AND is_shared AND version=$3
+RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id`, id, characterID, version).
+		Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
+	return p, err
+}
 func Summary(ctx context.Context, db DBTX, id int64) (PoolSummary, error) {
 	var v PoolSummary
 	err := db.QueryRow(ctx, `SELECT

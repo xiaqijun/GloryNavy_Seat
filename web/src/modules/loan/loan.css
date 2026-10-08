@@ -9,6 +9,12 @@
   justify-content: space-between;
   gap: 16px;
 }
+.loan-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .loan-title {
   display: flex;
   align-items: center;
@@ -185,6 +191,14 @@
 .loan-application-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 0;
+}
+.loan-settings-form {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+}
+.loan-settings-form .loan-dialog-note,
+.loan-settings-form .loan-form-message {
+  margin: 0;
 }
 .loan-credit-form,
 .loan-contribution-form {

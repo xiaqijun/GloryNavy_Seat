@@ -155,6 +155,14 @@ func (s *Service) Pools(ctx context.Context, user string, admin bool) ([]store.P
 	}
 	return []store.Pool{p}, nil
 }
+
+func (s *Service) CanManageSharedPool(ctx context.Context, actor string) (bool, error) {
+	p, err := store.SharedPool(ctx, s.db(), false)
+	if err != nil {
+		return false, err
+	}
+	return s.canManage(ctx, actor, p)
+}
 func (s *Service) CreateApplication(ctx context.Context, actor string, in ApplicationInput) (store.Case, error) {
 	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || in.IntervalDays < 1 || in.IntervalDays > 365 {
 		return store.Case{}, ErrInvalid
@@ -441,7 +449,7 @@ func (s *Service) contractOwnerMatchesPool(ctx context.Context, p store.Pool, ki
 // configured custody target. A borrower-supplied contract is only collateral
 // after the item transfer is addressed to the shared pool's custodian.
 func collateralMatchesPool(p store.Pool, c Contract) bool {
-	if p.LenderKind == "personal" && p.CustodianCharacterID != nil {
+	if p.CustodianCharacterID != nil {
 		return hasParty(c, *p.CustodianCharacterID)
 	}
 	if p.LenderKind == "corporation" && p.CorporationID != nil {
