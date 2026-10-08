@@ -245,7 +245,7 @@ export type Case = {
   updated_at: string;
 };
 export type Context = {
-  corporations: { id: string; name: string; can_manage: boolean }[];
+  corporations: { id: string; name: string; can_manage: boolean; can_compensate: boolean }[];
   characters: Character[];
   administrator: boolean;
   policies: Policy[];
@@ -473,7 +473,8 @@ export const context = (corp: string, signal?: AbortSignal) =>
             obj(x) &&
             str(x.id) &&
             str(x.name) &&
-            typeof x.can_manage === "boolean",
+            typeof x.can_manage === "boolean" &&
+            typeof x.can_compensate === "boolean",
         )
       ) return false;
       if (

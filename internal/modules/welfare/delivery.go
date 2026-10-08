@@ -93,7 +93,7 @@ func (s *Service) DeliveryCandidates(ctx context.Context, actor string, id, cont
 	if e = s.admin(ctx, actor); e != nil {
 		return nil, e
 	}
-	if e = s.allowed(ctx, actor, v.CorporationID, true); e != nil {
+	if e = s.allowedCase(ctx, actor, v.CorporationID, v.Kind, true); e != nil {
 		return nil, e
 	}
 	if actor == v.AccountID || !slices.Contains([]string{"srp", "solo", "supercarrier", "titan"}, v.Kind) || !slices.Contains([]string{"approved", "executing"}, v.State) || s.Contracts == nil {
@@ -210,7 +210,7 @@ func (s *Service) CheckDelivery(ctx context.Context, id int64) error {
 	if e = s.admin(ctx, actor); e != nil {
 		return e
 	}
-	if e = s.allowed(ctx, actor, previous.CorporationID, true); e != nil {
+	if e = s.allowedCase(ctx, actor, previous.CorporationID, previous.Kind, true); e != nil {
 		return e
 	}
 	if e = s.member(ctx, actor, previous.CorporationID, previous.AccountID); e != nil {
@@ -242,7 +242,7 @@ func (s *Service) CheckDelivery(ctx context.Context, id int64) error {
 	if e = s.admin(ctx, actor); e != nil {
 		return e
 	}
-	if e = s.allowed(ctx, actor, v.CorporationID, true); e != nil {
+	if e = s.allowedCase(ctx, actor, v.CorporationID, v.Kind, true); e != nil {
 		return e
 	}
 	c := pd.Delivery.Contract

@@ -144,6 +144,13 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 		}
 		return false, e
 	}
+	s.CompensationScope = func(ctx context.Context, user string, corp int64) (bool, error) {
+		c, e := reader.Corporation(ctx, corp)
+		if e != nil {
+			return false, e
+		}
+		return policy.Can(ctx, user, "corporation.welfare.compensation", access.Corporation{ID: corp, Name: c.CorporationName, AllianceID: c.AllianceID, CEOID: c.CEOID})
+	}
 	s.Corporations = func(ctx context.Context, user string) ([]welfare.Corporation, error) {
 		ids, e := reader.ActivityCorporations(ctx)
 		if e != nil {
@@ -155,7 +162,11 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 			if e != nil {
 				return nil, e
 			}
-			if !ok {
+			comp, e := s.CompensationScope(ctx, user, id)
+			if e != nil {
+				return nil, e
+			}
+			if !ok && !comp {
 				continue
 			}
 			c, e := reader.Corporation(ctx, id)
@@ -166,12 +177,15 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 			if e != nil {
 				return nil, e
 			}
-			out = append(out, welfare.Corporation{ID: id, Name: c.CorporationName, Manage: manage})
+			out = append(out, welfare.Corporation{ID: id, Name: c.CorporationName, Manage: manage, Compensate: comp})
 		}
 		return out, nil
 	}
 	s.Members = func(ctx context.Context, user string, corp int64) ([]welfare.Character, error) {
 		ok, e := s.Scope(ctx, user, corp, true)
+		if !ok {
+			ok, e = s.CompensationScope(ctx, user, corp)
+		}
 		if e != nil {
 			return nil, e
 		}

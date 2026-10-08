@@ -39,9 +39,10 @@ type Ship struct {
 	Name string `json:"name"`
 }
 type Corporation struct {
-	ID     int64  `json:"id,string"`
-	Name   string `json:"name"`
-	Manage bool   `json:"can_manage"`
+	ID         int64  `json:"id,string"`
+	Name       string `json:"name"`
+	Manage     bool   `json:"can_manage"`
+	Compensate bool   `json:"can_compensate"`
 }
 type LossQuotaPeriod struct {
 	UsedMinor      int64  `json:"used_minor"`
@@ -77,38 +78,38 @@ type Config struct {
 	Note                string         `json:"note"`
 }
 type Detail struct {
-	ImageCount       int                   `json:"image_count,omitempty"`
-	Cancellation     *Cancellation         `json:"cancellation,omitempty"`
-	PaymentStatus    string                `json:"payment_status,omitempty"`
-	Purchase         *eve.DeliveryContract `json:"purchase,omitempty"`
-	Rewards          *GrowthRewards        `json:"rewards,omitempty"`
-	Valuation        *Valuation            `json:"valuation,omitempty"`
-	PricingMode      string                `json:"pricing_mode,omitempty"`
-	Delivery         *Delivery             `json:"delivery,omitempty"`
-	SyncedLoss       bool                  `json:"synced_loss,omitempty"`
-	LossEvidence     *Loss                 `json:"loss_evidence,omitempty"`
-	CharacterID      int64                 `json:"character_id,string"`
-	CharacterName    string                `json:"character_name"`
-	ShipTypeID       int64                 `json:"ship_type_id,string"`
-	KillmailID       int64                 `json:"killmail_id,string"`
-	ContractID       int64                 `json:"contract_id,string"`
-	SupportingContractID int64             `json:"supporting_contract_id,string,omitempty"`
-	EventID          int64                 `json:"event_id,string"`
-	OccurredAt       string                `json:"occurred_at"`
-	Description      string                `json:"description"`
-	Evidence         string                `json:"evidence"`
-	Alliance         string                `json:"alliance"`
-	BaseMinor        int64                 `json:"base_minor"`
-	Discipline       bool                  `json:"discipline"`
-	PolicyVersion    int64                 `json:"policy_version,string"`
-	Rule             Config                `json:"rule"`
-	SkillEvidence    json.RawMessage       `json:"skill_evidence,omitempty"`
-	FittingEvidence  json.RawMessage       `json:"fitting_evidence,omitempty"`
-	ActivityBatchKey string                `json:"activity_batch_key,omitempty"`
-	Receipt          string                `json:"receipt"`
-	Reviewer         string                `json:"reviewer"`
-	Executor         string                `json:"executor"`
-	ReviewNote       string                `json:"review_note"`
+	ImageCount           int                   `json:"image_count,omitempty"`
+	Cancellation         *Cancellation         `json:"cancellation,omitempty"`
+	PaymentStatus        string                `json:"payment_status,omitempty"`
+	Purchase             *eve.DeliveryContract `json:"purchase,omitempty"`
+	Rewards              *GrowthRewards        `json:"rewards,omitempty"`
+	Valuation            *Valuation            `json:"valuation,omitempty"`
+	PricingMode          string                `json:"pricing_mode,omitempty"`
+	Delivery             *Delivery             `json:"delivery,omitempty"`
+	SyncedLoss           bool                  `json:"synced_loss,omitempty"`
+	LossEvidence         *Loss                 `json:"loss_evidence,omitempty"`
+	CharacterID          int64                 `json:"character_id,string"`
+	CharacterName        string                `json:"character_name"`
+	ShipTypeID           int64                 `json:"ship_type_id,string"`
+	KillmailID           int64                 `json:"killmail_id,string"`
+	ContractID           int64                 `json:"contract_id,string"`
+	SupportingContractID int64                 `json:"supporting_contract_id,string,omitempty"`
+	EventID              int64                 `json:"event_id,string"`
+	OccurredAt           string                `json:"occurred_at"`
+	Description          string                `json:"description"`
+	Evidence             string                `json:"evidence"`
+	Alliance             string                `json:"alliance"`
+	BaseMinor            int64                 `json:"base_minor"`
+	Discipline           bool                  `json:"discipline"`
+	PolicyVersion        int64                 `json:"policy_version,string"`
+	Rule                 Config                `json:"rule"`
+	SkillEvidence        json.RawMessage       `json:"skill_evidence,omitempty"`
+	FittingEvidence      json.RawMessage       `json:"fitting_evidence,omitempty"`
+	ActivityBatchKey     string                `json:"activity_batch_key,omitempty"`
+	Receipt              string                `json:"receipt"`
+	Reviewer             string                `json:"reviewer"`
+	Executor             string                `json:"executor"`
+	ReviewNote           string                `json:"review_note"`
 }
 type GrantLine struct {
 	AccountID string `json:"account_id"`

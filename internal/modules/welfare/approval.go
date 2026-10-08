@@ -16,7 +16,7 @@ func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.
 		return out, e
 	}
 	for _, c := range corps {
-		if c.Manage {
+		if c.Manage || c.Compensate {
 			out.Allowed = true
 			out.Corporations = append(out.Corporations, reviewqueue.Option{ID: strconv.FormatInt(c.ID, 10), Name: c.Name})
 		}
@@ -48,6 +48,17 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 			continue
 		}
 		id, _ := strconv.ParseInt(corp.ID, 10, 64)
+		full, e := s.Scope(ctx, user, id, true)
+		if e != nil {
+			return reviewqueue.Page{}, e
+		}
+		lossOnly := false
+		if !full && s.CompensationScope != nil {
+			lossOnly, e = s.CompensationScope(ctx, user, id)
+			if e != nil {
+				return reviewqueue.Page{}, e
+			}
+		}
 		members, e := s.Members(ctx, user, id)
 		if e != nil {
 			return reviewqueue.Page{}, e
@@ -56,7 +67,11 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 		for _, m := range members {
 			if !seen[m.AccountID] {
 				seen[m.AccountID] = true
-				scope = append(scope, map[string]string{"corporation": corp.ID, "account": m.AccountID})
+				row := map[string]string{"corporation": corp.ID, "account": m.AccountID}
+				if lossOnly {
+					row["loss_only"] = "true"
+				}
+				scope = append(scope, row)
 			}
 		}
 	}

@@ -72,7 +72,7 @@ type Permission struct {
 // Add business abilities here when their corresponding feature is shipped.
 // Internal SeAT mappings and stored historical grants use Catalog independently.
 func ManageableCatalog() []Permission {
-	result := []Permission{{"corporation.welfare", "福利审核与交付", "corporation"}, {"corporation.loan", "贷款管理", "corporation"}, {"access.manage", "权限管理", "global"}, {"eve.sync.manage", "ESI 同步管理", "global"}, {"corporation.structure", "建筑管理", "corporation"}, {"corporation.contract", "军团合同", "corporation"}, {"corporation.attendance", "军团考勤与集结分", "corporation"}, {"corporation.skills", "军团技能要求", "corporation"}, {"corporation.journal", "钱包流水", "corporation"}, {"corporation.transaction", "钱包市场交易", "corporation"}}
+	result := []Permission{{"corporation.welfare", "福利审核与交付", "corporation"}, {"corporation.welfare.compensation", "补损审核与交付", "corporation"}, {"corporation.loan", "贷款管理", "corporation"}, {"access.manage", "权限管理", "global"}, {"eve.sync.manage", "ESI 同步管理", "global"}, {"corporation.structure", "建筑管理", "corporation"}, {"corporation.contract", "军团合同", "corporation"}, {"corporation.attendance", "军团考勤与集结分", "corporation"}, {"corporation.skills", "军团技能要求", "corporation"}, {"corporation.journal", "钱包流水", "corporation"}, {"corporation.transaction", "钱包市场交易", "corporation"}}
 	for i, n := range divisions {
 		result = append(result, Permission{"corporation.wallet_" + n + "_division", fmt.Sprintf("钱包分部 %d", i+1), "corporation"})
 	}
@@ -84,7 +84,7 @@ func ManageableCatalog() []Permission {
 func Catalog() []Permission {
 	result := []Permission{{"access.self", "本人权限", "self"}, {"access.manage", "权限管理", "global"}, {"eve.sync.manage", "ESI 同步管理", "global"}}
 	result = append(result, Permission{"access.members.read", "成员数据", "administrator"})
-	names := [][2]string{{"welfare", "福利审核与交付"}, {"loan", "贷款管理"}, {"skills", "军团技能要求"}, {"attendance", "军团考勤"}, {"summary", "军团概览"}, {"asset", "资产"}, {"customs_office", "海关"}, {"starbase", "母星基地"}, {"structure", "建筑"}, {"mining", "采矿"}, {"extraction", "卫星开采"}, {"industry", "工业"}, {"blueprint", "蓝图"}, {"contract", "合同"}, {"market", "市场"}, {"ledger", "采矿账本"}, {"journal", "钱包流水"}, {"transaction", "交易明细"}, {"contact", "联系人"}, {"standing", "声望"}, {"killmail", "击毁报告"}, {"security", "安全审查"}, {"tracking", "成员追踪"}, {"projects", "军团项目"}}
+	names := [][2]string{{"welfare", "福利审核与交付"}, {"welfare.compensation", "补损审核与交付"}, {"loan", "贷款管理"}, {"skills", "军团技能要求"}, {"attendance", "军团考勤"}, {"summary", "军团概览"}, {"asset", "资产"}, {"customs_office", "海关"}, {"starbase", "母星基地"}, {"structure", "建筑"}, {"mining", "采矿"}, {"extraction", "卫星开采"}, {"industry", "工业"}, {"blueprint", "蓝图"}, {"contract", "合同"}, {"market", "市场"}, {"ledger", "采矿账本"}, {"journal", "钱包流水"}, {"transaction", "交易明细"}, {"contact", "联系人"}, {"standing", "声望"}, {"killmail", "击毁报告"}, {"security", "安全审查"}, {"tracking", "成员追踪"}, {"projects", "军团项目"}}
 	for _, n := range names {
 		result = append(result, Permission{"corporation." + n[0], n[1], "corporation"})
 	}
@@ -157,7 +157,7 @@ func Evaluate(admin bool, facts []Fact, grants []Grant, permission string, targe
 	if permission == "access.members.read" {
 		return false
 	}
-	if corp && permission != "corporation.welfare" {
+	if corp && permission != "corporation.welfare" && permission != "corporation.welfare.compensation" {
 		for _, f := range facts {
 			if !Fresh(f, now) || f.Corporation.ID != target.ID {
 				continue

@@ -218,6 +218,11 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 			if e == nil {
 				quotas, e = h.Service.LossQuotas(r.Context(), u, corp, policies)
 			}
+		} else if e = h.Service.allowedLoss(r.Context(), u, corp, true); e == nil {
+			policies, e = store.Policies(r.Context(), h.Service.Pool, corp)
+			if e == nil {
+				quotas, e = h.Service.LossQuotas(r.Context(), u, corp, policies)
+			}
 		}
 	}
 	if e == nil {

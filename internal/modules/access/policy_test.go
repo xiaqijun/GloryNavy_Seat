@@ -22,7 +22,9 @@ func TestSeATCorporationPolicy(t *testing.T) {
 		{name: "Director all corporation abilities", permission: "corporation.projects", change: func(f *Fact) { f.Roles = []string{"Director"} }, want: true},
 		{name: "Director cannot manage website", permission: "access.manage", change: func(f *Fact) { f.Roles = []string{"Director"} }},
 		{name: "Director cannot approve site welfare automatically", permission: "corporation.welfare", change: func(f *Fact) { f.Roles = []string{"Director"} }},
+		{name: "Director cannot approve compensation automatically", permission: "corporation.welfare.compensation", change: func(f *Fact) { f.Roles = []string{"Director"} }},
 		{name: "explicit welfare grant", permission: "corporation.welfare", grants: []Grant{{Permission: "corporation.welfare", Corporations: []int64{10}}}, want: true},
+		{name: "explicit compensation grant", permission: "corporation.welfare.compensation", grants: []Grant{{Permission: "corporation.welfare.compensation", Corporations: []int64{10}}}, want: true},
 		{name: "location Director is not global", permission: "corporation.summary", change: func(f *Fact) { f.RolesAtHQ = []string{"Director"} }},
 		{name: "stale Director", permission: "corporation.summary", change: func(f *Fact) { f.Roles = []string{"Director"}; f.ValidUntil = now.Add(-time.Second) }},
 		{name: "revoked Director", permission: "corporation.summary", change: func(f *Fact) { f.Roles = []string{"Director"}; f.State = "reauthorize" }},
@@ -62,7 +64,7 @@ func TestGrantValidation(t *testing.T) {
 		}
 	}
 	for _, p := range Catalog() {
-		if p.Scope == "corporation" && p.ID != "corporation.welfare" && !Evaluate(false, []Fact{{State: "ready", CharacterID: 1, Corporation: Corporation{ID: 10}, Roles: []string{"Director"}, SyncedAt: time.Now().Add(-time.Second), ValidUntil: time.Now().Add(time.Hour)}}, nil, p.ID, Corporation{ID: 10, CEOID: 2}, time.Now()) {
+		if p.Scope == "corporation" && p.ID != "corporation.welfare" && p.ID != "corporation.welfare.compensation" && !Evaluate(false, []Fact{{State: "ready", CharacterID: 1, Corporation: Corporation{ID: 10}, Roles: []string{"Director"}, SyncedAt: time.Now().Add(-time.Second), ValidUntil: time.Now().Add(time.Hour)}}, nil, p.ID, Corporation{ID: 10, CEOID: 2}, time.Now()) {
 			t.Errorf("Director missing %s", p.ID)
 		}
 	}

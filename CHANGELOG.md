@@ -4,7 +4,7 @@
 
 ## 未发布
 
-- 记录专员角色模型：贷款专员、补损专员使用本站权限角色；合同接收方另行配置为已绑定的个人 EVE 角色。贷款处理角色已上线，补损仍沿用 `corporation.welfare`，独立补损权限和配置入口列入待办。文档已同步，未新增代码或迁移。
+- 新增 `corporation.welfare.compensation` 补损审核与交付权限，可在权限管理中按军团范围授予账号；审批中心只展示 `srp`/`solo` 补损，普通成员权限保持不变。现有 `corporation.welfare` 继续兼容完整福利管理。无新增 Goose/River 迁移。
 
 ## v0.1.0-alliance-pap-selector-20261008 — 2026-10-08
 

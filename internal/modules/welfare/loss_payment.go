@@ -62,7 +62,7 @@ func (s *Service) checkLossPayment(ctx context.Context, previous Case, pd Detail
 	if actor == previous.AccountID || !validUUID(actor) {
 		return pgx.ErrNoRows
 	}
-	if err := s.allowed(ctx, actor, previous.CorporationID, true); err != nil {
+	if err := s.allowedCase(ctx, actor, previous.CorporationID, previous.Kind, true); err != nil {
 		return err
 	}
 	preview, err := s.PaymentContracts(ctx, nil, previous.AccountID, pd.CharacterID, lossReference(previous), previous.CreatedAt)
@@ -102,7 +102,7 @@ func (s *Service) checkLossPayment(ctx context.Context, previous Case, pd Detail
 	if v.Version != previous.Version || v.AccountID != previous.AccountID {
 		return ErrConflict
 	}
-	if err = s.allowed(ctx, actor, v.CorporationID, true); err != nil {
+	if err = s.allowedCase(ctx, actor, v.CorporationID, v.Kind, true); err != nil {
 		return err
 	}
 	rows, err := s.PaymentContracts(ctx, tx, v.AccountID, pd.CharacterID, lossReference(v), v.CreatedAt)

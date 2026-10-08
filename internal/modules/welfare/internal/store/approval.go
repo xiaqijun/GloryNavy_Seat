@@ -21,6 +21,6 @@ func Approval(ctx context.Context, db DB, scope []byte, user string, f reviewque
  'payload',jsonb_build_object('id',c.id::text,'reference',c.settlement_reference,'account_id',c.account_id::text,'corporation_id',c.corporation_id::text,'kind',c.kind,'state',c.state,'version',c.version::text,'detail',c.detail,'award_minor',c.award_minor,'claim_keys',c.claim_keys,'created_at',c.created_at,'updated_at',c.updated_at)) item
  FROM welfare_cases c
  LEFT JOIN LATERAL (SELECT id,created_at,actor_id,action FROM welfare_audit WHERE case_id=c.id AND (action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void') OR action='delivery_check' AND result->>'state'='completed') AND (NOT $10 OR actor_id::text=$2 AND action<>'delivery_check') ORDER BY created_at DESC,id DESC LIMIT 1) a ON true
- WHERE c.kind<>'grant' AND EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) s WHERE s->>'corporation'=c.corporation_id::text AND s->>'account'=c.account_id::text)
+ WHERE c.kind<>'grant' AND EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) s WHERE s->>'corporation'=c.corporation_id::text AND s->>'account'=c.account_id::text AND (coalesce(s->>'loss_only','false')<>'true' OR c.kind IN ('srp','solo')))
  `, scope, user, f, p, limit, "welfare")
 }

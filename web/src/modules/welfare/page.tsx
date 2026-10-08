@@ -135,7 +135,6 @@ function Board({
   const [selectedKind, setKind] = useState("srp");
   const [selectedAll, setAll] = useState(false);
   const approvalEnabled = useApprovalEnabled();
-  const all = selectedAll && (!approvalEnabled || group === "grant");
   const [before, setBefore] = useState("");
   const [modal, setModal] = useState("");
   const [item, setItem] = useState<api.Case | null>(null);
@@ -144,7 +143,11 @@ function Board({
     queryKey: ["welfare", "context", user, corp],
     queryFn: ({ signal }) => api.context(corp, signal),
   });
-  const manage = !!c.data?.corporations.find((x) => x.id === corp)?.can_manage;
+  const corporation = c.data?.corporations.find((x) => x.id === corp);
+  const manage = !!corporation?.can_manage;
+  const compensate = !!corporation?.can_compensate;
+  const canManageGroup = group === "loss" ? manage || compensate : manage;
+  const all = selectedAll && (!approvalEnabled || group === "grant");
   const growthPolicies =
     c.data?.policies.filter((p) => p.kind.startsWith("growth_")) || [];
   const kind =
@@ -169,9 +172,9 @@ function Board({
       : opts(groups.find((g) => g.id === group)!.kinds);
   const listKind = group === "growth" ? "growth" : group === "activity" ? "activity" : kind;
   const q = useQuery({
-    queryKey: ["welfare", "cases", user, corp, all && manage, listKind, before],
+    queryKey: ["welfare", "cases", user, corp, all && canManageGroup, listKind, before],
     queryFn: ({ signal }) =>
-      api.list(corp, all && manage, listKind, before, signal),
+      api.list(corp, all && canManageGroup, listKind, before, signal),
     // The default personal list is independently authorized by the server.
     // Only the administrator-wide scope needs the context result first.
     enabled: !!listKind && (!selectedAll || !!c.data),
@@ -181,11 +184,11 @@ function Board({
     if (!q.data?.next_cursor) return;
     const next = q.data.next_cursor;
     void client.prefetchQuery({
-      queryKey: ["welfare", "cases", user, corp, all && manage, listKind, next],
-      queryFn: ({ signal }) => api.list(corp, all && manage, listKind, next, signal),
+      queryKey: ["welfare", "cases", user, corp, all && canManageGroup, listKind, next],
+      queryFn: ({ signal }) => api.list(corp, all && canManageGroup, listKind, next, signal),
       staleTime: 30_000,
     });
-  }, [all, client, corp, listKind, manage, q.data?.next_cursor, user]);
+  }, [all, canManageGroup, client, corp, listKind, q.data?.next_cursor, user]);
   const done = () => {
     setModal("");
     setItem(null);
@@ -232,7 +235,7 @@ function Board({
               disabled={!kindOptions.length}
             />
           )}
-          {manage &&
+          {canManageGroup &&
             group !== "growth" && group !== "activity" &&
             (!approvalEnabled || group === "grant") && (
               <Select
@@ -346,8 +349,8 @@ function Board({
       {group === "activity" && c.data && <ActivityPanel corp={corp} csrf={csrf} policies={c.data.policies} characters={growthChars} administrator={c.data.administrator} done={done} />}
       {group === "growth" && (
         <div className="welfare-growth-records-heading">
-          <h2>{all && manage ? msg("管理记录") : msg("我的记录")}</h2>
-          {manage && !approvalEnabled && (
+          <h2>{all && canManageGroup ? msg("管理记录") : msg("我的记录")}</h2>
+          {canManageGroup && !approvalEnabled && (
             <Select
               label={msg("申请范围")}
               value={all ? "all" : "mine"}
@@ -535,9 +538,9 @@ function Board({
           csrf={csrf}
           item={item}
           policy={c.data?.policies.find((p) => p.kind === item.kind)}
-          manage={manage && (!approvalEnabled || item.kind === "grant")}
+          manage={((item.kind === "srp" || item.kind === "solo") ? canManageGroup : manage) && (!approvalEnabled || item.kind === "grant")}
           admin={!!c.data?.administrator}
-          approvalEntry={approvalEnabled && manage && item.kind !== "grant"}
+          approvalEntry={approvalEnabled && (item.kind === "srp" || item.kind === "solo" ? canManageGroup : manage) && item.kind !== "grant"}
           close={() => setItem(null)}
           done={done}
         />

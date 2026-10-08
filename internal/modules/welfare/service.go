@@ -55,10 +55,13 @@ type Service struct {
 	Characters          func(context.Context, string) ([]Character, error)
 	Members             func(context.Context, string, int64) ([]Character, error)
 	Scope               func(context.Context, string, int64, bool) (bool, error)
-	LockAccounts        func(context.Context, pgx.Tx, []string) error
-	LockCharacter       func(context.Context, pgx.Tx, string, int64) error
-	Evidence            func(context.Context, string, int64, Config) (json.RawMessage, json.RawMessage, error)
-	Credit              func(context.Context, pgx.Tx, string, int64, int64, int64, string, string) error
+	// CompensationScope grants additional management access for loss cases
+	// only. It never replaces Scope, so the account keeps ordinary member access.
+	CompensationScope func(context.Context, string, int64) (bool, error)
+	LockAccounts      func(context.Context, pgx.Tx, []string) error
+	LockCharacter     func(context.Context, pgx.Tx, string, int64) error
+	Evidence          func(context.Context, string, int64, Config) (json.RawMessage, json.RawMessage, error)
+	Credit            func(context.Context, pgx.Tx, string, int64, int64, int64, string, string) error
 	// ExchangeDelivery is injected by the host so batch settlement can reuse
 	// exchange's single-order contract verifier without importing its store.
 	ExchangeDelivery           func(context.Context, int64) error
@@ -96,6 +99,27 @@ func (s *Service) allowed(ctx context.Context, actor string, corp int64, manage 
 	}
 	return nil
 }
+func (s *Service) allowedLoss(ctx context.Context, actor string, corp int64, manage bool) error {
+	if corp <= 0 {
+		return ErrInvalid
+	}
+	if manage && s.CompensationScope != nil {
+		ok, err := s.CompensationScope(ctx, actor, corp)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+	return s.allowed(ctx, actor, corp, manage)
+}
+func (s *Service) allowedCase(ctx context.Context, actor string, corp int64, kind string, manage bool) error {
+	if isLoss(kind) {
+		return s.allowedLoss(ctx, actor, corp, manage)
+	}
+	return s.allowed(ctx, actor, corp, manage)
+}
 func (s *Service) admin(ctx context.Context, user string) error {
 	ok, e := s.Administrator(ctx, user)
 	if e != nil {
@@ -129,7 +153,7 @@ func (s *Service) Read(ctx context.Context, actor string, id int64) (Case, error
 	if c.AccountID == actor {
 		return c, nil
 	}
-	if e = s.allowed(ctx, actor, c.CorporationID, true); e != nil {
+	if e = s.allowedCase(ctx, actor, c.CorporationID, c.Kind, true); e != nil {
 		return Case{}, e
 	}
 	if e = s.member(ctx, actor, c.CorporationID, c.AccountID); e != nil {
@@ -138,7 +162,11 @@ func (s *Service) Read(ctx context.Context, actor string, id int64) (Case, error
 	return c, nil
 }
 func (s *Service) List(ctx context.Context, actor string, corp int64, all bool, kind string, before int64) ([]Case, error) {
-	if e := s.allowed(ctx, actor, corp, all); e != nil {
+	if all && (kind == "loss" || isLoss(kind)) {
+		if e := s.allowedLoss(ctx, actor, corp, true); e != nil {
+			return nil, e
+		}
+	} else if e := s.allowed(ctx, actor, corp, all); e != nil {
 		return nil, e
 	}
 	owner := actor
@@ -297,7 +325,7 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 	}
 	// Members may maintain their existing applications even if live ESI metadata is temporarily missing.
 	if !(c.ID > 0 && !manage && owner == actor) {
-		if err = s.allowed(ctx, actor, c.CorporationID, manage); err != nil {
+		if err = s.allowedCase(ctx, actor, c.CorporationID, c.Kind, manage); err != nil {
 			return nil, err
 		}
 	}
@@ -510,7 +538,11 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 	}
 	// Recheck mutable privileges immediately before publication.
 	if manage {
-		if e = s.allowed(ctx, actor, c.CorporationID, true); e != nil {
+		kind := c.Kind
+		if previous.Kind != "" {
+			kind = previous.Kind
+		}
+		if e = s.allowedCase(ctx, actor, c.CorporationID, kind, true); e != nil {
 			return nil, e
 		}
 	}
