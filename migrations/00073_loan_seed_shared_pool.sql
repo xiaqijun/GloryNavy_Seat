@@ -19,7 +19,6 @@ INSERT INTO loan_pools
 SELECT 'corporation', custodian.corporation_id, '全站统一贷款池', 'open',
        jsonb_build_object(
          'min_principal_minor', 100,
-         'max_principal_minor', 9007199254740900,
          'max_installments', 120
        ), true, actor.id
 FROM custodian CROSS JOIN actor

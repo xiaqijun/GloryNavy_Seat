@@ -188,13 +188,12 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	// implicit interest, limit or haircut in the module.
 	var cfg struct {
 		MinPrincipal    int64 `json:"min_principal_minor"`
-		MaxPrincipal    int64 `json:"max_principal_minor"`
 		MaxInstallments int   `json:"max_installments"`
 	}
-	if json.Unmarshal(p.Config, &cfg) != nil || cfg.MinPrincipal <= 0 || cfg.MaxPrincipal < cfg.MinPrincipal || cfg.MaxInstallments <= 0 {
+	if json.Unmarshal(p.Config, &cfg) != nil || cfg.MinPrincipal <= 0 || cfg.MaxInstallments <= 0 {
 		return store.Case{}, ErrRule
 	}
-	if in.PrincipalMinor < cfg.MinPrincipal || in.PrincipalMinor > cfg.MaxPrincipal || in.InstallmentCount > cfg.MaxInstallments {
+	if in.PrincipalMinor < cfg.MinPrincipal || in.InstallmentCount > cfg.MaxInstallments {
 		return store.Case{}, ErrLimit
 	}
 	tx, e := s.Pool.Begin(ctx)

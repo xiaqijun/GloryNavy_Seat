@@ -25,10 +25,6 @@ type CreditEvidence struct {
 	EvidenceCutoff  time.Time
 }
 
-type creditPoolConfig struct {
-	MaxPrincipal int64 `json:"max_principal_minor"`
-}
-
 func clampScore(v, max int) int {
 	if v < 0 {
 		return 0
@@ -125,11 +121,13 @@ func (s *Service) Credit(ctx context.Context, user string) (store.Credit, error)
 			evidence = v
 		}
 	}
+	// The principal pool is the actual verified cash balance. Pending lender
+	// promises and website balances are excluded; reserved cash remains part of
+	// the pool's total principal and is checked separately during approval.
 	maxPrincipal := int64(0)
 	if pool, poolErr := store.SharedPool(ctx, s.db(), false); poolErr == nil {
-		var cfg creditPoolConfig
-		if json.Unmarshal(pool.Config, &cfg) == nil && cfg.MaxPrincipal > 0 {
-			maxPrincipal = cfg.MaxPrincipal
+		if summary, summaryErr := store.Summary(ctx, s.db(), pool.ID); summaryErr == nil {
+			maxPrincipal = summary.CashMinor
 		}
 	}
 	return assessCreditWithEvidence(user, signals, evidence, maxPrincipal, time.Now().UTC()), nil
