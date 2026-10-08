@@ -4,7 +4,11 @@
 
 ## 未发布
 
+
+## v0.1.0-approval-loan-queue-fix-20261009 — 2026-10-09
+
 - 修复贷款审批来源因聚合 SQL 的 `text = uuid` 类型推断错误而不可用的问题；审批中心现在按来源正确显示“贷款”，不再把所有未知来源误标为“奖励兑换”。无新增 Goose/River 迁移。
+- 应用机与公网静态站点已切换，应用 `active/ready`、首页 200、相关 Go 测试包和 OpenResty 配置检查通过。
 
 
 ## v0.1.0-approval-task-name-fallback-20261009 — 2026-10-09
