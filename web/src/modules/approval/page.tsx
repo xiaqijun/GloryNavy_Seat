@@ -521,7 +521,15 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           {msg(
             "部分来源不可用，计数不完整：{0}",
             unavailable
-              .map((v) => (v === "welfare" ? msg("军团福利") : msg("奖励兑换")))
+              .map((v) =>
+                v === "welfare"
+                  ? msg("军团福利")
+                  : v === "exchange"
+                    ? msg("奖励兑换")
+                    : v === "loan"
+                      ? msg("贷款")
+                      : v,
+              )
               .join("、"),
           )}
           <Button

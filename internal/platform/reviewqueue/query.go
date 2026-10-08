@@ -45,18 +45,18 @@ func Read(ctx context.Context, db DB, projection string, scope any, actor string
  AND ($7='' OR item->>'state'=$7 OR item->>'status'=$7)
  AND ($8::timestamptz IS NULL OR moment >= $8)
  AND ($9::timestamptz IS NULL OR moment < $9)
- AND (NOT $10 OR processed_by=$2)
+ AND (NOT $10 OR processed_by=$2::text)
  ), counted AS (
  SELECT jsonb_build_object(
- 'pending',count(*) FILTER(WHERE bucket='pending' AND item->>'account_id'<>$2),
- 'information',count(*) FILTER(WHERE bucket='information' AND item->>'account_id'<>$2),
- 'fulfillment',count(*) FILTER(WHERE bucket='fulfillment' AND item->>'account_id'<>$2),
- 'exceptions',count(*) FILTER(WHERE bucket='exceptions' AND item->>'account_id'<>$2),
+ 'pending',count(*) FILTER(WHERE bucket='pending' AND item->>'account_id'<>$2::text),
+ 'information',count(*) FILTER(WHERE bucket='information' AND item->>'account_id'<>$2::text),
+ 'fulfillment',count(*) FILTER(WHERE bucket='fulfillment' AND item->>'account_id'<>$2::text),
+ 'exceptions',count(*) FILTER(WHERE bucket='exceptions' AND item->>'account_id'<>$2::text),
  'history',count(*) FILTER(WHERE history)) counts FROM filtered
  ), page AS (
  SELECT item || jsonb_build_object('time',moment,'source',$16::text) item, moment,id FROM filtered
  WHERE ($15::bigint>0 AND id=$15 OR $15=0 AND
- (($11='history' AND history) OR ($11<>'history' AND bucket=$11 AND item->>'account_id'<>$2)))
+ (($11='history' AND history) OR ($11<>'history' AND bucket=$11 AND item->>'account_id'<>$2::text)))
  AND ` + cursor + `
  ORDER BY ` + order + ` LIMIT $17
  ) SELECT coalesce((SELECT jsonb_agg(item ORDER BY ` + order + `) FROM page),'[]'), counts FROM counted`
