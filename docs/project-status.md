@@ -4,6 +4,10 @@
 
 生产应用已切换至 `v0.1.0-plex-average-20261008`。PLEX（type_id 44992）改查 EVE 专门的 Global PLEX Market（region ID 19000001），订单簿缺边时回退 ESI `/markets/prices/` 官方平均价作为中间价，月卡等 PLEX 奖励不再因只查吉他而长期停留在 `incomplete`；普通物品仍保持双边买卖价完整性检查。无新增 Goose/River 迁移；应用 `active/ready`、月卡重算与首页/匿名鉴权检查已复核。
 
+## 已发布：固定统一贷款池初始化修复（2026-10-08）
+
+生产应用已切换至 `v0.1.0-loan-pool-seed-20261008`，Goose 73 已执行。迁移按当前军团角色快照选择托管军团，自动建立唯一开放贷款池；页面不再因缺少池记录而禁用出借和申请按钮。应用 `active/ready`、贷款池记录、首页与 `/loans` 200、匿名贷款接口 401、OpenResty 配置检查均已复核。
+
 ## 已发布：同步资源类型响应校验修复（2026-10-08）
 
 生产公网静态前端已切换至 `v0.1.0-sync-shape-fix-20261008`。角色同步接口已有 `corporation_structures` 目标，但前端白名单遗漏该资源，导致包含军团建筑目标时把正常 200 响应误报为格式异常；现已补齐类型、校验和文案。后端保持 `v0.1.0-approval-auth-cache-20261008`，无 Goose/River 新迁移；公网首页/登录 200，OpenResty `nginx -t` 通过。
