@@ -52,16 +52,16 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 			return page, e
 		}
 		if order.Content != nil {
-			if e = s.presentPhysical(ctx, order.Content); e != nil {
-				return page, e
-			}
+			// The frozen reward snapshot already contains IDs and quantities.
+			// Resolving display names is presentation-only; a temporary SDE
+			// problem must not make the entire exchange source unavailable or
+			// turn a valid count into an incomplete one.
+			s.presentPhysicalForApproval(ctx, order.Content)
 		}
 		if order.Name == "" && s.Names != nil {
-			names, err := s.Names.TypeNames(ctx, []int64{order.TypeID})
-			if err != nil {
-				return page, err
+			if names, err := s.Names.TypeNames(ctx, []int64{order.TypeID}); err == nil {
+				order.Name = names[order.TypeID].Name
 			}
-			order.Name = names[order.TypeID].Name
 		}
 		v.Title = order.Name
 		v.Payload, _ = json.Marshal(order)
@@ -82,6 +82,28 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 		}
 	}
 	return page, nil
+}
+
+// presentPhysicalForApproval enriches an immutable reward snapshot when the
+// local SDE is available. Approval reads must remain usable when that optional
+// presentation lookup is temporarily unavailable.
+func (s *Service) presentPhysicalForApproval(ctx context.Context, c *PhysicalReward) {
+	if len(c.Items) == 0 || s.Names == nil {
+		return
+	}
+	ids := make([]int64, 0, len(c.Items))
+	for _, item := range c.Items {
+		ids = append(ids, item.ID)
+	}
+	names, err := s.Names.TypeNames(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range c.Items {
+		if name := names[c.Items[i].ID].Name; name != "" {
+			c.Items[i].Name = name
+		}
+	}
 }
 
 func (s *Service) ApprovalPeople(ctx context.Context, user string) ([]string, error) {

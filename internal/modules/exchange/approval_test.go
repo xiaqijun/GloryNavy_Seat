@@ -4,9 +4,16 @@ import (
 	"context"
 	"errors"
 	"github.com/jackc/pgx/v5"
+	"glorynavy.local/seat/internal/modules/eve"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 	"testing"
 )
+
+type unavailableApprovalNames struct{}
+
+func (unavailableApprovalNames) TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error) {
+	return nil, errors.New("sde unavailable")
+}
 
 func TestApprovalExchangeSelfCancellationAndQueue(t *testing.T) {
 	s, _, shop := rewardFixture(t)
@@ -59,5 +66,23 @@ func TestApprovalExchangeSelfCancellationAndQueue(t *testing.T) {
 	s.Administrator = func(context.Context, string) (bool, error) { return false, nil }
 	if _, e = s.ApprovalQueue(ctx, member, reviewqueue.Filter{View: "history"}, reviewqueue.Position{}, 31); !errors.Is(e, pgx.ErrNoRows) {
 		t.Fatalf("revoked admin %v", e)
+	}
+}
+
+func TestApprovalQueueKeepsCountWhenOptionalNamesAreUnavailable(t *testing.T) {
+	s, _, shop := rewardFixture(t)
+	ctx := context.Background()
+	id, err := s.ClaimReward(ctx, manager, quote(shop, 901))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.Pool.Exec(ctx, `UPDATE exchange_redemptions SET reward_content=$2 WHERE id=$1`, id, []byte(`{"items":[{"type_id":"34","quantity":1}]}`)); err != nil {
+		t.Fatal(err)
+	}
+	s.Names = unavailableApprovalNames{}
+	s.Administrator = func(_ context.Context, u string) (bool, error) { return u == reviewer, nil }
+	p, err := s.ApprovalQueue(ctx, reviewer, reviewqueue.Filter{View: "pending"}, reviewqueue.Position{}, 31)
+	if err != nil || len(p.Items) != 1 || p.Counts["pending"] != 1 {
+		t.Fatalf("optional name lookup made queue unavailable: %+v %v", p, err)
 	}
 }

@@ -54,6 +54,8 @@ Source-private SQL authorizes and filters before selecting at most 31 candidates
 
 Per-source counts and page use one SQL snapshot. All reads are local; no ESI fetches or duplicate approval/ledger state are created. Source failure reports unavailable and incomplete totals instead of zero. Remaining records can be viewed, but pagination pauses until recovery. Visible tabs refresh about every 30 seconds; background polling is disabled.
 
+Reward item names in exchange orders are presentation enrichment. If the SDE name service is temporarily unavailable, the approval center still returns the list and counts using the frozen type IDs, quantities, and redemption amount; a name lookup failure is not reported as the entire exchange source being unavailable. Refresh after recovery fills the names in again.
+
 The pending local read optimization fetches current corporation-member authorizations in one database query while still checking each character's owner hash, state, expiry, and corporation. Welfare item and solar-system names are projected once per result page; case and evidence content are unchanged. The UI still requests the management queue only after access context allows it, and both server endpoints authorize independently. This adds no migration, configuration, or permission change. Local timings do not establish production performance until deployment.
 
 ## Validation and limits
