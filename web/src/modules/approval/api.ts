@@ -119,8 +119,13 @@ const isQueue = (v: unknown): v is Queue =>
   Object.values(v.counts).every((n) => typeof n === "number") &&
   typeof v.next_cursor === "string" &&
   strings(v.unavailable);
-export const getContext = (signal?: AbortSignal) =>
-  getData("/api/v1/approval/context", isContext, signal);
+export function getContext(signal?: AbortSignal): Promise<ApprovalContext>;
+export function getContext(includePeople: boolean, signal?: AbortSignal): Promise<ApprovalContext>;
+export function getContext(includePeopleOrSignal: boolean | AbortSignal = false, signal?: AbortSignal) {
+  const includePeople = typeof includePeopleOrSignal === "boolean" ? includePeopleOrSignal : false;
+  const requestSignal = typeof includePeopleOrSignal === "boolean" ? signal : includePeopleOrSignal;
+  return getData(`/api/v1/approval/context${includePeople ? "?include_people=true" : ""}`, isContext, requestSignal);
+}
 export const getQueue = (params: URLSearchParams, signal?: AbortSignal) =>
   getData(`/api/v1/approval/items?${params}`, isQueue, signal);
 export const getItem = (source: string, id: string, signal?: AbortSignal) =>

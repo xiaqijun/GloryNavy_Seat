@@ -231,6 +231,14 @@
   background: var(--card);
   max-width: 100%;
 }
+.approval-filter-hint {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+.approval-filter-error {
+  color: var(--destructive, #b91c1c);
+}
 .approval-table-wrap {
   background: var(--card);
   border: 1px solid var(--border);

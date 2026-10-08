@@ -155,7 +155,7 @@ func TestNameProjectionFailureDoesNotHideQueue(t *testing.T) {
 			},
 			Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
 				return reviewqueue.Page{
-					Items: []reviewqueue.Item{{Source: "exchange", ID: 1, Account: "account-1", Recipient: "recipient-1"}},
+					Items:  []reviewqueue.Item{{Source: "exchange", ID: 1, Account: "account-1", Recipient: "recipient-1"}},
 					Counts: map[string]int64{"pending": 1},
 				}, nil
 			},
@@ -164,5 +164,27 @@ func TestNameProjectionFailureDoesNotHideQueue(t *testing.T) {
 	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
 	if err != nil || len(result.Items) != 1 || result.Counts["pending"] != 1 || result.Items[0].Applicant != "recipient-1" {
 		t.Fatalf("name projection failure hid queue: result=%+v err=%v", result, err)
+	}
+}
+
+func TestContextWithoutPeopleSkipsExpensiveApplicantProjection(t *testing.T) {
+	peopleCalls := 0
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID: "welfare",
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+		People: func(context.Context, string) ([]string, error) {
+			peopleCalls++
+			return []string{"account-1"}, nil
+		},
+	}}}
+	result, err := s.ContextWithOptions(context.Background(), "manager", false)
+	if err != nil || !result.Allowed || len(result.People) != 0 || peopleCalls != 0 {
+		t.Fatalf("light context unexpectedly loaded people: result=%+v calls=%d err=%v", result, peopleCalls, err)
+	}
+	result, err = s.ContextWithOptions(context.Background(), "manager", true)
+	if err != nil || len(result.People) != 0 || peopleCalls != 1 {
+		t.Fatalf("full context did not load people: result=%+v calls=%d err=%v", result, peopleCalls, err)
 	}
 }

@@ -159,16 +159,24 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           ? "time_desc"
           : "time_asc";
   const [search, setSearch] = useState(params.get("q") || "");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [settling, setSettling] = useState(false);
   const toast = useToast();
   const context = useQuery({
     queryKey: ["approval", "context", user],
-    queryFn: ({ signal }) => getContext(signal),
-    refetchInterval: 30000,
-    staleTime: 15000,
+    queryFn: ({ signal }) => getContext(false, signal),
+    refetchInterval: 60000,
+    staleTime: 30000,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,
+  });
+  const people = useQuery({
+    queryKey: ["approval", "context", user, "people"],
+    queryFn: ({ signal }) => getContext(true, signal),
+    enabled: moreOpen && context.data?.allowed === true,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
   const query = new URLSearchParams(params);
   query.delete("source");
@@ -186,8 +194,8 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     queryKey: ["welfare", "settlements", user],
     queryFn: ({ signal }) => settlement.list(signal),
     enabled: context.data?.allowed === true && (tab === "fulfillment" || tab === "history"),
-    refetchInterval: 10000,
-    staleTime: 5000,
+    refetchInterval: tab === "fulfillment" || tab === "history" ? 30000 : false,
+    staleTime: 15000,
     refetchOnWindowFocus: false,
   });
   // The cursor is bound to the current filters and user. Start the next page
@@ -340,8 +348,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             type="button"
             className={tab === v.id ? "active" : ""}
             aria-current={tab === v.id ? "page" : undefined}
-            onPointerEnter={() => warmView(v.id)}
-            onFocus={() => warmView(v.id)}
+    onFocus={() => warmView(v.id)}
             onClick={() => change("view", v.id)}
           >
             {v.label}
@@ -460,7 +467,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             ]}
           />
         )}
-        <details className="approval-more">
+        <details className="approval-more" open={moreOpen} onToggle={(event) => setMoreOpen(event.currentTarget.open)}>
           <summary>{msg("更多筛选")}</summary>
           <div>
             <label>
@@ -495,12 +502,14 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
               onValueChange={(v) => change("account", v)}
               options={[
                 { value: "", label: msg("全部人员") },
-                ...context.data.people.map((p) => ({
+                ...((people.data?.people ?? []).map((p) => ({
                   value: p.id,
                   label: p.name,
-                })),
+                }))),
               ]}
             />
+            {people.isFetching && <span className="approval-filter-hint" role="status">{msg("正在读取申请人")}</span>}
+            {people.isError && <span className="approval-filter-hint approval-filter-error" role="alert">{msg("申请人筛选暂不可用")}</span>}
             <Button
               variant="outline"
               type="button"

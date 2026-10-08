@@ -32,6 +32,13 @@ type Context struct {
 }
 
 func (s *Service) Context(ctx context.Context, user string) (Context, error) {
+	return s.ContextWithOptions(ctx, user, true)
+}
+
+// ContextWithOptions keeps the initial approval shell lightweight. Applicant
+// options are only needed when the advanced filter is opened, so callers can
+// skip the member/name projection on the first request.
+func (s *Service) ContextWithOptions(ctx context.Context, user string, includePeople bool) (Context, error) {
 	out := Context{Sources: []string{}, Corporations: []reviewqueue.Option{}, Unavailable: []string{}, People: []reviewqueue.Option{}}
 	people := map[string]bool{}
 	seen := map[string]bool{}
@@ -51,7 +58,7 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 			defer wg.Done()
 			result := sourceContextResult{id: source.ID}
 			result.access, result.accessError = source.Access(ctx, user)
-			if result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
+			if includePeople && result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
 				if source.PeopleAuthorized != nil {
 					result.people, result.peopleError = source.PeopleAuthorized(ctx, user, result.access)
 				} else {
@@ -89,7 +96,7 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 			}
 		}
 	}
-	if s.Names != nil && len(people) > 0 {
+	if includePeople && s.Names != nil && len(people) > 0 {
 		ids := []string{}
 		for id := range people {
 			ids = append(ids, id)
@@ -253,8 +260,12 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 	}
 	if s.Names != nil && len(out.Items) > 0 {
 		ids := []string{}
+		seen := map[string]bool{}
 		for _, i := range out.Items {
-			ids = append(ids, i.Account)
+			if i.Account != "" && !seen[i.Account] {
+				seen[i.Account] = true
+				ids = append(ids, i.Account)
+			}
 		}
 		names, e := s.Names(ctx, ids)
 		for i := range out.Items {

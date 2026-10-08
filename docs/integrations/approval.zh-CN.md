@@ -52,7 +52,7 @@
 
 ## 查询与边界
 
-只读 API：GET /api/v1/approval/context、GET /api/v1/approval/items、GET /api/v1/approval/items/{source}/{id}。原审批/取消请求仍发到 welfare/commands 或 exchange/rewards/orders/{id}，继续检查 CSRF、当前权限、版本、幂等键及原事务锁。
+只读 API：GET /api/v1/approval/context、GET /api/v1/approval/items、GET /api/v1/approval/items/{source}/{id}。`/context` 默认返回权限、来源和军团选项；需要申请人筛选选项时使用 `?include_people=true`，服务端再读取人员名称投影。原审批/取消请求仍发到 welfare/commands 或 exchange/rewards/orders/{id}，继续检查 CSRF、当前权限、版本、幂等键及原事务锁。
 
 context 返回 allowed、sources、corporations、people、unavailable；items 接受 view、sort、kind、corporation、account、q、status、from、until、mine、cursor。`sort` 当前支持 `time_asc`/`time_desc`（申请/处理时间）和 `id_asc`/`id_desc`（编号），省略时待处理视图默认申请时间最早、已处理视图默认处理时间最新。时间使用 RFC3339，前端日期筛选明确 UTC，起始包含、截止不含。搜索单号、结算编号、接收角色和标题；主角色按人员选择筛选。兑换没有历史军团归属，选择军团时不混入兑换订单。
 
