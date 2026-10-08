@@ -4,7 +4,11 @@
 
 ## 未发布
 
-- 新增 `corporation.welfare.compensation` 补损审核与交付权限，可在权限管理中按军团范围授予账号；审批中心只展示 `srp`/`solo` 补损，普通成员权限保持不变。现有 `corporation.welfare` 继续兼容完整福利管理。无新增 Goose/River 迁移。
+
+## v0.1.0-welfare-compensation-officer-20261008 — 2026-10-08
+
+- 新增 `corporation.welfare.compensation` 补损审核与交付权限，可在权限管理中按军团范围授予账号；审批中心只展示 `srp`/`solo` 补损，普通成员权限保持不变。现有 `corporation.welfare` 继续兼容完整福利管理。
+- 无新增 Goose/River 迁移；生产应用与公网静态站点已切换，应用 `active/ready`、首页/登录 200、匿名福利接口 401 和 OpenResty 配置检查通过。
 
 ## v0.1.0-alliance-pap-selector-20261008 — 2026-10-08
 

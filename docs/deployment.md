@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 补损专员独立权限发布（2026-10-08）
+
+已发布 `v0.1.0-welfare-compensation-officer-20261008`，来源提交 `2120a942983bc34c1230699a9a8b712279677d20`。新增 `corporation.welfare.compensation` 独立站点权限，审批中心仅向该角色开放 `srp`/`solo` 补损审批与交付核验；普通成员权限保留，完整 `corporation.welfare` 范围不变。无新增 Goose/River 迁移；应用机与公网静态站点已原子切换，应用 `active/ready`、首页/登录 200、匿名福利接口 401、容器静态入口和 OpenResty `nginx -t` 均通过。
+
 ## 贷款详情移除核验按钮发布（2026-10-08）
 
 已发布 `v0.1.0-loan-no-verify-button-20261008`。贷款出借详情移除自动核验按钮，合同完成并同步后由系统自动核验；详情只保留合同复制信息和取消出借操作。无新增 Goose/River 迁移。
