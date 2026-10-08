@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 审批中心奖励兑换名称解析降级发布（2026-10-08）
+
+已发布 `v0.1.0-approval-exchange-name-fallback-20261008`，来源提交 `0bbc2e41d5328b91a05ab2a55c9630280656229b`。兑换审批列表在 SDE 名称服务暂时不可用时继续使用冻结快照返回类型 ID、数量、金额和计数，不再把展示名称解析失败当作整个兑换来源不可用。无新增 Goose/River 迁移；应用机与公网静态站点已原子切换，应用 `active/ready`、首页/登录 200、匿名审批接口 401、容器静态入口和 OpenResty `nginx -t` 均通过。
+
 ## 补损专员独立权限发布（2026-10-08）
 
 已发布 `v0.1.0-welfare-compensation-officer-20261008`，来源提交 `2120a942983bc34c1230699a9a8b712279677d20`。新增 `corporation.welfare.compensation` 独立站点权限，审批中心仅向该角色开放 `srp`/`solo` 补损审批与交付核验；普通成员权限保留，完整 `corporation.welfare` 范围不变。无新增 Goose/River 迁移；应用机与公网静态站点已原子切换，应用 `active/ready`、首页/登录 200、匿名福利接口 401、容器静态入口和 OpenResty `nginx -t` 均通过。
