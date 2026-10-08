@@ -71,7 +71,7 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
     if (busy) return;
     setBusy(true); setMessage("");
     try { await action(); onDone(); setOpen(false); }
-    catch (e) { setMessage(e instanceof Error ? e.message : msg("自动核验未找到匹配合同")); }
+    catch (e) { setMessage(e instanceof Error ? e.message : msg("取消出借失败")); }
     finally { setBusy(false); }
   };
   const sourceName = characters.find((character) => character.id === item.source_character_id)?.name ?? item.source_character_id;
@@ -87,7 +87,6 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
     </button>
     {open && <Modal title={msg("出借详情")} busy={busy} close={() => setOpen(false)} className="loan-deposit-dialog"
       footer={item.state === "pending" ? <div className="loan-form-actions">
-        <Button disabled={busy} onClick={() => void run(() => api.autoVerifyContribution(csrf, item.id, { version: item.version }))}>{busy ? msg("正在处理") : msg("自动核验合同")}</Button>
         <Button variant="outline" disabled={busy} onClick={() => void run(() => api.cancelContribution(csrf, item.id, { version: item.version }))}>{msg("取消出借")}</Button>
       </div> : undefined}>
       <dl className="loan-deposit-summary">
@@ -101,7 +100,7 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
       {item.state === "pending" && <>
         <section className="loan-contract-handoff" aria-label={msg("合同信息")}>
           <h3>{msg("合同信息")}</h3>
-          <p>{msg("物品交换合同，无物品；合同完成并同步后可核验入金。")}</p>
+          <p>{msg("物品交换合同，无物品；合同完成并同步后由系统自动核验入金。")}</p>
           <div className="loan-contract-copy-grid">
             <CopyField label={recipientLabel} value={recipient ?? ""} />
             <CopyField label={msg("支付金额 / ISK")} value={String(item.amount_minor / 100)} />
