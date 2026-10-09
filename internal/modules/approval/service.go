@@ -27,6 +27,9 @@ type Service struct {
 	Index    *store.Index
 	UseIndex bool
 	DualRead bool
+	// IndexAccounts is the optional P3 gray list. Empty means all authenticated
+	// users retain the P1 index path; a non-empty list limits it by account.
+	IndexAccounts []string
 }
 
 // NewService is the composition boundary for the central index. The private
@@ -170,7 +173,7 @@ func validate(f reviewqueue.Filter) error {
 	return nil
 }
 func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
-	if s.UseIndex && s.Index != nil {
+	if s.useIndexFor(user) {
 		out, err := s.listIndexed(ctx, user, f, token)
 		if s.DualRead && err == nil {
 			go s.compareAsync(user, f, token, out)
@@ -178,6 +181,13 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 		return out, err
 	}
 	return s.listLegacy(ctx, user, f, token)
+}
+
+func (s *Service) useIndexFor(user string) bool {
+	if !s.UseIndex || s.Index == nil {
+		return false
+	}
+	return len(s.IndexAccounts) == 0 || slices.Contains(s.IndexAccounts, user)
 }
 
 func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, indexed Result) {
@@ -190,7 +200,34 @@ func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, 
 	}
 	if reason := compareResults(indexed, legacy); reason != "" {
 		slog.Warn("approval dual-read mismatch", "reason", reason, "view", f.View, "sort", f.Sort, "kind", f.Kind, "corporation", f.Corporation)
+		if s.Index != nil {
+			filter, _ := json.Marshal(f)
+			source, sourceID, indexedVersion, legacyVersion := mismatchCoordinate(reason, indexed, legacy)
+			if err := s.Index.RecordDualReadDiff(ctx, user, string(filter), reason, source, sourceID, indexedVersion, legacyVersion); err != nil {
+				slog.Warn("approval dual-read diff persistence failed", "reason", reason, "error", err)
+			}
+		}
 	}
+}
+
+func mismatchCoordinate(reason string, indexed, legacy Result) (string, int64, int64, int64) {
+	if !strings.HasPrefix(reason, "item_") {
+		return "", 0, 0, 0
+	}
+	parts := strings.SplitN(reason, "_", 3)
+	if len(parts) < 3 {
+		return "", 0, 0, 0
+	}
+	index, err := strconv.Atoi(parts[1])
+	if err != nil || index < 0 || index >= len(indexed.Items) || index >= len(legacy.Items) {
+		return "", 0, 0, 0
+	}
+	left, right := indexed.Items[index], legacy.Items[index]
+	source, sourceID := left.Source, left.ID
+	if source == "" {
+		source, sourceID = right.Source, right.ID
+	}
+	return source, sourceID, left.Version, right.Version
 }
 
 func compareResults(indexed, legacy Result) string {

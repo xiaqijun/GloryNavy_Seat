@@ -5,10 +5,25 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"glorynavy.local/seat/internal/modules/approval/internal/store"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 	"testing"
 	"time"
 )
+
+func TestIndexAllowlistControlsReadPath(t *testing.T) {
+	s := &Service{UseIndex: true, Index: &store.Index{}, IndexAccounts: []string{"pilot"}}
+	if !s.useIndexFor("pilot") {
+		t.Fatal("allowlisted account did not use index")
+	}
+	if s.useIndexFor("other") {
+		t.Fatal("non-allowlisted account used index")
+	}
+	s.IndexAccounts = nil
+	if !s.useIndexFor("other") {
+		t.Fatal("empty allowlist did not preserve all-account index mode")
+	}
+}
 
 func TestMergePaginationPermissionAndPartialFailure(t *testing.T) {
 	ctx := context.Background()

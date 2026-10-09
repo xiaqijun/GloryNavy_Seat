@@ -59,6 +59,7 @@ type AuthConfig struct {
 	AlertMaxGrantSeconds                                   int64
 	AlertGrantTTL                                          time.Duration
 	ApprovalDualRead                                       bool
+	ApprovalIndexAccounts                                  []string
 }
 type Application struct {
 	http.Handler
@@ -742,7 +743,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
 	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
-	approvalModule, approvalProjection := approvalHandler(pool, auth.ApprovalDualRead, enabled, identityService, welfareModule.Service, exchangeService, loanService)
+	approvalModule, approvalProjection := approvalHandler(pool, auth.ApprovalDualRead, auth.ApprovalIndexAccounts, enabled, identityService, welfareModule.Service, exchangeService, loanService)
 	if pool != nil && len(approvalModule.Service.Sources) > 0 {
 		if err := approvalProjection.Reconcile(context.Background(), approvalModule.Service.Sources); err != nil {
 			logger.Warn("approval index initial reconcile failed; using source fallback", "error", err)

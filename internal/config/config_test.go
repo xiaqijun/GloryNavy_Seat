@@ -181,3 +181,20 @@ func TestAlertConsumptionConfigurationRequiresFrozenPolicy(t *testing.T) {
 		})
 	}
 }
+
+func TestApprovalIndexAccountAllowlist(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://dev@localhost/test")
+	t.Setenv("EVE_CLIENT_ID", "")
+	t.Setenv("EVE_CLIENT_SECRET", "")
+	t.Setenv("APPROVAL_INDEX_ACCOUNTS", "11111111-1111-1111-1111-111111111111, 11111111-1111-1111-1111-111111111111")
+	c, err := Load()
+	if err != nil || len(c.ApprovalIndexAccounts) != 1 {
+		t.Fatalf("allowlist=%v err=%v", c.ApprovalIndexAccounts, err)
+	}
+	for _, value := range []string{"not-a-uuid", "11111111-1111-1111-1111-11111111111z"} {
+		t.Setenv("APPROVAL_INDEX_ACCOUNTS", value)
+		if _, err := Load(); err == nil {
+			t.Fatalf("invalid approval account accepted: %s", value)
+		}
+	}
+}

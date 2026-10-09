@@ -12,9 +12,10 @@ import (
 	"slices"
 )
 
-func approvalHandler(pool *pgxpool.Pool, dualRead bool, enabled []string, accounts *identity.Service, w *welfare.Service, e *exchange.Service, l *loan.Service) (approval.Handler, *approval.Projection) {
+func approvalHandler(pool *pgxpool.Pool, dualRead bool, indexAccounts []string, enabled []string, accounts *identity.Service, w *welfare.Service, e *exchange.Service, l *loan.Service) (approval.Handler, *approval.Projection) {
 	s := approval.NewService(accounts.MainCharacterNames, pool)
 	s.DualRead = dualRead
+	s.IndexAccounts = indexAccounts
 	if slices.Contains(enabled, "welfare") {
 		s.Sources = append(s.Sources, reviewqueue.Source{ID: "welfare", Access: w.ApprovalAccess, Query: w.ApprovalQueue, QueryAuthorized: w.ApprovalQueueAuthorized, People: w.ApprovalPeople, PeopleAuthorized: w.ApprovalPeopleAuthorized, Snapshot: w.ApprovalSnapshot, Decorate: w.ApprovalDecorate})
 	}

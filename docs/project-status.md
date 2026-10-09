@@ -2,9 +2,13 @@
 
 ## 当前：审批中心统一读模型重构（P1 已发布，P2 灰度待验，2026-10-09）
 
-生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r5`（来源提交 `9d8574f`；包含首页白屏修复）。审批中心使用私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态，福利、兑换、贷款均已接入快照适配器；投影器启动回填并每 2 分钟对账，来源失败不会清空其他来源索引。详情、决定、合同、账务和对象级权限仍由来源模块负责，统一列表只承担读取聚合。
+生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r7`（包含首页白屏与兼容登录跳转修复）。审批中心使用私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态，福利、兑换、贷款均已接入快照适配器；投影器启动回填并每 2 分钟对账，来源失败不会清空其他来源索引。详情、决定、合同、账务和对象级权限仍由来源模块负责，统一列表只承担读取聚合。
 
-生产 Goose 为 76，`approval_projection_runs` 当前 `exchange=fresh/0`、`loan=fresh/0`、`welfare=fresh/109`，`approval_items` 共 109 条；应用 `active/ready`，首页和 `/login` 兼容跳转实际浏览器复核通过，静态资源 200，审批匿名接口 401，边缘 OpenResty `nginx -t` 通过。双读诊断已补齐来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作差异；`APPROVAL_DUAL_READ` 仍保持关闭，待管理员真实会话灰度验收。方案与验收边界见 [审批中心重构方案](plans/approval-center-refactor.zh-CN.md)。
+生产 Goose 为 77，`approval_projection_runs` 当前 `exchange=fresh/0`、`loan=fresh/0`、`welfare=fresh/109`，`approval_items` 共 109 条；应用 `active/ready`，首页和 `/login` 兼容跳转实际浏览器复核通过，静态资源 200，审批匿名接口 401，边缘 OpenResty `nginx -t` 通过。双读诊断已补齐来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作差异，并持久化到 `approval_dual_read_diffs`；`APPROVAL_DUAL_READ` 仍保持关闭，待管理员真实会话灰度验收。已提供 `APPROVAL_INDEX_ACCOUNTS` 按账号灰度索引读取，空值保持全量索引路径。方案与验收边界见 [审批中心重构方案](plans/approval-center-refactor.zh-CN.md)。
+
+## 已发布：审批统一读模型 P2 诊断与灰度开关（2026-10-09）
+
+生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r7`。新增 `approval_dual_read_diffs` 保存双读差异的筛选条件、字段原因、来源和版本；新增 `APPROVAL_INDEX_ACCOUNTS` 账号白名单用于 P3 灰度，未配置时保持当前全量索引读取。Goose 77；应用 `active/ready`、首页和静态资源 200、匿名审批接口 401、OpenResty 配置检查通过。双读开关仍关闭，真实管理员会话验收未冒充完成。
 
 ## 已发布：审批中心与贷款页面性能优化（2026-10-09）
 

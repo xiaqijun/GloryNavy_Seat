@@ -44,6 +44,7 @@ type Config struct {
 	AlertMaxGrantSeconds    int64
 	AlertGrantTTL           time.Duration
 	ApprovalDualRead        bool
+	ApprovalIndexAccounts   []string
 }
 
 func Load() (Config, error) {
@@ -168,6 +169,18 @@ func Load() (Config, error) {
 	if err != nil {
 		return c, errors.New("APPROVAL_DUAL_READ must be true or false")
 	}
+	for _, raw := range strings.Split(os.Getenv("APPROVAL_INDEX_ACCOUNTS"), ",") {
+		account := strings.TrimSpace(raw)
+		if account == "" {
+			continue
+		}
+		if !isUUID(account) {
+			return c, errors.New("APPROVAL_INDEX_ACCOUNTS contains an invalid account id")
+		}
+		if !slices.Contains(c.ApprovalIndexAccounts, account) {
+			c.ApprovalIndexAccounts = append(c.ApprovalIndexAccounts, account)
+		}
+	}
 	if api, parseErr := url.Parse(c.QQBotAPIBase); parseErr != nil || api.Host == "" || api.Path != "" || api.RawQuery != "" || api.Fragment != "" || api.User != nil || (api.Scheme != "https" && !(api.Scheme == "http" && (api.Hostname() == "127.0.0.1" || api.Hostname() == "localhost" || api.Hostname() == "::1"))) {
 		return c, errors.New("QQ_BOT_API_BASE must be an HTTPS origin")
 	}
@@ -195,6 +208,24 @@ func isNumericQQGroupID(value string) bool {
 	}
 	for _, r := range value {
 		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func isUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i, r := range value {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if r != '-' {
+				return false
+			}
+			continue
+		}
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
 			return false
 		}
 	}

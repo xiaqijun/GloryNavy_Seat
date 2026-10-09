@@ -257,3 +257,18 @@ func (s Index) StaleSources(ctx context.Context, maxAge time.Duration) ([]string
 	}
 	return out, rows.Err()
 }
+
+// RecordDualReadDiff persists only comparison diagnostics. It deliberately
+// stores the filter and source/version coordinates, never source payloads or
+// approval state, so the table can explain a mismatch without becoming a
+// second business record store.
+func (s Index) RecordDualReadDiff(ctx context.Context, actor, filter, reason, source string, sourceID, indexedVersion, legacyVersion int64) error {
+	if s.Pool == nil {
+		return ErrUnavailable
+	}
+	_, err := s.Pool.Exec(ctx, `INSERT INTO approval_dual_read_diffs
+		(actor_id,filter,reason,source,source_id,indexed_version,legacy_version)
+		VALUES($1,$2::jsonb,$3,$4,NULLIF($5,0),NULLIF($6,0),NULLIF($7,0))`,
+		actor, filter, reason, source, sourceID, indexedVersion, legacyVersion)
+	return err
+}

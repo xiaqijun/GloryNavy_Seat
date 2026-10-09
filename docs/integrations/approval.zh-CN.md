@@ -2,7 +2,7 @@
 
 ## 统一读模型（开发中）
 
-P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。生产切换前必须完成双读差异验收，当前版本保留来源聚合回退，迁移文件为 `migrations/00074_approval_items.sql`、`00075_approval_processed_by.sql` 和 `00076_approval_history.sql`。
+P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。Goose 77 新增 `approval_dual_read_diffs`，双读诊断持久化筛选、字段原因、来源和版本但不保存来源 payload；`APPROVAL_INDEX_ACCOUNTS` 可按账号灰度索引读取。`APPROVAL_DUAL_READ` 默认关闭，真实管理员验收前不打开。迁移文件为 `migrations/00074_approval_items.sql` 至 `00077_approval_dual_read_diffs.sql`。
 
 2026-10-03 已发布 `v0.1.0-contract-batch-recipient-name-20261003`：批次详情的合同接收人显示本站账号当前主角色名称；后台仍用角色 ID 做合同核验，历史批次的多个角色 ID 不会出现在接收人展示字段中。
 
