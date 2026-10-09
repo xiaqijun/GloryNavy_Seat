@@ -194,21 +194,78 @@ func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, 
 }
 
 func compareResults(indexed, legacy Result) string {
-	if len(indexed.Unavailable) != len(legacy.Unavailable) {
-		return "unavailable_count"
+	if reason := compareStringSet(indexed.Unavailable, legacy.Unavailable); reason != "" {
+		return "unavailable_" + reason
 	}
-	for bucket, count := range legacy.Counts {
-		if indexed.Counts[bucket] != count {
+	countKeys := map[string]bool{}
+	for bucket := range indexed.Counts {
+		countKeys[bucket] = true
+	}
+	for bucket := range legacy.Counts {
+		countKeys[bucket] = true
+	}
+	for bucket := range countKeys {
+		if indexed.Counts[bucket] != legacy.Counts[bucket] {
 			return "count_" + bucket
 		}
+	}
+	if indexed.Next != legacy.Next {
+		return "next_cursor"
 	}
 	if len(indexed.Items) != len(legacy.Items) {
 		return "item_count"
 	}
 	for i := range indexed.Items {
-		a, b := indexed.Items[i], legacy.Items[i]
-		if a.Source != b.Source || a.ID != b.ID || a.Version != b.Version || a.Account != b.Account || a.Corporation != b.Corporation || a.Kind != b.Kind || a.State != b.State || a.Status != b.Status || a.Time.UTC() != b.Time.UTC() {
-			return "item_" + strconv.Itoa(i)
+		if field := compareItem(indexed.Items[i], legacy.Items[i]); field != "" {
+			return "item_" + strconv.Itoa(i) + "_" + field
+		}
+	}
+	return ""
+}
+
+func compareStringSet(a, b []string) string {
+	if len(a) != len(b) {
+		return "count"
+	}
+	left, right := append([]string(nil), a...), append([]string(nil), b...)
+	slices.Sort(left)
+	slices.Sort(right)
+	for i := range left {
+		if left[i] != right[i] {
+			return "source"
+		}
+	}
+	return ""
+}
+
+func compareItem(a, b reviewqueue.Item) string {
+	checks := []struct {
+		name string
+		diff bool
+	}{
+		{"source", a.Source != b.Source},
+		{"id", a.ID != b.ID},
+		{"version", a.Version != b.Version},
+		{"account", a.Account != b.Account},
+		{"applicant", a.Applicant != b.Applicant},
+		{"corporation", a.Corporation != b.Corporation},
+		{"kind", a.Kind != b.Kind},
+		{"state", a.State != b.State},
+		{"status", a.Status != b.Status},
+		{"processed_by", !slices.Equal(a.ProcessedBy, b.ProcessedBy)},
+		{"history", a.History != b.History},
+		{"recipient", a.Recipient != b.Recipient},
+		{"title", a.Title != b.Title},
+		{"reference", a.Reference != b.Reference},
+		{"amount", a.Amount != b.Amount},
+		{"unit", a.Unit != b.Unit},
+		{"time", !a.Time.UTC().Equal(b.Time.UTC())},
+		{"action", a.Action != b.Action},
+		{"actions", !slices.Equal(a.Actions, b.Actions)},
+	}
+	for _, check := range checks {
+		if check.diff {
+			return check.name
 		}
 	}
 	return ""

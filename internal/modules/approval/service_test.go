@@ -204,4 +204,24 @@ func TestCompareResultsDetectsPageAndCountDrift(t *testing.T) {
 	if reason := compareResults(base, changed); reason != "item_count" {
 		t.Fatalf("page drift reason = %q", reason)
 	}
+	changed = base
+	changed.Next = "next"
+	if reason := compareResults(base, changed); reason != "next_cursor" {
+		t.Fatalf("cursor drift reason = %q", reason)
+	}
+	changed = base
+	changed.Unavailable = []string{"loan"}
+	if reason := compareResults(base, changed); reason != "unavailable_count" {
+		t.Fatalf("unavailable drift reason = %q", reason)
+	}
+	changed = base
+	changed.Items = []reviewqueue.Item{{Source: "welfare", ID: 1, Version: 2, Account: "a", State: "submitted", Status: "approved", Time: time.Unix(10, 0).UTC()}}
+	if reason := compareResults(base, changed); reason != "item_0_status" {
+		t.Fatalf("item status drift reason = %q", reason)
+	}
+	changed = base
+	changed.Items = []reviewqueue.Item{{Source: "welfare", ID: 1, Version: 2, Account: "a", State: "submitted", Status: "submitted", Time: time.Unix(10, 0).UTC(), Actions: []string{"approve"}}}
+	if reason := compareResults(base, changed); reason != "item_0_actions" {
+		t.Fatalf("item actions drift reason = %q", reason)
+	}
 }
