@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 审批列表授权范围缓存（2026-10-09）
+
+已发布 `v0.1.0-approval-read-model-20261009-r11`，来源提交 `19d4320`。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；无 Goose/River 新迁移。审批上下文和索引列表按账号、来源及读取路径隔离复用 5 秒授权范围结果，详情、审批决定和写操作仍实时回源。应用 `active/ready`、首页 200、匿名审批接口 401、Goose 77、`approval_projection_runs` 三来源状态和边缘 OpenResty `nginx -t` 均已复核。
+
 ## 审批中心统一读模型与首页白屏修复（2026-10-09）
 
 已发布 `v0.1.0-approval-read-model-20261009-r10`，来源提交 `71f7cfb`。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；Goose 77 已执行，River 无新增迁移。审批中心统一列表使用 `approval_items` 索引，福利、兑换、贷款投影均为 `fresh`；投影记录为 `exchange=0`、`loan=0`、`welfare=109`，索引共 109 条。列表响应新增来源状态、摘要版本、详情能力和陈旧标记；详情通过来源注册表加载，未知来源回退通用摘要，`IndexOnly` 来源可安全接入索引。详情和审批写入仍回源来源模块执行权限、版本、合同与账务校验，双读诊断开关保持关闭，待管理员会话灰度验收。双读差异记录现覆盖来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作，并持久化到 `approval_dual_read_diffs`；`APPROVAL_INDEX_ACCOUNTS` 可按账号启用索引灰度。统一索引列表不再逐行调用兑换 SDE 名称服务，来源能力声明在启动时校验。
