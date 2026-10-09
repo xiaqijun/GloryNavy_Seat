@@ -44,11 +44,12 @@ func NewService(names func(context.Context, []string) (map[string]string, error)
 }
 
 type Context struct {
-	Allowed      bool                 `json:"allowed"`
-	Sources      []string             `json:"sources"`
-	Corporations []reviewqueue.Option `json:"corporations"`
-	Unavailable  []string             `json:"unavailable"`
-	People       []reviewqueue.Option `json:"people"`
+	Allowed      bool                                `json:"allowed"`
+	Sources      []string                            `json:"sources"`
+	Capabilities map[string]reviewqueue.Capabilities `json:"capabilities"`
+	Corporations []reviewqueue.Option                `json:"corporations"`
+	Unavailable  []string                            `json:"unavailable"`
+	People       []reviewqueue.Option                `json:"people"`
 }
 
 func (s *Service) Context(ctx context.Context, user string) (Context, error) {
@@ -59,7 +60,7 @@ func (s *Service) Context(ctx context.Context, user string) (Context, error) {
 // options are only needed when the advanced filter is opened, so callers can
 // skip the member/name projection on the first request.
 func (s *Service) ContextWithOptions(ctx context.Context, user string, includePeople bool) (Context, error) {
-	out := Context{Sources: []string{}, Corporations: []reviewqueue.Option{}, Unavailable: []string{}, People: []reviewqueue.Option{}}
+	out := Context{Sources: []string{}, Capabilities: map[string]reviewqueue.Capabilities{}, Corporations: []reviewqueue.Option{}, Unavailable: []string{}, People: []reviewqueue.Option{}}
 	people := map[string]bool{}
 	seen := map[string]bool{}
 	type sourceContextResult struct {
@@ -101,6 +102,12 @@ func (s *Service) ContextWithOptions(ctx context.Context, user string, includePe
 		}
 		out.Allowed = true
 		out.Sources = append(out.Sources, result.id)
+		for _, source := range s.Sources {
+			if source.ID == result.id {
+				out.Capabilities[result.id] = source.Capabilities
+				break
+			}
+		}
 		if result.peopleLoaded && result.peopleError != nil {
 			slog.Warn("approval source unavailable", "source", result.id, "stage", "people", "error", result.peopleError)
 			out.Unavailable = append(out.Unavailable, result.id)

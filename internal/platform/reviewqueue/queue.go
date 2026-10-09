@@ -5,6 +5,9 @@ package reviewqueue
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -64,13 +67,29 @@ type Access struct {
 	Bindings              []Binding           `json:"-"`
 	RestrictBindings      bool                `json:"-"`
 }
+
+// Capabilities describes the operations and list filters a source can expose
+// in the central approval contract. It is metadata only: the source still
+// owns the final authorization and decision checks.
+type Capabilities struct {
+	Approve           bool   `json:"approve"`
+	Reject            bool   `json:"reject"`
+	CancelReview      bool   `json:"cancel_review"`
+	Fulfill           bool   `json:"fulfill"`
+	BatchSettle       bool   `json:"batch_settle"`
+	CorporationFilter bool   `json:"corporation_filter"`
+	ApplicantFilter   bool   `json:"applicant_filter"`
+	Amount            bool   `json:"amount"`
+	DetailKind        string `json:"detail_kind"`
+}
 type Page struct {
 	Items  []Item           `json:"items"`
 	Counts map[string]int64 `json:"counts"`
 }
 type Source struct {
-	ID     string
-	Access func(context.Context, string) (Access, error)
+	ID           string
+	Capabilities Capabilities
+	Access       func(context.Context, string) (Access, error)
 	// IndexAccess may load the additional scope needed by the central index;
 	// the regular Access path stays lightweight for the initial context shell.
 	IndexAccess func(context.Context, string) (Access, error)
@@ -89,4 +108,32 @@ type Source struct {
 	// Decorate applies actor-specific actions after an item is read from the
 	// central index. It must not mutate source state.
 	Decorate func(context.Context, string, *Item) error
+}
+
+// ValidateSources is called at composition time so an incomplete future
+// adapter fails closed instead of silently producing an empty queue.
+func ValidateSources(sources []Source) error {
+	seen := map[string]bool{}
+	for _, source := range sources {
+		if strings.TrimSpace(source.ID) == "" || seen[source.ID] {
+			return fmt.Errorf("invalid approval source id %q", source.ID)
+		}
+		seen[source.ID] = true
+		if source.Access == nil || source.Query == nil || source.Snapshot == nil {
+			return fmt.Errorf("approval source %q is missing access, query, or snapshot adapter", source.ID)
+		}
+		if source.Capabilities.DetailKind == "" {
+			return fmt.Errorf("approval source %q is missing detail kind", source.ID)
+		}
+	}
+	return nil
+}
+
+func SortedSourceIDs(sources []Source) []string {
+	ids := make([]string, 0, len(sources))
+	for _, source := range sources {
+		ids = append(ids, source.ID)
+	}
+	slices.Sort(ids)
+	return ids
 }

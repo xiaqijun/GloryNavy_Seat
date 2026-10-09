@@ -27,6 +27,17 @@ export type LoanApproval = {
 export type ApprovalContext = {
   allowed: boolean;
   sources: string[];
+  capabilities?: Record<string, {
+    approve: boolean;
+    reject: boolean;
+    cancel_review: boolean;
+    fulfill: boolean;
+    batch_settle: boolean;
+    corporation_filter: boolean;
+    applicant_filter: boolean;
+    amount: boolean;
+    detail_kind: string;
+  }>;
   corporations: { id: string; name: string }[];
   unavailable: string[];
   people: { id: string; name: string }[];
