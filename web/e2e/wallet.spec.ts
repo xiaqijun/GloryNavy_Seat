@@ -280,6 +280,9 @@ test("登录页可切换语言，切换后保留登录错误查询参数", async
   await page.route("**/api/v1/identity/session", (r) =>
     r.fulfill({ json: { data: { authenticated: false, session: null } } }),
   );
+  await page.route("**/api/v1/identity/session", (r) =>
+    r.fulfill({ json: { data: { authenticated: false, session: null } } }),
+  );
   await page.route("**/api/v1/eve/login-status", (r) =>
     r.fulfill({ json: { data: { configured: true } } }),
   );

@@ -40,30 +40,19 @@ const member = {
   },
 };
 
-test("unconfigured login is explicit and hidden from main navigation", async ({
+test("protected pages return to the public home without a standalone login", async ({
   page,
 }) => {
-  await page.route("**/api/v1/eve/login-status", (route) =>
-    route.fulfill({ json: { data: { configured: false } } }),
+  await page.route("**/api/v1/identity/session", (route) =>
+    route.fulfill({ json: { data: anonymous } }),
   );
   await page.goto("/workspace");
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(
-    page.getByRole("heading", { name: "EVE 登录", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("登录尚未配置，请联系管理员。", { exact: true }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole("button", { name: "使用 EVE Online 登录" }),
-  ).toHaveCount(0);
-  await expect(page.getByRole("navigation")).toHaveCount(0);
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "GloryNavy", exact: true })).toBeVisible();
   await expect(page.locator(".sidebar, .topbar")).toHaveCount(0);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
 });
 
 test("configured login submits to the server and sanitizes cancellation", async ({
@@ -89,48 +78,34 @@ test("configured login submits to the server and sanitizes cancellation", async 
   await expect(page.getByRole("alert")).toHaveText(
     "已取消登录，可以重新尝试。",
   );
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole("button", { name: "使用 EVE Online 登录" }),
   ).toBeEnabled();
 });
 
-test("signed-in character can log out with CSRF and clear displayed identity", async ({
+test("signed-in character sees the workspace entry on the public home", async ({
   page,
 }) => {
-  let loggedIn = true;
-  await page.route("**/api/v1/eve/login-status", (route) =>
-    route.fulfill({ json: { data: { configured: true } } }),
-  );
   await page.route("**/api/v1/identity/session", (route) =>
-    route.fulfill({ json: { data: loggedIn ? member : anonymous } }),
+    route.fulfill({ json: { data: member } }),
   );
-  await page.route("**/api/v1/identity/logout", async (route) => {
-    expect(route.request().method()).toBe("POST");
-    expect(route.request().headers()["x-csrf-token"]).toBe("browser-csrf");
-    loggedIn = false;
-    await route.fulfill({ json: { data: { logged_out: true } } });
-  });
-  await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "测试舰长" })).toBeVisible();
-  await expect(page).toHaveURL(/\/account$/);
-  await page.getByRole("button", { name: "退出登录" }).click();
-  await expect(
-    page.getByRole("heading", { name: "EVE 登录", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("测试舰长", { exact: true })).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "进入工作台" })).toHaveAttribute(
+    "href",
+    "/workspace",
+  );
+  await expect(page.getByRole("button", { name: "使用 EVE Online 登录" })).toHaveCount(0);
 });
 
-test("anonymous account visits use the standalone login without a redirect loop", async ({
+test("anonymous account visits return to the public home", async ({
   page,
 }) => {
-  await page.route("**/api/v1/identity/session", (r) =>
-    r.fulfill({ json: { data: anonymous } }),
-  );
+  await page.route("**/api/v1/identity/session", async (r) => {
+    await r.fulfill({ json: { data: anonymous } });
+  });
   await page.goto("/account");
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(
-    page.getByRole("heading", { name: "EVE 登录", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".sidebar")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "使用 EVE Online 登录" })).toBeVisible();
+  await expect(page.locator(".sidebar, .topbar")).toHaveCount(0);
 });

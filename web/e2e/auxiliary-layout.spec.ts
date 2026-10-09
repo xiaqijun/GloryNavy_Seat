@@ -81,7 +81,7 @@ for (const [name, path, endpoint] of [
   });
 
 for (const locale of ["zh-CN", "en"])
-  test(`login layout ${locale}: configured, unavailable, error`, async ({
+  test(`public login layout ${locale}: compatibility redirect`, async ({
     page,
   }, info) => {
     await setup(page, false);
@@ -89,26 +89,24 @@ for (const locale of ["zh-CN", "en"])
       (locale) => localStorage.setItem("glorynavy.locale", locale),
       locale,
     );
-    for (const configured of [true, false]) {
-      await page.route("**/api/v1/eve/status", (r) =>
-        r.fulfill({ json: { data: { configured } } }),
-      );
-      await page.goto("/login?error=cancelled");
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      for (const width of [1440, 375, 320]) {
-        await page.setViewportSize({ width, height: 568 });
-        await assertLayout(page);
-      }
-      await expect(
-        page.getByRole("button", {
-          name: /使用 EVE Online 登录|Sign in with EVE Online/,
-        }),
-      ).toHaveCount(configured ? 1 : 0);
-      await page.screenshot({
-        path: info.outputPath(`login-${configured}-320.png`),
-        fullPage: true,
-      });
+    await page.route("**/api/v1/identity/session", (r) =>
+      r.fulfill({ json: { data: { authenticated: false, session: null } } }),
+    );
+    await page.goto("/login?error=cancelled");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    for (const width of [1440, 375, 320]) {
+      await page.setViewportSize({ width, height: 568 });
+      await assertLayout(page);
     }
+    await expect(
+      page.getByRole("button", {
+        name: /使用 EVE Online 登录|Sign in with EVE Online/,
+      }),
+    ).toHaveCount(1);
+    await page.screenshot({
+      path: info.outputPath("login-320.png"),
+      fullPage: true,
+    });
   });
 
 for (const locale of ["zh-CN", "en"])
@@ -130,6 +128,9 @@ for (const locale of ["zh-CN", "en"])
     });
     await page.setViewportSize({ width: 320, height: 568 });
     try {
+      await page.route("**/api/v1/identity/session", (r) =>
+        r.fulfill({ json: { data: { authenticated: false, session: null } } }),
+      );
       await page.goto("/login", { waitUntil: "domcontentloaded" });
       const label =
         locale === "en" ? "Sign in with EVE Online" : "使用 EVE Online 登录";

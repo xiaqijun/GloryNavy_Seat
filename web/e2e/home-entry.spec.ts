@@ -195,10 +195,10 @@ test("session outage does not hide public content or recruitment", async ({
   ).toHaveCount(0);
 });
 
-test("anonymous workspace still goes to login", async ({ page }) => {
+test("anonymous workspace returns to the public home", async ({ page }) => {
   await setup(page, "anonymous");
   await page.goto("/workspace");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole("button", { name: "使用 EVE Online 登录" }),
   ).toBeVisible();
@@ -227,7 +227,7 @@ test("anonymous approval link does not preload its private page", async ({ page 
       approvalLoads.push(request.url());
   });
   await page.goto("/approvals");
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole("button", { name: "使用 EVE Online 登录" }),
   ).toBeVisible();
@@ -245,7 +245,18 @@ test("public login uses existing POST flow", async ({ page }) => {
   });
   await page.goto("/");
   await page.getByRole("button", { name: "使用 EVE Online 登录" }).click();
-  await expect(page).toHaveURL(/\/login\?error=cancelled$/);
+  await expect(page).toHaveURL(/\/\?error=cancelled$/);
+  await expect(page.getByRole("alert")).toHaveText("已取消登录，可以重新尝试。");
+});
+
+test("legacy login address redirects to the public home", async ({ page }) => {
+  await setup(page, "anonymous");
+  await page.goto("/login");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("button", { name: "使用 EVE Online 登录" }),
+  ).toBeVisible();
+  await expect(page.locator(".sidebar, .topbar")).toHaveCount(0);
 });
 
 for (const width of [320, 375, 768, 1440]) {

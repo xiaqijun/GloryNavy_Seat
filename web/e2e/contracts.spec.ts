@@ -253,7 +253,8 @@ test("anonymous contract deep links never prefetch private contract data", async
   const requests: string[] = [];
   page.on("request", (r) => { if (r.url().includes("/api/v1/eve/contracts")) requests.push(r.url()); });
   await page.goto("/contracts?kind=character&owner=123");
-  await expect(page).toHaveURL(/\/login/);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "使用 EVE Online 登录" })).toBeVisible();
   expect(requests).toEqual([]);
 });
 
