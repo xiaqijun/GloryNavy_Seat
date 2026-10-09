@@ -45,6 +45,8 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 | 果壳币、奖励库与兑换 | [中文](integrations/exchange.zh-CN.md) / [English](integrations/exchange.en.md) · [页面](ui/exchange.md) |
 | 军团与个人贷款 | [中文](integrations/loan.zh-CN.md) / [English](integrations/loan.en.md) · [页面](ui/loan.md) |
 | 审批中心 | [中文](integrations/approval.zh-CN.md) / [English](integrations/approval.en.md) · [页面](ui/approval.md) |
+
+审批中心重构方案：[统一读模型与来源适配器](plans/approval-center-refactor.zh-CN.md)。该文档是待实施设计，不代表已完成迁移或生产切换。
 | 工作台与系统页 | [页面](ui/system.md) |
 | 军团运营面板 | [页面](ui/operations.md) |
 | 管理员成员资料 | [页面](ui/members.md) |
