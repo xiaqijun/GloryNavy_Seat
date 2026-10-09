@@ -66,7 +66,10 @@ func (s *Service) sourceAccess(ctx context.Context, user string, source reviewqu
 		return access(ctx, user)
 	}
 	key := user + "\x00" + source.ID
-	if indexed {
+	// Most sources use the same authorization scope for the context shell and
+	// indexed list. Only an explicit IndexAccess adapter needs a separate cache
+	// entry because it may include extra list-only bindings or corporations.
+	if indexed && source.IndexAccess != nil {
 		key += "\x00index"
 	}
 	now := time.Now()

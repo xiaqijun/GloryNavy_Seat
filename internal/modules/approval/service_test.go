@@ -25,7 +25,7 @@ func TestIndexAllowlistControlsReadPath(t *testing.T) {
 	}
 }
 
-func TestSourceAccessCacheIsScopedToListPath(t *testing.T) {
+func TestSourceAccessCacheReusesSharedScopeAcrossListPaths(t *testing.T) {
 	calls := 0
 	s := &Service{AccessCacheTTL: time.Minute, accessCache: map[string]accessCacheEntry{}}
 	source := reviewqueue.Source{
@@ -44,11 +44,45 @@ func TestSourceAccessCacheIsScopedToListPath(t *testing.T) {
 	if calls != 1 {
 		t.Fatalf("cached access calls = %d, want 1", calls)
 	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, true); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("shared list access calls = %d, want 1", calls)
+	}
 	if _, err := s.sourceAccess(context.Background(), "b", source, false); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 2 {
 		t.Fatalf("cross-account access calls = %d, want 2", calls)
+	}
+}
+
+func TestSourceAccessCacheSeparatesExplicitIndexScope(t *testing.T) {
+	baseCalls, indexCalls := 0, 0
+	s := &Service{AccessCacheTTL: time.Minute, accessCache: map[string]accessCacheEntry{}}
+	source := reviewqueue.Source{
+		ID: "exchange",
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			baseCalls++
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+		IndexAccess: func(context.Context, string) (reviewqueue.Access, error) {
+			indexCalls++
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, true); err != nil {
+		t.Fatal(err)
+	}
+	if baseCalls != 1 || indexCalls != 1 {
+		t.Fatalf("scoped access calls = base %d, index %d; want 1/1", baseCalls, indexCalls)
 	}
 }
 
