@@ -1,6 +1,6 @@
 import { msg } from "@/lib/i18n";
 import { lazy, Suspense } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { PageBoundary } from "@/app/page-boundary";
 import { systemModule } from "@/modules/system";
 
@@ -13,9 +13,6 @@ const MemberApp = lazy(() => import("@/app/member-app"));
 
 export default function App() {
   const location = useLocation();
-  if (location.pathname === "/") {
-    return <Navigate to={{ pathname: "/", search: location.search }} replace />;
-  }
   if (location.pathname === "/") {
     return (
       <PageBoundary>
