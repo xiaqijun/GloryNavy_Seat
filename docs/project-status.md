@@ -2,9 +2,13 @@
 
 ## 当前：审批中心统一读模型重构（P1 已发布，P2 灰度待验，2026-10-09）
 
-生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r9`（来源提交 `4298fcd`；包含首页白屏、兼容登录跳转、索引列表移除 SDE fan-out 和来源能力校验）。审批中心使用私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态，福利、兑换、贷款均已接入快照适配器；投影器启动回填并每 2 分钟对账，来源失败不会清空其他来源索引。详情、决定、合同、账务和对象级权限仍由来源模块负责，统一列表只承担读取聚合。
+生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r10`（来源提交 `71f7cfb`；包含首页白屏、兼容登录跳转、索引列表移除 SDE fan-out、来源能力校验和可扩展详情注册表）。审批中心使用私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态，福利、兑换、贷款均已接入快照适配器；投影器启动回填并每 2 分钟对账，来源失败不会清空其他来源索引。详情、决定、合同、账务和对象级权限仍由来源模块负责，统一列表只承担读取聚合。
 
 生产 Goose 为 77，`approval_projection_runs` 当前 `exchange=fresh/0`、`loan=fresh/0`、`welfare=fresh/109`，`approval_items` 共 109 条；应用 `active/ready`，首页和 `/login` 兼容跳转实际浏览器复核通过，静态资源 200，审批匿名接口 401，边缘 OpenResty `nginx -t` 通过。双读诊断已补齐来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作差异，并持久化到 `approval_dual_read_diffs`；`APPROVAL_DUAL_READ` 仍保持关闭，待管理员真实会话灰度验收。已提供 `APPROVAL_INDEX_ACCOUNTS` 按账号灰度索引读取，空值保持全量索引路径。方案与验收边界见 [审批中心重构方案](plans/approval-center-refactor.zh-CN.md)。
+
+## 已发布：审批中心扩展契约与同步状态（2026-10-09）
+
+生产应用与公网静态站点已切换至 `v0.1.0-approval-read-model-20261009-r10`。统一列表响应增加 `source_status`、`summary_version`、`detail_kind` 和 `stale`；前端详情通过来源注册表加载，未注册来源回退通用摘要；`IndexOnly` 来源可以只提供快照投影，旧聚合回退安全返回来源不可用。上下文能力元数据和 OpenAPI、中文/英文指南已同步，应用 `active/ready`、首页 200、匿名审批接口 401、Goose 77、投影状态和边缘 OpenResty 检查已复核。双读仍关闭，管理员真实会话灰度与 p95 对照待验收。
 
 ## 已发布：审批统一读模型 P2 诊断与灰度开关（2026-10-09）
 
