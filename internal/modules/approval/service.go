@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"glorynavy.local/seat/internal/modules/approval/internal/store"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 	"log/slog"
 	"slices"
@@ -20,9 +22,24 @@ import (
 var ErrInvalid = errors.New("invalid approval query")
 
 type Service struct {
-	Sources []reviewqueue.Source
-	Names   func(context.Context, []string) (map[string]string, error)
+	Sources  []reviewqueue.Source
+	Names    func(context.Context, []string) (map[string]string, error)
+	Index    *store.Index
+	UseIndex bool
+	DualRead bool
 }
+
+// NewService is the composition boundary for the central index. The private
+// store remains owned by approval; callers only provide the identity name
+// resolver and database pool.
+func NewService(names func(context.Context, []string) (map[string]string, error), pool *pgxpool.Pool) *Service {
+	s := &Service{Names: names}
+	if pool != nil {
+		s.Index = &store.Index{Pool: pool}
+	}
+	return s
+}
+
 type Context struct {
 	Allowed      bool                 `json:"allowed"`
 	Sources      []string             `json:"sources"`
@@ -153,6 +170,145 @@ func validate(f reviewqueue.Filter) error {
 	return nil
 }
 func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
+	if s.UseIndex && s.Index != nil {
+		out, err := s.listIndexed(ctx, user, f, token)
+		if s.DualRead && err == nil {
+			go s.compareAsync(user, f, token, out)
+		}
+		return out, err
+	}
+	return s.listLegacy(ctx, user, f, token)
+}
+
+func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, indexed Result) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	legacy, err := s.listLegacy(ctx, user, f, token)
+	if err != nil {
+		slog.Warn("approval dual-read legacy failed", "error", err)
+		return
+	}
+	if reason := compareResults(indexed, legacy); reason != "" {
+		slog.Warn("approval dual-read mismatch", "reason", reason, "view", f.View, "sort", f.Sort, "kind", f.Kind, "corporation", f.Corporation)
+	}
+}
+
+func compareResults(indexed, legacy Result) string {
+	if len(indexed.Unavailable) != len(legacy.Unavailable) {
+		return "unavailable_count"
+	}
+	for bucket, count := range legacy.Counts {
+		if indexed.Counts[bucket] != count {
+			return "count_" + bucket
+		}
+	}
+	if len(indexed.Items) != len(legacy.Items) {
+		return "item_count"
+	}
+	for i := range indexed.Items {
+		a, b := indexed.Items[i], legacy.Items[i]
+		if a.Source != b.Source || a.ID != b.ID || a.Version != b.Version || a.Account != b.Account || a.Corporation != b.Corporation || a.Kind != b.Kind || a.State != b.State || a.Status != b.Status || a.Time.UTC() != b.Time.UTC() {
+			return "item_" + strconv.Itoa(i)
+		}
+	}
+	return ""
+}
+
+func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
+	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}}
+	if e := validate(f); e != nil {
+		return out, e
+	}
+	var c cursor
+	if token != "" {
+		b, e := base64.RawURLEncoding.DecodeString(token)
+		if e != nil || len(b) > 2048 || json.Unmarshal(b, &c) != nil || c.Fingerprint != fingerprint(user, f) || invalidCursorPosition(f.Sort, c.Position) {
+			return out, ErrInvalid
+		}
+	}
+	type result struct {
+		id string
+		a  reviewqueue.Access
+		e  error
+	}
+	results := make([]result, len(s.Sources))
+	var wg sync.WaitGroup
+	for i, source := range s.Sources {
+		wg.Add(1)
+		go func(i int, source reviewqueue.Source) {
+			defer wg.Done()
+			a, e := source.Access(ctx, user)
+			results[i] = result{id: source.ID, a: a, e: e}
+		}(i, source)
+	}
+	wg.Wait()
+	access := map[string]reviewqueue.Access{}
+	authorized := false
+	for _, r := range results {
+		if r.e != nil {
+			out.Unavailable = append(out.Unavailable, r.id)
+			continue
+		}
+		if r.a.Allowed {
+			authorized = true
+			access[r.id] = r.a
+		}
+	}
+	if !authorized && len(out.Unavailable) == 0 {
+		return out, pgx.ErrNoRows
+	}
+	if stale, err := s.Index.StaleSources(ctx, 5*time.Minute); err == nil {
+		for _, source := range stale {
+			if _, ok := access[source]; ok && !slices.Contains(out.Unavailable, source) {
+				out.Unavailable = append(out.Unavailable, source)
+			}
+		}
+	}
+	page, e := s.Index.List(ctx, scopes(access), user, f, c.Position, 30)
+	if e != nil {
+		return out, e
+	}
+	out.Items, out.Counts = page.Items, page.Counts
+	if len(out.Items) > 0 {
+		ids := make([]string, 0, len(out.Items))
+		seen := map[string]bool{}
+		for _, item := range out.Items {
+			if item.Account != "" && !seen[item.Account] {
+				seen[item.Account] = true
+				ids = append(ids, item.Account)
+			}
+		}
+		names := map[string]string{}
+		if s.Names != nil && len(ids) > 0 {
+			if resolved, err := s.Names(ctx, ids); err == nil {
+				names = resolved
+			}
+		}
+		for i := range out.Items {
+			if name := names[out.Items[i].Account]; name != "" {
+				out.Items[i].Applicant = name
+			}
+			if out.Items[i].Applicant == "" {
+				out.Items[i].Applicant = out.Items[i].Recipient
+			}
+			for _, source := range s.Sources {
+				if source.ID == out.Items[i].Source && source.Decorate != nil {
+					if err := source.Decorate(ctx, user, &out.Items[i]); err != nil {
+						out.Unavailable = append(out.Unavailable, source.ID)
+						break
+					}
+				}
+			}
+		}
+	}
+	if len(out.Unavailable) == 0 && page.HasNext {
+		b, _ := json.Marshal(cursor{Position: page.Next, Fingerprint: fingerprint(user, f)})
+		out.Next = base64.RawURLEncoding.EncodeToString(b)
+	}
+	return out, nil
+}
+
+func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
 	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}}
 	if e := validate(f); e != nil {
 		return out, e

@@ -106,6 +106,10 @@ type Case struct {
 	FundedAt            *time.Time `json:"funded_at"`
 	SettledAt           *time.Time `json:"settled_at"`
 }
+type ApprovalSnapshotRow struct {
+	Case
+	OccurredAt time.Time
+}
 
 type Installment struct {
 	ID                 int64     `json:"id,string"`
@@ -285,6 +289,26 @@ func ListCases(ctx context.Context, db DBTX, account string, all bool) ([]Case, 
 	for rows.Next() {
 		var c Case
 		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// SnapshotCases returns the source-owned summaries used by the approval
+// projector. The central approval index applies reviewer corporation scope;
+// this function performs no actor authorization.
+func SnapshotCases(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) {
+	rows, err := db.Query(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at,coalesce((SELECT max(created_at) FROM loan_audit a WHERE a.case_id=c.id AND a.action='review'),c.updated_at,c.created_at) FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id ORDER BY c.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []ApprovalSnapshotRow{}
+	for rows.Next() {
+		var c ApprovalSnapshotRow
+		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt, &c.OccurredAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

@@ -9,6 +9,60 @@ import (
 	"strconv"
 )
 
+// ApprovalSnapshot converts source-owned redemption rows into the compact
+// summary persisted by the central approval index.
+func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, error) {
+	rows, err := store.SnapshotRows(ctx, s.Pool)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]reviewqueue.Item, 0, len(rows))
+	for _, r := range rows {
+		when := r.OccurredAt
+		if when.IsZero() {
+			when = r.CreatedAt.Time
+		}
+		order := RewardOrder{ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: r.RewardName, Quantity: r.Quantity, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: when, Reference: r.SettlementReference}
+		if len(r.RewardContent) > 0 {
+			var content PhysicalReward
+			if json.Unmarshal(r.RewardContent, &content) == nil {
+				order.Content = &content
+			}
+		}
+		payload, _ := json.Marshal(order)
+		status := r.DeliveryStatus
+		if status == "" {
+			status = "waiting_contract"
+		}
+		out = append(out, reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), Kind: "exchange", State: r.State, Status: status, Recipient: strconv.FormatInt(r.RecipientID, 10), Title: r.RewardName, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: when, Payload: payload})
+	}
+	return out, nil
+}
+
+func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *reviewqueue.Item) error {
+	if item == nil {
+		return nil
+	}
+	var order RewardOrder
+	if err := json.Unmarshal(item.Payload, &order); err != nil {
+		return err
+	}
+	if order.Content != nil {
+		s.presentPhysicalForApproval(ctx, order.Content)
+	}
+	if order.Name == "" && s.Names != nil {
+		if names, err := s.Names.TypeNames(ctx, []int64{order.TypeID}); err == nil {
+			order.Name = names[order.TypeID].Name
+		}
+	}
+	item.Title = order.Name
+	item.Payload, _ = json.Marshal(order)
+	if item.Account != user && item.State == "cancel_requested" {
+		item.Actions = []string{"cancelled", "pending"}
+	}
+	return nil
+}
+
 func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
 	out := reviewqueue.Access{Corporations: []reviewqueue.Option{}}
 	if s.Administrator == nil {

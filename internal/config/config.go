@@ -43,6 +43,7 @@ type Config struct {
 	AlertUnitPriceMinor     int64
 	AlertMaxGrantSeconds    int64
 	AlertGrantTTL           time.Duration
+	ApprovalDualRead        bool
 }
 
 func Load() (Config, error) {
@@ -162,6 +163,10 @@ func Load() (Config, error) {
 		if err != nil || c.AlertGrantTTL < time.Minute || c.AlertGrantTTL > 31*24*time.Hour {
 			return c, errors.New("SENTRY_ALERT_GRANT_TTL must be between 1m and 744h")
 		}
+	}
+	c.ApprovalDualRead, err = strconv.ParseBool(value("APPROVAL_DUAL_READ", "false"))
+	if err != nil {
+		return c, errors.New("APPROVAL_DUAL_READ must be true or false")
 	}
 	if api, parseErr := url.Parse(c.QQBotAPIBase); parseErr != nil || api.Host == "" || api.Path != "" || api.RawQuery != "" || api.Fragment != "" || api.User != nil || (api.Scheme != "https" && !(api.Scheme == "http" && (api.Hostname() == "127.0.0.1" || api.Hostname() == "localhost" || api.Hostname() == "::1"))) {
 		return c, errors.New("QQ_BOT_API_BASE must be an HTTPS origin")

@@ -1,5 +1,11 @@
 # Approval center
 
+The unified index also stores the current member-account scope required by source authorization. Compensation officers are therefore filtered by both corporation and current membership. For P2 verification, set `APPROVAL_DUAL_READ=true` temporarily; the server runs the legacy aggregation in the background with the same authorization, filters, and cursor and records drift, then disable it after acceptance.
+
+## Unified read model (in development)
+
+The P1 implementation adds the approval-owned `approval_items` list index and `approval_projection_runs` status table. Welfare, exchange, and loan register source snapshots; the index stores only list summaries, buckets, and source versions. Details, decisions, contracts, and accounting still go back to the owning source. Dual-read verification is required before production cutover; the current build keeps the source fan-out fallback. Migration: `migrations/00074_approval_items.sql`.
+
 Released in `v0.1.0-contract-batch-recipient-name-20261003` (2026-10-03): batch details now display the current main character's name as the contract recipient. The backend continues to verify contracts by character ID, while legacy batches with multiple stored character IDs no longer expose those IDs in the recipient display field.
 
 Batch references can exceed EVE's 50-character contract-title limit. Synchronization accepts the deterministic 50-character prefix that EVE persists while continuing to require the main recipient, issuer, exact amount, and complete item match; contract ownership and delivery checks remain unchanged.

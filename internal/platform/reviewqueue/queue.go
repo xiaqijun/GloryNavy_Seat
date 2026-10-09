@@ -51,8 +51,10 @@ type Option struct {
 	Name string `json:"name"`
 }
 type Access struct {
-	Allowed      bool     `json:"allowed"`
-	Corporations []Option `json:"corporations"`
+	Allowed               bool                `json:"allowed"`
+	Corporations          []Option            `json:"corporations"`
+	Accounts              []string            `json:"-"`
+	AccountsByCorporation map[string][]string `json:"-"`
 }
 type Page struct {
 	Items  []Item           `json:"items"`
@@ -68,4 +70,12 @@ type Source struct {
 	QueryAuthorized  func(context.Context, string, Filter, Position, int, Access) (Page, error)
 	People           func(context.Context, string) ([]string, error)
 	PeopleAuthorized func(context.Context, string, Access) ([]string, error)
+	// Snapshot returns the source-owned list projection for the central approval
+	// index. It must not expose source-private store types; the approval module
+	// stores only the returned summary fields and still delegates details and
+	// decisions back to the source.
+	Snapshot func(context.Context) ([]Item, error)
+	// Decorate applies actor-specific actions after an item is read from the
+	// central index. It must not mutate source state.
+	Decorate func(context.Context, string, *Item) error
 }

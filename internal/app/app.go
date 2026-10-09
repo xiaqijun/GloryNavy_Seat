@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -57,6 +58,7 @@ type AuthConfig struct {
 	AlertUnitPriceMinor                                    int64
 	AlertMaxGrantSeconds                                   int64
 	AlertGrantTTL                                          time.Duration
+	ApprovalDualRead                                       bool
 }
 type Application struct {
 	http.Handler
@@ -740,13 +742,38 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
 	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalHandler(enabled, identityService, welfareModule.Service, exchangeService, loanService).Module()}, enabled, authorize)
+	approvalModule, approvalProjection := approvalHandler(pool, auth.ApprovalDualRead, enabled, identityService, welfareModule.Service, exchangeService, loanService)
+	if pool != nil && len(approvalModule.Service.Sources) > 0 {
+		if err := approvalProjection.Reconcile(context.Background(), approvalModule.Service.Sources); err != nil {
+			logger.Warn("approval index initial reconcile failed; using source fallback", "error", err)
+		} else {
+			approvalModule.Service.UseIndex = true
+		}
+	}
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}
 	application := &Application{Handler: httpapi.New(logger, registry, system.ReadyHandler(system.New(pool, version)), authorize)}
+	backgrounds := []func(context.Context){}
 	if esiSync != nil {
-		application.background = esiSync.Run
+		backgrounds = append(backgrounds, esiSync.Run)
+	}
+	if pool != nil && len(approvalModule.Service.Sources) > 0 {
+		backgrounds = append(backgrounds, func(ctx context.Context) { approvalProjection.Run(ctx, approvalModule.Service.Sources) })
+	}
+	if len(backgrounds) > 0 {
+		application.background = func(ctx context.Context) {
+			var wg sync.WaitGroup
+			wg.Add(len(backgrounds))
+			for _, run := range backgrounds {
+				go func(run func(context.Context)) {
+					defer wg.Done()
+					run(ctx)
+				}(run)
+			}
+			wg.Wait()
+		}
 	}
 	return application, nil
 }

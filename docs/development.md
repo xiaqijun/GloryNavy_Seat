@@ -141,6 +141,7 @@ npm --prefix web run preview:local
 | `EVE_TOKEN_KEY` | 启用 eve 且配置 EVE 登录时需要 Base64 编码的 32 字节密钥；只在缺失时生成，升级时保留 |
 | `ESI_USER_AGENT` | 默认 GloryNavy/0.1.0；部署前建议补充真实运维联系方式，只接受最多 256 个可打印 ASCII 字符 |
 | `DB_MAX_CONNS` | 默认 10，配置范围 1–100；默认值不是容量验收结论 |
+| `APPROVAL_DUAL_READ` | 默认 `false`；审批索引启用期间可设为 `true`，在后台将统一索引结果与旧来源聚合按相同筛选、权限和游标比对，只记录差异，不改变响应；完成 P2 验收后应关闭 |
 | `LOG_LEVEL` | 默认 `info`，由 Go slog 校验 |
 | `API_PROXY_TARGET` | Vite 代理目标；开发脚本在未指定时按 `HTTP_ADDR` 生成 |
 | `TEST_DATABASE_URL` | Go 数据库集成测试使用的独立开发/测试库 |

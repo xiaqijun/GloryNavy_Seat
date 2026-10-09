@@ -11,6 +11,31 @@ import (
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 )
 
+// ApprovalSnapshot converts loan-owned cases into the compact rows indexed by
+// the approval center. Only corporation lender pools enter this source.
+func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, error) {
+	rows, err := store.SnapshotCases(ctx, s.db())
+	if err != nil {
+		return nil, err
+	}
+	out := make([]reviewqueue.Item, 0, len(rows))
+	for _, c := range rows {
+		if c.LenderKind != "corporation" || c.CorporationID == nil {
+			continue
+		}
+		payload, _ := json.Marshal(c)
+		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
+	}
+	return out, nil
+}
+
+func (s *Service) ApprovalDecorate(_ context.Context, user string, item *reviewqueue.Item) error {
+	if item != nil && item.Account != user && item.State == "submitted" {
+		item.Actions = []string{"approve", "reject"}
+	}
+	return nil
+}
+
 // ApprovalAccess exposes only corporation pools to the central, read-only
 // approval queue. Personal lender decisions remain in the loan module.
 func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.Access, error) {

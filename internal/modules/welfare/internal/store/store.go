@@ -28,6 +28,10 @@ type Case struct {
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
 }
+type ApprovalSnapshotRow struct {
+	Case
+	OccurredAt time.Time
+}
 type Policy struct {
 	CorporationID int64           `json:"corporation_id,string"`
 	Kind          string          `json:"kind"`
@@ -74,6 +78,26 @@ func List(ctx context.Context, db DB, corp int64, owner, kind string, before int
 	for rows.Next() {
 		c, e := scan(rows)
 		if e != nil {
+			return nil, e
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// Snapshot returns the compact source-owned rows used by the approval index.
+// Authorization is deliberately absent here; the approval service applies the
+// actor's corporation scope when reading the central index.
+func Snapshot(ctx context.Context, db DB) ([]ApprovalSnapshotRow, error) {
+	rows, e := db.Query(ctx, "SELECT "+cols+",coalesce((SELECT max(created_at) FROM welfare_audit a WHERE a.case_id=welfare_cases.id AND a.action IN ('apply','resubmit')),created_at) FROM welfare_cases ORDER BY id")
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []ApprovalSnapshotRow{}
+	for rows.Next() {
+		var c ApprovalSnapshotRow
+		if e := rows.Scan(&c.ID, &c.AccountID, &c.CorporationID, &c.Kind, &c.State, &c.Version, &c.Detail, &c.Award, &c.Keys, &c.CreatedAt, &c.UpdatedAt, &c.Reference, &c.OccurredAt); e != nil {
 			return nil, e
 		}
 		out = append(out, c)

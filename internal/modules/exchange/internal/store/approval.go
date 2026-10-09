@@ -4,7 +4,35 @@ import (
 	"context"
 	"encoding/json"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
+	"time"
 )
+
+type ApprovalSnapshotRow struct {
+	ExchangeRedemption
+	DeliveryStatus string
+	OccurredAt     time.Time
+}
+
+// SnapshotRows returns all redemption summaries for the central approval
+// projector. It intentionally returns generated source types only inside the
+// exchange store package; the exchange service converts them to reviewqueue
+// items before registration with approval.
+func SnapshotRows(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) {
+	rows, err := db.Query(ctx, `SELECT r.id,r.account_id,r.request_key,r.fingerprint,r.reward_id,r.type_id,r.quantity,r.recipient_id,r.recipient_name,r.isk_per_coin,r.isk_value,r.coins_minor,r.state,r.version,r.created_at,r.decided_at,r.decided_by,r.note,r.original_account_id,r.reward_name,r.reward_content,r.catalog_version,r.settlement_reference,coalesce(d.status,''),CASE WHEN r.state IN ('fulfilled','cancelled') OR d.status='awaiting_acceptance' THEN coalesce((SELECT max(created_at) FROM exchange_shop_audit a WHERE a.target_id=r.id AND a.kind IN ('claim','decision','delivery')),r.created_at) ELSE r.created_at END FROM exchange_redemptions r LEFT JOIN exchange_deliveries d ON d.order_id=r.id ORDER BY r.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []ApprovalSnapshotRow{}
+	for rows.Next() {
+		var r ApprovalSnapshotRow
+		if err := rows.Scan(&r.ID, &r.AccountID, &r.RequestKey, &r.Fingerprint, &r.RewardID, &r.TypeID, &r.Quantity, &r.RecipientID, &r.RecipientName, &r.IskPerCoin, &r.IskValue, &r.CoinsMinor, &r.State, &r.Version, &r.CreatedAt, &r.DecidedAt, &r.DecidedBy, &r.Note, &r.OriginalAccountID, &r.RewardName, &r.RewardContent, &r.CatalogVersion, &r.SettlementReference, &r.DeliveryStatus, &r.OccurredAt); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
 
 func ApprovalRecipients(ctx context.Context, db DBTX) ([]int64, error) {
 	rows, e := db.Query(ctx, `SELECT DISTINCT recipient_id FROM exchange_redemptions`)

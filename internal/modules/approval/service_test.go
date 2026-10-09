@@ -188,3 +188,20 @@ func TestContextWithoutPeopleSkipsExpensiveApplicantProjection(t *testing.T) {
 		t.Fatalf("full context did not load people: result=%+v calls=%d err=%v", result, peopleCalls, err)
 	}
 }
+
+func TestCompareResultsDetectsPageAndCountDrift(t *testing.T) {
+	base := Result{Items: []reviewqueue.Item{{Source: "welfare", ID: 1, Version: 2, Account: "a", State: "submitted", Status: "submitted", Time: time.Unix(10, 0).UTC()}}, Counts: map[string]int64{"pending": 1}}
+	if reason := compareResults(base, base); reason != "" {
+		t.Fatalf("equal results reported as drift: %s", reason)
+	}
+	changed := base
+	changed.Counts = map[string]int64{"pending": 2}
+	if reason := compareResults(base, changed); reason != "count_pending" {
+		t.Fatalf("count drift reason = %q", reason)
+	}
+	changed = base
+	changed.Items = []reviewqueue.Item{}
+	if reason := compareResults(base, changed); reason != "item_count" {
+		t.Fatalf("page drift reason = %q", reason)
+	}
+}

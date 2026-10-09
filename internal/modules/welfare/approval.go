@@ -9,6 +9,68 @@ import (
 	"strconv"
 )
 
+// ApprovalSnapshot is the source-owned compact projection consumed by the
+// central approval index. It contains no actor-specific actions or names.
+func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, error) {
+	rows, err := store.Snapshot(ctx, s.Pool)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]reviewqueue.Item, 0, len(rows))
+	for _, row := range rows {
+		c := row.Case
+		payload := rawJSON(c)
+		var d Detail
+		_ = json.Unmarshal(c.Detail, &d)
+		when := row.OccurredAt
+		if when.IsZero() {
+			when = c.CreatedAt
+		}
+		status := d.PaymentStatus
+		if status == "" {
+			status = c.State
+		}
+		title := d.Rule.ProjectName
+		if title == "" && d.LossEvidence != nil {
+			title = d.LossEvidence.ShipName
+		}
+		out = append(out, reviewqueue.Item{Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID, Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind, State: c.State, Status: status, Title: title, Reference: c.Reference, Amount: c.Award, Unit: "ISK", Time: when, Payload: payload})
+	}
+	return out, nil
+}
+
+// ApprovalDecorate restores only actor-specific presentation and actions
+// after an item has been read from the shared index.
+func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *reviewqueue.Item) error {
+	if item == nil {
+		return nil
+	}
+	var c Case
+	if err := json.Unmarshal(item.Payload, &c); err != nil {
+		return err
+	}
+	var d Detail
+	if err := json.Unmarshal(c.Detail, &d); err != nil {
+		return err
+	}
+	if d.LossEvidence != nil {
+		item.Title = d.LossEvidence.ShipName
+	}
+	if item.Account != user {
+		switch c.State {
+		case "submitted", "information", "external":
+			item.Actions = []string{"approve", "reject", "information"}
+		case "cancel_requested":
+			item.Actions = []string{"approve_cancel", "reject_cancel"}
+		case "approved", "executing":
+			if coinOnly(d) {
+				item.Actions = []string{"release_coins"}
+			}
+		}
+	}
+	return nil
+}
+
 func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
 	out := reviewqueue.Access{Corporations: []reviewqueue.Option{}}
 	corps, e := s.Corporations(ctx, user)
@@ -18,7 +80,22 @@ func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.
 	for _, c := range corps {
 		if c.Manage || c.Compensate {
 			out.Allowed = true
-			out.Corporations = append(out.Corporations, reviewqueue.Option{ID: strconv.FormatInt(c.ID, 10), Name: c.Name})
+			id := strconv.FormatInt(c.ID, 10)
+			out.Corporations = append(out.Corporations, reviewqueue.Option{ID: id, Name: c.Name})
+			if s.Members != nil {
+				if out.AccountsByCorporation == nil {
+					out.AccountsByCorporation = map[string][]string{}
+				}
+				members, err := s.Members(ctx, user, c.ID)
+				if err != nil {
+					return out, err
+				}
+				accounts := make([]string, 0, len(members))
+				for _, member := range members {
+					accounts = append(accounts, member.AccountID)
+				}
+				out.AccountsByCorporation[id] = accounts
+			}
 		}
 	}
 	return out, nil
@@ -139,6 +216,17 @@ func (s *Service) approvalPeople(ctx context.Context, user string, a reviewqueue
 	}
 	seen := map[string]bool{}
 	ids := []string{}
+	if a.AccountsByCorporation != nil {
+		for _, accounts := range a.AccountsByCorporation {
+			for _, id := range accounts {
+				if !seen[id] {
+					seen[id] = true
+					ids = append(ids, id)
+				}
+			}
+		}
+		return ids, nil
+	}
 	for _, c := range a.Corporations {
 		id, _ := strconv.ParseInt(c.ID, 10, 64)
 		members, e := s.Members(ctx, user, id)
