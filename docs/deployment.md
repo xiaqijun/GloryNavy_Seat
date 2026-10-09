@@ -2,7 +2,7 @@
 
 ## 审批中心统一读模型与首页白屏修复（2026-10-09）
 
-已发布 `v0.1.0-approval-read-model-20261009-r7`。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；Goose 77 已执行，River 无新增迁移。审批中心统一列表使用 `approval_items` 索引，福利、兑换、贷款投影均为 `fresh`；投影记录为 `exchange=0`、`loan=0`、`welfare=109`，索引共 109 条。详情和审批写入仍回源来源模块执行权限、版本、合同与账务校验，双读诊断开关保持关闭，待管理员会话灰度验收。双读差异记录现覆盖来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作，并持久化到 `approval_dual_read_diffs`；`APPROVAL_INDEX_ACCOUNTS` 可按账号启用索引灰度。
+已发布 `v0.1.0-approval-read-model-20261009-r8`。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；Goose 77 已执行，River 无新增迁移。审批中心统一列表使用 `approval_items` 索引，福利、兑换、贷款投影均为 `fresh`；投影记录为 `exchange=0`、`loan=0`、`welfare=109`，索引共 109 条。详情和审批写入仍回源来源模块执行权限、版本、合同与账务校验，双读诊断开关保持关闭，待管理员会话灰度验收。双读差异记录现覆盖来源集合、计数、游标、分页行权限字段、状态、处理人、金额和动作，并持久化到 `approval_dual_read_diffs`；`APPROVAL_INDEX_ACCOUNTS` 可按账号启用索引灰度。统一索引列表不再逐行调用兑换 SDE 名称服务。
 
 发布期间定位并修复 `App.tsx` 根路径自重定向导致的首页白屏，公开首页现直接渲染介绍和 EVE SSO 入口；真实浏览器复核首页内容、控制台错误和 `/login` 回到 `/` 均通过。应用 `active/ready`、公网首页和静态资源 200、匿名审批接口 401、OpenResty `nginx -t` 均已复核；上一版本保留在两台机器的 `releases/` 目录。
 

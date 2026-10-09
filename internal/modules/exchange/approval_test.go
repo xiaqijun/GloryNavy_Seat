@@ -2,12 +2,33 @@ package exchange
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/eve"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 	"testing"
 )
+
+type countingApprovalNames struct{ calls int }
+
+func (n *countingApprovalNames) TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error) {
+	n.calls++
+	return map[int64]eve.StaticTypeName{34: {ID: 34, Name: "should-not-load"}}, nil
+}
+
+func TestApprovalDecorateDoesNotFanOutToSDE(t *testing.T) {
+	names := &countingApprovalNames{}
+	s := &Service{Names: names}
+	payload, _ := json.Marshal(RewardOrder{ID: 1, TypeID: 34, Name: "Frozen name"})
+	item := &reviewqueue.Item{Account: "member", State: "cancel_requested", Payload: payload}
+	if err := s.ApprovalDecorate(context.Background(), "reviewer", item); err != nil {
+		t.Fatal(err)
+	}
+	if names.calls != 0 || item.Title != "" || len(item.Actions) != 2 {
+		t.Fatalf("indexed decorate fanned out: calls=%d title=%q actions=%v", names.calls, item.Title, item.Actions)
+	}
+}
 
 type unavailableApprovalNames struct{}
 

@@ -42,7 +42,7 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 	return out, nil
 }
 
-func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *reviewqueue.Item) error {
+func (s *Service) ApprovalDecorate(_ context.Context, user string, item *reviewqueue.Item) error {
 	if item == nil {
 		return nil
 	}
@@ -50,16 +50,10 @@ func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *revie
 	if err := json.Unmarshal(item.Payload, &order); err != nil {
 		return err
 	}
-	if order.Content != nil {
-		s.presentPhysicalForApproval(ctx, order.Content)
-	}
-	if order.Name == "" && s.Names != nil {
-		if names, err := s.Names.TypeNames(ctx, []int64{order.TypeID}); err == nil {
-			order.Name = names[order.TypeID].Name
-		}
-	}
-	item.Title = order.Name
-	item.Payload, _ = json.Marshal(order)
+	// The central index already contains the frozen display summary. Keep this
+	// hook actor-specific: resolving SDE names here would turn every indexed
+	// list row back into a source fan-out and make optional presentation data
+	// capable of delaying the approval page.
 	if item.Account != user && item.State == "cancel_requested" {
 		item.Actions = []string{"cancelled", "pending"}
 	}
