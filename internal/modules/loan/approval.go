@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/loan/internal/store"
@@ -23,8 +24,24 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if c.LenderKind != "corporation" || c.CorporationID == nil {
 			continue
 		}
-		payload, _ := json.Marshal(c)
-		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
+		payload, _ := json.Marshal(struct {
+			ID                int64     `json:"id,string"`
+			PublicID          string    `json:"public_id"`
+			Version           int64     `json:"version,string"`
+			PoolID            int64     `json:"pool_id,string"`
+			PoolName          string    `json:"pool_name"`
+			CorporationID     *int64    `json:"corporation_id,string"`
+			BorrowerAccountID string    `json:"borrower_account_id"`
+			BorrowerCharacter int64     `json:"borrower_character_id,string"`
+			PrincipalMinor    int64     `json:"principal_minor"`
+			InterestMinor     int64     `json:"interest_minor"`
+			TotalDueMinor     int64     `json:"total_due_minor"`
+			Installments      int       `json:"installment_count"`
+			IntervalDays      int       `json:"interval_days"`
+			FirstDueAt        time.Time `json:"first_due_at"`
+			State             string    `json:"state"`
+		}{c.ID, c.PublicID, c.Version, c.PoolID, c.PoolName, c.CorporationID, c.BorrowerAccountID, c.BorrowerCharacterID, c.PrincipalMinor, c.InterestMinor, c.TotalDueMinor, c.InstallmentCount, c.IntervalDays, c.FirstDueAt, c.State})
+		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, ProcessedBy: c.ProcessedBy, History: c.History, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
 	}
 	return out, nil
 }

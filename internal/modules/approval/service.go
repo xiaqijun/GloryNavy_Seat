@@ -237,7 +237,11 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 		wg.Add(1)
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
-			a, e := source.Access(ctx, user)
+			access := source.Access
+			if source.IndexAccess != nil {
+				access = source.IndexAccess
+			}
+			a, e := access(ctx, user)
 			results[i] = result{id: source.ID, a: a, e: e}
 		}(i, source)
 	}

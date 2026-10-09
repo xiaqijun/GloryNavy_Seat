@@ -10,6 +10,8 @@ import (
 type ApprovalSnapshotRow struct {
 	ExchangeRedemption
 	DeliveryStatus string
+	ProcessedBy    []string
+	History        bool
 	OccurredAt     time.Time
 }
 
@@ -18,7 +20,7 @@ type ApprovalSnapshotRow struct {
 // exchange store package; the exchange service converts them to reviewqueue
 // items before registration with approval.
 func SnapshotRows(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) {
-	rows, err := db.Query(ctx, `SELECT r.id,r.account_id,r.request_key,r.fingerprint,r.reward_id,r.type_id,r.quantity,r.recipient_id,r.recipient_name,r.isk_per_coin,r.isk_value,r.coins_minor,r.state,r.version,r.created_at,r.decided_at,r.decided_by,r.note,r.original_account_id,r.reward_name,r.reward_content,r.catalog_version,r.settlement_reference,coalesce(d.status,''),CASE WHEN r.state IN ('fulfilled','cancelled') OR d.status='awaiting_acceptance' THEN coalesce((SELECT max(created_at) FROM exchange_shop_audit a WHERE a.target_id=r.id AND a.kind IN ('claim','decision','delivery')),r.created_at) ELSE r.created_at END FROM exchange_redemptions r LEFT JOIN exchange_deliveries d ON d.order_id=r.id ORDER BY r.id`)
+	rows, err := db.Query(ctx, `SELECT r.id,r.account_id,r.request_key,r.fingerprint,r.reward_id,r.type_id,r.quantity,r.recipient_id,r.recipient_name,r.isk_per_coin,r.isk_value,r.coins_minor,r.state,r.version,r.created_at,r.decided_at,r.decided_by,r.note,r.original_account_id,r.reward_name,r.reward_content,r.catalog_version,r.settlement_reference,coalesce(d.status,''),coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM exchange_shop_audit WHERE target_id=r.id AND kind='decision' AND payload->>'state' IN ('pending','cancelled')),'{}'::text[]),coalesce((a.actor_id IS NOT NULL OR r.state IN ('fulfilled','cancelled') OR d.status='awaiting_acceptance'),false),CASE WHEN r.state IN ('fulfilled','cancelled') OR d.status='awaiting_acceptance' THEN coalesce(a.audit_at,r.decided_at,r.created_at) ELSE r.created_at END FROM exchange_redemptions r LEFT JOIN exchange_deliveries d ON d.order_id=r.id LEFT JOIN LATERAL (SELECT actor_id,created_at AS audit_at FROM exchange_shop_audit WHERE target_id=r.id AND (kind='delivery' OR kind='decision' AND payload->>'state' IN ('pending','cancelled')) ORDER BY created_at DESC,id DESC LIMIT 1) a ON true ORDER BY r.id`)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +28,7 @@ func SnapshotRows(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) {
 	out := []ApprovalSnapshotRow{}
 	for rows.Next() {
 		var r ApprovalSnapshotRow
-		if err := rows.Scan(&r.ID, &r.AccountID, &r.RequestKey, &r.Fingerprint, &r.RewardID, &r.TypeID, &r.Quantity, &r.RecipientID, &r.RecipientName, &r.IskPerCoin, &r.IskValue, &r.CoinsMinor, &r.State, &r.Version, &r.CreatedAt, &r.DecidedAt, &r.DecidedBy, &r.Note, &r.OriginalAccountID, &r.RewardName, &r.RewardContent, &r.CatalogVersion, &r.SettlementReference, &r.DeliveryStatus, &r.OccurredAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.AccountID, &r.RequestKey, &r.Fingerprint, &r.RewardID, &r.TypeID, &r.Quantity, &r.RecipientID, &r.RecipientName, &r.IskPerCoin, &r.IskValue, &r.CoinsMinor, &r.State, &r.Version, &r.CreatedAt, &r.DecidedAt, &r.DecidedBy, &r.Note, &r.OriginalAccountID, &r.RewardName, &r.RewardContent, &r.CatalogVersion, &r.SettlementReference, &r.DeliveryStatus, &r.ProcessedBy, &r.History, &r.OccurredAt); err != nil {
 			return nil, err
 		}
 		out = append(out, r)

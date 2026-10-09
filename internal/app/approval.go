@@ -19,7 +19,7 @@ func approvalHandler(pool *pgxpool.Pool, dualRead bool, enabled []string, accoun
 		s.Sources = append(s.Sources, reviewqueue.Source{ID: "welfare", Access: w.ApprovalAccess, Query: w.ApprovalQueue, QueryAuthorized: w.ApprovalQueueAuthorized, People: w.ApprovalPeople, PeopleAuthorized: w.ApprovalPeopleAuthorized, Snapshot: w.ApprovalSnapshot, Decorate: w.ApprovalDecorate})
 	}
 	if slices.Contains(enabled, "exchange") {
-		s.Sources = append(s.Sources, reviewqueue.Source{ID: "exchange", Access: e.ApprovalAccess, Query: e.ApprovalQueue, QueryAuthorized: e.ApprovalQueueAuthorized, People: e.ApprovalPeople, PeopleAuthorized: e.ApprovalPeopleAuthorized, Snapshot: e.ApprovalSnapshot, Decorate: e.ApprovalDecorate})
+		s.Sources = append(s.Sources, reviewqueue.Source{ID: "exchange", Access: e.ApprovalAccess, IndexAccess: e.ApprovalIndexAccess, Query: e.ApprovalQueue, QueryAuthorized: e.ApprovalQueueAuthorized, People: e.ApprovalPeople, PeopleAuthorized: e.ApprovalPeopleAuthorized, Snapshot: e.ApprovalSnapshot, Decorate: e.ApprovalDecorate})
 	}
 	if slices.Contains(enabled, "loan") {
 		s.Sources = append(s.Sources, reviewqueue.Source{ID: "loan", Access: l.ApprovalAccess, Query: l.ApprovalQueue, QueryAuthorized: l.ApprovalQueueAuthorized, Snapshot: l.ApprovalSnapshot, Decorate: l.ApprovalDecorate})

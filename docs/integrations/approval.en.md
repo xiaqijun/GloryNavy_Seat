@@ -4,7 +4,7 @@ The unified index also stores the current member-account scope required by sourc
 
 ## Unified read model (in development)
 
-The P1 implementation adds the approval-owned `approval_items` list index and `approval_projection_runs` status table. Welfare, exchange, and loan register source snapshots; the index stores only list summaries, buckets, and source versions. Details, decisions, contracts, and accounting still go back to the owning source. Dual-read verification is required before production cutover; the current build keeps the source fan-out fallback. Migration: `migrations/00074_approval_items.sql`.
+The P1 implementation adds the approval-owned `approval_items` list index and `approval_projection_runs` status table. Welfare, exchange, and loan register source snapshots; the index stores only list summaries, buckets, history visibility, processed actor, and source versions. Details, decisions, contracts, and accounting still go back to the owning source. Dual-read verification is required before production cutover; the current build keeps the source fan-out fallback. Migrations: `migrations/00074_approval_items.sql`, `migrations/00075_approval_processed_by.sql`, and `migrations/00076_approval_history.sql`.
 
 Released in `v0.1.0-contract-batch-recipient-name-20261003` (2026-10-03): batch details now display the current main character's name as the contract recipient. The backend continues to verify contracts by character ID, while legacy batches with multiple stored character IDs no longer expose those IDs in the recipient display field.
 

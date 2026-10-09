@@ -88,6 +88,7 @@
 | `kind` | 福利、兑换、贷款或扩展类型 |
 | `bucket` | pending / fulfillment / exceptions / history |
 | `state`、`status` | 当前展示状态 |
+| `history`、`processed_by` | 保留历史页与“我的审批”过滤语义 |
 | `title`、`reference`、`recipient` | 搜索和摘要展示 |
 | `amount_minor`、`unit` | 金额摘要，不保存账务明细 |
 | `occurred_at`、`processed_at` | 申请和处理时间 |
@@ -249,7 +250,7 @@ type ApprovalProjector interface {
 
 ## 当前实现进度（2026-10-09）
 
-- 已新增 `approval_items` 与 `approval_projection_runs` 私有迁移，支持来源版本保护、来源状态和统一列表索引。
+- 已新增 `approval_items` 与 `approval_projection_runs` 私有迁移，并通过后续迁移补充 `processed_by`、`history`，支持来源版本保护、来源状态和统一列表索引。
 - 福利、兑换、贷款已提供来源私有快照适配器；审批投影器启动时回填，之后按 2 分钟周期对账。单个来源失败会保留其他来源的投影并记录错误。
 - `/api/v1/approval/items` 已具备索引读取路径，申请人名称和来源动作在返回页按需补全；详情、决定和对象级权限仍回源。
 - 已加入可控双读诊断：索引返回后可在后台运行旧聚合，对比计数、来源不可用状态、分页行、版本、状态和时间游标，并只记录差异原因，不改变用户响应。

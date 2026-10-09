@@ -15,11 +15,18 @@ import (
 var ErrUnavailable = errors.New("approval index unavailable")
 
 type Scope struct {
-	Source           string   `json:"source"`
-	All              bool     `json:"all,omitempty"`
-	Corporation      string   `json:"corporation,omitempty"`
-	Accounts         []string `json:"accounts,omitempty"`
-	RestrictAccounts bool     `json:"restrict_accounts,omitempty"`
+	Source           string    `json:"source"`
+	All              bool      `json:"all,omitempty"`
+	Corporation      string    `json:"corporation,omitempty"`
+	Accounts         []string  `json:"accounts,omitempty"`
+	RestrictAccounts bool      `json:"restrict_accounts,omitempty"`
+	Bindings         []Binding `json:"bindings,omitempty"`
+	RestrictBindings bool      `json:"restrict_bindings,omitempty"`
+}
+
+type Binding struct {
+	Account   string `json:"account"`
+	Recipient string `json:"recipient"`
 }
 
 type Index struct{ Pool *pgxpool.Pool }
@@ -68,18 +75,27 @@ func upsert(ctx context.Context, db DBTX, item reviewqueue.Item) error {
 	if len(payload) == 0 {
 		payload = json.RawMessage(`{}`)
 	}
-	actions, _ := json.Marshal(item.Actions)
+	actionsValue := item.Actions
+	if actionsValue == nil {
+		actionsValue = []string{}
+	}
+	actions, _ := json.Marshal(actionsValue)
+	processedByValue := item.ProcessedBy
+	if processedByValue == nil {
+		processedByValue = []string{}
+	}
+	processedBy, _ := json.Marshal(processedByValue)
 	_, err := db.Exec(ctx, `INSERT INTO approval_items
-		(source,source_id,source_version,account_id,corporation_id,kind,bucket,state,status,applicant,recipient,title,reference,amount_minor,unit,occurred_at,payload,actions)
-		VALUES($1,$2,$3,$4::uuid,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+		(source,source_id,source_version,account_id,processed_by,history,corporation_id,kind,bucket,state,status,applicant,recipient,title,reference,amount_minor,unit,occurred_at,payload,actions)
+		VALUES($1,$2,$3,$4::uuid,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
 		ON CONFLICT(source,source_id) DO UPDATE SET
-		 source_version=EXCLUDED.source_version, account_id=EXCLUDED.account_id, corporation_id=EXCLUDED.corporation_id,
+		 source_version=EXCLUDED.source_version, account_id=EXCLUDED.account_id, processed_by=EXCLUDED.processed_by, history=EXCLUDED.history, corporation_id=EXCLUDED.corporation_id,
 		 kind=EXCLUDED.kind, bucket=EXCLUDED.bucket, state=EXCLUDED.state, status=EXCLUDED.status,
 		 applicant=EXCLUDED.applicant, recipient=EXCLUDED.recipient, title=EXCLUDED.title, reference=EXCLUDED.reference,
 		 amount_minor=EXCLUDED.amount_minor, unit=EXCLUDED.unit, occurred_at=EXCLUDED.occurred_at,
 		 payload=EXCLUDED.payload, actions=EXCLUDED.actions, projection_state='fresh', projection_error='', projected_at=now()
 		WHERE approval_items.source_version <= EXCLUDED.source_version`,
-		item.Source, item.ID, item.Version, item.Account, corporation, item.Kind, bucket(item), item.State, item.Status,
+		item.Source, item.ID, item.Version, item.Account, processedBy, item.History, corporation, item.Kind, bucket(item), item.State, item.Status,
 		item.Applicant, item.Recipient, item.Title, item.Reference, item.Amount, item.Unit, item.Time, payload, actions)
 	return err
 }
@@ -137,7 +153,7 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	}
 	args := []any{scopeJSON, actor, f.Kind, f.Corporation, f.Account, f.Search, f.Status, f.From, f.Until, f.Mine, f.View}
 	where := `EXISTS (SELECT 1 FROM jsonb_array_elements($1::jsonb) scope
-		WHERE scope->>'source'=i.source AND (scope->>'all'='true' OR (scope->>'corporation'=coalesce(i.corporation_id::text,'') AND (coalesce(scope->>'restrict_accounts','false') <> 'true' OR scope->'accounts' ? i.account_id::text))))
+		WHERE scope->>'source'=i.source AND (scope->>'all'='true' OR (scope->>'corporation'=coalesce(i.corporation_id::text,'') AND (coalesce(scope->>'restrict_accounts','false') <> 'true' OR scope->'accounts' ? i.account_id::text) AND (coalesce(scope->>'restrict_bindings','false') <> 'true' OR EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(scope->'bindings')='array' THEN scope->'bindings' ELSE '[]'::jsonb END) binding WHERE binding->>'account'=i.account_id::text AND binding->>'recipient'=i.recipient)))))
 		AND ($3='' OR i.kind=$3 OR ($3='growth' AND starts_with(i.kind,'growth_')) OR ($3='activity' AND starts_with(i.kind,'activity_')))
 		AND ($4='' OR i.corporation_id::text=$4)
 		AND ($5='' OR i.account_id::text=$5)
@@ -145,8 +161,8 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 		AND ($7='' OR i.state=$7 OR i.status=$7)
 		AND ($8='' OR i.occurred_at >= $8::timestamptz)
 		AND ($9='' OR i.occurred_at < $9::timestamptz)
-		AND (NOT $10 OR i.account_id::text=$2)
-		AND (($11='history' AND i.bucket='history') OR ($11<>'history' AND i.bucket=$11 AND i.account_id::text<>$2))`
+		AND (NOT $10 OR i.processed_by ? $2)
+		AND (($11='history' AND i.history) OR ($11<>'history' AND i.bucket=$11 AND i.account_id::text<>$2))`
 	if f.ID > 0 {
 		where += fmt.Sprintf(" AND i.source_id=$%d", len(args)+1)
 		args = append(args, f.ID)
@@ -174,8 +190,8 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	limitArg := len(args) + 1
 	args = append(args, limit+1)
 	rows, err := s.Pool.Query(ctx, `WITH filtered AS (SELECT i.* FROM approval_items i WHERE `+where+`), counted AS (
-		SELECT jsonb_build_object('pending',count(*) FILTER (WHERE bucket='pending'), 'information',count(*) FILTER (WHERE bucket='information'), 'fulfillment',count(*) FILTER (WHERE bucket='fulfillment'), 'exceptions',count(*) FILTER (WHERE bucket='exceptions'), 'history',count(*) FILTER (WHERE bucket='history')) counts FROM filtered)
-		SELECT i.source,i.source_id,i.source_version,i.account_id::text,coalesce(i.corporation_id::text,''),i.kind,i.state,i.status,i.applicant,i.recipient,i.title,i.reference,i.amount_minor,i.unit,i.occurred_at,i.payload,i.actions,(SELECT counts FROM counted)
+		SELECT jsonb_build_object('pending',count(*) FILTER (WHERE bucket='pending' AND account_id::text<>$2), 'information',count(*) FILTER (WHERE bucket='information' AND account_id::text<>$2), 'fulfillment',count(*) FILTER (WHERE bucket='fulfillment' AND account_id::text<>$2), 'exceptions',count(*) FILTER (WHERE bucket='exceptions' AND account_id::text<>$2), 'history',count(*) FILTER (WHERE history)) counts FROM filtered)
+		SELECT i.source,i.source_id,i.source_version,i.account_id::text,i.processed_by,i.history,coalesce(i.corporation_id::text,''),i.kind,i.state,i.status,i.applicant,i.recipient,i.title,i.reference,i.amount_minor,i.unit,i.occurred_at,i.payload,i.actions,(SELECT counts FROM counted)
 		FROM filtered i WHERE `+cursor+` ORDER BY `+order+` LIMIT $`+strconv.Itoa(limitArg), args...)
 	if err != nil {
 		return Result{}, err
@@ -184,10 +200,11 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	out := Result{Items: []reviewqueue.Item{}, Counts: emptyCounts()}
 	for rows.Next() {
 		var item reviewqueue.Item
-		var actions, counts []byte
-		if err = rows.Scan(&item.Source, &item.ID, &item.Version, &item.Account, &item.Corporation, &item.Kind, &item.State, &item.Status, &item.Applicant, &item.Recipient, &item.Title, &item.Reference, &item.Amount, &item.Unit, &item.Time, &item.Payload, &actions, &counts); err != nil {
+		var processedBy, actions, counts []byte
+		if err = rows.Scan(&item.Source, &item.ID, &item.Version, &item.Account, &processedBy, &item.History, &item.Corporation, &item.Kind, &item.State, &item.Status, &item.Applicant, &item.Recipient, &item.Title, &item.Reference, &item.Amount, &item.Unit, &item.Time, &item.Payload, &actions, &counts); err != nil {
 			return Result{}, err
 		}
+		_ = json.Unmarshal(processedBy, &item.ProcessedBy)
 		_ = json.Unmarshal(actions, &item.Actions)
 		if len(out.Items) < limit {
 			out.Items = append(out.Items, item)

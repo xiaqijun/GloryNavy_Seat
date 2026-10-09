@@ -75,8 +75,12 @@ func scopes(access map[string]reviewqueue.Access) []store.Scope {
 		if !a.Allowed {
 			continue
 		}
+		bindings := make([]store.Binding, 0, len(a.Bindings))
+		for _, binding := range a.Bindings {
+			bindings = append(bindings, store.Binding{Account: binding.Account, Recipient: binding.Recipient})
+		}
 		if len(a.Corporations) == 0 {
-			out = append(out, store.Scope{Source: source, All: true})
+			out = append(out, store.Scope{Source: source, All: !a.RestrictBindings, Bindings: bindings, RestrictBindings: a.RestrictBindings})
 			continue
 		}
 		for _, corp := range a.Corporations {
@@ -84,7 +88,7 @@ func scopes(access map[string]reviewqueue.Access) []store.Scope {
 			if a.AccountsByCorporation != nil {
 				accounts = a.AccountsByCorporation[corp.ID]
 			}
-			out = append(out, store.Scope{Source: source, Corporation: corp.ID, Accounts: accounts, RestrictAccounts: a.AccountsByCorporation != nil})
+			out = append(out, store.Scope{Source: source, Corporation: corp.ID, Accounts: accounts, RestrictAccounts: a.AccountsByCorporation != nil, Bindings: bindings, RestrictBindings: a.RestrictBindings})
 		}
 	}
 	return out

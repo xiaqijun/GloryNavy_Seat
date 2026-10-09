@@ -26,6 +26,9 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if len(r.RewardContent) > 0 {
 			var content PhysicalReward
 			if json.Unmarshal(r.RewardContent, &content) == nil {
+				for i := range content.Fittings {
+					content.Fittings[i].Fit = nil
+				}
 				order.Content = &content
 			}
 		}
@@ -34,7 +37,7 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if status == "" {
 			status = "waiting_contract"
 		}
-		out = append(out, reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), Kind: "exchange", State: r.State, Status: status, Recipient: strconv.FormatInt(r.RecipientID, 10), Title: r.RewardName, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: when, Payload: payload})
+		out = append(out, reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), ProcessedBy: r.ProcessedBy, History: r.History, Kind: "exchange", State: r.State, Status: status, Recipient: strconv.FormatInt(r.RecipientID, 10), Title: r.RewardName, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: when, Payload: payload})
 	}
 	return out, nil
 }
@@ -70,7 +73,29 @@ func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.
 	}
 	ok, e := s.Administrator(ctx, user)
 	out.Allowed = ok
-	return out, e
+	if e != nil || !ok {
+		return out, e
+	}
+	return out, nil
+}
+
+// ApprovalIndexAccess adds the recipient/account bindings needed to authorize
+// central index rows. It is intentionally separate from ApprovalAccess so the
+// initial approval context does not query every historical recipient.
+func (s *Service) ApprovalIndexAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
+	out, e := s.ApprovalAccess(ctx, user)
+	if e != nil || !out.Allowed {
+		return out, e
+	}
+	bindings, e := s.approvalBindings(ctx)
+	if e != nil {
+		return out, e
+	}
+	for _, binding := range bindings {
+		out.Bindings = append(out.Bindings, reviewqueue.Binding{Account: binding["account"], Recipient: binding["recipient"]})
+	}
+	out.RestrictBindings = true
+	return out, nil
 }
 func (s *Service) ApprovalQueue(ctx context.Context, user string, f reviewqueue.Filter, p reviewqueue.Position, limit int) (reviewqueue.Page, error) {
 	a, e := s.ApprovalAccess(ctx, user)

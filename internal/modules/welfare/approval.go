@@ -19,9 +19,9 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 	out := make([]reviewqueue.Item, 0, len(rows))
 	for _, row := range rows {
 		c := row.Case
-		payload := rawJSON(c)
 		var d Detail
 		_ = json.Unmarshal(c.Detail, &d)
+		payload := approvalSummary(c, d)
 		when := row.OccurredAt
 		if when.IsZero() {
 			when = c.CreatedAt
@@ -34,9 +34,44 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if title == "" && d.LossEvidence != nil {
 			title = d.LossEvidence.ShipName
 		}
-		out = append(out, reviewqueue.Item{Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID, Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind, State: c.State, Status: status, Title: title, Reference: c.Reference, Amount: c.Award, Unit: "ISK", Time: when, Payload: payload})
+		out = append(out, reviewqueue.Item{Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID, ProcessedBy: row.ProcessedBy, History: row.History, Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind, State: c.State, Status: status, Title: title, Reference: c.Reference, Amount: c.Award, Unit: "ISK", Time: when, Payload: payload})
 	}
 	return out, nil
+}
+
+func approvalSummary(c Case, d Detail) json.RawMessage {
+	compact := d
+	compact.Rule = Config{ProjectName: d.Rule.ProjectName}
+	compact.LossEvidence = nil
+	if d.Valuation != nil {
+		v := *d.Valuation
+		v.Market = nil
+		v.Contract = nil
+		compact.Valuation = &v
+	}
+	if d.Rewards != nil {
+		rewards := *d.Rewards
+		rewards.Fittings = make([]GrowthFitting, len(d.Rewards.Fittings))
+		for i, fitting := range d.Rewards.Fittings {
+			rewards.Fittings[i] = fitting
+			rewards.Fittings[i].Fit = nil
+		}
+		compact.Rewards = &rewards
+	}
+	compact.Cancellation = nil
+	compact.Purchase = nil
+	compact.Delivery = nil
+	compact.SkillEvidence = nil
+	compact.FittingEvidence = nil
+	compact.Evidence = ""
+	compact.Description = ""
+	compact.Receipt = ""
+	compact.Reviewer = ""
+	compact.Executor = ""
+	compact.ReviewNote = ""
+	c.Detail = rawJSON(compact)
+	c.Keys = nil
+	return rawJSON(c)
 }
 
 // ApprovalDecorate restores only actor-specific presentation and actions

@@ -36,6 +36,8 @@ type Item struct {
 	Kind        string          `json:"kind"`
 	State       string          `json:"state"`
 	Status      string          `json:"status"`
+	ProcessedBy []string        `json:"-"`
+	History     bool            `json:"-"`
 	Recipient   string          `json:"recipient"`
 	Title       string          `json:"title"`
 	Reference   string          `json:"reference"`
@@ -50,11 +52,17 @@ type Option struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
+type Binding struct {
+	Account   string `json:"account"`
+	Recipient string `json:"recipient"`
+}
 type Access struct {
 	Allowed               bool                `json:"allowed"`
 	Corporations          []Option            `json:"corporations"`
 	Accounts              []string            `json:"-"`
 	AccountsByCorporation map[string][]string `json:"-"`
+	Bindings              []Binding           `json:"-"`
+	RestrictBindings      bool                `json:"-"`
 }
 type Page struct {
 	Items  []Item           `json:"items"`
@@ -63,7 +71,10 @@ type Page struct {
 type Source struct {
 	ID     string
 	Access func(context.Context, string) (Access, error)
-	Query  func(context.Context, string, Filter, Position, int) (Page, error)
+	// IndexAccess may load the additional scope needed by the central index;
+	// the regular Access path stays lightweight for the initial context shell.
+	IndexAccess func(context.Context, string) (Access, error)
+	Query       func(context.Context, string, Filter, Position, int) (Page, error)
 	// QueryAuthorized receives the access result already collected by the
 	// approval aggregator. Sources may use it to avoid repeating the same
 	// permission and scope reads before building their projection.
