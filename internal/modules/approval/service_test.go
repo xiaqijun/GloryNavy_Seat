@@ -25,6 +25,20 @@ func TestIndexAllowlistControlsReadPath(t *testing.T) {
 	}
 }
 
+func TestIndexOnlySourceFallsBackWithoutCallingMissingLegacyQuery(t *testing.T) {
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID:        "future",
+		IndexOnly: true,
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+	}}}
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(result.Unavailable) != 1 || result.Unavailable[0] != "future" || result.SourceStatus["future"] != "unavailable" {
+		t.Fatalf("index-only legacy fallback = %+v, err=%v", result, err)
+	}
+}
+
 func TestMergePaginationPermissionAndPartialFailure(t *testing.T) {
 	ctx := context.Background()
 	s := &Service{}
@@ -179,6 +193,31 @@ func TestNameProjectionFailureDoesNotHideQueue(t *testing.T) {
 	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
 	if err != nil || len(result.Items) != 1 || result.Counts["pending"] != 1 || result.Items[0].Applicant != "recipient-1" {
 		t.Fatalf("name projection failure hid queue: result=%+v err=%v", result, err)
+	}
+}
+
+func TestLegacyListAddsSourceProjectionMetadata(t *testing.T) {
+	now := time.Unix(20, 0).UTC()
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID:           "future",
+		Capabilities: reviewqueue.Capabilities{DetailKind: "future-review"},
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+		Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+			return reviewqueue.Page{Items: []reviewqueue.Item{{Source: "future", ID: 9, Version: 4, Account: "a", Time: now}}}, nil
+		},
+	}}}
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(result.Items) != 1 {
+		t.Fatalf("metadata list = %+v, err=%v", result, err)
+	}
+	item := result.Items[0]
+	if item.SummaryVersion != 4 || item.DetailKind != "future-review" || item.SourceStatus != "available" || item.Stale {
+		t.Fatalf("item metadata = %+v", item)
+	}
+	if result.SourceStatus["future"] != "available" {
+		t.Fatalf("source status = %+v", result.SourceStatus)
 	}
 }
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useSearchParams } from "react-router-dom";
 import {
@@ -307,6 +307,9 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
       ...(q.data?.unavailable || []),
     ]),
   ];
+  const staleSources = Object.entries(q.data?.source_status || {})
+    .filter(([, status]) => status === "stale")
+    .map(([source]) => source);
   if (context.isError)
     return (
       <p role="alert">
@@ -548,6 +551,17 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             }}
           >
             {msg("重试")}
+          </Button>
+        </p>
+      )}
+      {staleSources.length > 0 && unavailable.length === 0 && (
+        <p role="status" className="approval-sync-status">
+          {msg("部分来源正在同步，列表可能暂时落后：{0}", staleSources.join("、"))}
+          <Button
+            variant="outline"
+            onClick={() => void q.refetch()}
+          >
+            {msg("刷新")}
           </Button>
         </p>
       )}
@@ -859,33 +873,50 @@ function Detail({
         )}
       </Modal>
     );
-  if (q.data.source === "welfare")
-    return (
-      <WelfareDetail
-        item={q.data.payload as welfare.Case}
-        user={user}
-        csrf={csrf}
-        close={close}
-        done={done}
-      />
-    );
-  if (q.data.source === "loan")
-    return (
-      <LoanDetail
-        item={q.data}
-        csrf={csrf}
-        close={close}
-        done={done}
-      />
-    );
-  return (
-    <ApprovalOrder
-      item={q.data}
+  const Renderer = approvalDetailRegistry[q.data.detail_kind || q.data.source] || GenericDetail;
+  return <Renderer item={q.data} user={user} csrf={csrf} close={close} done={done} />;
+}
+
+type ApprovalDetailProps = {
+  item: QueueItem;
+  user: string;
+  csrf: string;
+  close: () => void;
+  done: () => void;
+};
+type ApprovalDetailRenderer = ComponentType<ApprovalDetailProps>;
+
+// The central page resolves a source through this registry. Adding a future
+// source only registers its detail renderer; list fetching, pagination and
+// error handling remain source agnostic.
+const approvalDetailRegistry: Record<string, ApprovalDetailRenderer> = {
+  welfare: ({ item, user, csrf, close, done }) => (
+    <WelfareDetail
+      item={item.payload as welfare.Case}
       user={user}
       csrf={csrf}
       close={close}
       done={done}
     />
+  ),
+  loan: ({ item, csrf, close, done }) => (
+    <LoanDetail item={item} csrf={csrf} close={close} done={done} />
+  ),
+  exchange: ({ item, user, csrf, close, done }) => (
+    <ApprovalOrder item={item} user={user} csrf={csrf} close={close} done={done} />
+  ),
+};
+
+function GenericDetail({ item, close }: ApprovalDetailProps) {
+  return (
+    <Modal title={msg("审批详情")} close={close}>
+      <div className="approval-detail-grid">
+        <div><span>{msg("类型")}</span><strong>{item.detail_kind || item.source}</strong></div>
+        <div><span>{msg("编号")}</span><strong>{item.reference || item.id}</strong></div>
+        <div><span>{msg("状态")}</span><strong>{item.status || item.state}</strong></div>
+        {item.title && <div><span>{msg("项目")}</span><strong>{item.title}</strong></div>}
+      </div>
+    </Modal>
   );
 }
 

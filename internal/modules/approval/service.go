@@ -146,6 +146,10 @@ type Result struct {
 	Counts      map[string]int64   `json:"counts"`
 	Next        string             `json:"next_cursor"`
 	Unavailable []string           `json:"unavailable"`
+	// SourceStatus distinguishes an empty source from one that is unavailable
+	// or whose projection has fallen behind. It is deliberately read metadata;
+	// source decisions still come from the owning module.
+	SourceStatus map[string]string `json:"source_status"`
 }
 type cursor struct {
 	Position    reviewqueue.Position `json:"position"`
@@ -316,7 +320,7 @@ func compareItem(a, b reviewqueue.Item) string {
 }
 
 func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
-	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}}
+	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}, SourceStatus: map[string]string{}}
 	if e := validate(f); e != nil {
 		return out, e
 	}
@@ -352,11 +356,13 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 	for _, r := range results {
 		if r.e != nil {
 			out.Unavailable = append(out.Unavailable, r.id)
+			out.SourceStatus[r.id] = "unavailable"
 			continue
 		}
 		if r.a.Allowed {
 			authorized = true
 			access[r.id] = r.a
+			out.SourceStatus[r.id] = "available"
 		}
 	}
 	if !authorized && len(out.Unavailable) == 0 {
@@ -365,7 +371,7 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 	if stale, err := s.Index.StaleSources(ctx, 5*time.Minute); err == nil {
 		for _, source := range stale {
 			if _, ok := access[source]; ok && !slices.Contains(out.Unavailable, source) {
-				out.Unavailable = append(out.Unavailable, source)
+				out.SourceStatus[source] = "stale"
 			}
 		}
 	}
@@ -390,6 +396,15 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 			}
 		}
 		for i := range out.Items {
+			out.Items[i].SummaryVersion = out.Items[i].Version
+			out.Items[i].SourceStatus = out.SourceStatus[out.Items[i].Source]
+			out.Items[i].Stale = out.Items[i].SourceStatus == "stale"
+			for _, source := range s.Sources {
+				if source.ID == out.Items[i].Source {
+					out.Items[i].DetailKind = source.Capabilities.DetailKind
+					break
+				}
+			}
 			if name := names[out.Items[i].Account]; name != "" {
 				out.Items[i].Applicant = name
 			}
@@ -399,7 +414,10 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 			for _, source := range s.Sources {
 				if source.ID == out.Items[i].Source && source.Decorate != nil {
 					if err := source.Decorate(ctx, user, &out.Items[i]); err != nil {
-						out.Unavailable = append(out.Unavailable, source.ID)
+						if !slices.Contains(out.Unavailable, source.ID) {
+							out.Unavailable = append(out.Unavailable, source.ID)
+						}
+						out.SourceStatus[source.ID] = "unavailable"
 						break
 					}
 				}
@@ -414,7 +432,7 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 }
 
 func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
-	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}}
+	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}, SourceStatus: map[string]string{}}
 	if e := validate(f); e != nil {
 		return out, e
 	}
@@ -448,7 +466,9 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 			}
 			if access.Allowed {
 				result.allowed = true
-				if source.QueryAuthorized != nil {
+				if source.Query == nil && source.QueryAuthorized == nil {
+					result.queryError = fmt.Errorf("source is index-only")
+				} else if source.QueryAuthorized != nil {
 					result.page, result.queryError = source.QueryAuthorized(ctx, user, f, c.Position, 31, access)
 				} else {
 					result.page, result.queryError = source.Query(ctx, user, f, c.Position, 31)
@@ -467,12 +487,14 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 				slog.Warn("approval source unavailable", "source", result.id, "stage", "query", "error", result.queryError)
 			}
 			out.Unavailable = append(out.Unavailable, result.id)
+			out.SourceStatus[result.id] = "unavailable"
 			continue
 		}
 		if !result.allowed {
 			continue
 		}
 		authorized = true
+		out.SourceStatus[result.id] = "available"
 		out.Items = append(out.Items, result.page.Items...)
 		for k, n := range result.page.Counts {
 			out.Counts[k] += n
@@ -518,6 +540,16 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 		out.Next = base64.RawURLEncoding.EncodeToString(b)
 	} else if len(out.Items) > 30 {
 		out.Items = out.Items[:30]
+	}
+	for i := range out.Items {
+		out.Items[i].SummaryVersion = out.Items[i].Version
+		out.Items[i].SourceStatus = out.SourceStatus[out.Items[i].Source]
+		for _, source := range s.Sources {
+			if source.ID == out.Items[i].Source {
+				out.Items[i].DetailKind = source.Capabilities.DetailKind
+				break
+			}
+		}
 	}
 	if s.Names != nil && len(out.Items) > 0 {
 		ids := []string{}

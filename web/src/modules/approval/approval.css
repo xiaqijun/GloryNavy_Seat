@@ -239,6 +239,17 @@
 .approval-filter-error {
   color: var(--destructive, #b91c1c);
 }
+.approval-sync-status {
+  color: var(--warning-foreground, #8a5a00);
+  background: var(--warning-muted, #fff7e6);
+  border: 1px solid var(--warning-border, #f2cc8f);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .approval-table-wrap {
   background: var(--card);
   border: 1px solid var(--border);

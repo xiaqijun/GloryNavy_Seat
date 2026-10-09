@@ -24,6 +24,12 @@ func TestValidateSourcesRequiresRegisteredProjectionContract(t *testing.T) {
 			t.Fatalf("incomplete source accepted: %+v", broken)
 		}
 	}
+	indexOnly := base
+	indexOnly.Query = nil
+	indexOnly.IndexOnly = true
+	if err := ValidateSources([]Source{indexOnly}); err != nil {
+		t.Fatalf("index-only source rejected: %v", err)
+	}
 	if err := ValidateSources([]Source{base, base}); err == nil {
 		t.Fatal("duplicate source accepted")
 	}

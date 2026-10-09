@@ -270,6 +270,8 @@ export const english: Record<string, string> = {
   搜索编号或角色: "Search reference or character",
   "部分来源不可用，计数不完整：{0}":
     "Some sources are unavailable; counts are incomplete: {0}",
+  "部分来源正在同步，列表可能暂时落后：{0}":
+    "Some sources are syncing; the list may be temporarily stale: {0}",
   类型与编号: "Type / ID",
   项目或舰船: "Project / ship",
   金额或奖励: "Amount / reward",

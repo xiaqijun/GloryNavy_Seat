@@ -8,7 +8,7 @@
 
 ## 接入审批中心来源
 
-approval 通过宿主注入 reviewqueue.Source，来源提供 Access、Query、People；SQL 必须留在来源私有 store。Query 在分页/计数前过滤授权对象，时间、来源、ID 必须稳定排序；不可把前端隐藏当权限或在列表读取中访问 ESI。源写 API 继续检查版本、幂等、当前权限和对象归属，原单及审计为唯一事实源。新来源不得自行复制币账。当前例子见 internal/app/approval.go 与[指南](integrations/approval.zh-CN.md)。
+approval 通过宿主注入 reviewqueue.Source，来源提供 Access、Snapshot、Capabilities 和旧聚合 Query；SQL 必须留在来源私有 store。`Snapshot` 只返回列表摘要，`Capabilities.DetailKind` 驱动中心详情注册表；只接入索引的新来源可声明 `IndexOnly`，没有旧 Query 时回退路径必须安全标记不可用。Query 在分页/计数前过滤授权对象，时间、来源、ID 必须稳定排序；不可把前端隐藏当权限或在列表读取中访问 ESI。源写 API 继续检查版本、幂等、当前权限和对象归属，原单及审计为唯一事实源。新来源不得自行复制币账。当前例子见 internal/app/approval.go 与[指南](integrations/approval.zh-CN.md)。
 
 自动合同结算编号使用 Goose 41 的类型-UTC日期-UUID 规则，创建时由数据库生成并持久化。不要在前端、读取接口、重试或自动核对时重新生成；不要替换已有编号或把 ESI 数字合同 ID 改成业务编号。详见福利/兑换中英文指南。
 

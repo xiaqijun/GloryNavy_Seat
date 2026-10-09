@@ -233,8 +233,8 @@ func (s Index) MarkSource(ctx context.Context, source, state, message string) er
 	if s.Pool == nil {
 		return ErrUnavailable
 	}
-	_, err := s.Pool.Exec(ctx, `INSERT INTO approval_projection_runs(source,state,last_error)
-		VALUES($1,$2,$3) ON CONFLICT(source) DO UPDATE SET state=EXCLUDED.state,last_error=EXCLUDED.last_error`, source, state, strings.TrimSpace(message))
+	_, err := s.Pool.Exec(ctx, `INSERT INTO approval_projection_runs(source,state,last_started_at,last_error)
+		VALUES($1,$2,now(),$3) ON CONFLICT(source) DO UPDATE SET state=EXCLUDED.state,last_started_at=now(),last_error=EXCLUDED.last_error`, source, state, strings.TrimSpace(message))
 	return err
 }
 

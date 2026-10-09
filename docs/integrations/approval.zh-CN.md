@@ -2,7 +2,7 @@
 
 ## 统一读模型（开发中）
 
-P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。来源适配器现在声明操作、筛选和详情组件能力，宿主启动时校验注册契约，统一上下文返回能力元数据。Goose 77 新增 `approval_dual_read_diffs`，双读诊断持久化筛选、字段原因、来源和版本但不保存来源 payload；`APPROVAL_INDEX_ACCOUNTS` 可按账号灰度索引读取。`APPROVAL_DUAL_READ` 默认关闭，真实管理员验收前不打开。迁移文件为 `migrations/00074_approval_items.sql` 至 `00077_approval_dual_read_diffs.sql`。
+P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。来源适配器现在声明操作、筛选和详情组件能力，宿主启动时校验注册契约，统一上下文返回能力元数据。列表响应补充 `source_status`、`summary_version`、`detail_kind` 和 `stale`，投影陈旧时保留索引记录并显示同步状态；前端详情按能力注册表加载，未知来源显示通用摘要。标记为 `IndexOnly` 的新来源可先提供快照投影，旧聚合回退会安全标记为不可用。Goose 77 新增 `approval_dual_read_diffs`，双读诊断持久化筛选、字段原因、来源和版本但不保存来源 payload；`APPROVAL_INDEX_ACCOUNTS` 可按账号灰度索引读取。`APPROVAL_DUAL_READ` 默认关闭，真实管理员验收前不打开。迁移文件为 `migrations/00074_approval_items.sql` 至 `00077_approval_dual_read_diffs.sql`。
 
 2026-10-03 已发布 `v0.1.0-contract-batch-recipient-name-20261003`：批次详情的合同接收人显示本站账号当前主角色名称；后台仍用角色 ID 做合同核验，历史批次的多个角色 ID 不会出现在接收人展示字段中。
 
@@ -58,7 +58,7 @@ P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_pro
 
 只读 API：GET /api/v1/approval/context、GET /api/v1/approval/items、GET /api/v1/approval/items/{source}/{id}。`/context` 默认返回权限、来源和军团选项；需要申请人筛选选项时使用 `?include_people=true`，服务端再读取人员名称投影。原审批/取消请求仍发到 welfare/commands 或 exchange/rewards/orders/{id}，继续检查 CSRF、当前权限、版本、幂等键及原事务锁。
 
-context 返回 allowed、sources、corporations、people、unavailable；items 接受 view、sort、kind、corporation、account、q、status、from、until、mine、cursor。`sort` 当前支持 `time_asc`/`time_desc`（申请/处理时间）和 `id_asc`/`id_desc`（编号），省略时待处理视图默认申请时间最早、已处理视图默认处理时间最新。时间使用 RFC3339，前端日期筛选明确 UTC，起始包含、截止不含。搜索单号、结算编号、接收角色和标题；主角色按人员选择筛选。兑换没有历史军团归属，选择军团时不混入兑换订单。
+context 返回 allowed、sources、capabilities、corporations、people、unavailable；`capabilities` 按来源声明批准、驳回、取消审核、发放、批量结算、筛选能力和 `detail_kind`，仅用于列表与详情注册表，不授予写权限。items 接受 view、sort、kind、corporation、account、q、status、from、until、mine、cursor。响应还返回 `source_status`，以及每条记录的 `summary_version`、`detail_kind`、`source_status`、`stale`；来源投影陈旧时仍显示索引数据并明确状态。`sort` 当前支持 `time_asc`/`time_desc`（申请/处理时间）和 `id_asc`/`id_desc`（编号），省略时待处理视图默认申请时间最早、已处理视图默认处理时间最新。时间使用 RFC3339，前端日期筛选明确 UTC，起始包含、截止不含。搜索单号、结算编号、接收角色和标题；主角色按人员选择筛选。兑换没有历史军团归属，选择军团时不混入兑换订单。
 
 各来源私有 SQL 先按授权集合和筛选读取，单来源最多 31 条；平台 reviewqueue 仅提供无表名的投影/过滤/游标工具，approval 不访问其他模块 store。宿主注入 Source 与身份主角色名称服务。当前页最多 30 条，活动视图使用申请时间，已处理视图使用处理时间；两者均可升降序，编号也可升降序。全局键按所选列、来源和单号构成，游标绑定账号、筛选和排序方向。两个来源使用同一排序边界，因此不需要拼接各自第一页，也不会漏掉稳定记录。实时状态变化可能移动单据，刷新首页获取最新结果，不承诺跨请求数据库快照。
 
@@ -67,6 +67,8 @@ context 返回 allowed、sources、corporations、people、unavailable；items �
 兑换订单的奖励物品名称属于展示增强。统一索引列表只读取订单冻结快照中的已有名称、类型 ID、数量和兑换金额，不逐行调用 SDE 名称服务；SDE 暂时不可用不会拖慢列表，也不会将名称解析失败误报为来源不可用。详情和来源页面仍可在需要时补全名称。
 
 申请人主角色昵称和福利成员主角色名称同样属于展示增强；名称投影查询失败时保留待办、计数和接收角色，不把列表误报为不可用。来源权限或业务查询本身失败时，服务端会记录具体来源和阶段，前端继续标记对应来源计数不完整。
+
+审批上下文和列表接口记录不含账号、查询词或 payload 的 `duration_ms` 观测日志，并标注是否走索引、是否加载申请人筛选；可按发布前后的同一视图和数据集计算 p50/p95，不把单次请求当作性能结论。
 
 统一索引路径还会保存来源授权所需的当前有效成员账号范围；福利补损专员的可见范围因此同时受军团和成员归属限制。P2 验收可将 `APPROVAL_DUAL_READ=true` 临时打开，后台按相同授权、筛选和游标运行旧聚合并记录差异，完成验收后关闭。
 
