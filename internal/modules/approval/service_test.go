@@ -25,6 +25,33 @@ func TestIndexAllowlistControlsReadPath(t *testing.T) {
 	}
 }
 
+func TestSourceAccessCacheIsScopedToListPath(t *testing.T) {
+	calls := 0
+	s := &Service{AccessCacheTTL: time.Minute, accessCache: map[string]accessCacheEntry{}}
+	source := reviewqueue.Source{
+		ID: "loan",
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			calls++
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.sourceAccess(context.Background(), "a", source, false); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("cached access calls = %d, want 1", calls)
+	}
+	if _, err := s.sourceAccess(context.Background(), "b", source, false); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 {
+		t.Fatalf("cross-account access calls = %d, want 2", calls)
+	}
+}
+
 func TestIndexOnlySourceFallsBackWithoutCallingMissingLegacyQuery(t *testing.T) {
 	s := &Service{Sources: []reviewqueue.Source{{
 		ID:        "future",

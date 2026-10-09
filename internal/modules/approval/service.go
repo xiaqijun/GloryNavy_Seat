@@ -27,20 +27,66 @@ type Service struct {
 	Index    *store.Index
 	UseIndex bool
 	DualRead bool
+	// AccessCacheTTL only caches the source scope used to filter the indexed
+	// candidate list. Detail and decision paths always reauthorize directly at
+	// the owning source.
+	AccessCacheTTL time.Duration
 	// IndexAccounts is the optional P3 gray list. Empty means all authenticated
 	// users retain the P1 index path; a non-empty list limits it by account.
 	IndexAccounts []string
+	accessMu      sync.Mutex
+	accessCache   map[string]accessCacheEntry
+}
+
+type accessCacheEntry struct {
+	access  reviewqueue.Access
+	expires time.Time
 }
 
 // NewService is the composition boundary for the central index. The private
 // store remains owned by approval; callers only provide the identity name
 // resolver and database pool.
 func NewService(names func(context.Context, []string) (map[string]string, error), pool *pgxpool.Pool) *Service {
-	s := &Service{Names: names}
+	s := &Service{Names: names, AccessCacheTTL: 5 * time.Second, accessCache: map[string]accessCacheEntry{}}
 	if pool != nil {
 		s.Index = &store.Index{Pool: pool}
 	}
 	return s
+}
+
+func (s *Service) sourceAccess(ctx context.Context, user string, source reviewqueue.Source, indexed bool) (reviewqueue.Access, error) {
+	access := source.Access
+	if indexed && source.IndexAccess != nil {
+		access = source.IndexAccess
+	}
+	if access == nil {
+		return reviewqueue.Access{}, errors.New("approval source access adapter missing")
+	}
+	if s.AccessCacheTTL <= 0 {
+		return access(ctx, user)
+	}
+	key := user + "\x00" + source.ID
+	if indexed {
+		key += "\x00index"
+	}
+	now := time.Now()
+	s.accessMu.Lock()
+	entry, ok := s.accessCache[key]
+	s.accessMu.Unlock()
+	if ok && now.Before(entry.expires) {
+		return entry.access, nil
+	}
+	value, err := access(ctx, user)
+	if err != nil {
+		return reviewqueue.Access{}, err
+	}
+	s.accessMu.Lock()
+	if s.accessCache == nil {
+		s.accessCache = map[string]accessCacheEntry{}
+	}
+	s.accessCache[key] = accessCacheEntry{access: value, expires: now.Add(s.AccessCacheTTL)}
+	s.accessMu.Unlock()
+	return value, nil
 }
 
 type Context struct {
@@ -78,7 +124,7 @@ func (s *Service) ContextWithOptions(ctx context.Context, user string, includePe
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
 			result := sourceContextResult{id: source.ID}
-			result.access, result.accessError = source.Access(ctx, user)
+			result.access, result.accessError = s.sourceAccess(ctx, user, source, false)
 			if includePeople && result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
 				if source.PeopleAuthorized != nil {
 					result.people, result.peopleError = source.PeopleAuthorized(ctx, user, result.access)
@@ -342,11 +388,7 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 		wg.Add(1)
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
-			access := source.Access
-			if source.IndexAccess != nil {
-				access = source.IndexAccess
-			}
-			a, e := access(ctx, user)
+			a, e := s.sourceAccess(ctx, user, source, true)
 			results[i] = result{id: source.ID, a: a, e: e}
 		}(i, source)
 	}
@@ -458,7 +500,7 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
 			result := sourceResult{index: i, id: source.ID}
-			access, e := source.Access(ctx, user)
+			access, e := s.sourceAccess(ctx, user, source, false)
 			if e != nil {
 				result.accessError = e
 				results[i] = result

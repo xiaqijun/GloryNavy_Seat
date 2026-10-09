@@ -58,6 +58,8 @@ Read-only endpoints: GET /api/v1/approval/context, GET /api/v1/approval/items, G
 
 The context and list handlers emit `duration_ms` observations without account IDs, search terms or payloads, and identify indexed reads and applicant-filter loading. Compare p50/p95 across the same view and data set before drawing a performance conclusion; a single request is not an acceptance result.
 
+The context and indexed list reuse a five-second authorization-scope snapshot isolated by site account, source, and access path, avoiding duplicate member/binding reads during the initial page load. Details and all writes bypass this cache and reauthorize object scope, versions, and self-review rules in the owning source.
+
 Source-private SQL authorizes and filters before selecting at most 31 candidates. Shared reviewqueue contains projection/keyset utilities but no business table references. Host adapters inject services; approval never imports another module's store. Active views use application time, Processed uses processing time, and both time and record number can be ordered in either direction. Merge returns at most 30 records with source tie-breakers. A global tuple cursor bound to actor, filters and sort is applied identically to every source. Stable records are neither skipped nor duplicated; live status changes can reposition records, so refresh the first page for current work.
 
 Per-source counts and page use one SQL snapshot. All reads are local; no ESI fetches or duplicate approval/ledger state are created. Source failure reports unavailable and incomplete totals instead of zero. Remaining records can be viewed, but pagination pauses until recovery. Visible tabs refresh about every 30 seconds; background polling is disabled.
