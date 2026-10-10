@@ -1186,9 +1186,12 @@ const formatMinor = (value: number) =>
 function ApprovalValue({ item }: { item: QueueItem }) {
   const lossAmount = lossQueueAmount(item);
   const order = item.source === "exchange" ? (item.payload as Order) : null;
+  const welfarePayload = item.source === "welfare"
+    ? item.payload as welfare.Case
+    : null;
   const welfareRewards = order || lossAmount
     ? undefined
-    : (item.payload as welfare.Case).detail.rewards;
+    : welfarePayload?.detail?.rewards;
   const rewards = order ? order.content : welfareRewards;
   const content: PhysicalContent | undefined =
     rewards ||

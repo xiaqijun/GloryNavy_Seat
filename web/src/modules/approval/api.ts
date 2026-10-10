@@ -81,7 +81,9 @@ export function lossQueueAmount(
   if (!["submitted", "information", "external"].includes(item.state)) {
     return { amount: item.amount_minor, label: "approved" };
   }
-  const detail = (item.payload as Case).detail;
+  const payload = item.payload as Partial<Case>;
+  const detail = payload.detail;
+  if (!detail) return null;
   const quote =
     item.kind === "solo"
       ? detail?.valuation?.state === "ready"
@@ -96,6 +98,8 @@ const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((s) => typeof s === "string");
+const nonEmptyString = (v: unknown): v is string =>
+  typeof v === "string" && v.trim().length > 0;
 const isCapabilities = (v: unknown): v is ApprovalContext["capabilities"] =>
   !v || (object(v) && Object.values(v).every((cap) =>
     object(cap) &&
@@ -115,7 +119,7 @@ const isContext = (v: unknown): v is ApprovalContext =>
   );
 export const isItem = (v: unknown): v is QueueItem =>
   object(v) &&
-  ["welfare", "exchange", "loan"].includes(String(v.source)) &&
+  nonEmptyString(v.source) &&
   [
     "id",
     "version",

@@ -186,6 +186,19 @@ func TestIndexOnlySourceFallsBackWithoutCallingMissingLegacyQuery(t *testing.T) 
 	}
 }
 
+func TestIndexOnlyDetailFailsClosedWithoutLegacyAdapter(t *testing.T) {
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID:        "future",
+		IndexOnly: true,
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			return reviewqueue.Access{Allowed: true}, nil
+		},
+	}}}
+	if _, err := s.Detail(context.Background(), "manager", "future", "7"); !errors.Is(err, store.ErrUnavailable) {
+		t.Fatalf("index-only detail error = %v, want store unavailable", err)
+	}
+}
+
 func TestMergePaginationPermissionAndPartialFailure(t *testing.T) {
 	ctx := context.Background()
 	s := &Service{}

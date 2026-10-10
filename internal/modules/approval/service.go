@@ -751,6 +751,12 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 		if !a.Allowed {
 			return reviewqueue.Item{}, pgx.ErrNoRows
 		}
+		// IndexOnly sources may participate in the central list before their
+		// legacy detail adapter is available. Fail closed with a normal service
+		// error instead of dereferencing a nil query function.
+		if p.QueryAuthorized == nil && p.Query == nil {
+			return reviewqueue.Item{}, store.ErrUnavailable
+		}
 		filter := reviewqueue.Filter{View: "history", ID: n}
 		var page reviewqueue.Page
 		if p.QueryAuthorized != nil {
