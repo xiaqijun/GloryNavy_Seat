@@ -439,8 +439,9 @@ func compareItem(a, b reviewqueue.Item) string {
 		{"kind", a.Kind != b.Kind},
 		{"state", a.State != b.State},
 		{"status", a.Status != b.Status},
-		{"processed_by", !slices.Equal(a.ProcessedBy, b.ProcessedBy)},
-		{"history", a.History != b.History},
+		// ProcessedBy and History are internal authorization/counting metadata;
+		// the legacy source adapter does not serialize them in its page items.
+		// Counts and Mine filtering are compared through their observable result.
 		{"recipient", a.Recipient != b.Recipient},
 		{"title", a.Title != b.Title},
 		{"reference", a.Reference != b.Reference},

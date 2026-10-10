@@ -26,10 +26,10 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if when.IsZero() {
 			when = c.CreatedAt
 		}
+		// Keep the source contract's empty payment status. The UI already
+		// falls back to state for presentation, while the legacy approval
+		// query exposes an empty status when no payment status exists.
 		status := d.PaymentStatus
-		if status == "" {
-			status = c.State
-		}
 		title := d.Rule.ProjectName
 		if title == "" && d.LossEvidence != nil {
 			title = d.LossEvidence.ShipName
