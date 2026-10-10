@@ -2,6 +2,7 @@ package approval
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
@@ -10,6 +11,25 @@ import (
 	"testing"
 	"time"
 )
+
+func TestNormalizeItemKeepsDetailJSONShape(t *testing.T) {
+	item := reviewqueue.Item{}
+	normalizeItem(&item)
+	b, err := json.Marshal(item)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if actions, ok := raw["actions"].([]any); !ok || actions == nil {
+		t.Fatalf("actions JSON = %#v, want empty array", raw["actions"])
+	}
+	if payload, ok := raw["payload"].(map[string]any); !ok || payload == nil {
+		t.Fatalf("payload JSON = %#v, want object", raw["payload"])
+	}
+}
 
 func TestIndexAllowlistControlsReadPath(t *testing.T) {
 	s := &Service{UseIndex: true, Index: &store.Index{}, IndexAccounts: []string{"pilot"}}

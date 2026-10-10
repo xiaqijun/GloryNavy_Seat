@@ -48,6 +48,23 @@ type accessCacheEntry struct {
 	expires time.Time
 }
 
+// normalizeItem keeps every detail response compatible with the central
+// approval JSON contract. Source-owned detail adapters commonly leave actions
+// nil for records the current administrator cannot act on; encoding a nil
+// slice as JSON null breaks the frontend response guard, which expects an
+// array even when it is empty.
+func normalizeItem(item *reviewqueue.Item) {
+	if item == nil {
+		return
+	}
+	if item.Actions == nil {
+		item.Actions = []string{}
+	}
+	if len(item.Payload) == 0 || string(item.Payload) == "null" {
+		item.Payload = json.RawMessage(`{}`)
+	}
+}
+
 type approvalIndex interface {
 	List(context.Context, []store.Scope, string, reviewqueue.Filter, reviewqueue.Position, int) (store.Result, error)
 	Get(context.Context, []store.Scope, string, string, int64) (reviewqueue.Item, error)
@@ -765,6 +782,7 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 			if err != nil {
 				return reviewqueue.Item{}, err
 			}
+			normalizeItem(&item)
 			item.Source = source
 			item.DetailKind = p.Capabilities.DetailKind
 			item.SummaryVersion = item.Version
@@ -794,6 +812,7 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 					return reviewqueue.Item{}, err
 				}
 			}
+			normalizeItem(&item)
 			logSourceTiming(source, "detail_index", started, nil, "path", "index")
 			return item, nil
 		}
@@ -821,6 +840,7 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 			return reviewqueue.Item{}, e
 		}
 		if len(page.Items) == 1 {
+			normalizeItem(&page.Items[0])
 			return page.Items[0], nil
 		}
 	}
