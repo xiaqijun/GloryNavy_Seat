@@ -191,7 +191,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     queryFn: ({ signal }) => getQueue(query, signal),
     enabled: context.data?.allowed === true,
     refetchInterval: 30000,
-    staleTime: 15000,
+    staleTime: tab === "history" ? 30000 : 15000,
     refetchOnWindowFocus: false,
   });
   const batches = useQuery({
@@ -221,6 +221,21 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
       staleTime: 30_000,
     });
   }, [client, context.data?.allowed, params, q.data, q.isPlaceholderData, user]);
+  // History is the most frequently visited secondary view. Warm its exact
+  // filter query once the current page is usable, so a click can render from
+  // the cache while the periodic refresh keeps the visible view current.
+  useEffect(() => {
+    if (context.data?.allowed !== true || tab === "history" || !q.data) return;
+    const history = queueForView(params, "history");
+    const timer = window.setTimeout(() => {
+      void client.prefetchQuery({
+        queryKey: ["approval", "queue", user, history.toString()],
+        queryFn: ({ signal }) => getQueue(history, signal),
+        staleTime: 30_000,
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [client, context.data?.allowed, params, q.data, tab, user]);
   const warmView = (target: string) => {
     if (context.data?.allowed !== true || target === tab) return;
     const next = queueForView(params, target);
@@ -355,7 +370,8 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             type="button"
             className={tab === v.id ? "active" : ""}
             aria-current={tab === v.id ? "page" : undefined}
-    onFocus={() => warmView(v.id)}
+            onPointerEnter={() => warmView(v.id)}
+            onFocus={() => warmView(v.id)}
             onClick={() => change("view", v.id)}
           >
             {v.label}
