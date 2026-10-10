@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-approval-detail-fast-20261010-r1/r2 — 2026-10-10
+
+应用机已切换至 r1，公网静态站点已切换至 r2。审批详情由来源单条读取或 `approval_items` 单行读取，详情接口生产样本 267–306ms；前端详情组件支持悬停/聚焦预加载并以列表摘要占位。Go 全量测试、前端 96 项测试、lint 和构建通过；应用 active/ready、匿名审批详情 401、首页 200、容器内 OpenResty `nginx -t` 通过。无 Goose/River 新迁移。
+
 ## 审批投影契约对齐与双读验收（2026-10-10）
 
 已发布 `v0.1.0-approval-read-model-20261010-r23`，来源提交 `a613257654d22748569420c37112a30358ec6424`。Goose 78 新增 `approval_items.action`，福利成长/活动奖励单位、三类来源最新处理动作和审计时间与旧来源查询保持一致，修复历史分页顺序和奖励单位双读差异。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点已原子切换；应用 `active/ready`、首页 200、Goose 78、三来源投影 `exchange=fresh/0`、`loan=fresh/0`、`welfare=fresh/109` 和边缘 `nginx -t` 均已复核。
