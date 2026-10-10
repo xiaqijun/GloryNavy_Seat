@@ -1,5 +1,9 @@
 # Alliance PAP: standalone service integration
 
+## August 2026 historical snapshot synchronized 2026-10-10
+
+The retained local alliance PAP export was restored for `2026-08` and written to `attendance_alliance_pap_snapshot` with a complete-month marker: 33 characters and 199.50 PAP. Current valid bindings map 27 characters to 9 site accounts; six unbound rows remain as source evidence but are excluded from member display and conversion. This operation only fills the historical month and does not change the current-month sync singleton or upstream capture state. Administrators can select `2026-08` in member review and historical conversion; conversion still rechecks current bindings and existing idempotent ledger entries.
+
 ## Historical conversion update 2026-10-02 (deployed, live admin acceptance pending)
 
 Administrators can open the Alliance PAP conversion dialog and select any retained complete month with an unconverted balance. Each month has its own completeness marker and version. Submission rechecks the snapshot version, current valid bindings, the `alliance_pap` rate and already-converted units, then uses the exchange idempotency key and source ledger. Fully converted months are omitted; stale versions require a fresh preview. Historical conversion does not rewrite the snapshot or treat it as the current month.
