@@ -11,6 +11,7 @@ Register one `reviewqueue.Source` in the host composition:
 | `ID` | Stable lowercase identifier; never duplicate another source |
 | `Capabilities` | Declare decisions, filters and `DetailKind` |
 | `Access` | Return the actor's current source scope without leaking objects |
+| `ContextAccess` | Optional lightweight shell scope; return source/corporation permission without loading all member accounts |
 | `IndexAccess` | Provide only when index scope differs from the context scope |
 | `Snapshot` | Return list summaries without tokens, full contracts, accounting or full audit data |
 | `Query` | Legacy aggregation for fallback only; an index-first source may use `IndexOnly` |

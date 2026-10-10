@@ -17,7 +17,7 @@ func approvalHandler(pool *pgxpool.Pool, dualRead bool, indexAccounts []string, 
 	s.DualRead = dualRead
 	s.IndexAccounts = indexAccounts
 	if slices.Contains(enabled, "welfare") {
-		s.Sources = append(s.Sources, reviewqueue.Source{ID: "welfare", Capabilities: reviewqueue.Capabilities{Approve: true, Reject: true, CancelReview: true, Fulfill: true, CorporationFilter: true, ApplicantFilter: true, Amount: true, DetailKind: "welfare"}, Access: w.ApprovalAccess, Query: w.ApprovalQueue, QueryAuthorized: w.ApprovalQueueAuthorized, People: w.ApprovalPeople, PeopleAuthorized: w.ApprovalPeopleAuthorized, Snapshot: w.ApprovalSnapshot, Decorate: w.ApprovalDecorate})
+		s.Sources = append(s.Sources, reviewqueue.Source{ID: "welfare", Capabilities: reviewqueue.Capabilities{Approve: true, Reject: true, CancelReview: true, Fulfill: true, CorporationFilter: true, ApplicantFilter: true, Amount: true, DetailKind: "welfare"}, Access: w.ApprovalAccess, ContextAccess: w.ApprovalContextAccess, Query: w.ApprovalQueue, QueryAuthorized: w.ApprovalQueueAuthorized, People: w.ApprovalPeople, PeopleAuthorized: w.ApprovalPeopleAuthorized, Snapshot: w.ApprovalSnapshot, Decorate: w.ApprovalDecorate})
 	}
 	if slices.Contains(enabled, "exchange") {
 		s.Sources = append(s.Sources, reviewqueue.Source{ID: "exchange", Capabilities: reviewqueue.Capabilities{CancelReview: true, CorporationFilter: false, ApplicantFilter: true, Amount: true, DetailKind: "exchange"}, Access: e.ApprovalAccess, IndexAccess: e.ApprovalIndexAccess, Query: e.ApprovalQueue, QueryAuthorized: e.ApprovalQueueAuthorized, People: e.ApprovalPeople, PeopleAuthorized: e.ApprovalPeopleAuthorized, Snapshot: e.ApprovalSnapshot, Decorate: e.ApprovalDecorate})

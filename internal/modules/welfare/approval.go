@@ -107,6 +107,35 @@ func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *revie
 }
 
 func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
+	out, e := s.ApprovalContextAccess(ctx, user)
+	if e != nil {
+		return out, e
+	}
+	for _, corp := range out.Corporations {
+		if s.Members == nil {
+			continue
+		}
+		if out.AccountsByCorporation == nil {
+			out.AccountsByCorporation = map[string][]string{}
+		}
+		id, _ := strconv.ParseInt(corp.ID, 10, 64)
+		members, err := s.Members(ctx, user, id)
+		if err != nil {
+			return out, err
+		}
+		accounts := make([]string, 0, len(members))
+		for _, member := range members {
+			accounts = append(accounts, member.AccountID)
+		}
+		out.AccountsByCorporation[corp.ID] = accounts
+	}
+	return out, nil
+}
+
+// ApprovalContextAccess is the lightweight shell scope. It deliberately does
+// not load the member account set; the full list scope is read only when the
+// applicant filter or indexed list requires it.
+func (s *Service) ApprovalContextAccess(ctx context.Context, user string) (reviewqueue.Access, error) {
 	out := reviewqueue.Access{Corporations: []reviewqueue.Option{}}
 	corps, e := s.Corporations(ctx, user)
 	if e != nil {
@@ -115,22 +144,7 @@ func (s *Service) ApprovalAccess(ctx context.Context, user string) (reviewqueue.
 	for _, c := range corps {
 		if c.Manage || c.Compensate {
 			out.Allowed = true
-			id := strconv.FormatInt(c.ID, 10)
-			out.Corporations = append(out.Corporations, reviewqueue.Option{ID: id, Name: c.Name})
-			if s.Members != nil {
-				if out.AccountsByCorporation == nil {
-					out.AccountsByCorporation = map[string][]string{}
-				}
-				members, err := s.Members(ctx, user, c.ID)
-				if err != nil {
-					return out, err
-				}
-				accounts := make([]string, 0, len(members))
-				for _, member := range members {
-					accounts = append(accounts, member.AccountID)
-				}
-				out.AccountsByCorporation[id] = accounts
-			}
+			out.Corporations = append(out.Corporations, reviewqueue.Option{ID: strconv.FormatInt(c.ID, 10), Name: c.Name})
 		}
 	}
 	return out, nil

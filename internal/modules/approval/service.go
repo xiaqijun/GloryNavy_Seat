@@ -119,6 +119,34 @@ func (s *Service) sourceAccess(ctx context.Context, user string, source reviewqu
 	return value, nil
 }
 
+func (s *Service) contextAccess(ctx context.Context, user string, source reviewqueue.Source) (reviewqueue.Access, error) {
+	if source.ContextAccess == nil {
+		return s.sourceAccess(ctx, user, source, false)
+	}
+	key := user + "\x00" + source.ID + "\x00context"
+	if s.AccessCacheTTL <= 0 {
+		return source.ContextAccess(ctx, user)
+	}
+	now := time.Now()
+	s.accessMu.Lock()
+	entry, ok := s.accessCache[key]
+	s.accessMu.Unlock()
+	if ok && now.Before(entry.expires) {
+		return entry.access, nil
+	}
+	value, err := source.ContextAccess(ctx, user)
+	if err != nil {
+		return reviewqueue.Access{}, err
+	}
+	s.accessMu.Lock()
+	if s.accessCache == nil {
+		s.accessCache = map[string]accessCacheEntry{}
+	}
+	s.accessCache[key] = accessCacheEntry{access: value, expires: now.Add(s.AccessCacheTTL)}
+	s.accessMu.Unlock()
+	return value, nil
+}
+
 type Context struct {
 	Allowed      bool                                `json:"allowed"`
 	Sources      []string                            `json:"sources"`
@@ -155,7 +183,11 @@ func (s *Service) ContextWithOptions(ctx context.Context, user string, includePe
 			defer wg.Done()
 			result := sourceContextResult{id: source.ID}
 			accessStarted := time.Now()
-			result.access, result.accessError = s.sourceAccess(ctx, user, source, false)
+			if includePeople {
+				result.access, result.accessError = s.sourceAccess(ctx, user, source, false)
+			} else {
+				result.access, result.accessError = s.contextAccess(ctx, user, source)
+			}
 			logSourceTiming(source.ID, "access", accessStarted, result.accessError, "indexed", false, "allowed", result.access.Allowed)
 			if includePeople && result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
 				peopleStarted := time.Now()

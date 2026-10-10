@@ -94,6 +94,11 @@ type Source struct {
 	ID           string
 	Capabilities Capabilities
 	Access       func(context.Context, string) (Access, error)
+	// ContextAccess is an optional lightweight scope used for the initial
+	// approval shell. It must return source/corporation permission without
+	// loading the full member or applicant account set. The complete Access
+	// adapter remains authoritative for indexed lists and details.
+	ContextAccess func(context.Context, string) (Access, error)
 	// IndexAccess may load the additional scope needed by the central index;
 	// the regular Access path stays lightweight for the initial context shell.
 	IndexAccess func(context.Context, string) (Access, error)

@@ -390,6 +390,30 @@ func TestContextWithoutPeopleSkipsExpensiveApplicantProjection(t *testing.T) {
 	}
 }
 
+func TestContextShellUsesLightweightSourceAccess(t *testing.T) {
+	fullCalls, shellCalls := 0, 0
+	s := &Service{Sources: []reviewqueue.Source{{
+		ID: "welfare",
+		Access: func(context.Context, string) (reviewqueue.Access, error) {
+			fullCalls++
+			return reviewqueue.Access{Allowed: true, Corporations: []reviewqueue.Option{{ID: "1", Name: "Corp"}}, Accounts: []string{"account-1"}}, nil
+		},
+		ContextAccess: func(context.Context, string) (reviewqueue.Access, error) {
+			shellCalls++
+			return reviewqueue.Access{Allowed: true, Corporations: []reviewqueue.Option{{ID: "1", Name: "Corp"}}}, nil
+		},
+		People: func(context.Context, string) ([]string, error) { return []string{"account-1"}, nil },
+	}}}
+	light, err := s.ContextWithOptions(context.Background(), "manager", false)
+	if err != nil || !light.Allowed || len(light.Corporations) != 1 || shellCalls != 1 || fullCalls != 0 {
+		t.Fatalf("light context = %+v, shell=%d full=%d err=%v", light, shellCalls, fullCalls, err)
+	}
+	full, err := s.ContextWithOptions(context.Background(), "manager", true)
+	if err != nil || !full.Allowed || shellCalls != 1 || fullCalls != 1 {
+		t.Fatalf("full context = %+v, shell=%d full=%d err=%v", full, shellCalls, fullCalls, err)
+	}
+}
+
 func TestCompareResultsDetectsPageAndCountDrift(t *testing.T) {
 	base := Result{Items: []reviewqueue.Item{{Source: "welfare", ID: 1, Version: 2, Account: "a", State: "submitted", Status: "submitted", Time: time.Unix(10, 0).UTC()}}, Counts: map[string]int64{"pending": 1}}
 	if reason := compareResults(base, base); reason != "" {
