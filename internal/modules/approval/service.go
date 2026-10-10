@@ -21,6 +21,8 @@ import (
 
 var ErrInvalid = errors.New("invalid approval query")
 
+const defaultDualReadConcurrency = 4
+
 type Service struct {
 	Sources  []reviewqueue.Source
 	Names    func(context.Context, []string) (map[string]string, error)
@@ -37,6 +39,8 @@ type Service struct {
 	IndexAccounts []string
 	accessMu      sync.Mutex
 	accessCache   map[string]accessCacheEntry
+	dualReadMu    sync.Mutex
+	dualReadSem   chan struct{}
 }
 
 type accessCacheEntry struct {
@@ -265,11 +269,29 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 	if s.useIndexFor(user) {
 		out, err := s.listIndexed(ctx, user, f, token)
 		if s.DualRead && err == nil {
-			go s.compareAsync(user, f, token, out)
+			s.scheduleDualRead(user, f, token, out)
 		}
 		return out, err
 	}
 	return s.listLegacy(ctx, user, f, token)
+}
+
+func (s *Service) scheduleDualRead(user string, f reviewqueue.Filter, token string, indexed Result) {
+	s.dualReadMu.Lock()
+	if s.dualReadSem == nil {
+		s.dualReadSem = make(chan struct{}, defaultDualReadConcurrency)
+	}
+	sem := s.dualReadSem
+	s.dualReadMu.Unlock()
+	select {
+	case sem <- struct{}{}:
+		go func() {
+			defer func() { <-sem }()
+			s.compareAsync(user, f, token, indexed)
+		}()
+	default:
+		slog.Warn("approval dual-read skipped", "reason", "concurrency_limit")
+	}
 }
 
 func (s *Service) useIndexFor(user string) bool {
@@ -285,17 +307,24 @@ func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, 
 	legacy, err := s.listLegacy(ctx, user, f, token)
 	if err != nil {
 		slog.Warn("approval dual-read legacy failed", "error", err)
+		s.persistDualReadDiff(ctx, user, f, "legacy_error", indexed, Result{})
 		return
 	}
 	if reason := compareResults(indexed, legacy); reason != "" {
 		slog.Warn("approval dual-read mismatch", "reason", reason, "view", f.View, "sort", f.Sort, "kind", f.Kind, "corporation", f.Corporation)
-		if index := s.approvalIndex(); index != nil {
-			filter, _ := json.Marshal(f)
-			source, sourceID, indexedVersion, legacyVersion := mismatchCoordinate(reason, indexed, legacy)
-			if err := index.RecordDualReadDiff(ctx, user, string(filter), reason, source, sourceID, indexedVersion, legacyVersion); err != nil {
-				slog.Warn("approval dual-read diff persistence failed", "reason", reason, "error", err)
-			}
-		}
+		s.persistDualReadDiff(ctx, user, f, reason, indexed, legacy)
+	}
+}
+
+func (s *Service) persistDualReadDiff(ctx context.Context, user string, f reviewqueue.Filter, reason string, indexed, legacy Result) {
+	index := s.approvalIndex()
+	if index == nil {
+		return
+	}
+	filter, _ := json.Marshal(f)
+	source, sourceID, indexedVersion, legacyVersion := mismatchCoordinate(reason, indexed, legacy)
+	if err := index.RecordDualReadDiff(ctx, user, string(filter), reason, source, sourceID, indexedVersion, legacyVersion); err != nil {
+		slog.Warn("approval dual-read diff persistence failed", "reason", reason, "error", err)
 	}
 }
 
