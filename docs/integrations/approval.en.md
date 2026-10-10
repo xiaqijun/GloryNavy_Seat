@@ -1,6 +1,6 @@
 # Approval center
 
-The unified index also stores the current member-account scope required by source authorization. Compensation officers are therefore filtered by both corporation and current membership. For P2 verification, set `APPROVAL_DUAL_READ=true` temporarily; the server runs the legacy aggregation in the background with the same authorization, filters, and cursor and records drift, then disable it after acceptance.
+The unified index also stores the current member-account scope required by source authorization. Compensation officers are therefore filtered by both corporation and current membership. For P2 verification, set `APPROVAL_DUAL_READ=true` temporarily; the server runs the legacy aggregation in the background with the same authorization, filters, and cursor and records drift. At most four comparisons run concurrently; excess work is skipped with a reason, and legacy failures are recorded as `legacy_error`. Disable it after acceptance.
 
 ## Unified read model (in development)
 
