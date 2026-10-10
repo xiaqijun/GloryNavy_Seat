@@ -74,3 +74,4 @@ Database tests cover scope, self-exclusion, exchange cancellation self-review re
 
 No real member review, refund or game contract has been performed for validation. Existing real-game fulfillment limitations remain documented in [welfare](welfare.en.md) and [exchange](exchange.en.md). Bulk review, multi-stage approval, automatic approval and notifications are out of scope.
 > Local update (2026-09-28): approval source access, context, and queue reads now run in parallel. Source isolation, merged sorting, and unavailable-source markers are unchanged. The UI loads only the active view and keeps hover/focus and next-page prefetching.
+New approval sources should follow the [approval source integration template](approval-source-template.en.md) for capabilities, snapshots, permissions and event summaries, and reuse `internal/platform/reviewqueue/testfixture` for index-only, version-protection, source-failure and source-owned authorization tests.
