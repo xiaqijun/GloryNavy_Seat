@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 审批列表共享授权范围（2026-10-09）
+
+已发布 `v0.1.0-approval-read-model-20261009-r12`，来源提交 `3844b74`。无独立 `IndexAccess` 的来源会在审批上下文和索引列表之间复用 5 秒授权范围；显式独立索引范围仍使用隔离缓存键。无 Goose/River 新迁移；应用机与公网静态站点已切换，应用 `active/ready`、首页 200、匿名审批接口 401、Goose 77、三来源投影状态和 OpenResty `nginx -t` 均已复核。
+
 ## 审批列表授权范围缓存（2026-10-09）
 
 已发布 `v0.1.0-approval-read-model-20261009-r11`，来源提交 `19d4320`。应用机 `/opt/glorynavy/current` 与公网 1Panel 静态站点 `current` 已原子切换；无 Goose/River 新迁移。审批上下文和索引列表按账号、来源及读取路径隔离复用 5 秒授权范围结果，详情、审批决定和写操作仍实时回源。应用 `active/ready`、首页 200、匿名审批接口 401、Goose 77、`approval_projection_runs` 三来源状态和边缘 OpenResty `nginx -t` 均已复核。
