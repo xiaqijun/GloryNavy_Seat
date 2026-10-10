@@ -35,6 +35,13 @@ func (f dualReadIndex) List(context.Context, []store.Scope, string, reviewqueue.
 	return f.page, nil
 }
 
+func (f dualReadIndex) Get(context.Context, []store.Scope, string, string, int64) (reviewqueue.Item, error) {
+	if len(f.page.Items) == 0 {
+		return reviewqueue.Item{}, pgx.ErrNoRows
+	}
+	return f.page.Items[0], nil
+}
+
 func (f dualReadIndex) StaleSources(context.Context, time.Duration) ([]string, error) {
 	return f.stale, nil
 }

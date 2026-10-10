@@ -43,6 +43,44 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 	return out, nil
 }
 
+// ApprovalDetail reads one welfare case directly. The old approval detail
+// path called ApprovalQueue with an ID filter, which still built the complete
+// member scope and counted every queue bucket before returning one row.
+func (s *Service) ApprovalDetail(ctx context.Context, user string, id int64) (reviewqueue.Item, error) {
+	c, err := s.Read(ctx, user, id)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	c = s.presentCases(ctx, []Case{c})[0]
+	var d Detail
+	if err := json.Unmarshal(c.Detail, &d); err != nil {
+		return reviewqueue.Item{}, err
+	}
+	when := c.UpdatedAt
+	if when.IsZero() {
+		when = c.CreatedAt
+	}
+	status := d.PaymentStatus
+	item := reviewqueue.Item{
+		Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID,
+		Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind,
+		State: c.State, Status: status, Recipient: d.CharacterName,
+		Title: d.Rule.ProjectName, Reference: c.Reference, Amount: c.Award,
+		Unit: "ISK", Time: when, History: c.State == "completed" || c.State == "cancelled" || c.State == "rejected" || c.State == "reversed",
+		Payload: rawJSON(c),
+	}
+	if isGrowth(c.Kind) || isActivity(c.Kind) {
+		item.Amount, item.Unit = 0, "reward"
+	}
+	if d.LossEvidence != nil {
+		item.Title = d.LossEvidence.ShipName
+	}
+	if err := s.ApprovalDecorate(ctx, user, &item); err != nil {
+		return reviewqueue.Item{}, err
+	}
+	return item, nil
+}
+
 func approvalSummary(c Case, d Detail) json.RawMessage {
 	compact := d
 	compact.Rule = Config{ProjectName: d.Rule.ProjectName}

@@ -814,6 +814,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             key={`${params.get("source")}:${params.get("id")}`}
             source={params.get("source")!}
             id={params.get("id")!}
+            initialItem={q.data?.items.find((item) => item.source === params.get("source") && item.id === params.get("id"))}
             user={user}
             csrf={csrf}
             close={close}
@@ -843,6 +844,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
 function Detail({
   source,
   id,
+  initialItem,
   user,
   csrf,
   close,
@@ -850,6 +852,7 @@ function Detail({
 }: {
   source: string;
   id: string;
+  initialItem?: QueueItem;
   user: string;
   csrf: string;
   close: () => void;
@@ -858,6 +861,7 @@ function Detail({
   const q = useQuery({
     queryKey: ["approval", "detail", user, source, id],
     queryFn: ({ signal }) => getItem(source, id, signal),
+    placeholderData: initialItem,
     refetchInterval: 30000,
   });
   if (q.isError || !q.data)

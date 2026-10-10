@@ -42,6 +42,77 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 	return out, nil
 }
 
+// ApprovalDetail performs the exchange-specific single-record read used by
+// the central detail endpoint. It keeps recipient authorization in exchange
+// while avoiding ApprovalQueue's page query, SDE pass and counted scan.
+func (s *Service) ApprovalDetail(ctx context.Context, user string, id int64) (reviewqueue.Item, error) {
+	a, err := s.ApprovalIndexAccess(ctx, user)
+	if err != nil || !a.Allowed {
+		if err != nil {
+			return reviewqueue.Item{}, err
+		}
+		return reviewqueue.Item{}, pgx.ErrNoRows
+	}
+	r, err := store.New(s.Pool).Redemption(ctx, id)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	visible := false
+	for _, binding := range a.Bindings {
+		if binding.Account == r.AccountID.String() && binding.Recipient == strconv.FormatInt(r.RecipientID, 10) {
+			visible = true
+			break
+		}
+	}
+	if !visible {
+		return reviewqueue.Item{}, pgx.ErrNoRows
+	}
+	var content PhysicalReward
+	if len(r.RewardContent) > 0 {
+		if err := json.Unmarshal(r.RewardContent, &content); err != nil {
+			return reviewqueue.Item{}, err
+		}
+		s.presentPhysicalForApproval(ctx, &content)
+	}
+	name := r.RewardName
+	if name == "" && s.Names != nil {
+		if names, e := s.Names.TypeNames(ctx, []int64{r.TypeID}); e == nil {
+			name = names[r.TypeID].Name
+		}
+	}
+	delivery, err := store.ReadDelivery(ctx, s.Pool, id)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	history, err := store.ApprovalHistory(ctx, s.Pool, id)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	order := RewardOrder{Reference: r.SettlementReference, Delivery: delivery, Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time}
+	payload, _ := json.Marshal(order)
+	var action string
+	if len(history) > 0 {
+		var latest struct{ Action string `json:"action"` }
+		if json.Unmarshal(history[len(history)-1], &latest) == nil {
+			action = latest.Action
+		}
+		var raw map[string]json.RawMessage
+		if json.Unmarshal(payload, &raw) == nil {
+			raw["history"], _ = json.Marshal(history)
+			payload, _ = json.Marshal(raw)
+		}
+	}
+	status := delivery.Status
+	if status == "" {
+		status = "waiting_contract"
+	}
+	item := reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), Kind: "exchange", State: r.State, Status: status, Recipient: r.RecipientName, Title: name, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: r.CreatedAt.Time, Action: action, History: r.State == "fulfilled" || r.State == "cancelled" || status == "awaiting_acceptance", Payload: payload}
+	if err := s.ApprovalDecorate(ctx, user, &item); err != nil {
+		return reviewqueue.Item{}, err
+	}
+	return item, nil
+}
+
 func (s *Service) ApprovalDecorate(_ context.Context, user string, item *reviewqueue.Item) error {
 	if item == nil {
 		return nil

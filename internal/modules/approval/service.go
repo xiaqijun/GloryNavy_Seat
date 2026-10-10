@@ -50,6 +50,7 @@ type accessCacheEntry struct {
 
 type approvalIndex interface {
 	List(context.Context, []store.Scope, string, reviewqueue.Filter, reviewqueue.Position, int) (store.Result, error)
+	Get(context.Context, []store.Scope, string, string, int64) (reviewqueue.Item, error)
 	StaleSources(context.Context, time.Duration) ([]string, error)
 	RecordDualReadDiff(context.Context, string, string, string, string, int64, int64, int64) error
 }
@@ -744,6 +745,57 @@ func (s *Service) Detail(ctx context.Context, user, source, id string) (reviewqu
 	for _, p := range s.Sources {
 		if p.ID != source {
 			continue
+		}
+		started := time.Now()
+		if p.Detail != nil {
+			// Keep the approval center's management boundary before entering a
+			// source detail adapter. Some source-owned read APIs also allow an
+			// applicant to read their own record, which must not widen this
+			// management-only route.
+			a, err := p.Access(ctx, user)
+			if err != nil {
+				logSourceTiming(source, "detail_access", started, err, "path", "source")
+				return reviewqueue.Item{}, err
+			}
+			if !a.Allowed {
+				return reviewqueue.Item{}, pgx.ErrNoRows
+			}
+			item, err := p.Detail(ctx, user, n)
+			logSourceTiming(source, "detail", started, err, "path", "source")
+			if err != nil {
+				return reviewqueue.Item{}, err
+			}
+			item.Source = source
+			item.DetailKind = p.Capabilities.DetailKind
+			item.SummaryVersion = item.Version
+			return item, nil
+		}
+		// A source without private enrichment can use the central projection's
+		// single-row read. This deliberately avoids List's counted CTE and the
+		// legacy source queue fan-out.
+		if s.UseIndex && s.approvalIndex() != nil {
+			a, err := s.sourceAccess(ctx, user, p, true)
+			if err != nil {
+				logSourceTiming(source, "detail_access", started, err, "path", "index")
+				return reviewqueue.Item{}, err
+			}
+			if !a.Allowed {
+				return reviewqueue.Item{}, pgx.ErrNoRows
+			}
+			item, err := s.approvalIndex().Get(ctx, scopes(map[string]reviewqueue.Access{source: a}), user, source, n)
+			if err != nil {
+				logSourceTiming(source, "detail_index", started, err, "path", "index")
+				return reviewqueue.Item{}, err
+			}
+			item.DetailKind = p.Capabilities.DetailKind
+			item.SummaryVersion = item.Version
+			if p.Decorate != nil {
+				if err = p.Decorate(ctx, user, &item); err != nil {
+					return reviewqueue.Item{}, err
+				}
+			}
+			logSourceTiming(source, "detail_index", started, nil, "path", "index")
+			return item, nil
 		}
 		a, e := p.Access(ctx, user)
 		if e != nil {

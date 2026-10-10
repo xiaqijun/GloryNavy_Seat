@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/platform/reviewqueue"
 	"strconv"
@@ -128,6 +129,43 @@ type Result struct {
 	Next        reviewqueue.Position
 	HasNext     bool
 	Unavailable []string
+}
+
+// Get reads one already-projected item without calculating queue counts. It is
+// used by the detail path when a source does not need private enrichment.
+// The scope predicate is the same object/account boundary as List, so the
+// central projection never becomes a second authorization store.
+func (s Index) Get(ctx context.Context, scopes []Scope, actor, source string, id int64) (reviewqueue.Item, error) {
+	if s.Pool == nil {
+		return reviewqueue.Item{}, ErrUnavailable
+	}
+	if len(scopes) == 0 || source == "" || id <= 0 {
+		return reviewqueue.Item{}, pgx.ErrNoRows
+	}
+	scopeJSON, err := json.Marshal(scopes)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	var item reviewqueue.Item
+	var processedBy, actions []byte
+	err = s.Pool.QueryRow(ctx, `SELECT coalesce(i.source,''),coalesce(i.source_id,0),coalesce(i.source_version,0),coalesce(i.account_id::text,''),coalesce(i.processed_by,'[]'::jsonb),coalesce(i.history,false),coalesce(i.corporation_id::text,''),coalesce(i.kind,''),coalesce(i.state,''),coalesce(i.status,''),coalesce(i.applicant,''),coalesce(i.recipient,''),coalesce(i.title,''),coalesce(i.reference,''),coalesce(i.amount_minor,0),coalesce(i.unit,''),coalesce(i.occurred_at,'epoch'::timestamptz),coalesce(i.payload,'{}'::jsonb),coalesce(i.actions,'[]'::jsonb),coalesce(i.action,'')
+		FROM approval_items i
+		WHERE i.source=$3 AND i.source_id=$4
+		AND EXISTS (SELECT 1 FROM jsonb_array_elements($1::jsonb) scope
+			WHERE scope->>'source'=i.source AND (scope->>'all'='true' OR
+			(scope->>'corporation'=coalesce(i.corporation_id::text,'') AND
+			(coalesce(scope->>'restrict_accounts','false') <> 'true' OR scope->'accounts' ? i.account_id::text) AND
+			(coalesce(scope->>'restrict_bindings','false') <> 'true' OR EXISTS (
+				SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(scope->'bindings')='array' THEN scope->'bindings' ELSE '[]'::jsonb END) binding
+				WHERE binding->>'account'=i.account_id::text AND binding->>'recipient'=i.recipient))))`, scopeJSON, actor, source, id).Scan(
+		&item.Source, &item.ID, &item.Version, &item.Account, &processedBy, &item.History, &item.Corporation, &item.Kind, &item.State, &item.Status, &item.Applicant, &item.Recipient, &item.Title, &item.Reference, &item.Amount, &item.Unit, &item.Time, &item.Payload, &actions, &item.Action,
+	)
+	if err != nil {
+		return reviewqueue.Item{}, err
+	}
+	_ = json.Unmarshal(processedBy, &item.ProcessedBy)
+	_ = json.Unmarshal(actions, &item.Actions)
+	return item, nil
 }
 
 func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewqueue.Filter, position reviewqueue.Position, limit int) (Result, error) {

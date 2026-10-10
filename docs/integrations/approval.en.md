@@ -8,6 +8,8 @@ The P1 implementation adds the approval-owned `approval_items` list index and `a
 
 The 2026-10-10 r23 production acceptance covered Pending, Fulfillment, Exceptions, and Processed with a real administrator session and recorded no unexplained dual-read differences. Welfare growth/activity rows preserve the source `reward/0` contract and history timestamps use source audit time. The dual-read flag was disabled after acceptance; all three projections remain fresh.
 
+Pending release: welfare and exchange details now use source-owned single-record adapters; loan and future sources without a private adapter use a single `approval_items` row. This skips the full queue query, bucket counts, pagination and member-scope construction. The source still owns object authorization, presentation enrichment and decision checks. The detail page first reuses the selected list-row summary, then replaces it with the complete response; the handler emits a separate `duration_ms` timing event.
+
 Released in `v0.1.0-contract-batch-recipient-name-20261003` (2026-10-03): batch details now display the current main character's name as the contract recipient. The backend continues to verify contracts by character ID, while legacy batches with multiple stored character IDs no longer expose those IDs in the recipient display field.
 
 Batch references can exceed EVE's 50-character contract-title limit. Synchronization accepts the deterministic 50-character prefix that EVE persists while continuing to require the main recipient, issuer, exact amount, and complete item match; contract ownership and delivery checks remain unchanged.

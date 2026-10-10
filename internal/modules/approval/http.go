@@ -53,6 +53,10 @@ func (h Handler) list(w http.ResponseWriter, r *http.Request) {
 	respond(w, r, v, e)
 }
 func (h Handler) detail(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+	defer func() {
+		slog.Info("approval detail timing", "duration_ms", time.Since(started).Milliseconds(), "source", chi.URLParam(r, "source"), "id", chi.URLParam(r, "id"))
+	}()
 	v, e := h.Service.Detail(r.Context(), h.User(r), chi.URLParam(r, "source"), chi.URLParam(r, "id"))
 	respond(w, r, v, e)
 }

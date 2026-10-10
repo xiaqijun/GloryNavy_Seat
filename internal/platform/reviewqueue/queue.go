@@ -111,6 +111,10 @@ type Source struct {
 	// approval aggregator. Sources may use it to avoid repeating the same
 	// permission and scope reads before building their projection.
 	QueryAuthorized  func(context.Context, string, Filter, Position, int, Access) (Page, error)
+	// Detail is an optional source-owned single-record read. It avoids routing
+	// a detail request through the source's full queue query while keeping
+	// object authorization and presentation in the owning module.
+	Detail         func(context.Context, string, int64) (Item, error)
 	People           func(context.Context, string) ([]string, error)
 	PeopleAuthorized func(context.Context, string, Access) ([]string, error)
 	// Snapshot returns the source-owned list projection for the central approval
