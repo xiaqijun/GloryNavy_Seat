@@ -1,8 +1,10 @@
 # 审批中心
 
-## 统一读模型（开发中）
+## 统一读模型（已发布）
 
-P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。来源适配器现在声明操作、筛选和详情组件能力，宿主启动时校验注册契约，统一上下文返回能力元数据。列表响应补充 `source_status`、`summary_version`、`detail_kind` 和 `stale`，投影陈旧时保留索引记录并显示同步状态；前端详情按能力注册表加载，未知来源显示通用摘要。标记为 `IndexOnly` 的新来源可先提供快照投影，旧聚合回退会安全标记为不可用。Goose 77 新增 `approval_dual_read_diffs`，双读诊断持久化筛选、字段原因、来源和版本但不保存来源 payload；`APPROVAL_INDEX_ACCOUNTS` 可按账号灰度索引读取。`APPROVAL_DUAL_READ` 默认关闭，真实管理员验收前不打开。迁移文件为 `migrations/00074_approval_items.sql` 至 `00077_approval_dual_read_diffs.sql`。
+P1 实现新增审批模块私有 `approval_items` 列表索引和 `approval_projection_runs` 投影状态。福利、兑换、贷款来源通过宿主注册快照适配器，索引只保存列表摘要、状态桶、历史可见性、处理人和来源版本；详情、审批决定、合同与账务仍回源。来源适配器现在声明操作、筛选和详情组件能力，宿主启动时校验注册契约，统一上下文返回能力元数据。列表响应补充 `source_status`、`summary_version`、`detail_kind` 和 `stale`，投影陈旧时保留索引记录并显示同步状态；前端详情按能力注册表加载，未知来源显示通用摘要。标记为 `IndexOnly` 的新来源可先提供快照投影，旧聚合回退会安全标记为不可用。Goose 77 新增 `approval_dual_read_diffs`，Goose 78 新增 `approval_items.action` 保存来源最新处理动作；双读诊断持久化筛选、字段原因、来源和版本但不保存来源 payload。`APPROVAL_INDEX_ACCOUNTS` 可按账号灰度索引读取，`APPROVAL_DUAL_READ` 验收后默认关闭。迁移文件为 `migrations/00074_approval_items.sql` 至 `00078_approval_item_action.sql`。
+
+2026-10-10 r23 已完成真实管理员双读验收：待审批、待发放、异常、已处理四个视图未产生未解释差异；福利成长/活动项在索引中保持 `reward/0`，历史时间与来源审计时间一致。验收后已关闭 `APPROVAL_DUAL_READ`，三类投影保持 `fresh`。
 
 新增来源请先按[审批来源接入模板](approval-source-template.zh-CN.md)注册能力、快照和权限，并复用 `internal/platform/reviewqueue/testfixture` 夹具验证索引路径、版本保护、来源故障和来源回源授权。
 
@@ -74,7 +76,7 @@ context 返回 allowed、sources、capabilities、corporations、people、unavai
 
 日志可用 `journalctl -u glorynavy --since '1 hour ago' -o cat | node scripts/approval-timing-report.mjs` 汇总；脚本按来源、阶段和 indexed/legacy 路径输出样本数、p50、p95 和最大值，不读取或输出账号、筛选词或 payload。
 
-2026-10-10 最近 2 小时生产窗口观察到 15 次索引列表样本：索引阶段 p50 15ms、p95 23ms；待审批整页 p50 243ms、p95 292ms。当前双读关闭，尚未取得同数据集 legacy 基线，不将该窗口单独视为 P3 性能验收。
+2026-10-10 r23 生产验收窗口记录四个视图的索引整页样本：待审批 p95 248ms、待发放 259ms、异常 203ms、已处理 21ms；同窗口福利旧聚合约 2.9–3.1s。双读无未解释差异，验收后已关闭开关。
 
 上下文与索引列表之间会对同一本站账号和来源复用 5 秒权限范围快照，减少首屏连续请求的重复成员/绑定查询；来源可提供 `ContextAccess` 让初始 shell 只读取来源/军团权限，不加载完整成员集合，展开申请人筛选时再使用完整 `Access`。来源显式提供独立 `IndexAccess` 时才按索引路径隔离缓存键。详情和所有写操作不使用该缓存，仍由来源模块实时复核对象权限、版本和自审规则。
 
