@@ -25,6 +25,58 @@ func TestIndexAllowlistControlsReadPath(t *testing.T) {
 	}
 }
 
+type dualReadIndex struct {
+	page   store.Result
+	diffCh chan string
+	stale  []string
+}
+
+func (f dualReadIndex) List(context.Context, []store.Scope, string, reviewqueue.Filter, reviewqueue.Position, int) (store.Result, error) {
+	return f.page, nil
+}
+
+func (f dualReadIndex) StaleSources(context.Context, time.Duration) ([]string, error) {
+	return f.stale, nil
+}
+
+func (f dualReadIndex) RecordDualReadDiff(_ context.Context, _ string, _ string, reason, _ string, _ int64, _ int64, _ int64) error {
+	f.diffCh <- reason
+	return nil
+}
+
+func TestDualReadRunsLegacyProjectionAndPersistsDrift(t *testing.T) {
+	diffs := make(chan string, 1)
+	indexedItem := reviewqueue.Item{Source: "welfare", ID: 1, Version: 2, Account: "a", State: "submitted", Status: "submitted", Time: time.Unix(10, 0).UTC()}
+	s := &Service{
+		UseIndex: true,
+		DualRead: true,
+		index:    dualReadIndex{page: store.Result{Items: []reviewqueue.Item{indexedItem}, Counts: map[string]int64{"pending": 1}}, diffCh: diffs},
+		Sources: []reviewqueue.Source{{
+			ID: "welfare",
+			Access: func(context.Context, string) (reviewqueue.Access, error) {
+				return reviewqueue.Access{Allowed: true}, nil
+			},
+			Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+				legacy := indexedItem
+				legacy.Status = "approved"
+				return reviewqueue.Page{Items: []reviewqueue.Item{legacy}, Counts: map[string]int64{"pending": 1}}, nil
+			},
+		}},
+	}
+	got, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(got.Items) != 1 {
+		t.Fatalf("indexed list = %+v, err=%v", got, err)
+	}
+	select {
+	case reason := <-diffs:
+		if reason != "item_0_status" {
+			t.Fatalf("dual-read reason = %q", reason)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("dual-read diff was not persisted")
+	}
+}
+
 func TestSourceAccessCacheReusesSharedScopeAcrossListPaths(t *testing.T) {
 	calls := 0
 	s := &Service{AccessCacheTTL: time.Minute, accessCache: map[string]accessCacheEntry{}}

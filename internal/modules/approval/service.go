@@ -25,6 +25,7 @@ type Service struct {
 	Sources  []reviewqueue.Source
 	Names    func(context.Context, []string) (map[string]string, error)
 	Index    *store.Index
+	index    approvalIndex
 	UseIndex bool
 	DualRead bool
 	// AccessCacheTTL only caches the source scope used to filter the indexed
@@ -41,6 +42,12 @@ type Service struct {
 type accessCacheEntry struct {
 	access  reviewqueue.Access
 	expires time.Time
+}
+
+type approvalIndex interface {
+	List(context.Context, []store.Scope, string, reviewqueue.Filter, reviewqueue.Position, int) (store.Result, error)
+	StaleSources(context.Context, time.Duration) ([]string, error)
+	RecordDualReadDiff(context.Context, string, string, string, string, int64, int64, int64) error
 }
 
 func logSourceTiming(source, stage string, started time.Time, err error, attrs ...any) {
@@ -61,6 +68,13 @@ func NewService(names func(context.Context, []string) (map[string]string, error)
 		s.Index = &store.Index{Pool: pool}
 	}
 	return s
+}
+
+func (s *Service) approvalIndex() approvalIndex {
+	if s.index != nil {
+		return s.index
+	}
+	return s.Index
 }
 
 func (s *Service) sourceAccess(ctx context.Context, user string, source reviewqueue.Source, indexed bool) (reviewqueue.Access, error) {
@@ -259,7 +273,7 @@ func (s *Service) List(ctx context.Context, user string, f reviewqueue.Filter, t
 }
 
 func (s *Service) useIndexFor(user string) bool {
-	if !s.UseIndex || s.Index == nil {
+	if !s.UseIndex || s.approvalIndex() == nil {
 		return false
 	}
 	return len(s.IndexAccounts) == 0 || slices.Contains(s.IndexAccounts, user)
@@ -275,10 +289,10 @@ func (s *Service) compareAsync(user string, f reviewqueue.Filter, token string, 
 	}
 	if reason := compareResults(indexed, legacy); reason != "" {
 		slog.Warn("approval dual-read mismatch", "reason", reason, "view", f.View, "sort", f.Sort, "kind", f.Kind, "corporation", f.Corporation)
-		if s.Index != nil {
+		if index := s.approvalIndex(); index != nil {
 			filter, _ := json.Marshal(f)
 			source, sourceID, indexedVersion, legacyVersion := mismatchCoordinate(reason, indexed, legacy)
-			if err := s.Index.RecordDualReadDiff(ctx, user, string(filter), reason, source, sourceID, indexedVersion, legacyVersion); err != nil {
+			if err := index.RecordDualReadDiff(ctx, user, string(filter), reason, source, sourceID, indexedVersion, legacyVersion); err != nil {
 				slog.Warn("approval dual-read diff persistence failed", "reason", reason, "error", err)
 			}
 		}
@@ -385,6 +399,10 @@ func compareItem(a, b reviewqueue.Item) string {
 
 func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Filter, token string) (Result, error) {
 	out := Result{Items: []reviewqueue.Item{}, Counts: map[string]int64{}, Unavailable: []string{}, SourceStatus: map[string]string{}}
+	index := s.approvalIndex()
+	if index == nil {
+		return out, store.ErrUnavailable
+	}
 	if e := validate(f); e != nil {
 		return out, e
 	}
@@ -430,7 +448,7 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 	if !authorized && len(out.Unavailable) == 0 {
 		return out, pgx.ErrNoRows
 	}
-	if stale, err := s.Index.StaleSources(ctx, 5*time.Minute); err == nil {
+	if stale, err := index.StaleSources(ctx, 5*time.Minute); err == nil {
 		for _, source := range stale {
 			if _, ok := access[source]; ok && !slices.Contains(out.Unavailable, source) {
 				out.SourceStatus[source] = "stale"
@@ -438,7 +456,7 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 		}
 	}
 	indexStarted := time.Now()
-	page, e := s.Index.List(ctx, scopes(access), user, f, c.Position, 30)
+	page, e := index.List(ctx, scopes(access), user, f, c.Position, 30)
 	logSourceTiming("approval", "index", indexStarted, e, "indexed", true, "count", len(page.Items))
 	if e != nil {
 		return out, e
