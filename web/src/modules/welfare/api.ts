@@ -311,7 +311,7 @@ export const isGrowthRewards = (v: unknown): v is GrowthRewards =>
   );
 export type Valuation = {
   source: "market" | "purchase_contract";
-  state: "ready" | "incomplete" | "unavailable";
+  state: "pending" | "ready" | "incomplete" | "unavailable";
   reason: string;
   at: string;
   amount_minor: number;
@@ -319,10 +319,22 @@ export type Valuation = {
   market?: Appraisal;
   contract?: DeliveryContract;
 };
+export const valuationStateMessage = (
+  state: Valuation["state"] | undefined,
+): "待核价" | "报价不完整" | "核价失败" => {
+  switch (state) {
+    case "incomplete":
+      return "报价不完整";
+    case "unavailable":
+      return "核价失败";
+    default:
+      return "待核价";
+  }
+};
 export const isValuation = (v: unknown): v is Valuation =>
   obj(v) &&
   ["market", "purchase_contract"].includes(String(v.source)) &&
-  ["ready", "incomplete", "unavailable"].includes(String(v.state)) &&
+  ["pending", "ready", "incomplete", "unavailable"].includes(String(v.state)) &&
   str(v.reason) &&
   typeof v.at === "string" &&
   Number.isFinite(Date.parse(v.at)) &&

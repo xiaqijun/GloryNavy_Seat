@@ -2083,6 +2083,8 @@ export const english: Record<string, string> = {
   购舰合同核价: "Purchase contract appraisal",
   市场中间价核价: "Market midpoint appraisal",
   待核价: "Awaiting appraisal",
+  报价不完整: "Incomplete quote",
+  核价失败: "Appraisal failed",
   核价中: "Appraising",
   " · 吉他 4-4 · {0}%": " · Jita 4-4 · {0}%",
   " · 已人工核价": " · Manually appraised",

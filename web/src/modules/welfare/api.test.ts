@@ -36,6 +36,7 @@ describe("welfare amounts", () => {
     expect(isValuation({ ...v, amount_minor: "100" })).toBe(false);
     expect(isValuation({ ...v, market: { complete: true } })).toBe(false);
     expect(isValuation({ ...v, at: "invalid" })).toBe(false);
+    expect(isValuation({ ...v, state: "pending" })).toBe(true);
   });
   it("rejects partial or untyped delivery evidence", () => {
     expect(isDeliveryCandidates({ items: [] })).toBe(true);

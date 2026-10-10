@@ -33,4 +33,18 @@ describe("approval source contract", () => {
       lossQueueAmount(item({ source: "welfare", kind: "solo", payload: {} })),
     ).toBeNull();
   });
+
+  it("preserves incomplete and unavailable appraisal states for the UI", () => {
+    const valuation = {
+      source: "market",
+      state: "incomplete",
+      reason: "部分物品缺少双边报价，不能按小计核准",
+      at: "2026-10-10T00:00:00Z",
+      amount_minor: 0,
+      settings_version: "1",
+    };
+    const payload = { detail: { valuation } } as QueueItem["payload"];
+    expect(lossQueueAmount(item({ source: "welfare", kind: "solo", payload }))).toEqual({ amount: 0, label: "incomplete" });
+    expect(lossQueueAmount(item({ source: "welfare", kind: "solo", payload: { detail: { valuation: { ...valuation, state: "unavailable" } } } as QueueItem["payload"] }))).toEqual({ amount: 0, label: "unavailable" });
+  });
 });

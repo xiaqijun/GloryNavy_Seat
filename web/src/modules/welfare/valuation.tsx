@@ -55,7 +55,7 @@ export function ValuationView({
           <strong>
             {v?.state === "ready"
               ? `${api.money(v.amount_minor)} ISK`
-              : msg("待核价")}
+              : msg(api.valuationStateMessage(v?.state))}
           </strong></>}
         </div>
         {refresh && (

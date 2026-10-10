@@ -553,6 +553,8 @@ function reviewAmount(item: QueueItem): string {
   const loss = lossQueueAmount(item);
   if (loss?.label === "pending")
     return msg(item.kind === "solo" ? "待核价" : "审核时确定");
+  if (loss?.label === "incomplete") return msg("报价不完整");
+  if (loss?.label === "unavailable") return msg("核价失败");
   if (item.unit.toLowerCase() === "isk")
     return `${loss?.label === "quote" ? `${msg("核价金额")} · ` : ""}${number((loss?.amount ?? item.amount_minor) / 100)} ISK`;
   if (item.unit === "coin")

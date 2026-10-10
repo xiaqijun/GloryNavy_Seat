@@ -36,7 +36,7 @@ export function LossCaseContent({
               ? v.kind === "solo"
                 ? d.valuation?.state === "ready"
                   ? `${api.money(d.valuation.amount_minor)} ISK`
-                  : msg("待核价")
+                  : msg(api.valuationStateMessage(d.valuation?.state))
                 : d.base_minor > 0
                   ? `${api.money(d.base_minor)} ISK`
                   : msg("审核时确定")
@@ -130,7 +130,7 @@ export function LossReviewOverview({ item: v, onOpenEvidence }: { item: api.Case
           <strong>
             {valuation?.state === "ready"
               ? `${api.money(valuation.amount_minor)} ISK`
-              : msg("待核价")}
+              : msg(api.valuationStateMessage(valuation?.state))}
           </strong>
           {valuation?.reason && valuation.state !== "ready" && (
             <small>{msg(valuation.reason)}</small>

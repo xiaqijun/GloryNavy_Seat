@@ -75,7 +75,7 @@ export type Queue = {
 };
 export function lossQueueAmount(
   item: QueueItem,
-): { amount: number; label: "quote" | "approved" | "pending" } | null {
+): { amount: number; label: "quote" | "approved" | "pending" | "incomplete" | "unavailable" } | null {
   if (item.source !== "welfare" || !["srp", "solo"].includes(item.kind))
     return null;
   if (!["submitted", "information", "external"].includes(item.state)) {
@@ -92,7 +92,11 @@ export function lossQueueAmount(
       : detail?.base_minor ?? 0;
   return quote > 0
     ? { amount: quote, label: "quote" }
-    : { amount: 0, label: "pending" };
+    : detail?.valuation?.state === "incomplete"
+      ? { amount: 0, label: "incomplete" }
+      : detail?.valuation?.state === "unavailable"
+        ? { amount: 0, label: "unavailable" }
+        : { amount: 0, label: "pending" };
 }
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";

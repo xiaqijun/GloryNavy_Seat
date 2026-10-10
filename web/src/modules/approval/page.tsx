@@ -1271,7 +1271,11 @@ function ApprovalValue({ item }: { item: QueueItem }) {
       {!cash && !coins && !physical.length &&
         (lossAmount?.label === "pending"
           ? msg(item.kind === "solo" ? "待核价" : "审核时确定")
-          : "—")}
+          : lossAmount?.label === "incomplete"
+            ? msg("报价不完整")
+            : lossAmount?.label === "unavailable"
+              ? msg("核价失败")
+              : "—")}
     </div>
   );
 }
