@@ -77,6 +77,40 @@ func TestDualReadRunsLegacyProjectionAndPersistsDrift(t *testing.T) {
 	}
 }
 
+func TestIndexedListDoesNotFanOutToLegacySourceQueries(t *testing.T) {
+	indexedItem := reviewqueue.Item{
+		Source:  "future",
+		ID:      7,
+		Version: 3,
+		Account: "account-1",
+		State:   "submitted",
+		Status:  "submitted",
+		Time:    time.Unix(20, 0).UTC(),
+	}
+	s := &Service{
+		UseIndex: true,
+		index: dualReadIndex{page: store.Result{
+			Items:  []reviewqueue.Item{indexedItem},
+			Counts: map[string]int64{"pending": 1},
+		}},
+		Sources: []reviewqueue.Source{{
+			ID:        "future",
+			IndexOnly: true,
+			Access: func(context.Context, string) (reviewqueue.Access, error) {
+				return reviewqueue.Access{Allowed: true}, nil
+			},
+			Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+				t.Fatal("indexed list called a legacy source query")
+				return reviewqueue.Page{}, nil
+			},
+		}},
+	}
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(result.Items) != 1 || result.Items[0].SourceStatus != "available" {
+		t.Fatalf("indexed list = %+v, err=%v", result, err)
+	}
+}
+
 func TestSourceAccessCacheReusesSharedScopeAcrossListPaths(t *testing.T) {
 	calls := 0
 	s := &Service{AccessCacheTTL: time.Minute, accessCache: map[string]accessCacheEntry{}}
