@@ -161,10 +161,13 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 		AND ($7='' OR i.state=$7 OR i.status=$7)
 		AND ($8='' OR i.occurred_at >= $8::timestamptz)
 		AND ($9='' OR i.occurred_at < $9::timestamptz)
-		AND (NOT $10 OR i.processed_by ? $2)
-		AND (($11='history' AND i.history) OR ($11<>'history' AND i.bucket=$11 AND i.account_id::text<>$2))`
+		AND (NOT $10 OR i.processed_by ? $2)`
+	// The source contract counts every bucket after the common filters. The
+	// selected view is a page-only predicate, so switching tabs never changes
+	// the badge counts shown by the approval center.
+	pageFilter := `(($11='history' AND i.history) OR ($11<>'history' AND i.bucket=$11 AND i.account_id::text<>$2))`
 	if f.ID > 0 {
-		where += fmt.Sprintf(" AND i.source_id=$%d", len(args)+1)
+		pageFilter = fmt.Sprintf("($%d::bigint>0 AND i.source_id=$%d)", len(args)+1, len(args)+1)
 		args = append(args, f.ID)
 	}
 	cursor := "TRUE"
@@ -191,13 +194,15 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	args = append(args, limit+1)
 	rows, err := s.Pool.Query(ctx, `WITH filtered AS (SELECT i.* FROM approval_items i WHERE `+where+`), counted AS (
 		SELECT jsonb_build_object('pending',count(*) FILTER (WHERE bucket='pending' AND account_id::text<>$2), 'information',count(*) FILTER (WHERE bucket='information' AND account_id::text<>$2), 'fulfillment',count(*) FILTER (WHERE bucket='fulfillment' AND account_id::text<>$2), 'exceptions',count(*) FILTER (WHERE bucket='exceptions' AND account_id::text<>$2), 'history',count(*) FILTER (WHERE history)) counts FROM filtered)
-		SELECT i.source,i.source_id,i.source_version,i.account_id::text,i.processed_by,i.history,coalesce(i.corporation_id::text,''),i.kind,i.state,i.status,i.applicant,i.recipient,i.title,i.reference,i.amount_minor,i.unit,i.occurred_at,i.payload,i.actions,(SELECT counts FROM counted)
-		FROM filtered i WHERE `+cursor+` ORDER BY `+order+` LIMIT $`+strconv.Itoa(limitArg), args...)
+		SELECT coalesce(i.source,''),coalesce(i.source_id,0),coalesce(i.source_version,0),coalesce(i.account_id::text,''),coalesce(i.processed_by,'[]'::jsonb),coalesce(i.history,false),coalesce(i.corporation_id::text,''),coalesce(i.kind,''),coalesce(i.state,''),coalesce(i.status,''),coalesce(i.applicant,''),coalesce(i.recipient,''),coalesce(i.title,''),coalesce(i.reference,''),coalesce(i.amount_minor,0),coalesce(i.unit,''),coalesce(i.occurred_at,'epoch'::timestamptz),coalesce(i.payload,'{}'::jsonb),coalesce(i.actions,'[]'::jsonb),(SELECT counts FROM counted)
+		FROM (SELECT i.* FROM filtered i WHERE `+pageFilter+` AND `+cursor+` ORDER BY `+order+` LIMIT $`+strconv.Itoa(limitArg)+`) i
+		RIGHT JOIN counted ON true`, args...)
 	if err != nil {
 		return Result{}, err
 	}
 	defer rows.Close()
 	out := Result{Items: []reviewqueue.Item{}, Counts: emptyCounts()}
+	counted := false
 	for rows.Next() {
 		var item reviewqueue.Item
 		var processedBy, actions, counts []byte
@@ -206,13 +211,23 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 		}
 		_ = json.Unmarshal(processedBy, &item.ProcessedBy)
 		_ = json.Unmarshal(actions, &item.Actions)
+		// A RIGHT JOIN on counted emits one zero-value row for an empty page;
+		// consume its counts but never expose it as an approval item.
+		if item.Source == "" {
+			if !counted {
+				_ = json.Unmarshal(counts, &out.Counts)
+				counted = true
+			}
+			continue
+		}
 		if len(out.Items) < limit {
 			out.Items = append(out.Items, item)
 		} else {
 			out.HasNext = true
 		}
-		if len(out.Counts) == 0 {
+		if !counted {
 			_ = json.Unmarshal(counts, &out.Counts)
+			counted = true
 		}
 	}
 	if err = rows.Err(); err != nil {
