@@ -43,6 +43,15 @@ type accessCacheEntry struct {
 	expires time.Time
 }
 
+func logSourceTiming(source, stage string, started time.Time, err error, attrs ...any) {
+	outcome := "ok"
+	if err != nil {
+		outcome = "error"
+	}
+	base := []any{"source", source, "stage", stage, "duration_ms", time.Since(started).Milliseconds(), "outcome", outcome}
+	slog.Info("approval source timing", append(base, attrs...)...)
+}
+
 // NewService is the composition boundary for the central index. The private
 // store remains owned by approval; callers only provide the identity name
 // resolver and database pool.
@@ -127,13 +136,17 @@ func (s *Service) ContextWithOptions(ctx context.Context, user string, includePe
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
 			result := sourceContextResult{id: source.ID}
+			accessStarted := time.Now()
 			result.access, result.accessError = s.sourceAccess(ctx, user, source, false)
+			logSourceTiming(source.ID, "access", accessStarted, result.accessError, "indexed", false, "allowed", result.access.Allowed)
 			if includePeople && result.accessError == nil && result.access.Allowed && (source.People != nil || source.PeopleAuthorized != nil) {
+				peopleStarted := time.Now()
 				if source.PeopleAuthorized != nil {
 					result.people, result.peopleError = source.PeopleAuthorized(ctx, user, result.access)
 				} else {
 					result.people, result.peopleError = source.People(ctx, user)
 				}
+				logSourceTiming(source.ID, "people", peopleStarted, result.peopleError, "indexed", false, "count", len(result.people))
 				result.peopleLoaded = true
 			}
 			results[i] = result
@@ -173,11 +186,13 @@ func (s *Service) ContextWithOptions(ctx context.Context, user string, includePe
 		}
 	}
 	if includePeople && s.Names != nil && len(people) > 0 {
+		namesStarted := time.Now()
 		ids := []string{}
 		for id := range people {
 			ids = append(ids, id)
 		}
 		names, e := s.Names(ctx, ids)
+		logSourceTiming("identity", "names", namesStarted, e, "indexed", false, "count", len(ids))
 		if e == nil {
 			for _, id := range ids {
 				if name := names[id]; name != "" {
@@ -391,7 +406,9 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 		wg.Add(1)
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
+			accessStarted := time.Now()
 			a, e := s.sourceAccess(ctx, user, source, true)
+			logSourceTiming(source.ID, "access", accessStarted, e, "indexed", true, "allowed", a.Allowed)
 			results[i] = result{id: source.ID, a: a, e: e}
 		}(i, source)
 	}
@@ -420,7 +437,9 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 			}
 		}
 	}
+	indexStarted := time.Now()
 	page, e := s.Index.List(ctx, scopes(access), user, f, c.Position, 30)
+	logSourceTiming("approval", "index", indexStarted, e, "indexed", true, "count", len(page.Items))
 	if e != nil {
 		return out, e
 	}
@@ -436,8 +455,12 @@ func (s *Service) listIndexed(ctx context.Context, user string, f reviewqueue.Fi
 		}
 		names := map[string]string{}
 		if s.Names != nil && len(ids) > 0 {
+			namesStarted := time.Now()
 			if resolved, err := s.Names(ctx, ids); err == nil {
 				names = resolved
+				logSourceTiming("identity", "names", namesStarted, nil, "indexed", true, "count", len(ids))
+			} else {
+				logSourceTiming("identity", "names", namesStarted, err, "indexed", true, "count", len(ids))
 			}
 		}
 		for i := range out.Items {
@@ -503,7 +526,9 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 		go func(i int, source reviewqueue.Source) {
 			defer wg.Done()
 			result := sourceResult{index: i, id: source.ID}
+			accessStarted := time.Now()
 			access, e := s.sourceAccess(ctx, user, source, false)
+			logSourceTiming(source.ID, "access", accessStarted, e, "indexed", false, "allowed", access.Allowed)
 			if e != nil {
 				result.accessError = e
 				results[i] = result
@@ -514,9 +539,13 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 				if source.Query == nil && source.QueryAuthorized == nil {
 					result.queryError = fmt.Errorf("source is index-only")
 				} else if source.QueryAuthorized != nil {
+					queryStarted := time.Now()
 					result.page, result.queryError = source.QueryAuthorized(ctx, user, f, c.Position, 31, access)
+					logSourceTiming(source.ID, "query", queryStarted, result.queryError, "indexed", false, "count", len(result.page.Items))
 				} else {
+					queryStarted := time.Now()
 					result.page, result.queryError = source.Query(ctx, user, f, c.Position, 31)
+					logSourceTiming(source.ID, "query", queryStarted, result.queryError, "indexed", false, "count", len(result.page.Items))
 				}
 			}
 			results[i] = result
@@ -605,7 +634,9 @@ func (s *Service) listLegacy(ctx context.Context, user string, f reviewqueue.Fil
 				ids = append(ids, i.Account)
 			}
 		}
+		namesStarted := time.Now()
 		names, e := s.Names(ctx, ids)
+		logSourceTiming("identity", "names", namesStarted, e, "indexed", false, "count", len(ids))
 		for i := range out.Items {
 			if e == nil {
 				out.Items[i].Applicant = names[out.Items[i].Account]
