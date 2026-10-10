@@ -1,5 +1,5 @@
 import { msg } from "@/lib/i18n";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { PageBoundary } from "@/app/page-boundary";
 import { systemModule } from "@/modules/system";
@@ -13,6 +13,12 @@ const MemberApp = lazy(() => import("@/app/member-app"));
 
 export default function App() {
   const location = useLocation();
+  useEffect(() => {
+    document.documentElement.dataset.appReady = "true";
+    return () => {
+      delete document.documentElement.dataset.appReady;
+    };
+  }, []);
   if (location.pathname === "/") {
     return (
       <PageBoundary>

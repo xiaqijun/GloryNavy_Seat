@@ -119,13 +119,16 @@ export default function LandingPage() {
       // pin/reveal offsets when that section's layout changes.
       let refreshFrame = 0;
       const strength = root.current?.querySelector(".landing-strength");
-      const observer = new ResizeObserver(() => {
-        cancelAnimationFrame(refreshFrame);
-        refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
-      });
-      if (strength) observer.observe(strength);
+      const observer =
+        typeof ResizeObserver === "undefined"
+          ? undefined
+          : new ResizeObserver(() => {
+              cancelAnimationFrame(refreshFrame);
+              refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
+            });
+      if (strength && observer) observer.observe(strength);
       return () => {
-        observer.disconnect();
+        observer?.disconnect();
         cancelAnimationFrame(refreshFrame);
         motion.revert();
       };

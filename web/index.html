@@ -5,8 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GloryNavy · 军团管理平台</title>
+    <style>
+      #boot-fallback {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        color: #e5e7eb;
+        background: #0b0d11;
+        font: 500 15px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif;
+        text-align: center;
+      }
+      #boot-fallback p { margin: 0; }
+      #boot-fallback a { color: #f1c75b; }
+      html[data-app-ready] #boot-fallback { display: none; }
+    </style>
   </head>
   <body>
+    <div id="boot-fallback" role="status">
+      <p>正在加载 GloryNavy…<br /><a href="/">重新加载首页</a></p>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
