@@ -34,7 +34,11 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if title == "" && d.LossEvidence != nil {
 			title = d.LossEvidence.ShipName
 		}
-		out = append(out, reviewqueue.Item{Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID, ProcessedBy: row.ProcessedBy, History: row.History, Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind, State: c.State, Status: status, Recipient: d.CharacterName, Title: title, Reference: c.Reference, Amount: c.Award, Unit: "ISK", Time: when, Payload: payload})
+		amount, unit := c.Award, "ISK"
+		if isGrowth(c.Kind) || isActivity(c.Kind) {
+			amount, unit = 0, "reward"
+		}
+		out = append(out, reviewqueue.Item{Source: "welfare", ID: c.ID, Version: c.Version, Account: c.AccountID, ProcessedBy: row.ProcessedBy, History: row.History, Corporation: strconv.FormatInt(c.CorporationID, 10), Kind: c.Kind, State: c.State, Status: status, Recipient: d.CharacterName, Title: title, Reference: c.Reference, Amount: amount, Unit: unit, Action: row.Action, Time: when, Payload: payload})
 	}
 	return out, nil
 }

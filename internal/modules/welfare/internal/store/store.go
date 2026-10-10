@@ -33,6 +33,7 @@ type ApprovalSnapshotRow struct {
 	OccurredAt  time.Time
 	ProcessedBy []string
 	History     bool
+	Action      string
 }
 type Policy struct {
 	CorporationID int64           `json:"corporation_id,string"`
@@ -91,7 +92,7 @@ func List(ctx context.Context, db DB, corp int64, owner, kind string, before int
 // Authorization is deliberately absent here; the approval service applies the
 // actor's corporation scope when reading the central index.
 func Snapshot(ctx context.Context, db DB) ([]ApprovalSnapshotRow, error) {
-	rows, e := db.Query(ctx, "SELECT "+cols+",coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM welfare_audit WHERE case_id=c.id AND action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void')),'{}'::text[]),coalesce((a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance'),false),CASE WHEN a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance' THEN coalesce(a.audit_at,c.updated_at,c.created_at) ELSE coalesce((SELECT max(created_at) FROM welfare_audit WHERE case_id=c.id AND action IN ('apply','resubmit')),c.created_at) END FROM welfare_cases c LEFT JOIN LATERAL (SELECT actor_id,created_at AS audit_at FROM welfare_audit WHERE case_id=c.id AND (action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void') OR action='delivery_check' AND result->>'state'='completed') ORDER BY created_at DESC,id DESC LIMIT 1) a ON true WHERE c.kind<>'grant' ORDER BY c.id")
+	rows, e := db.Query(ctx, "SELECT "+cols+",coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM welfare_audit WHERE case_id=c.id AND action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void')),'{}'::text[]),coalesce((a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance'),false),CASE WHEN a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance' THEN coalesce(a.audit_at,c.updated_at,c.created_at) ELSE coalesce((SELECT max(created_at) FROM welfare_audit WHERE case_id=c.id AND action IN ('apply','resubmit')),c.created_at) END,coalesce(a.action,'') FROM welfare_cases c LEFT JOIN LATERAL (SELECT actor_id,created_at AS audit_at,action FROM welfare_audit WHERE case_id=c.id AND (action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void') OR action='delivery_check' AND result->>'state'='completed') ORDER BY created_at DESC,id DESC LIMIT 1) a ON true WHERE c.kind<>'grant' ORDER BY c.id")
 	if e != nil {
 		return nil, e
 	}
@@ -99,7 +100,7 @@ func Snapshot(ctx context.Context, db DB) ([]ApprovalSnapshotRow, error) {
 	out := []ApprovalSnapshotRow{}
 	for rows.Next() {
 		var c ApprovalSnapshotRow
-		if e := rows.Scan(&c.ID, &c.AccountID, &c.CorporationID, &c.Kind, &c.State, &c.Version, &c.Detail, &c.Award, &c.Keys, &c.CreatedAt, &c.UpdatedAt, &c.Reference, &c.ProcessedBy, &c.History, &c.OccurredAt); e != nil {
+		if e := rows.Scan(&c.ID, &c.AccountID, &c.CorporationID, &c.Kind, &c.State, &c.Version, &c.Detail, &c.Award, &c.Keys, &c.CreatedAt, &c.UpdatedAt, &c.Reference, &c.ProcessedBy, &c.History, &c.OccurredAt, &c.Action); e != nil {
 			return nil, e
 		}
 		out = append(out, c)

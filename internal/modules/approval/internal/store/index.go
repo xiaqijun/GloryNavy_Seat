@@ -86,17 +86,17 @@ func upsert(ctx context.Context, db DBTX, item reviewqueue.Item) error {
 	}
 	processedBy, _ := json.Marshal(processedByValue)
 	_, err := db.Exec(ctx, `INSERT INTO approval_items
-		(source,source_id,source_version,account_id,processed_by,history,corporation_id,kind,bucket,state,status,applicant,recipient,title,reference,amount_minor,unit,occurred_at,payload,actions)
-		VALUES($1,$2,$3,$4::uuid,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+		(source,source_id,source_version,account_id,processed_by,history,corporation_id,kind,bucket,state,status,applicant,recipient,title,reference,amount_minor,unit,occurred_at,payload,actions,action)
+		VALUES($1,$2,$3,$4::uuid,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
 		ON CONFLICT(source,source_id) DO UPDATE SET
 		 source_version=EXCLUDED.source_version, account_id=EXCLUDED.account_id, processed_by=EXCLUDED.processed_by, history=EXCLUDED.history, corporation_id=EXCLUDED.corporation_id,
 		 kind=EXCLUDED.kind, bucket=EXCLUDED.bucket, state=EXCLUDED.state, status=EXCLUDED.status,
 		 applicant=EXCLUDED.applicant, recipient=EXCLUDED.recipient, title=EXCLUDED.title, reference=EXCLUDED.reference,
 		 amount_minor=EXCLUDED.amount_minor, unit=EXCLUDED.unit, occurred_at=EXCLUDED.occurred_at,
-		 payload=EXCLUDED.payload, actions=EXCLUDED.actions, projection_state='fresh', projection_error='', projected_at=now()
+		 payload=EXCLUDED.payload, actions=EXCLUDED.actions, action=EXCLUDED.action, projection_state='fresh', projection_error='', projected_at=now()
 		WHERE approval_items.source_version <= EXCLUDED.source_version`,
 		item.Source, item.ID, item.Version, item.Account, processedBy, item.History, corporation, item.Kind, bucket(item), item.State, item.Status,
-		item.Applicant, item.Recipient, item.Title, item.Reference, item.Amount, item.Unit, item.Time, payload, actions)
+		item.Applicant, item.Recipient, item.Title, item.Reference, item.Amount, item.Unit, item.Time, payload, actions, item.Action)
 	return err
 }
 
@@ -194,7 +194,7 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	args = append(args, limit+1)
 	rows, err := s.Pool.Query(ctx, `WITH filtered AS (SELECT i.* FROM approval_items i WHERE `+where+`), counted AS (
 		SELECT jsonb_build_object('pending',count(*) FILTER (WHERE bucket='pending' AND account_id::text<>$2), 'information',count(*) FILTER (WHERE bucket='information' AND account_id::text<>$2), 'fulfillment',count(*) FILTER (WHERE bucket='fulfillment' AND account_id::text<>$2), 'exceptions',count(*) FILTER (WHERE bucket='exceptions' AND account_id::text<>$2), 'history',count(*) FILTER (WHERE history)) counts FROM filtered)
-		SELECT coalesce(i.source,''),coalesce(i.source_id,0),coalesce(i.source_version,0),coalesce(i.account_id::text,''),coalesce(i.processed_by,'[]'::jsonb),coalesce(i.history,false),coalesce(i.corporation_id::text,''),coalesce(i.kind,''),coalesce(i.state,''),coalesce(i.status,''),coalesce(i.applicant,''),coalesce(i.recipient,''),coalesce(i.title,''),coalesce(i.reference,''),coalesce(i.amount_minor,0),coalesce(i.unit,''),coalesce(i.occurred_at,'epoch'::timestamptz),coalesce(i.payload,'{}'::jsonb),coalesce(i.actions,'[]'::jsonb),(SELECT counts FROM counted)
+		SELECT coalesce(i.source,''),coalesce(i.source_id,0),coalesce(i.source_version,0),coalesce(i.account_id::text,''),coalesce(i.processed_by,'[]'::jsonb),coalesce(i.history,false),coalesce(i.corporation_id::text,''),coalesce(i.kind,''),coalesce(i.state,''),coalesce(i.status,''),coalesce(i.applicant,''),coalesce(i.recipient,''),coalesce(i.title,''),coalesce(i.reference,''),coalesce(i.amount_minor,0),coalesce(i.unit,''),coalesce(i.occurred_at,'epoch'::timestamptz),coalesce(i.payload,'{}'::jsonb),coalesce(i.actions,'[]'::jsonb),coalesce(i.action,''),(SELECT counts FROM counted)
 		FROM (SELECT i.* FROM filtered i WHERE `+pageFilter+` AND `+cursor+` ORDER BY `+order+` LIMIT $`+strconv.Itoa(limitArg)+`) i
 		RIGHT JOIN counted ON true`, args...)
 	if err != nil {
@@ -206,7 +206,7 @@ func (s Index) List(ctx context.Context, scopes []Scope, actor string, f reviewq
 	for rows.Next() {
 		var item reviewqueue.Item
 		var processedBy, actions, counts []byte
-		if err = rows.Scan(&item.Source, &item.ID, &item.Version, &item.Account, &processedBy, &item.History, &item.Corporation, &item.Kind, &item.State, &item.Status, &item.Applicant, &item.Recipient, &item.Title, &item.Reference, &item.Amount, &item.Unit, &item.Time, &item.Payload, &actions, &counts); err != nil {
+		if err = rows.Scan(&item.Source, &item.ID, &item.Version, &item.Account, &processedBy, &item.History, &item.Corporation, &item.Kind, &item.State, &item.Status, &item.Applicant, &item.Recipient, &item.Title, &item.Reference, &item.Amount, &item.Unit, &item.Time, &item.Payload, &actions, &item.Action, &counts); err != nil {
 			return Result{}, err
 		}
 		_ = json.Unmarshal(processedBy, &item.ProcessedBy)

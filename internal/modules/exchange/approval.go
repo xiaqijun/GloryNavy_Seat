@@ -37,7 +37,7 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if status == "" {
 			status = "waiting_contract"
 		}
-		out = append(out, reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), ProcessedBy: r.ProcessedBy, History: r.History, Kind: "exchange", State: r.State, Status: status, Recipient: strconv.FormatInt(r.RecipientID, 10), Title: r.RewardName, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: when, Payload: payload})
+		out = append(out, reviewqueue.Item{Source: "exchange", ID: r.ID, Version: r.Version, Account: r.AccountID.String(), ProcessedBy: r.ProcessedBy, History: r.History, Action: r.Action, Kind: "exchange", State: r.State, Status: status, Recipient: strconv.FormatInt(r.RecipientID, 10), Title: r.RewardName, Reference: r.SettlementReference, Amount: r.CoinsMinor, Unit: "coin", Time: when, Payload: payload})
 	}
 	return out, nil
 }

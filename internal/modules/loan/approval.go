@@ -41,7 +41,7 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 			FirstDueAt        time.Time `json:"first_due_at"`
 			State             string    `json:"state"`
 		}{c.ID, c.PublicID, c.Version, c.PoolID, c.PoolName, c.CorporationID, c.BorrowerAccountID, c.BorrowerCharacterID, c.PrincipalMinor, c.InterestMinor, c.TotalDueMinor, c.InstallmentCount, c.IntervalDays, c.FirstDueAt, c.State})
-		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, ProcessedBy: c.ProcessedBy, History: c.History, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
+		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, ProcessedBy: c.ProcessedBy, History: c.History, Action: c.Action, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
 	}
 	return out, nil
 }
@@ -112,7 +112,7 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 	raw, _ := json.Marshal(scope)
 	return reviewqueue.Read(ctx, s.Pool, `
  SELECT c.id,
- CASE WHEN $11='history' THEN coalesce(a.created_at,c.updated_at,c.created_at) ELSE c.created_at END moment,
+ coalesce(a.created_at,c.updated_at,c.created_at) moment,
  CASE WHEN c.state='submitted' THEN 'pending' ELSE 'history' END bucket,
  (c.state<>'submitted') history,
  coalesce(a.actor_id::text,'') processed_by,
