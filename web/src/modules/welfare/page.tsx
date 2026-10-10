@@ -1717,6 +1717,7 @@ export function CaseView({
   user,
   csrf,
   item,
+  initialItem,
   policy,
   manage,
   admin,
@@ -1728,6 +1729,7 @@ export function CaseView({
   user: string;
   csrf: string;
   item: api.Case;
+  initialItem?: api.Case;
   policy?: api.Policy;
   manage: boolean;
   admin: boolean;
@@ -1739,6 +1741,7 @@ export function CaseView({
   const q = useQuery({
     queryKey: ["welfare", "case", item.id],
     queryFn: ({ signal }) => api.detail(item.id, signal),
+    placeholderData: initialItem ? { item: initialItem, history: [] } : undefined,
     refetchInterval: 30_000,
   });
   const [action, setAction] = useState("");

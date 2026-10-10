@@ -40,6 +40,10 @@ const ApprovalOrder = lazy(() =>
     default: module.ApprovalOrder,
   })),
 );
+const preloadDetail = (source: string) => {
+  if (source === "welfare") void import("@/modules/welfare/page");
+  if (source === "exchange") void import("@/modules/exchange/approval-order");
+};
 
 const views = [
   { id: "pending", label: msg("待审批") },
@@ -763,7 +767,10 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
                   <td>
                     <IconAction
                       label={msg("查看 {0} #{1}", typeLabel(v), v.id)}
+                      onPointerEnter={() => preloadDetail(v.source)}
+                      onFocus={() => preloadDetail(v.source)}
                       onClick={() => {
+                        preloadDetail(v.source);
                         const p = new URLSearchParams(params);
                         p.set("source", v.source);
                         p.set("id", v.id);
@@ -1002,6 +1009,7 @@ function WelfareDetail({
   return (
     <CaseView
       item={item}
+      initialItem={item}
       user={user}
       csrf={csrf}
       manage={
