@@ -616,7 +616,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return welfare.SettlementReward{}, err
 		}
 		for _, item := range items {
-			out.Items = append(out.Items, welfare.SettlementItemSummary{TypeID: item.TypeID, Quantity: item.Quantity})
+			out.Items = append(out.Items, welfare.SettlementItemSummary{TypeID: item.TypeID, Quantity: item.Quantity, Name: item.Name})
 		}
 		return out, nil
 	}

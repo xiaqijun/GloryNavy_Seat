@@ -81,13 +81,17 @@ func (s *Service) decorateSettlementItems(ctx context.Context, b *store.Settleme
 	}
 	ids := make([]int64, 0, len(items))
 	seen := make(map[int64]bool, len(items))
+	missing := false
 	for _, item := range items {
+		if item.Name == "" {
+			missing = true
+		}
 		if item.TypeID > 0 && !seen[item.TypeID] {
 			ids = append(ids, item.TypeID)
 			seen[item.TypeID] = true
 		}
 	}
-	if len(ids) == 0 {
+	if !missing || len(ids) == 0 {
 		return nil
 	}
 	names, err := s.Names.TypeNames(ctx, ids)
@@ -110,6 +114,35 @@ func (s *Service) decorateSettlementItems(ctx context.Context, b *store.Settleme
 	}
 	b.Items = encoded
 	return nil
+}
+
+// freezeSettlementItemNames resolves only the items that do not already carry
+// a name in their source reward snapshot. The resulting names are persisted in
+// the aggregate snapshot, so normal detail reads do not need an SDE lookup.
+func (s *Service) freezeSettlementItemNames(ctx context.Context, reward *SettlementReward) {
+	if s.Names == nil || reward == nil {
+		return
+	}
+	ids := make([]int64, 0, len(reward.Items))
+	seen := make(map[int64]bool, len(reward.Items))
+	for _, item := range reward.Items {
+		if item.TypeID > 0 && item.Name == "" && !seen[item.TypeID] {
+			ids = append(ids, item.TypeID)
+			seen[item.TypeID] = true
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	names, err := s.Names.TypeNames(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range reward.Items {
+		if reward.Items[i].Name == "" {
+			reward.Items[i].Name = names[reward.Items[i].TypeID].Name
+		}
+	}
 }
 
 func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input SettlementInput) (SettlementBatchView, error) {
@@ -178,6 +211,7 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 	if summaryAccount != accountGroup {
 		return out, ErrSettlementGroup
 	}
+	s.freezeSettlementItemNames(ctx, &summary)
 	itemsJSON, e := json.Marshal(summary.Items)
 	if e != nil {
 		return out, e

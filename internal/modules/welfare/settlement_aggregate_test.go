@@ -58,6 +58,40 @@ func TestSettlementBatchForReadHidesLegacyAltRecipients(t *testing.T) {
 	}
 }
 
+func TestSettlementBatchForReadUsesFrozenItemNameWithoutLookup(t *testing.T) {
+	names := &presentationNames{}
+	s := &Service{Names: names}
+	b := store.SettlementBatch{
+		Items: []byte(`[{"type_id":"34","quantity":"10","name":"已冻结名称"}]`),
+	}
+	got, err := s.settlementBatchForRead(context.Background(), b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names.calls != 0 {
+		t.Fatalf("frozen names triggered lookup: %d calls", names.calls)
+	}
+	if string(got.Items) != string(b.Items) {
+		t.Fatalf("frozen item snapshot changed: %s", got.Items)
+	}
+}
+
+func TestFreezeSettlementItemNamesResolvesOnlyMissingNames(t *testing.T) {
+	names := &presentationNames{}
+	s := &Service{Names: names}
+	reward := SettlementReward{Items: []SettlementItemSummary{
+		{TypeID: 34, Quantity: 10},
+		{TypeID: 587, Quantity: 1, Name: "已有名称"},
+	}}
+	s.freezeSettlementItemNames(context.Background(), &reward)
+	if names.calls != 1 {
+		t.Fatalf("name lookup calls = %d, want 1", names.calls)
+	}
+	if reward.Items[0].Name != "三钛合金" || reward.Items[1].Name != "已有名称" {
+		t.Fatalf("names = %#v", reward.Items)
+	}
+}
+
 func TestSettlementContractMatchesFrozenAggregate(t *testing.T) {
 	b := store.SettlementBatch{
 		SettlementReference: "BATCH-20260930-00000000-0000-4000-8000-000000000000",

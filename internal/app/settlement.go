@@ -38,8 +38,14 @@ func exchangeRewardItems(content exchange.PhysicalReward) ([]market.Item, error)
 		}
 	}
 	out := make([]market.Item, 0, len(counts))
+	names := map[int64]string{}
+	for _, item := range content.Items {
+		if names[item.ID] == "" {
+			names[item.ID] = item.Name
+		}
+	}
 	for id, quantity := range counts {
-		out = append(out, market.Item{TypeID: id, Quantity: quantity})
+		out = append(out, market.Item{TypeID: id, Quantity: quantity, Name: names[id]})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].TypeID < out[j].TypeID })
 	return out, nil

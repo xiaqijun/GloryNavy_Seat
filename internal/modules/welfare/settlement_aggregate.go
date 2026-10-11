@@ -18,7 +18,7 @@ import (
 
 // SettlementItemSummary is the frozen item multiset that the administrator
 // can copy into one in-game contract. Type IDs remain authoritative; Name is
-// response decoration resolved by the existing SDE presentation layer.
+// a frozen display field and never participates in contract matching.
 type SettlementItemSummary struct {
 	TypeID   int64  `json:"type_id,string"`
 	Quantity int64  `json:"quantity,string"`
@@ -214,17 +214,22 @@ func mergeSettlementReward(dst *SettlementReward, src SettlementReward) error {
 	}
 	dst.ISKMinor += src.ISKMinor
 	counts := map[int64]int64{}
+	names := map[int64]string{}
 	for _, item := range dst.Items {
 		counts[item.TypeID] = item.Quantity
+		names[item.TypeID] = item.Name
 	}
 	for _, item := range src.Items {
 		if err := addSettlementItem(counts, item.TypeID, item.Quantity); err != nil {
 			return err
 		}
+		if names[item.TypeID] == "" && item.Name != "" {
+			names[item.TypeID] = item.Name
+		}
 	}
 	dst.Items = dst.Items[:0]
 	for id, quantity := range counts {
-		dst.Items = append(dst.Items, SettlementItemSummary{TypeID: id, Quantity: quantity})
+		dst.Items = append(dst.Items, SettlementItemSummary{TypeID: id, Quantity: quantity, Name: names[id]})
 	}
 	sort.Slice(dst.Items, func(i, j int) bool { return dst.Items[i].TypeID < dst.Items[j].TypeID })
 	return nil
@@ -242,7 +247,7 @@ func welfareSettlementReward(row Case) (SettlementReward, error) {
 		}
 		out.ISKMinor += detail.Rewards.ISKMinor
 		for _, item := range detail.Rewards.Items {
-			out.Items = append(out.Items, SettlementItemSummary{TypeID: item.ID, Quantity: item.Quantity})
+			out.Items = append(out.Items, SettlementItemSummary{TypeID: item.ID, Quantity: item.Quantity, Name: item.Name})
 		}
 		for _, fitting := range detail.Rewards.Fittings {
 			var fit fittings.Fit
