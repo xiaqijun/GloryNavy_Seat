@@ -514,6 +514,7 @@ function ClaimForm({
             disabled={m.isPending}
             label={msg("接收角色")}
             value={recipient}
+            autoFocus
             onChange={(v) => {
               setRecipient(v);
               setKey(crypto.randomUUID());
