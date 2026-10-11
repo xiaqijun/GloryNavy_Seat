@@ -6,7 +6,7 @@
 
 ## 当前：补损核价状态展示修复与审批中心统一读模型（2026-10-11）
 
-公网静态站点将切换至 `v0.1.0-welfare-valuation-skip-missing-20261011`，应用将保持 `v0.1.0-approval-detail-contract-20261011-r4`，无 Goose/River 新迁移。自动核价会跳过没有可用中间价的物品，使用其余物品继续计算；全部物品缺价时仍转人工核价。补损详情、审批中心和工作台区分 `pending`（待核价）、`incomplete`（报价不完整）和 `unavailable`（核价失败）。
+公网静态站点已切换至 `v0.1.0-welfare-valuation-skip-missing-20261011`，应用已切换至同版本，应用与公网服务均 active/ready，首页 200、静态入口和匿名审批接口 401、OpenResty 配置检查通过。无 Goose/River 新迁移。自动核价会跳过没有可用中间价的物品，使用其余物品继续计算；全部物品缺价时仍转人工核价。补损详情、审批中心和工作台区分 `pending`（待核价）、`incomplete`（报价不完整）和 `unavailable`（核价失败）。
 
 ## 已发布：审批中心统一读模型重构（P1/P2 已发布，P3 灰度可用，2026-10-10）
 
