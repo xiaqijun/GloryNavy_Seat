@@ -50,6 +50,7 @@ export type Character = {
   id: string;
   name: string;
   account_id: string;
+  nickname?: string;
   corporation_id: string;
   main_character_name?: string;
 };
@@ -435,6 +436,7 @@ const char = (v: unknown): v is Character =>
   str(v.name) &&
   str(v.account_id) &&
   (v.main_character_name === undefined || str(v.main_character_name)) &&
+  (v.nickname === undefined || str(v.nickname)) &&
   str(v.corporation_id);
 export const isCase = (v: unknown): v is Case =>
   obj(v) &&

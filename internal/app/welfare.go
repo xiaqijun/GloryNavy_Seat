@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/modules/access"
+	"glorynavy.local/seat/internal/modules/community"
 	"glorynavy.local/seat/internal/modules/eve"
 	"glorynavy.local/seat/internal/modules/exchange"
 	"glorynavy.local/seat/internal/modules/fittings"
@@ -17,11 +18,12 @@ import (
 	"time"
 )
 
-func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *access.Service, reader *eve.AuthorizationService, coins *exchange.Service, fits *fittings.Service, skill *skills.Service) welfare.Handler {
+func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityProfiles *community.Service, policy *access.Service, reader *eve.AuthorizationService, coins *exchange.Service, fits *fittings.Service, skill *skills.Service) welfare.Handler {
 	if reader == nil {
 		reader = eve.ReadAuthorization(pool)
 	}
 	s := &welfare.Service{Pool: pool, Administrator: policy.IsAdministrator, LockAccounts: accounts.LockActiveAccounts, Credit: coins.WelfareGrantTx}
+	s.AccountNicknames = communityProfiles.Nicknames
 	s.MainCharacterID = func(ctx context.Context, account string) (int64, error) {
 		ids, err := accounts.MainCharacterIDs(ctx, []string{account})
 		if err != nil {
@@ -220,8 +222,13 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acce
 			}
 		}
 		mainNames, _ := accounts.MainCharacterNames(ctx, accountIDs)
+		nicknames := map[string]string{}
+		if s.AccountNicknames != nil {
+			nicknames, _ = s.AccountNicknames(ctx, accountIDs)
+		}
 		for i := range out {
 			out[i].MainCharacterName = mainNames[out[i].AccountID]
+			out[i].Nickname = nicknames[out[i].AccountID]
 		}
 		return out, nil
 	}

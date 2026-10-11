@@ -54,6 +54,7 @@ type Service struct {
 	Corporations        func(context.Context, string) ([]Corporation, error)
 	Characters          func(context.Context, string) ([]Character, error)
 	Members             func(context.Context, string, int64) ([]Character, error)
+	AccountNicknames    func(context.Context, []string) (map[string]string, error)
 	Scope               func(context.Context, string, int64, bool) (bool, error)
 	// CompensationScope grants additional management access for loss cases
 	// only. It never replaces Scope, so the account keeps ordinary member access.

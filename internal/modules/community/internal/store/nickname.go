@@ -6,6 +6,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ListNicknames returns account-scoped nicknames in one query for host
+// composition roots that need to decorate member directories.
+func (q *Queries) ListNicknames(ctx context.Context, userIDs []string) (map[string]string, error) {
+	out := make(map[string]string, len(userIDs))
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	rows, err := q.db.Query(ctx, `
+		SELECT user_id::text, trim(kook_name)
+		FROM community_profiles
+		WHERE user_id::text = ANY($1::text[])
+		  AND nullif(trim(kook_name), '') IS NOT NULL`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return nil, err
+		}
+		out[id] = name
+	}
+	return out, rows.Err()
+}
+
 // LockNickname serializes writes for the normalized nickname. The lock is
 // transaction-scoped, so the subsequent ownership check is race-safe without
 // changing the legacy schema or blocking unrelated nicknames.

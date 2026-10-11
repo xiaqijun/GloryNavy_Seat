@@ -31,6 +31,7 @@ type Character struct {
 	ID                int64  `json:"id,string"`
 	Name              string `json:"name"`
 	AccountID         string `json:"account_id"`
+	Nickname          string `json:"nickname,omitempty"`
 	MainCharacterName string `json:"main_character_name,omitempty"`
 	CorporationID     int64  `json:"corporation_id,string"`
 }

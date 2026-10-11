@@ -574,7 +574,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		return token, err
 	}
 	// Include persisted data even when its UI module is disabled.
-	welfareModule := welfareHandler(pool, identityService, accessService, syncService, exchangeService, fittingService, skillModule.Service)
+	welfareModule := welfareHandler(pool, identityService, communityService, accessService, syncService, exchangeService, fittingService, skillModule.Service)
 	wireWelfareLosses(welfareModule.Service, identityService, reader, staticData)
 	wireWelfareAttendance(welfareModule.Service, attendanceModule.Service, identityService)
 	if eveHandler.Contracts != nil {

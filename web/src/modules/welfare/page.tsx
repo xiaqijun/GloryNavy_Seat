@@ -1285,14 +1285,27 @@ function useMembers(corp: string) {
   });
 }
 function uniqueMembers(rows: api.Character[] = []) {
-  return [
-    ...new Map(
-      rows.map((c) => [
-        c.account_id,
-        { value: c.account_id, label: c.main_character_name || c.name },
-      ]),
-    ).values(),
-  ];
+  const byAccount = new Map<string, api.Character>();
+  for (const c of rows) {
+    if (!byAccount.has(c.account_id) || c.main_character_name === c.name) {
+      byAccount.set(c.account_id, c);
+    }
+  }
+  const nicknameCounts = new Map<string, number>();
+  for (const c of byAccount.values()) {
+    if (c.nickname) {
+      const key = c.nickname.trim().toLowerCase();
+      nicknameCounts.set(key, (nicknameCounts.get(key) || 0) + 1);
+    }
+  }
+  return [...byAccount.values()].map((c) => ({
+    value: c.account_id,
+    label: c.nickname
+      ? nicknameCounts.get(c.nickname.trim().toLowerCase())! > 1
+        ? `${c.nickname} · ${c.main_character_name || c.name}`
+        : c.nickname
+      : c.main_character_name || c.name,
+  }));
 }
 const profileTitles = {
   loss: msg("补损资格"),

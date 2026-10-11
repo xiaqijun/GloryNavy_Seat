@@ -135,6 +135,12 @@ func (s *Service) Get(ctx context.Context, userID string) (Profile, error) {
 	}
 	return profile(row), nil
 }
+
+// Nicknames returns the account-level display nicknames for the requested
+// users. It is intentionally read-only and is used by host-owned directories.
+func (s *Service) Nicknames(ctx context.Context, userIDs []string) (map[string]string, error) {
+	return store.New(s.pool).ListNicknames(ctx, userIDs)
+}
 func (s *Service) Complete(ctx context.Context, userID string) (bool, error) {
 	p, err := s.Get(ctx, userID)
 	return p.Complete, err
