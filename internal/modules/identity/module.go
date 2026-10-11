@@ -50,7 +50,7 @@ func (h Handler) Authorize(permission string, next http.Handler) http.Handler {
 				return
 			}
 			if !complete {
-				httpapi.Failure(w, r, 403, "profile_required", "请先补全 QQ 号与 KOOK 昵称")
+				httpapi.Failure(w, r, 403, "profile_required", "请先补全 QQ 号与昵称")
 				return
 			}
 		}

@@ -1,5 +1,9 @@
 # 项目状态
 
+## 当前：账号昵称统一称呼与重复保护（2026-10-12）
+
+`/account` 与成员页面将原 KOOK 昵称展示为“昵称”，昵称属于本站账号并由主角色关系辅助识别，主角色和小号共用。保存时按去除首尾空白并忽略大小写检查其他账号占用，冲突返回 `nickname_taken`；生产已有重复值保留，后续编辑时要求改为未占用昵称。数据库和旧接口字段保持兼容，无 Goose/River 新迁移。
+
 ## 当前：贷款专员可跨账号选择有效角色（2026-10-12）
 
 贷款管理者配置合同处理人时，候选下拉框改为所有有效绑定的 EVE 角色；普通成员仍只读取自己的角色，服务端只在贷款管理范围内返回候选。无 Goose/River 新迁移。生产应用与公网静态站点已切换至 `v0.1.0-loan-officer-directory-20261012`，应用 `active/ready`、`/health/ready` 200、匿名审批接口 401，首页与 `/loans` 200，边缘 OpenResty 配置检查通过。
@@ -326,7 +330,7 @@ QQ 平台真实回调、群 OpenID 和 Bot 管理员权限仍需配置后联调�
 
 ## 已发布记录：QQ Bot 配置前端化（2026-09-29）
 
-管理员可在 `/community` 的 QQ 机器人管理页维护 AppID、API 地址、群 OpenID、显示名称和启用状态；`/account` 仅保留 QQ 号与 KOOK 昵称等个人资料。配置持久化于 Goose 53/54，App Secret 以写只字段提交并由服务端加密保存，保存后立即应用到官方回调与补偿同步。首次保存前环境变量作为兜底；已随 `v0.1.0-qq-attendance-20260929` 发布生产；真实 QQ 平台联调待完成。
+管理员可在 `/community` 的 QQ 机器人管理页维护 AppID、API 地址、群 OpenID、显示名称和启用状态；`/account` 仅保留 QQ 号与昵称等个人资料。配置持久化于 Goose 53/54，App Secret 以写只字段提交并由服务端加密保存，保存后立即应用到官方回调与补偿同步。首次保存前环境变量作为兜底；已随 `v0.1.0-qq-attendance-20260929` 发布生产；真实 QQ 平台联调待完成。
 
 ## 已发布记录：官方 QQ 机器人回调（2026-09-29）
 
@@ -481,7 +485,7 @@ Goose 48 的活动项目、奖励库快照、独立果壳币、成员截图申�
 | --- | --- | --- |
 | 公开首页 | 真实舰船素材、GSAP 分段动效、招募入口；军团角色、在线角色、本月击毁及击毁价值只显示名称＋数字；在线多开分别计数，缺数据不伪造 0 | [首页](ui/homepage.md)、[公开数据](integrations/public-corporation.zh-CN.md) |
 | 账号与认证 | EVE SSO、滑动续期会话、多角色/主角色、独立重新授权、解绑、显式账号合并；不因同名或相同 QQ 自动绑号 | [登录](integrations/eve-login.zh-CN.md)、[合并](integrations/account-merge.zh-CN.md) |
-| 社区资料 | QQ 号与 KOOK 昵称手填、编辑、完整度门禁；官方 QQ 群申请码、自动审批、入群回调绑定和管理员补偿同步已发布，真实平台联调待完成 | [社区资料](integrations/community-profile.zh-CN.md) |
+| 社区资料 | QQ 号与账号昵称手填、编辑、完整度门禁；昵称用于游戏内统一称呼，新保存值按归一化规则防重复；官方 QQ 群申请码、自动审批、入群回调绑定和管理员补偿同步已发布，真实平台联调待完成 | [社区资料](integrations/community-profile.zh-CN.md) |
 | 权限与成员 | 本站 RBAC、SeAT 风格军团策略、超级管理员成员数据读取、对象范围鉴权；游戏职务与本站权限分离 | [权限](integrations/seat-authorization.zh-CN.md)、[成员](ui/members.md) |
 | ESI / SDE | River 持久同步、授权代次与发布 fence、共享缓存/限流、令牌与令牌桶观测；本地中英文物品/星系名称及独立静态参考 | [同步](integrations/esi-sync.zh-CN.md)、[SDE](integrations/sde-names.zh-CN.md) |
 | 建筑管理（本地首期，已发布） | River 同步军团 Upwell 建筑和 POS 到本地快照；页面展示状态、服务、燃料到期/燃料仓明细与观测时间；按 `corporation.structure` 做对象权限检查，不提供租用或游戏内权限写入 | [建筑管理](integrations/structures.zh-CN.md)、[页面说明](ui/structures.md) |

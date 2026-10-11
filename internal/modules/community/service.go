@@ -23,7 +23,8 @@ import (
 
 var (
 	ErrQQ                       = errors.New("QQ 号需为 5–12 位数字，且不能以 0 开头")
-	ErrKOOK                     = errors.New("KOOK 昵称需为 1–64 个字符，不能包含控制字符")
+	ErrKOOK                     = errors.New("昵称需为 1–64 个字符，不能包含控制字符")
+	ErrNicknameTaken            = errors.New("该昵称已被其他本站账号使用，请更换")
 	ErrVersion                  = errors.New("资料已在其他页面更新，请重新读取后修改")
 	ErrQQBotReplay              = errors.New("QQ 机器人事件重放冲突")
 	ErrQQNotBound               = errors.New("QQ 号尚未绑定本站账号")
@@ -179,6 +180,18 @@ func (s *Service) Update(ctx context.Context, userID, qq, kook, version string) 
 		changed = append(changed, "kook")
 	}
 	if len(changed) > 0 {
+		if old.KookName != kook {
+			if err = q.LockNickname(ctx, kook); err != nil {
+				return Profile{}, err
+			}
+			taken, checkErr := q.NicknameTaken(ctx, kook, id)
+			if checkErr != nil {
+				return Profile{}, checkErr
+			}
+			if taken {
+				return Profile{}, ErrNicknameTaken
+			}
+		}
 		if err = q.UpdateProfile(ctx, store.UpdateProfileParams{UserID: id, QqNumber: qq, KookName: kook}); err != nil {
 			return Profile{}, err
 		}

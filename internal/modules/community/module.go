@@ -44,6 +44,8 @@ func (h Handler) update(w http.ResponseWriter, r *http.Request) {
 		httpapi.Failure(w, r, 400, "invalid_qq", ErrQQ.Error())
 	case errors.Is(err, ErrKOOK):
 		httpapi.Failure(w, r, 400, "invalid_kook", ErrKOOK.Error())
+	case errors.Is(err, ErrNicknameTaken):
+		httpapi.Failure(w, r, 409, "nickname_taken", ErrNicknameTaken.Error())
 	case errors.Is(err, ErrVersion):
 		httpapi.Failure(w, r, 409, "profile_conflict", ErrVersion.Error())
 	case err != nil:

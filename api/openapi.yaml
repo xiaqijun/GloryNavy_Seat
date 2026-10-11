@@ -5147,8 +5147,8 @@ paths:
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
     put:
       operationId: updateOwnCommunityProfile
-      summary: Save both QQ number and KOOK nickname using an optimistic profile revision
-      description: Body limit 4096 bytes; unknown fields rejected. User comes from the session, never the body. Trims both values; QQ requires 5-12 ASCII digits without leading zero, KOOK requires 1-64 Unicode code points without control characters. These are local input rules. Changed fields increment their revisions and invalidate only their platform's previous confirmation; unchanged saves preserve confirmations and revisions. Details are not unique ownership evidence and never merge users. Members cannot set confirmation fields.
+      summary: Save QQ number and unified in-game nickname using an optimistic profile revision
+      description: Body limit 4096 bytes; unknown fields rejected. User comes from the session, never the body. Trims both values; QQ requires 5-12 ASCII digits without leading zero, and the legacy kook_name field carries a unified in-game nickname of 1-64 Unicode code points without control characters. The nickname belongs to the site account and is shared by its main and alternate characters. New saves reject a normalized nickname already used by another account with nickname_taken; legacy duplicates are retained for compatibility until edited. These are local input rules and never merge users. Members cannot set confirmation fields.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5171,7 +5171,7 @@ paths:
                 kook_name:
                   {
                     type: string,
-                    description: KOOK nickname,
+                    description: Unified in-game nickname (legacy field name),
                     trimmed and validated by local input rules,
                   }
                 version:
@@ -5183,7 +5183,7 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/CommunityProfile" }
         "400":
-          description: invalid_profile, invalid_qq or invalid_kook
+          description: invalid_profile, invalid_qq, invalid_kook or nickname_taken
           content:
             {
               application/json:

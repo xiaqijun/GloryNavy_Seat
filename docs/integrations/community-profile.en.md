@@ -1,25 +1,25 @@
-# QQ and KOOK community details
+# QQ and account nickname details
 
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
-Updated: 2026-09-29. [中文](community-profile.zh-CN.md). Manual details, editing, the profile-completeness gate, official QQ group admission callbacks, administrator fallback sync and the administrator group-settings card are implemented locally. Live QQ open-platform verification and a KOOK bot remain pending; platform OAuth is not a confirmed requirement.
+Updated: 2026-10-12. [中文](community-profile.zh-CN.md). Manual details, editing, the profile-completeness gate, official QQ group admission callbacks, administrator fallback sync and the administrator group-settings card are implemented locally. Live QQ open-platform verification remains pending; platform OAuth is not a confirmed requirement.
 
 ## 1. Usage and states
 
-Enter the QQ number and KOOK nickname in Community details on `/account`; use the edit icon to change them. Details belong to the site user and are shared across viewed characters, main-character changes and alternate-character logins.
+Enter the QQ number and nickname in Community details on `/account`; use the edit icon to change them. Details belong to the site user, are shared across viewed characters, main-character changes and alternate-character logins, and the nickname is the unified in-game form of address.
 
 - QQ: local input rule of 5–12 ASCII digits, no leading zero; stored as a string.
-- KOOK: 1–64 Unicode code points after trimming, without control characters; internal spaces and emoji are preserved.
-- Both fields must be valid to save a complete profile. These are local validation rules, not proof of a QQ/KOOK account or nickname ownership.
-- Saving leaves group/server confirmation pending. Matching numbers or nicknames never merge users. Unverified inputs are not unique identity evidence and have no global uniqueness constraint.
+- Nickname: 1–64 Unicode code points after trimming, without control characters; internal spaces and emoji are preserved.
+- Both fields must be valid to save a complete profile. These are local validation rules, not proof of a QQ account. New nickname saves are checked case-insensitively after trimming; an existing owner returns `nickname_taken`. Legacy duplicates remain until a user edits them.
+- QQ may still have group confirmation. The nickname only reports provided/unfilled state. Matching numbers or nicknames never merge users; site user and main-character relationships identify the account.
 
-`complete` means both details are present. Each platform separately reports `unfilled`, `pending` or `confirmed`. Members cannot supply confirmation state. Changing a confirmed value invalidates only that platform's confirmation; an unchanged save preserves revisions and confirmations.
+`complete` means both details are present. QQ reports `unfilled`, `pending` or `confirmed`; the nickname reports provided/unfilled. Members cannot supply confirmation state. Changing QQ invalidates its confirmation; unchanged saves preserve revisions.
 
 ## 2. API and module boundaries
 
 `community` depends on `identity` and owns private SQL/store code. `GET /api/v1/community/profile` and `PUT /api/v1/community/profile` only access the current session user, with no target user ID. Mutations require a same-origin Origin, a site session and `X-CSRF-Token`. Bodies are limited to 4096 bytes and unknown fields are rejected.
 
-PUT accepts `qq_number`, `kook_name` and `version`. Revisions are decimal strings; an empty profile starts at `"0"`. Conflicting edits return 409. The page preserves the draft and offers explicit reload before retry. See [OpenAPI](../../api/openapi.yaml).
+PUT accepts `qq_number`, legacy-compatible `kook_name` (the account nickname) and `version`. Revisions are decimal strings; an empty profile starts at `"0"`. Conflicting edits or duplicate nicknames return 409. The page preserves the draft and offers explicit reload before retry. See [OpenAPI](../../api/openapi.yaml).
 
 When community is enabled, the host gates protected business operations on profile completeness, including for site administrators. Incomplete profiles receive `403 profile_required`. Session/logout, character management, EVE linking/reauthorization, own authorization summary and community profile operations remain available. Pending membership confirmation does not prevent normal business authorization after details are complete. `/` is the public landing page; business pages such as `/system` retain host session gating. Anonymous operational metadata is tracked separately under SEC-01 in the backlog.
 
@@ -55,4 +55,4 @@ Coverage includes validation, user-level sharing, platform-specific invalidation
 
 ## Administrator reads
 
-Administrators read QQ/KOOK values and confirmation states through /api/v1/access/members/{user}/data, composed via the host-injected community.Get service. No edit revisions, credentials or confirmation mutations are exposed. /community/profile still refers exclusively to the signed-in account and accepts no target user. See [member viewing](../ui/members.md).
+Administrators read the QQ value and account nickname through /api/v1/access/members/{user}/data; only QQ exposes confirmation state. No edit revisions, credentials or confirmation mutations are exposed. /community/profile still refers exclusively to the signed-in account and accepts no target user. See [member viewing](../ui/members.md).

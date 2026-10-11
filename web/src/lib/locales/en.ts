@@ -893,8 +893,8 @@ export const english: Record<string, string> = {
   "保存失败，请稍后重试": "Save failed. Please try again later.",
   "请输入 5–12 位 QQ 号，不能以 0 开头":
     "Enter a 5–12 digit QQ number that does not start with 0",
-  "请输入 1–64 个字符的 KOOK 昵称，不含控制字符":
-    "Enter a KOOK nickname of 1–64 characters without control characters",
+  "请输入 1–64 个字符的昵称，不含控制字符":
+    "Enter a nickname of 1–64 characters without control characters",
   修改社区资料: "Edit community profile",
   正在读取社区资料: "Loading community profile",
   "社区资料读取失败，请重试。":
@@ -904,8 +904,11 @@ export const english: Record<string, string> = {
   入群: "Group membership",
   加入服务器: "Server membership",
   资料未填写: "Profile incomplete",
+  已填写: "Provided",
   "QQ 号": "QQ number",
-  "KOOK 昵称": "KOOK nickname",
+  昵称: "Nickname",
+  "该昵称已被其他本站账号使用，请更换":
+    "This nickname is already used by another site account. Choose another.",
   "修改后，对应平台需要重新确认。":
     "Changes require confirmation again on the corresponding platform.",
   "读取失败，请重试": "Unable to load. Please retry.",
@@ -2184,8 +2187,8 @@ export const english: Record<string, string> = {
   配装服务暂不可用: "Fitting service temporarily unavailable",
   "登录服务暂不可用，请稍后重试":
     "Sign-in service temporarily unavailable. Please try again later.",
-  "请先补全 QQ 号与 KOOK 昵称":
-    "Complete your QQ number and KOOK nickname first.",
+  "请先补全 QQ 号与昵称":
+    "Complete your QQ number and nickname first.",
   "操作已失效，请刷新后重试": "Action expired. Refresh and retry.",
   "合并验证已失效，请重新验证": "Merge verification expired. Verify again.",
   请先查看合并预览: "Review the merge preview first.",

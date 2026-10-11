@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import {
   MessageCircle,
-  Headphones,
+  AtSign,
   UsersRound,
   Pencil,
   RefreshCw,
@@ -133,7 +133,7 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
             <>
               <div className="community-bindings">
                 <BindingSummary label="QQ" binding={p.qq} icon="qq" />
-                <BindingSummary label="KOOK" binding={p.kook} icon="kook" />
+                <BindingSummary label={msg("昵称")} binding={p.kook} icon="nickname" />
               </div>
               {p.qq.value && (
                 <QQGroupAdmission
@@ -220,10 +220,11 @@ function BindingSummary({
 }: {
   label: string;
   binding: Binding;
-  icon: "qq" | "kook";
+  icon: "qq" | "nickname";
 }) {
-  const Icon = icon === "qq" ? MessageCircle : Headphones;
-  const confirmed = binding.confirmation === "confirmed";
+  const isNickname = icon === "nickname";
+  const Icon = isNickname ? AtSign : MessageCircle;
+  const confirmed = isNickname || binding.confirmation === "confirmed";
   return (
     <div className="community-binding">
       <span className="community-platform-icon">
@@ -234,9 +235,13 @@ function BindingSummary({
         <p>{binding.value || msg("未填写")}</p>
         <span
           className={`community-confirmation ${confirmed ? "is-confirmed" : ""}`}
-          title={`${label} ${icon === "qq" ? msg("入群") : msg("加入服务器")}${confirmed ? msg("已确认") : binding.confirmation === "unfilled" ? msg("资料未填写") : msg("待确认")}`}
+          title={`${label} ${isNickname ? (binding.value ? msg("已填写") : msg("资料未填写")) : `${msg("入群")}${confirmed ? msg("已确认") : binding.confirmation === "unfilled" ? msg("资料未填写") : msg("待确认")}`}`}
         >
-          {confirmed
+          {isNickname
+            ? binding.value
+              ? msg("已填写")
+              : msg("未填写")
+            : confirmed
             ? msg("已确认")
             : binding.confirmation === "unfilled"
               ? msg("未填写")
@@ -281,9 +286,7 @@ function ProfileEditor({
   const pending = save.isPending || reloading;
   const changedConfirmed =
     (qq.trim() !== profile.qq.value &&
-      profile.qq.confirmation === "confirmed") ||
-    (kook.trim() !== profile.kook.value &&
-      profile.kook.confirmation === "confirmed");
+      profile.qq.confirmation === "confirmed");
   return (
     <form
       className="community-form"
@@ -341,8 +344,8 @@ function ProfileEditor({
         </div>
         <div className="community-field">
           <label htmlFor="community-kook">
-            <Headphones size={16} aria-hidden="true" />
-            {msg("KOOK 昵称")}{" "}
+            <AtSign size={16} aria-hidden="true" />
+            {msg("昵称")}{" "}
           </label>
           <input
             ref={kookRef}

@@ -84,7 +84,7 @@ test("QQ and KOOK details are shared, editable and separate from confirmation", 
   });
   await page.goto("/account");
   const qq = page.getByLabel("QQ 号", { exact: true });
-  const kook = page.getByLabel("KOOK 昵称", { exact: true });
+  const kook = page.getByLabel("昵称", { exact: true });
   await expect(qq).toBeVisible();
   await page.getByRole("button", { name: "保存资料", exact: true }).click();
   await expect(qq).toBeFocused();
@@ -140,7 +140,7 @@ test("QQ and KOOK details are shared, editable and separate from confirmation", 
   };
   await page.reload();
   await page.getByRole("button", { name: "修改社区资料", exact: true }).click();
-  await kook.fill("新的 KOOK 昵称");
+  await kook.fill("新的昵称");
   await expect(
     page.getByText("修改后，对应平台需要重新确认。", { exact: true }),
   ).toBeVisible();
@@ -269,10 +269,10 @@ test("community loading failure is recoverable and edits survive server errors",
     .getByRole("button", { name: "重新读取社区资料", exact: true })
     .click();
   await page.getByLabel("QQ 号", { exact: true }).fill("123456");
-  await page.getByLabel("KOOK 昵称", { exact: true }).fill("昵称");
+  await page.getByLabel("昵称", { exact: true }).fill("昵称");
   await page.getByRole("button", { name: "保存资料", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("保存失败，请稍后重试");
-  await expect(page.getByLabel("KOOK 昵称", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("昵称", { exact: true })).toHaveValue(
     "昵称",
   );
 });

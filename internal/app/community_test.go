@@ -24,10 +24,11 @@ func TestCommunityProfileHTTPAndBusinessGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	session, _ := users.Session(ctx, token)
-	_, err = users.SignIn(ctx, 202, "Other", "other", "")
+	otherToken, err := users.SignIn(ctx, 202, "Other", "other", "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	otherSession, _ := users.Session(ctx, otherToken)
 	if err = access.New(pool, nil, nil).SetAdministrator(ctx, session.UserID, true); err != nil {
 		t.Fatal(err)
 	}
@@ -78,6 +79,10 @@ func TestCommunityProfileHTTPAndBusinessGate(t *testing.T) {
 	}
 	if w = call("PUT", "/api/v1/community/profile", body, token, session.CSRFToken, "https://example.com"); w.Code != 409 {
 		t.Fatal("stale profile accepted")
+	}
+	duplicate := `{"qq_number":"654321","kook_name":" 舰长 ","version":"0"}`
+	if w = call("PUT", "/api/v1/community/profile", duplicate, otherToken, otherSession.CSRFToken, "https://example.com"); w.Code != 409 || !strings.Contains(w.Body.String(), "nickname_taken") {
+		t.Fatalf("duplicate nickname accepted %d %s", w.Code, w.Body.String())
 	}
 	var count int
 	_ = pool.QueryRow(ctx, "SELECT count(*) FROM community_profiles").Scan(&count)

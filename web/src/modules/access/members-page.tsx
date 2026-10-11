@@ -449,22 +449,24 @@ function MemberDetails({
               (
                 [
                   ["QQ", data.community.qq],
-                  ["KOOK", data.community.kook],
+                  [msg("昵称"), data.community.kook],
                 ] as const
               ).map(([label, b]) => (
                 <div key={label}>
                   <span className="member-muted">{label}</span>
                   <strong>{b.value || msg("未填写")}</strong>
                   <span
-                    className={`member-badge ${b.confirmation === "confirmed" ? "is-ready" : ""}`}
+                    className={`member-badge ${label === msg("昵称") || b.confirmation === "confirmed" ? "is-ready" : ""}`}
                   >
-                    {
-                      {
-                        unfilled: msg("未填写"),
-                        pending: msg("待确认"),
-                        confirmed: msg("已确认"),
-                      }[b.confirmation]
-                    }
+                    {label === msg("昵称")
+                      ? b.value
+                        ? msg("已填写")
+                        : msg("未填写")
+                      : {
+                          unfilled: msg("未填写"),
+                          pending: msg("待确认"),
+                          confirmed: msg("已确认"),
+                        }[b.confirmation]}
                   </span>
                 </div>
               ))

@@ -225,6 +225,6 @@ export function validateDetails(qq: string, kook: string) {
       Array.from(kook.trim()).length <= 64 &&
       !/[\p{Cc}]/u.test(kook.trim())
         ? ""
-        : msg("请输入 1–64 个字符的 KOOK 昵称，不含控制字符"),
+        : msg("请输入 1–64 个字符的昵称，不含控制字符"),
   };
 }
