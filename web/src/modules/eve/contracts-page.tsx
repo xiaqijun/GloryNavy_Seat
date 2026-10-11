@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { IconAction } from "@/components/ui/icon-action";
+import { AccountCharacterSelect } from "@/components/account-character-select";
 import { EveImage } from "@/components/eve-image";
 import { useSession } from "@/modules/identity/use-session";
 import {
@@ -183,7 +184,12 @@ function ContractWorkspace({ user }: { user: string }) {
               </div>
               {choices.length > 0 && (
                 <div className="contract-owner">
-                  <Select
+                  {kind === "character" ? <AccountCharacterSelect
+                    label={msg("查看角色")}
+                    value={owner?.id ?? ""}
+                    onChange={(id) => patch({ owner: id, before: "", trail: "" })}
+                    characters={choices.map((o) => ({ id: o.id, name: o.name || o.id, account_id: "current" }))}
+                  /> : <Select
                     label={
                       kind === "character" ? msg("查看角色") : msg("查看军团")
                     }
@@ -202,7 +208,7 @@ function ContractWorkspace({ user }: { user: string }) {
                         />
                       ),
                     }))}
-                  />
+                  />}
                 </div>
               )}
             </div>

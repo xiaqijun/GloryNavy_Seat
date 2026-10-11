@@ -1,5 +1,7 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  当前账号: "Current account",
+  请选择昵称: "Select nickname",
   "建筑管理": "Structure management",
   "查看军团 Upwell 建筑与 POS 的当前状态": "View current corporation Upwell and POS status",
   "按类型查看军团建筑": "Browse corporation structures by type",

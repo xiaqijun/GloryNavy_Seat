@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/http";
 import { msg, getLocale } from "@/lib/i18n";
 import { APIError, getData } from "@/lib/http";
-export type Entity = { id: string; name: string };
+export type Entity = { id: string; name: string; account_id?: string; nickname?: string };
 export type Context = { corporations: Entity[]; characters: Entity[] };
 export type Event = {
   pap_points?: number;

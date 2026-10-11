@@ -36,6 +36,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
 import { Select } from "@/components/ui/select";
+import { AccountCharacterSelect } from "@/components/account-character-select";
 import { EveImage } from "@/components/eve-image";
 import {
   getContext,
@@ -98,6 +99,17 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     queryKey: ["attendance", "context", user],
     queryFn: ({ signal }) => getContext(signal),
   });
+  const profile = useQuery({
+    queryKey: ["community", "profile", user],
+    queryFn: ({ signal }) => import("@/modules/community/api").then((api) => api.getProfile(signal)),
+    staleTime: 60_000,
+  });
+  const pickerCharacters = (context.data?.characters ?? []).map((character) => ({
+    ...character,
+    account_id: user,
+    nickname: profile.data?.kook.value?.trim() || undefined,
+  }));
+  const displayContext = context.data ? { ...context.data, characters: pickerCharacters } : undefined;
   const view =
     params.get("view") === "pap"
       ? "pap"
@@ -158,14 +170,14 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
                 user={user}
                 csrf={csrf}
                 id={event}
-                context={context.data}
+                context={{ ...context.data, characters: pickerCharacters }}
                 back={() => patch({ event: "" })}
               />
             ) : (
               <Events
                 user={user}
                 csrf={csrf}
-                context={context.data}
+                context={displayContext!}
                 select={(event) => patch({ event })}
               />
             )}
@@ -175,7 +187,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             <PAPPanel
               user={user}
               csrf={csrf}
-              context={context.data}
+              context={displayContext!}
               select={(id) => patch({ view: "events", event: id })}
             />
           </Tabs.Content>
@@ -185,7 +197,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           <Tabs.Content value="online">
             <OnlinePanel
               user={user}
-              context={context.data}
+              context={displayContext!}
               member={params.get("member") ?? ""}
             />
           </Tabs.Content>
@@ -548,21 +560,11 @@ function EventDetail({
       <PAPEvent user={user} csrf={csrf} event={e} entries={q.data.entries} />
       {e.can_manage && e.state === "open" && (
         <div className="attendance-toolbar attendance-capture">
-          <Select
+          <AccountCharacterSelect
             label={msg("点名来源角色")}
             value={source}
-            onValueChange={setSource}
-            options={context.characters.map((c) => ({
-              value: c.id,
-              label: c.name,
-              leading: (
-                <EveImage
-                  id={c.id}
-                  kind="character"
-                  className="attendance-tiny-avatar"
-                />
-              ),
-            }))}
+            onChange={setSource}
+            characters={context.characters}
           />
           <Button
             disabled={capture.isPending || !source}

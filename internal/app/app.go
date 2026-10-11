@@ -161,8 +161,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	exchangeService.Own = func(ctx context.Context, user string) ([]exchange.Binding, error) {
 		rows, err := identityService.ActiveCharacters(ctx, user)
 		out := []exchange.Binding{}
+		nicknames, _ := communityService.Nicknames(ctx, []string{user})
 		for _, r := range rows {
-			out = append(out, exchange.Binding{ID: r.ID, Name: r.Name, UserID: user})
+			out = append(out, exchange.Binding{ID: r.ID, Name: r.Name, UserID: user, AccountID: user, Nickname: nicknames[user]})
 		}
 		return out, err
 	}
@@ -170,7 +171,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		rows, err := identityService.Bindings(ctx, tx, ids)
 		out := []exchange.Binding{}
 		for _, r := range rows {
-			out = append(out, exchange.Binding{ID: r.ID, Name: r.Name, UserID: r.UserID})
+			out = append(out, exchange.Binding{ID: r.ID, Name: r.Name, UserID: r.UserID, AccountID: r.UserID})
 		}
 		return out, err
 	}
@@ -658,17 +659,28 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	loanService := &loan.Service{Pool: pool, Characters: func(ctx context.Context, user string) ([]loan.Character, error) {
 		rows, err := identityService.ActiveCharacters(ctx, user)
 		out := make([]loan.Character, 0, len(rows))
+		nicknames, _ := communityService.Nicknames(ctx, []string{user})
 		for _, row := range rows {
-			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
+			out = append(out, loan.Character{ID: row.ID, Name: row.Name, AccountID: user, Nickname: nicknames[user]})
 		}
 		return out, err
 	}, ManageCharacters: func(ctx context.Context) ([]loan.Character, error) {
 		rows, err := identityService.AllActiveCharacters(ctx)
 		out := make([]loan.Character, 0, len(rows))
+		if err != nil { return out, err }
+		ids := make([]int64, 0, len(rows))
+		for _, row := range rows { ids = append(ids, row.ID) }
+		bindings, err := identityService.Bindings(ctx, nil, ids)
+		if err != nil { return out, err }
+		users := make([]string, 0, len(bindings))
+		for _, binding := range bindings { users = append(users, binding.UserID) }
+		nicknames, _ := communityService.Nicknames(ctx, users)
 		for _, row := range rows {
-			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
+			accountID := ""
+			for _, binding := range bindings { if binding.ID == row.ID { accountID = binding.UserID; break } }
+			out = append(out, loan.Character{ID: row.ID, Name: row.Name, AccountID: accountID, Nickname: nicknames[accountID]})
 		}
-		return out, err
+		return out, nil
 	}, CharacterNames: func(ctx context.Context, ids []int64) (map[int64]string, error) {
 		rows, err := identityService.Bindings(ctx, nil, ids)
 		if err != nil {

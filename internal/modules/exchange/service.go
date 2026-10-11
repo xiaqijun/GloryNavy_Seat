@@ -20,9 +20,11 @@ var ErrUnavailable = errors.New("exchange unavailable")
 var ErrRateRequired = errors.New("source conversion rate required")
 
 type Binding struct {
-	ID     int64  `json:"id,string"`
-	Name   string `json:"name"`
-	UserID string `json:"-"`
+	ID        int64  `json:"id,string"`
+	Name      string `json:"name"`
+	UserID    string `json:"-"`
+	Nickname  string `json:"nickname,omitempty"`
+	AccountID string `json:"account_id,omitempty"`
 }
 type Service struct {
 	Contracts      func(context.Context, pgx.Tx, string, int64, string, time.Time) ([]eve.DeliveryContract, error)

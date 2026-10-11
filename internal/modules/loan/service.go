@@ -29,8 +29,10 @@ var (
 )
 
 type Character struct {
-	ID   int64
-	Name string
+	ID        int64  `json:"id,string"`
+	Name      string `json:"name"`
+	AccountID string `json:"account_id,omitempty"`
+	Nickname  string `json:"nickname,omitempty"`
 }
 type Contract struct {
 	ID                  int64

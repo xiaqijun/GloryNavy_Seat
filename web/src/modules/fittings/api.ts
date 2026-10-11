@@ -3,7 +3,7 @@ import { msg } from "@/lib/i18n";
 import { getData, APIError } from "@/lib/http";
 import type { Draft, Fit, SavedFit } from "./model";
 export type Context = {
-  characters: { id: string; name: string }[];
+  characters: { id: string; name: string; account_id?: string; nickname?: string }[];
   can_edit: boolean;
 };
 export type Snapshot = {

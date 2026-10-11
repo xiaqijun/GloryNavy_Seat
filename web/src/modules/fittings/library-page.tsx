@@ -23,6 +23,7 @@ import { useSession } from "@/modules/identity";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { AccountCharacterSelect, type AccountCharacterOption } from "@/components/account-character-select";
 import { IconAction } from "@/components/ui/icon-action";
 import { EveImage } from "@/components/eve-image";
 import { PlanEditor } from "@/modules/skills/plan-editor";
@@ -43,10 +44,11 @@ export default function FittingsPage() {
       key={s.data.session.user_id + (p.get("member") ?? "")}
       member={p.get("member") ?? ""}
       csrf={s.data.session.csrf_token}
+      userId={s.data.session.user_id}
     />
   );
 }
-function Library({ member, csrf }: { member: string; csrf: string }) {
+function Library({ member, csrf, userId }: { member: string; csrf: string; userId: string }) {
   const qc = useQueryClient();
   const [tab, setTab] = useState(member ? "personal" : "corporation");
   const [corpID, setCorpID] = useState("");
@@ -65,9 +67,19 @@ function Library({ member, csrf }: { member: string; csrf: string }) {
     queryFn: ({ signal }) => api.context(member, signal),
     enabled: tab === "personal",
   });
+  const profile = useQuery({
+    queryKey: ["community", "profile", userId],
+    queryFn: ({ signal }) => import("@/modules/community/api").then((api) => api.getProfile(signal)),
+    enabled: !member && tab === "personal",
+    staleTime: 60_000,
+  });
   const corps = context.data?.corporations ?? [];
   const corp = corps.find((c) => c.id === corpID) ?? corps[0];
-  const characters = personalContext.data?.characters ?? [];
+  const characters: AccountCharacterOption[] = (personalContext.data?.characters ?? []).map((character) => ({
+    ...character,
+    account_id: member || userId,
+    nickname: member ? undefined : profile.data?.kook.value?.trim() || undefined,
+  }));
   const character = characters.find((c) => c.id === charID) ?? characters[0];
   const library = useQuery({
     queryKey: ["fittings", "library", corp?.id],
@@ -192,14 +204,14 @@ function Library({ member, csrf }: { member: string; csrf: string }) {
             options={corps.map((c) => ({ value: c.id, label: c.name }))}
           />
         ) : (
-          <Select
+          <AccountCharacterSelect
             label={msg("查看角色")}
             value={character?.id ?? ""}
-            onValueChange={(v) => {
+            onChange={(v) => {
               setCharID(v);
               reset();
             }}
-            options={characters.map((c) => ({ value: c.id, label: c.name }))}
+            characters={characters}
           />
         )}
       </div>

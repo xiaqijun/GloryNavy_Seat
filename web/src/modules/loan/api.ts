@@ -8,7 +8,7 @@ export type Case = { id: string; public_id: string; pool_id: string; pool_name: 
 export type Guarantee = { id: string; case_id: string; guarantor_account_id: string; guarantor_character_id?: string; amount_minor: number; state: string; version: number; case_public_id?: string; borrower_account_id?: string; borrower_character_id?: string; principal_minor?: number };
 export type Collateral = { id: string; case_id: string; owner_account_id: string; contract_kind: string; contract_owner_id: string; contract_id: string; valuation_minor: number; haircut_bps: number; covered_minor: number; state: string; version: number; items?: unknown[] };
 export type CaseDetail = { case: Case; installments: unknown[]; guarantees: Guarantee[]; collateral: Collateral[] };
-export type Character = { id: string; name: string };
+export type Character = { id: string; name: string; account_id?: string; nickname?: string };
 export type Context = { pools: Pool[]; pool_summary: PoolSummary; credit: Credit; administrator: boolean; can_manage_pool?: boolean; custodian_characters?: Character[] };
 const object = (v: unknown): v is Record<string, any> => typeof v === "object" && v !== null;
 const contextData = (v: unknown): v is Context => object(v) && Array.isArray(v.pools) && object(v.credit) && typeof v.administrator === "boolean";

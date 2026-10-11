@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/http";
 import { msg } from "@/lib/i18n";
 import { APIError, getData } from "@/lib/http";
-export type Character = { id: string; name: string; corporation_id: string };
+export type Character = { id: string; name: string; corporation_id: string; account_id?: string; nickname?: string };
 export type Corporation = { id: string; name: string; can_manage: boolean };
 export type Context = { characters: Character[]; corporations: Corporation[] };
 export type Meta = {

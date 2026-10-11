@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
 import { Select } from "@/components/ui/select";
+import { AccountCharacterSelect, type AccountCharacterOption } from "@/components/account-character-select";
 import { EveImage } from "@/components/eve-image";
 import * as api from "./api";
 import "./skills.css";
@@ -79,6 +80,7 @@ export default function SkillsPage() {
     <Workspace
       key={session.data.session.user_id + (params.get("member") ?? "")}
       csrf={session.data.session.csrf_token}
+      userId={session.data.session.user_id}
       member={params.get("member") ?? ""}
       initialPlan={params.get("plan") ?? ""}
       initialCorp={params.get("corporation") ?? ""}
@@ -87,11 +89,13 @@ export default function SkillsPage() {
 }
 function Workspace({
   csrf,
+  userId,
   member,
   initialPlan,
   initialCorp,
 }: {
   csrf: string;
+  userId: string;
   member: string;
   initialPlan: string;
   initialCorp: string;
@@ -105,7 +109,17 @@ function Workspace({
     queryKey: ["skills", "context", member],
     queryFn: ({ signal }) => api.context(member, signal),
   });
-  const chars = ctx.data?.characters ?? [];
+  const profile = useQuery({
+    queryKey: ["community", "profile", userId],
+    queryFn: ({ signal }) => import("@/modules/community/api").then((api) => api.getProfile(signal)),
+    enabled: !member,
+    staleTime: 60_000,
+  });
+  const chars: Array<AccountCharacterOption & { corporation_id: string }> = (ctx.data?.characters ?? []).map((character) => ({
+    ...character,
+    account_id: member || userId,
+    nickname: member ? undefined : profile.data?.kook.value?.trim() || undefined,
+  }));
   const character = chars.find((c) => c.id === selected) ?? chars[0];
   const snapshot = useQuery({
     queryKey: ["skills", "snapshot", character?.id],
@@ -129,24 +143,14 @@ function Workspace({
       <header className="skills-header">
         <h1>{msg("技能管理")}</h1>
         <div className="skills-actions">
-          <Select
+          <AccountCharacterSelect
             label={msg("查看角色")}
             value={character?.id ?? ""}
-            onValueChange={(v) => {
+            characters={chars}
+            onChange={(v) => {
               setSelected(v);
               setGroup("");
             }}
-            options={chars.map((c) => ({
-              value: c.id,
-              label: c.name,
-              leading: (
-                <EveImage
-                  kind="character"
-                  id={c.id}
-                  className="skill-avatar-small"
-                />
-              ),
-            }))}
           />
           <IconAction
             label={msg("刷新技能数据")}

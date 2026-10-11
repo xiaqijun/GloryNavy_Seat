@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/http";
 import { msg, getLocale } from "@/lib/i18n";
 import { getData, APIError } from "@/lib/http";
 export type Context = {
-  characters: { id: string; name: string }[];
+  characters: { id: string; name: string; account_id?: string; nickname?: string }[];
   sources: {
     id: string;
     name: string;

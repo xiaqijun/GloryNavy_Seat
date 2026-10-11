@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { AccountCharacterSelect } from "@/components/account-character-select";
 import { EveImage } from "@/components/eve-image";
 import {
   getShop,
@@ -509,15 +510,15 @@ function ClaimForm({
         </div>
         <div className="exchange-recipient-field">
           <span>{msg("接收角色")}</span>
-          <Select
+          <AccountCharacterSelect
             disabled={m.isPending}
             label={msg("接收角色")}
             value={recipient}
-            onValueChange={(v) => {
+            onChange={(v) => {
               setRecipient(v);
               setKey(crypto.randomUUID());
             }}
-            options={characters.map((c) => ({ value: c.id, label: c.name }))}
+            characters={characters}
           />
         </div>
         <small>{msg("取消需管理员审核，同意后退回果壳币。")}</small>

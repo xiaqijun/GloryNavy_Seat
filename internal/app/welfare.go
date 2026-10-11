@@ -115,6 +115,7 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityPro
 		if e != nil {
 			return nil, e
 		}
+		nicknames, _ := communityProfiles.Nicknames(ctx, []string{user})
 		out := []welfare.Character{}
 		for _, c := range rows {
 			a, e := reader.Get(ctx, c.ID)
@@ -125,7 +126,7 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityPro
 			if subtle.ConstantTimeCompare(a.OwnerHash, c.OwnerHash) == 1 && (a.State == "ready" || a.State == "retry") && a.ValidUntil.After(time.Now()) {
 				corp = a.CorporationID
 			}
-			out = append(out, welfare.Character{ID: c.ID, Name: c.Name, AccountID: user, CorporationID: corp})
+			out = append(out, welfare.Character{ID: c.ID, Name: c.Name, AccountID: user, Nickname: nicknames[user], CorporationID: corp})
 		}
 		return out, nil
 	}

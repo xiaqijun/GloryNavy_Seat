@@ -6,7 +6,7 @@ import type { Fit } from "./model";
 import type { Requirement } from "@/modules/skills/api";
 export type LibraryContext = {
   can_manage: boolean;
-  characters: { id: string; name: string; can_save: boolean }[];
+  characters: { id: string; name: string; can_save: boolean; account_id?: string; nickname?: string }[];
   corporations: { id: string; name: string; can_create_skills: boolean }[];
 };
 export type Entry = {

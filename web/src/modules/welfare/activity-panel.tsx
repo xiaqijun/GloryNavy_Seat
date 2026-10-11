@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { AccountCharacterSelect } from "@/components/account-character-select";
 import { RewardSummary } from "@/components/reward-summary";
 import { getCatalog } from "@/modules/exchange/catalog-api";
 import { amount as contractAmount, getContracts, title as contractTitle, type Contract } from "@/modules/eve/contracts-api";
@@ -125,7 +126,7 @@ function ApplicationEditor({ corp, csrf, project, characters, close, done }: { c
         <button type="button" className={`welfare-activity-contract-toggle${showContracts ? " is-open" : ""}`} onClick={() => setShowContracts((value) => !value)} aria-expanded={showContracts}><FileText size={16} aria-hidden="true" /><span>{msg("选择合同材料")}</span><small>{contractID ? msg("已选择合同 #{0}", contractID) : msg("可选")}</small></button>
         {showContracts && <div className="welfare-activity-contract-picker">
           <div className="welfare-activity-contract-toolbar">
-            <Select label={msg("合同所属角色")} value={contractCharacterID} onValueChange={(value) => { setContractCharacterID(value); setContractID(""); }} options={characters.map((character) => ({ value: character.id, label: character.name }))} />
+            <AccountCharacterSelect label={msg("合同所属角色")} value={contractCharacterID} onChange={(value) => { setContractCharacterID(value); setContractID(""); }} characters={characters} />
             <div className="welfare-activity-contract-search"><input aria-label={msg("搜索合同")} placeholder={msg("搜索合同描述或 ID")} value={contractSearch} onChange={(event) => setContractSearch(event.target.value)} /><Button type="button" variant="outline" size="sm" aria-label={msg("搜索合同")} onClick={() => setContractQuery(contractSearch.trim())}><Search size={15} /></Button></div>
           </div>
           {contractID && <button type="button" className="welfare-activity-selected-contract" onClick={() => setContractID("")}><span><FileText size={15} />{msg("合同 #{0}", contractID)}</span><X size={15} aria-hidden="true" /></button>}
