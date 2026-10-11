@@ -1,5 +1,9 @@
 # Corporation welfare
 
+## Batch settlement item names
+
+Batch creation freezes item type IDs and quantities. When the approval center reads a batch detail, it resolves localized item names in one call through the existing SDE name service; an unavailable name falls back to the type ID. Names are presentation and copy-confirmation decoration only. In-game contract matching continues to use the frozen type IDs and quantities, and a name lookup failure does not block reading the batch.
+
 ## Batch recipient display (released 2026-10-03)
 
 Batch settlement details display the current main character's name as the contract recipient. The backend still verifies the in-game contract by the main character ID; multiple character IDs retained in a legacy snapshot remain internal and are not shown as the recipient.
