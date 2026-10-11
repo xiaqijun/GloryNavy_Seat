@@ -153,7 +153,10 @@ func (s *Service) ConfigureCustodian(ctx context.Context, actor string, poolID, 
 	if err = store.Audit(ctx, tx, 0, actor, "custodian_updated", locked, out); err != nil {
 		return p, err
 	}
-	return out, tx.Commit(ctx)
+	if err = tx.Commit(ctx); err != nil {
+		return p, err
+	}
+	return s.decoratePool(ctx, out), nil
 }
 func (s *Service) guardAccounts(ctx context.Context, tx pgx.Tx, ids ...string) error {
 	if s.LockAccounts == nil {

@@ -82,6 +82,7 @@ func (a ContractAdapter) Claim(ctx context.Context, tx pgx.Tx, id int64, module 
 type Service struct {
 	Pool                *pgxpool.Pool
 	Characters          func(context.Context, string) ([]Character, error)
+	CharacterName       func(context.Context, int64) (string, error)
 	CanManagePool       func(context.Context, string, string, int64) (bool, error)
 	IsAdministrator     func(context.Context, string) (bool, error)
 	Contracts           ContractReader
@@ -153,7 +154,16 @@ func (s *Service) Pools(ctx context.Context, user string, admin bool) ([]store.P
 	if p.State != "open" && !admin {
 		return []store.Pool{}, nil
 	}
-	return []store.Pool{p}, nil
+	return []store.Pool{s.decoratePool(ctx, p)}, nil
+}
+
+func (s *Service) decoratePool(ctx context.Context, p store.Pool) store.Pool {
+	if p.CustodianCharacterID != nil && *p.CustodianCharacterID > 0 && s.CharacterName != nil {
+		if name, err := s.CharacterName(ctx, *p.CustodianCharacterID); err == nil && strings.TrimSpace(name) != "" {
+			p.CustodianCharacterName = name
+		}
+	}
+	return p
 }
 
 func (s *Service) CanManageSharedPool(ctx context.Context, actor string) (bool, error) {

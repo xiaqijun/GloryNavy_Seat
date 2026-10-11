@@ -19,16 +19,17 @@ type DBTX interface {
 }
 
 type Pool struct {
-	IsShared             bool            `json:"is_shared"`
-	CustodianCharacterID *int64          `json:"custodian_character_id,string"`
-	ID                   int64           `json:"id,string"`
-	LenderKind           string          `json:"lender_kind"`
-	LenderUserID         *string         `json:"lender_user_id"`
-	CorporationID        *int64          `json:"corporation_id,string"`
-	Name                 string          `json:"name"`
-	State                string          `json:"state"`
-	Config               json.RawMessage `json:"config"`
-	Version              int64           `json:"version"`
+	IsShared               bool            `json:"is_shared"`
+	CustodianCharacterID   *int64          `json:"custodian_character_id,string"`
+	CustodianCharacterName string          `json:"custodian_character_name,omitempty"`
+	ID                     int64           `json:"id,string"`
+	LenderKind             string          `json:"lender_kind"`
+	LenderUserID           *string         `json:"lender_user_id"`
+	CorporationID          *int64          `json:"corporation_id,string"`
+	Name                   string          `json:"name"`
+	State                  string          `json:"state"`
+	Config                 json.RawMessage `json:"config"`
+	Version                int64           `json:"version"`
 }
 
 type Credit struct {

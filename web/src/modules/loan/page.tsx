@@ -80,7 +80,8 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
   const state = item.state === "funded" ? msg("已入池") : item.state === "pending" ? msg("待入金核验") : msg("已取消");
   const lender = item.lender_kind === "corporation" ? msg("军团出借") : msg("个人出借");
   const recipient = pool?.custodian_character_id;
-  const recipientLabel = msg("处理人角色 ID");
+  const recipientLabel = msg("贷款专员角色");
+  const recipientName = pool?.custodian_character_name || recipient || "";
   return <div role="listitem">
     <button type="button" className="loan-deposit-row" onClick={() => { setMessage(""); setOpen(true); }} aria-haspopup="dialog">
       <span className="loan-deposit-identity"><strong>{sourceName}</strong><small>{lender}</small></span>
@@ -104,7 +105,7 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
           <h3>{msg("合同信息")}</h3>
           <p>{msg("物品交换合同，无物品；合同完成并同步后由系统自动核验入金。")}</p>
           <div className="loan-contract-copy-grid">
-            <CopyField label={recipientLabel} value={recipient ?? ""} />
+            <CopyField label={recipientLabel} value={recipientName} />
             <CopyField label={msg("支付金额 / ISK")} value={String(item.amount_minor / 100)} />
             <CopyField label={msg("合同备注")} value={"GNV-LOAN-DEPOSIT-" + item.id} />
           </div>

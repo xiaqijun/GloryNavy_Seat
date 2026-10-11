@@ -1,6 +1,6 @@
 import { apiFetch, getData } from "@/lib/http";
 
-export type Pool = { id: string; is_shared: boolean; lender_kind: "personal" | "corporation"; lender_user_id?: string; corporation_id?: string; custodian_character_id?: string; name: string; state: string; config: Record<string, unknown>; version: number };
+export type Pool = { id: string; is_shared: boolean; lender_kind: "personal" | "corporation"; lender_user_id?: string; corporation_id?: string; custodian_character_id?: string; custodian_character_name?: string; name: string; state: string; config: Record<string, unknown>; version: number };
 export type PoolSummary = { pending_minor: number; funded_minor: number; cash_minor: number; reserved_minor: number; available_minor: number };
 export type Contribution = { id: string; pool_id: string; account_id: string; lender_kind: "personal" | "corporation"; source_character_id: string; corporation_id?: string; amount_minor: number; state: "pending" | "funded" | "cancelled"; contract_id?: string; version: number; created_at: string; funded_at?: string };
 export type Credit = { account_id: string; score?: number; total_limit_minor: number; unsecured_limit_minor: number; state: string; rule_version: string; reason: string; version: number; repayment_points?: number; leverage_points?: number; security_points?: number; pap_points?: number; asset_points?: number; evidence?: string };
