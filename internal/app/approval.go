@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/modules/approval"
 	"glorynavy.local/seat/internal/modules/exchange"
@@ -12,8 +14,8 @@ import (
 	"slices"
 )
 
-func approvalHandler(pool *pgxpool.Pool, dualRead bool, indexAccounts []string, enabled []string, accounts *identity.Service, w *welfare.Service, e *exchange.Service, l *loan.Service) (approval.Handler, *approval.Projection, error) {
-	s := approval.NewService(accounts.MainCharacterNames, pool)
+func approvalHandler(pool *pgxpool.Pool, dualRead bool, indexAccounts []string, enabled []string, names func(context.Context, []string) (map[string]string, error), w *welfare.Service, e *exchange.Service, l *loan.Service) (approval.Handler, *approval.Projection, error) {
+	s := approval.NewService(names, pool)
 	s.DualRead = dualRead
 	s.IndexAccounts = indexAccounts
 	if slices.Contains(enabled, "welfare") {

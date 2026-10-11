@@ -383,6 +383,33 @@ func TestNameProjectionFailureDoesNotHideQueue(t *testing.T) {
 	}
 }
 
+func TestListUsesAccountDisplayNameProjection(t *testing.T) {
+	s := &Service{
+		Names: func(_ context.Context, ids []string) (map[string]string, error) {
+			if len(ids) != 1 || ids[0] != "account-1" {
+				t.Fatalf("name projection ids = %v", ids)
+			}
+			return map[string]string{"account-1": "舰队昵称"}, nil
+		},
+		Sources: []reviewqueue.Source{{
+			ID: "exchange",
+			Access: func(context.Context, string) (reviewqueue.Access, error) {
+				return reviewqueue.Access{Allowed: true}, nil
+			},
+			Query: func(context.Context, string, reviewqueue.Filter, reviewqueue.Position, int) (reviewqueue.Page, error) {
+				return reviewqueue.Page{
+					Items:  []reviewqueue.Item{{Source: "exchange", ID: 1, Account: "account-1", Applicant: "角色名", Recipient: "接收角色"}},
+					Counts: map[string]int64{"pending": 1},
+				}, nil
+			},
+		}},
+	}
+	result, err := s.List(context.Background(), "manager", reviewqueue.Filter{View: "pending"}, "")
+	if err != nil || len(result.Items) != 1 || result.Items[0].Applicant != "舰队昵称" {
+		t.Fatalf("account display name was not used: result=%+v err=%v", result, err)
+	}
+}
+
 func TestLegacyListAddsSourceProjectionMetadata(t *testing.T) {
 	now := time.Unix(20, 0).UTC()
 	s := &Service{Sources: []reviewqueue.Source{{
