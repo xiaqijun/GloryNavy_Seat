@@ -2,7 +2,7 @@
 
 ## Batch settlement item names
 
-Batch creation freezes item type IDs, quantities and display names. Details for batches that already have names are returned directly from the frozen snapshot, without another SDE read. Legacy batches that lack names use one compatibility lookup through the existing SDE name service; an unavailable name falls back to the type ID. Names are presentation and copy-confirmation decoration only. In-game contract matching continues to use the frozen type IDs and quantities, and a name lookup failure does not block reading the batch.
+Batch creation freezes item type IDs, quantities and display names. Details for batches that already have names are returned directly from the frozen snapshot, without another SDE read. Legacy batches that lack names use an on-demand compatibility lookup through the existing SDE name service; an unavailable name falls back to the type ID. Names are presentation and copy-confirmation decoration only. In-game contract matching continues to use the frozen type IDs and quantities, and a name lookup failure does not block reading the batch.
 
 ## Batch recipient display (released 2026-10-03)
 
