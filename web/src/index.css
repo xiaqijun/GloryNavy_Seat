@@ -49,6 +49,17 @@ body {
 }
 .account-character-select {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+.account-character-select-title {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 650;
+}
+.account-character-select-fields {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
@@ -78,7 +89,7 @@ body {
   outline-offset: 2px;
 }
 @media (max-width: 640px) {
-  .account-character-select { grid-template-columns: 1fr; }
+  .account-character-select-fields { grid-template-columns: 1fr; }
 }
 a,
 button {

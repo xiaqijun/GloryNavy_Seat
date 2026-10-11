@@ -17,7 +17,7 @@ function groupLabel(character: AccountCharacterOption) {
   return character.nickname?.trim() || msg("当前账号");
 }
 
-/** A two-step picker: account nickname first, then one of its game roles. */
+/** Select an account first only when the list spans multiple accounts. */
 export function AccountCharacterSelect({
   label,
   characters,
@@ -42,10 +42,40 @@ export function AccountCharacterSelect({
   const selectedKey = selected ? groupKey(selected) : groups[0]?.[0] || "";
   const visible = characters.filter((character) => groupKey(character) === selectedKey);
   const first = visible[0]?.id || "";
+  const showAccount = groups.length > 1;
+  const roleSelect = (
+    <select
+      autoFocus={autoFocus}
+      value={selected && selectedKey === groupKey(selected) ? value : first}
+      onChange={(event) => onChange(event.target.value)}
+      required
+      disabled={disabled}
+      aria-label={showAccount ? `${label} · ${msg("角色")}` : label}
+    >
+      <option value="" disabled>{msg("请选择角色")}</option>
+      {visible.map((character) => (
+        <option key={character.id} value={character.id}>
+          {character.name}{character.is_main ? `（${msg("主角色")}）` : ""}
+        </option>
+      ))}
+    </select>
+  );
+  if (!showAccount) {
+    return (
+      <div className="account-character-select account-character-select-single">
+        <label>
+          {label}
+          {roleSelect}
+        </label>
+      </div>
+    );
+  }
   return (
-    <div className="account-character-select">
+    <div className="account-character-select" role="group" aria-label={label}>
+      <span className="account-character-select-title">{label}</span>
+      <div className="account-character-select-fields">
       <label>
-        {label} · {msg("昵称")}
+        {msg("昵称")}
         <select
           value={selectedKey}
           onChange={(event) => {
@@ -65,23 +95,10 @@ export function AccountCharacterSelect({
         </select>
       </label>
       <label>
-        {label} · {msg("角色")}
-        <select
-          autoFocus={autoFocus}
-          value={selected && selectedKey === groupKey(selected) ? value : first}
-          onChange={(event) => onChange(event.target.value)}
-          required
-          disabled={disabled}
-          aria-label={`${label} · ${msg("角色")}`}
-        >
-          <option value="" disabled>{msg("请选择角色")}</option>
-          {visible.map((character) => (
-            <option key={character.id} value={character.id}>
-              {character.name}{character.is_main ? `（${msg("主角色")}）` : ""}
-            </option>
-          ))}
-        </select>
+        {msg("角色")}
+        {roleSelect}
       </label>
+      </div>
     </div>
   );
 }
