@@ -65,6 +65,10 @@ export type FinanceTrendPoint = {
   tax: string;
   net: string;
 };
+export type TaxRankingPoint = {
+  nickname: string;
+  tax: string;
+};
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";
 const id = (v: unknown) => typeof v === "string" && /^\d+$/.test(v);
@@ -163,6 +167,15 @@ export const corporationPersonalIncomeTrend = (corporationID: string, from: stri
         object(row) && typeof row.period === "string" && /^\d{4}-\d{2}$/.test(row.period) &&
         typeof row.income === "string" && typeof row.expense === "string" &&
         typeof row.active_members === "number" && Number.isInteger(row.active_members) && row.active_members >= 0,
+      ),
+    signal,
+  );
+export const corporationPersonalTaxRanking = (corporationID: string, from: string, until: string, signal?: AbortSignal) =>
+  getData(
+    `/api/v1/wallet/personal-corporation-tax-ranking?${new URLSearchParams({ corporation_id: corporationID, from, until })}`,
+    (value: unknown): value is { items: TaxRankingPoint[] } =>
+      object(value) && Array.isArray(value.items) && value.items.every((row) =>
+        object(row) && typeof row.nickname === "string" && row.nickname.length > 0 && typeof row.tax === "string",
       ),
     signal,
   );

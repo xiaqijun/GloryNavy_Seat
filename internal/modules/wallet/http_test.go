@@ -194,3 +194,29 @@ func TestPersonalCorporationIncomeTrendValidatesRangeAndReturnsItems(t *testing.
 		t.Fatalf("future/invalid range should be rejected: %d", w.Code)
 	}
 }
+
+func TestPersonalCorporationTaxRankingValidatesRangeAndReturnsItems(t *testing.T) {
+	from := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+	until := time.Now().UTC().Format(time.RFC3339)
+	called := false
+	h := Handler{
+		User: func(*http.Request) string { return "admin" },
+		CorporationPersonalTaxRanking: func(_ context.Context, actor string, id int64, gotFrom, gotUntil time.Time) ([]TaxRankingRow, error) {
+			called = true
+			if actor != "admin" || id != 10 || gotFrom.IsZero() || gotUntil.Before(gotFrom) {
+				t.Fatalf("unexpected tax ranking scope: %q %d %s %s", actor, id, gotFrom, gotUntil)
+			}
+			return []TaxRankingRow{{Nickname: "舰队昵称", Tax: "123.45"}}, nil
+		},
+	}
+	w := httptest.NewRecorder()
+	h.personalCorporationTaxRanking(w, httptest.NewRequest("GET", "/?corporation_id=10&from="+from+"&until="+until, nil))
+	if w.Code != 200 || !called || !strings.Contains(w.Body.String(), `"nickname":"舰队昵称"`) || !strings.Contains(w.Body.String(), `"tax":"123.45"`) {
+		t.Fatalf("%d %t %s", w.Code, called, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	h.personalCorporationTaxRanking(w, httptest.NewRequest("GET", "/?corporation_id=10&from="+from+"&until=2000-01-01T00%3A00%3A00Z", nil))
+	if w.Code != 400 {
+		t.Fatalf("future/invalid range should be rejected: %d", w.Code)
+	}
+}

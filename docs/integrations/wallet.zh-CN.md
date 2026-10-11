@@ -65,4 +65,6 @@ EVE 私有 store 保存 `eve_wallet_observations` / `eve_wallet_cursors`；walle
 
 运营面板补充：成员收入变化使用 `GET /api/v1/wallet/personal-corporation-income-trend`，按当前军团有效绑定角色的本地钱包快照聚合 UTC 月度收入、支出和有收入成员数，供近六个月趋势展示。服务端不发起 ESI 请求，重复同步只取最新观察。
 
+运营面板税收排行使用 `GET /api/v1/wallet/personal-corporation-tax-ranking?corporation_id=...&from=...&until=...`，在同一有效角色范围内筛选个人钱包流水的 `tax_receiver_id` 为当前军团且 `tax` 为正的记录，按流水快照去重后按本站账号合并多个角色，返回交税前十名的账号昵称和税额。昵称缺失时宿主回退主角色名或绑定角色名；接口只读本地快照，继续复核管理员成员读取范围、当前军团归属、凭据所有权和钱包 scope，不新增迁移或 ESI scope。
+
 运营面板财务卡片使用 `GET /api/v1/wallet/corporation-finance-trend?owner_id=...&from=...&until=...` 获取授权军团分部的月度收入、支出、税收和净变化。前端只使用军团钱包余额作为总额，税收取当前 UTC 月，并分别展示近六个月钱包净变化趋势和税收趋势；金额保持十进制字符串，接口只读本地快照并复用军团钱包权限检查。

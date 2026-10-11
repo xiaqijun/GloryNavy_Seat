@@ -25,6 +25,12 @@ type Owner struct {
 	Journal      bool   `json:"journal"`
 	Transactions bool   `json:"transactions"`
 }
+
+type TaxRankingRow struct {
+	Nickname string `json:"nickname"`
+	Tax      string `json:"tax"`
+}
+
 type Handler struct {
 	User                           func(*http.Request) string
 	Owners                         func(context.Context, string, string) ([]Owner, error)
@@ -36,6 +42,7 @@ type Handler struct {
 	CorporationFinanceTrend        func(context.Context, int64, []int, time.Time, time.Time) ([]eve.WalletFinanceTrend, error)
 	CorporationPersonalSummary     func(context.Context, string, int64, time.Time) (eve.WalletSummary, error)
 	CorporationPersonalIncomeTrend func(context.Context, string, int64, time.Time, time.Time) ([]eve.WalletIncomeTrend, error)
+	CorporationPersonalTaxRanking  func(context.Context, string, int64, time.Time, time.Time) ([]TaxRankingRow, error)
 	Names                          func(context.Context, []int64) (map[string]string, error)
 	Types                          interface {
 		TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error)
@@ -51,6 +58,7 @@ func (h Handler) Module() module.Definition {
 		{Method: "GET", Path: "/corporation-finance-trend", Permission: "wallet.self", Handler: http.HandlerFunc(h.corporationFinanceTrend)},
 		{Method: "GET", Path: "/personal-corporation-summary", Permission: "wallet.self", Handler: http.HandlerFunc(h.personalCorporationSummary)},
 		{Method: "GET", Path: "/personal-corporation-income-trend", Permission: "wallet.self", Handler: http.HandlerFunc(h.personalCorporationIncomeTrend)},
+		{Method: "GET", Path: "/personal-corporation-tax-ranking", Permission: "wallet.self", Handler: http.HandlerFunc(h.personalCorporationTaxRanking)},
 	}}
 }
 
@@ -191,6 +199,21 @@ func (h Handler) personalCorporationIncomeTrend(w http.ResponseWriter, r *http.R
 		return
 	}
 	rows, e := h.CorporationPersonalIncomeTrend(r.Context(), h.User(r), corporationID, from, until)
+	if e != nil {
+		walletError(w, r, e)
+		return
+	}
+	httpapi.Respond(w, r, 200, map[string]any{"items": rows})
+}
+
+func (h Handler) personalCorporationTaxRanking(w http.ResponseWriter, r *http.Request) {
+	from, until, rangeErr := parseTrendRange(r)
+	corporationID, parseErr := parseID(r.URL.Query().Get("corporation_id"), false)
+	if rangeErr != nil || parseErr != nil || h.CorporationPersonalTaxRanking == nil {
+		httpapi.Failure(w, r, 400, "invalid_request", "税收排行查询条件无效")
+		return
+	}
+	rows, e := h.CorporationPersonalTaxRanking(r.Context(), h.User(r), corporationID, from, until)
 	if e != nil {
 		walletError(w, r, e)
 		return

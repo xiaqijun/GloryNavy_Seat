@@ -81,6 +81,11 @@ type WalletIncomeTrendRow struct {
 	ActiveMembers int
 }
 
+type WalletTaxRankRow struct {
+	OwnerID int64
+	Tax     string
+}
+
 type WalletFinanceTrendRow struct {
 	Period  string
 	Income  string
@@ -337,6 +342,50 @@ func ReadCorporationPersonalWalletIncomeTrend(ctx context.Context, db DBTX, corp
 	for rows.Next() {
 		var row WalletIncomeTrendRow
 		if e = rows.Scan(&row.Period, &row.Income, &row.Expense, &row.ActiveMembers); e != nil {
+			return nil, e
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// ReadCorporationPersonalWalletTaxRanking returns taxes paid to the selected
+// corporation by currently eligible member characters. The caller groups
+// characters by site account so a multi-character member occupies one rank.
+func ReadCorporationPersonalWalletTaxRanking(ctx context.Context, db DBTX, corporationID int64, from, until time.Time, characterIDs []int64) ([]WalletTaxRankRow, error) {
+	if len(characterIDs) == 0 {
+		return []WalletTaxRankRow{}, nil
+	}
+	rows, e := db.Query(ctx, `WITH eligible AS (
+ SELECT c.character_id,c.owner_hash
+ FROM eve_credentials c
+ JOIN eve_character_profiles p ON p.character_id=c.character_id
+ WHERE c.character_id=ANY($3::bigint[]) AND p.corporation_id=$1 AND p.valid_until>now()
+   AND c.state<>'reauthorize' AND 'esi-wallet.read_character_wallet.v1'=ANY(c.scopes)
+ ), latest AS (
+ SELECT DISTINCT ON (w.owner_id,w.record_id,w.entry_key)
+   w.owner_id,
+   GREATEST(COALESCE(NULLIF(w.payload->>'tax','')::numeric,0),0) AS tax
+ FROM eve_wallet_observations w JOIN eligible e ON e.character_id=w.source_character_id
+ WHERE w.owner_kind='character' AND w.kind='journal'
+   AND w.occurred_at >= $2 AND w.occurred_at < $4
+   AND w.payload->>'tax_receiver_id'=$1::text
+   AND w.owner_hash=e.owner_hash
+ ORDER BY w.owner_id,w.record_id,w.entry_key,w.observed_at DESC
+ )
+ SELECT owner_id,COALESCE(sum(tax),0)::text
+ FROM latest
+ WHERE tax>0
+ GROUP BY owner_id
+ ORDER BY sum(tax) DESC,owner_id`, corporationID, from, characterIDs, until)
+	if e != nil {
+		return nil, e
+	}
+	defer rows.Close()
+	out := []WalletTaxRankRow{}
+	for rows.Next() {
+		var row WalletTaxRankRow
+		if e = rows.Scan(&row.OwnerID, &row.Tax); e != nil {
 			return nil, e
 		}
 		out = append(out, row)

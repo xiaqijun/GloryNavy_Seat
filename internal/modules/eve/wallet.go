@@ -434,6 +434,11 @@ type WalletIncomeTrend struct {
 	ActiveMembers int    `json:"active_members"`
 }
 
+type WalletTaxRank struct {
+	CharacterID int64
+	Tax         string
+}
+
 type WalletFinanceTrend struct {
 	Period  string `json:"period"`
 	Income  string `json:"income"`
@@ -499,6 +504,18 @@ func (s *AuthorizationService) WalletCorporationPersonalIncomeTrend(ctx context.
 	out := make([]WalletIncomeTrend, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, WalletIncomeTrend{Period: row.Period, Income: row.Income, Expense: row.Expense, ActiveMembers: row.ActiveMembers})
+	}
+	return out, nil
+}
+
+func (s *AuthorizationService) WalletCorporationPersonalTaxRanking(ctx context.Context, corporationID int64, from, until time.Time, characterIDs []int64) ([]WalletTaxRank, error) {
+	rows, e := store.ReadCorporationPersonalWalletTaxRanking(ctx, s.pool, corporationID, from, until, characterIDs)
+	if e != nil {
+		return nil, e
+	}
+	out := make([]WalletTaxRank, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, WalletTaxRank{CharacterID: row.OwnerID, Tax: row.Tax})
 	}
 	return out, nil
 }

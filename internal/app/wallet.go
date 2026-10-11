@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"crypto/subtle"
+	"math/big"
+
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/access"
 	"glorynavy.local/seat/internal/modules/eve"
@@ -10,49 +12,13 @@ import (
 	"glorynavy.local/seat/internal/modules/wallet"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 )
 
-func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.AuthorizationService, static *eve.StaticDataService, canRead func(context.Context, string, int64) (bool, error)) wallet.Handler {
+func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.AuthorizationService, static *eve.StaticDataService, canRead func(context.Context, string, int64) (bool, error), nickname func(context.Context, []string) (map[string]string, error)) wallet.Handler {
 	h := wallet.Handler{User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }, Data: reader.WalletData, Summaries: reader.WalletSummaries, CorporationSummary: reader.WalletCorporationSummary, CorporationFinanceTrend: reader.WalletCorporationFinanceTrend, Names: reader.WalletNames, Types: static}
-	h.CorporationPersonalSummary = func(ctx context.Context, actor string, corporationID int64, from time.Time) (eve.WalletSummary, error) {
-		allowed, e := acl.Can(ctx, actor, "access.members.read", access.Corporation{ID: corporationID})
-		if e != nil {
-			return eve.WalletSummary{}, e
-		}
-		if !allowed {
-			return eve.WalletSummary{}, pgx.ErrNoRows
-		}
-		characters, e := reader.ActivityCharacters(ctx, corporationID)
-		if e != nil {
-			return eve.WalletSummary{}, e
-		}
-		bindings, e := accounts.Bindings(ctx, nil, characters)
-		if e != nil {
-			return eve.WalletSummary{}, e
-		}
-		bound := make(map[int64]identity.Binding, len(bindings))
-		for _, binding := range bindings {
-			bound[binding.ID] = binding
-		}
-		ids := make([]int64, 0, len(characters))
-		for _, characterID := range characters {
-			binding, ok := bound[characterID]
-			if !ok {
-				continue
-			}
-			credential, e := reader.Get(ctx, characterID)
-			if e != nil {
-				return eve.WalletSummary{}, e
-			}
-			if credential.State == "reauthorize" || !slices.Contains(credential.Scopes, eve.CharacterWalletScope) || subtle.ConstantTimeCompare(credential.OwnerHash, binding.OwnerHash) != 1 {
-				continue
-			}
-			ids = append(ids, characterID)
-		}
-		return reader.WalletCorporationPersonalSummary(ctx, corporationID, from, ids)
-	}
-	h.CorporationPersonalIncomeTrend = func(ctx context.Context, actor string, corporationID int64, from, until time.Time) ([]eve.WalletIncomeTrend, error) {
+	readableCharacters := func(ctx context.Context, actor string, corporationID int64) ([]identity.Binding, error) {
 		allowed, e := acl.Can(ctx, actor, "access.members.read", access.Corporation{ID: corporationID})
 		if e != nil {
 			return nil, e
@@ -72,7 +38,7 @@ func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.
 		for _, binding := range bindings {
 			bound[binding.ID] = binding
 		}
-		ids := make([]int64, 0, len(characters))
+		out := make([]identity.Binding, 0, len(characters))
 		for _, characterID := range characters {
 			binding, ok := bound[characterID]
 			if !ok {
@@ -85,9 +51,97 @@ func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.
 			if credential.State == "reauthorize" || !slices.Contains(credential.Scopes, eve.CharacterWalletScope) || subtle.ConstantTimeCompare(credential.OwnerHash, binding.OwnerHash) != 1 {
 				continue
 			}
-			ids = append(ids, characterID)
+			out = append(out, binding)
+		}
+		return out, nil
+	}
+	h.CorporationPersonalSummary = func(ctx context.Context, actor string, corporationID int64, from time.Time) (eve.WalletSummary, error) {
+		bindings, e := readableCharacters(ctx, actor, corporationID)
+		if e != nil {
+			return eve.WalletSummary{}, e
+		}
+		ids := make([]int64, 0, len(bindings))
+		for _, binding := range bindings {
+			ids = append(ids, binding.ID)
+		}
+		return reader.WalletCorporationPersonalSummary(ctx, corporationID, from, ids)
+	}
+	h.CorporationPersonalIncomeTrend = func(ctx context.Context, actor string, corporationID int64, from, until time.Time) ([]eve.WalletIncomeTrend, error) {
+		bindings, e := readableCharacters(ctx, actor, corporationID)
+		if e != nil {
+			return nil, e
+		}
+		ids := make([]int64, 0, len(bindings))
+		for _, binding := range bindings {
+			ids = append(ids, binding.ID)
 		}
 		return reader.WalletCorporationPersonalIncomeTrend(ctx, corporationID, from, until, ids)
+	}
+	h.CorporationPersonalTaxRanking = func(ctx context.Context, actor string, corporationID int64, from, until time.Time) ([]wallet.TaxRankingRow, error) {
+		bindings, e := readableCharacters(ctx, actor, corporationID)
+		if e != nil {
+			return nil, e
+		}
+		ids := make([]int64, 0, len(bindings))
+		byCharacter := make(map[int64]identity.Binding, len(bindings))
+		for _, binding := range bindings {
+			ids = append(ids, binding.ID)
+			byCharacter[binding.ID] = binding
+		}
+		rows, e := reader.WalletCorporationPersonalTaxRanking(ctx, corporationID, from, until, ids)
+		if e != nil {
+			return nil, e
+		}
+		users := uniqueBindingUsers(bindings)
+		accountNames := map[string]string{}
+		if nickname != nil {
+			accountNames, _ = nickname(ctx, users)
+		}
+		mainNames, _ := accounts.MainCharacterNames(ctx, users)
+		type aggregate struct {
+			name string
+			tax  *big.Rat
+		}
+		byAccount := map[string]*aggregate{}
+		for _, row := range rows {
+			binding, ok := byCharacter[row.CharacterID]
+			if !ok {
+				continue
+			}
+			value, ok := new(big.Rat).SetString(row.Tax)
+			if !ok || value.Sign() <= 0 {
+				continue
+			}
+			entry := byAccount[binding.UserID]
+			if entry == nil {
+				entry = &aggregate{name: binding.Name, tax: new(big.Rat)}
+				byAccount[binding.UserID] = entry
+			}
+			entry.tax.Add(entry.tax, value)
+		}
+		out := make([]wallet.TaxRankingRow, 0, len(byAccount))
+		for userID, entry := range byAccount {
+			name := accountNames[userID]
+			if name == "" {
+				name = mainNames[userID]
+			}
+			if name == "" {
+				name = entry.name
+			}
+			out = append(out, wallet.TaxRankingRow{Nickname: name, Tax: entry.tax.FloatString(2)})
+		}
+		slices.SortFunc(out, func(a, b wallet.TaxRankingRow) int {
+			av, _ := new(big.Rat).SetString(a.Tax)
+			bv, _ := new(big.Rat).SetString(b.Tax)
+			if cmp := bv.Cmp(av); cmp != 0 {
+				return cmp
+			}
+			return strings.Compare(a.Nickname, b.Nickname)
+		})
+		if len(out) > 10 {
+			out = out[:10]
+		}
+		return out, nil
 	}
 	personalOwners := func(ctx context.Context, actor, member string) ([]wallet.Owner, error) {
 		subject := actor
@@ -200,4 +254,20 @@ func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.
 		return wallet.Owner{}, pgx.ErrNoRows
 	}
 	return h
+}
+
+func uniqueBindingUsers(bindings []identity.Binding) []string {
+	seen := make(map[string]struct{}, len(bindings))
+	out := make([]string, 0, len(bindings))
+	for _, binding := range bindings {
+		if binding.UserID == "" {
+			continue
+		}
+		if _, ok := seen[binding.UserID]; ok {
+			continue
+		}
+		seen[binding.UserID] = struct{}{}
+		out = append(out, binding.UserID)
+	}
+	return out
 }

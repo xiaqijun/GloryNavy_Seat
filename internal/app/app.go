@@ -640,7 +640,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	if slices.Contains(enabled, "identity") {
 		authorize = identityHandler.Authorize
 	}
-	walletModule := walletHandler(identityService, accessService, reader, staticData, canReadCharacter)
+	walletModule := walletHandler(identityService, accessService, reader, staticData, canReadCharacter, communityService.Nicknames)
 	if syncService != nil {
 		walletModule.Names = syncService.WalletNames
 	}

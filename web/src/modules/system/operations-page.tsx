@@ -306,6 +306,13 @@ function OperationsWorkspace({ user }: { user: string }) {
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+  const taxRanking = useQuery({
+    queryKey: ["operations", "personal-tax-ranking", user, corpId, incomeTrendFrom.toISOString().slice(0, 10)],
+    queryFn: ({ signal }) => walletApi.corporationPersonalTaxRanking(corpId, incomeTrendFrom.toISOString(), new Date().toISOString(), signal),
+    enabled: !!corpId && modules.has("wallet"),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
   const welfareContext = useQuery({
     queryKey: ["operations", "welfare-context", user, corpId],
     queryFn: ({ signal }) => welfareApi.context(corpId, signal),
@@ -352,6 +359,7 @@ function OperationsWorkspace({ user }: { user: string }) {
       finance.refetch(),
       financeTrend.refetch(),
       incomeTrend.refetch(),
+      taxRanking.refetch(),
       welfareContext.refetch(),
       welfareCases.refetch(),
       publicCorp.refetch(),
@@ -396,6 +404,10 @@ function OperationsWorkspace({ user }: { user: string }) {
         <Card className="operations-panel operations-member-income">
           <header><h2>{msg("成员收入变化")}</h2><Link to="/wallet" className="operations-link">{msg("查看钱包")} <ArrowUpRight size={15} aria-hidden="true" /></Link></header>
           {!modules.has("wallet") || incomeTrend.isError ? <Feedback error={incomeTrend.error ?? undefined} retry={() => void incomeTrend.refetch()} /> : !incomeTrend.data ? <Feedback /> : <MemberIncomeTrend points={incomeTrendPoints(incomeTrend.data.items)} />}
+        </Card>
+        <Card className="operations-panel operations-tax-ranking">
+          <header><h2>{msg("税收排行")}</h2><span className="operations-panel-note">{msg("近六个月 · 前十名")}</span></header>
+          {!modules.has("wallet") || taxRanking.isError ? <Feedback error={taxRanking.error ?? undefined} retry={() => void taxRanking.refetch()} /> : !taxRanking.data ? <Feedback /> : <TaxRanking rows={taxRanking.data.items} />}
         </Card>
         <Card className="operations-panel operations-pap">
           <header><h2>{msg("集结情况 · PAP结算")}</h2><Link to="/attendance?view=pap" className="operations-link">{msg("查看考勤")} <ArrowUpRight size={15} aria-hidden="true" /></Link></header>
@@ -497,6 +509,22 @@ function MemberIncomeTrend({ points }: { points: { label: string; value: number;
     <div className="operations-income-chart">
       <TrendChart label={msg("成员收入六个月趋势")} points={points} unit="M ISK" />
     </div>
+  </>;
+}
+
+function TaxRanking({ rows }: { rows: walletApi.TaxRankingPoint[] }) {
+  if (rows.length === 0) return <p className="operations-empty">{msg("暂无可用税收数据")}</p>;
+  return <>
+    <ol className="operations-tax-list">
+      {rows.slice(0, 10).map((row, index) => (
+        <li key={`${row.nickname}:${index}`}>
+          <span className="operations-tax-rank">{index + 1}</span>
+          <strong>{row.nickname}</strong>
+          <span className="operations-tax-amount">{compactISK(row.tax)}</span>
+        </li>
+      ))}
+    </ol>
+    <p className="operations-public-note">{msg("按账号昵称合并当前军团有效角色的交税金额")}</p>
   </>;
 }
 

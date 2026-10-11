@@ -210,7 +210,8 @@ a.operations-metric:hover {
 
 .operations-queue,
 .operations-finance,
-.operations-member-income {
+.operations-member-income,
+.operations-tax-ranking {
   grid-column: 1 / -1;
 }
 
@@ -218,6 +219,48 @@ a.operations-metric:hover {
   min-width: 0;
   padding-top: 12px;
   border-top: 1px solid var(--border);
+}
+
+.operations-tax-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tax-rank;
+}
+
+.operations-tax-list li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  border-top: 1px solid var(--border);
+}
+
+.operations-tax-rank {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.operations-tax-list strong,
+.operations-tax-amount {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.operations-tax-amount {
+  color: var(--primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.operations-tax-list + .operations-public-note {
+  margin: 0;
 }
 .operations-event-list {
   display: grid;
@@ -491,6 +534,7 @@ a.operations-metric:hover {
   .operations-finance-highlights { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
   .operations-finance-observed { grid-column: 1 / -1; justify-self: start; text-align: left; }
   .operations-finance-charts { grid-template-columns: minmax(0, 1fr); }
+  .operations-tax-list { grid-template-columns: minmax(0, 1fr); }
   .operations-event-list > a { grid-template-columns: minmax(0, 1fr) 18px; gap: 8px; }
   .operations-event-meta { grid-column: 1; justify-content: flex-start; }
 }

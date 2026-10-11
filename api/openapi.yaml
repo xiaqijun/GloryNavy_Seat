@@ -309,6 +309,54 @@ paths:
         '403': {description: Site administrator/member read capability required}
         '404': {description: Corporation member wallet scope or snapshots unavailable}
         '503': {description: Storage unavailable}
+  /api/v1/wallet/personal-corporation-tax-ranking:
+    get:
+      operationId: walletPersonalCorporationTaxRanking
+      summary: Site administrator top ten tax ranking for bound corporation members
+      description: Aggregates positive tax journal snapshots received by the selected current corporation over the requested UTC range. Duplicate local observations are removed by wallet owner, record and entry key. Characters from the same site account are merged and returned using the account nickname, with a main-character fallback. No ESI network request and no corporation wallet data.
+      security: [{SessionCookie: []}]
+      parameters:
+        - name: corporation_id
+          in: query
+          required: true
+          schema: {type: string, pattern: '^[1-9][0-9]*$'}
+        - name: from
+          in: query
+          required: true
+          schema: {type: string, format: date-time}
+          description: Inclusive start; at most 370 days before until
+        - name: until
+          in: query
+          required: true
+          schema: {type: string, format: date-time}
+          description: Exclusive end; cannot be in the future
+      responses:
+        '200':
+          description: Up to ten account-level tax totals; decimal ISK values are strings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        maxItems: 10
+                        items:
+                          type: object
+                          required: [nickname, tax]
+                          properties:
+                            nickname: {type: string}
+                            tax: {type: string}
+        '400': {description: Invalid range or corporation ID}
+        '401': {description: No active session}
+        '403': {description: Site administrator/member read capability required}
+        '404': {description: Corporation member wallet scope or snapshots unavailable}
+        '503': {description: Storage unavailable}
   /api/v1/wallet/records:
     {"get":{"operationId":"walletRecords","summary":"Read authorized wallet observations with stable 50-row keyset pagination","description":"Corporation reads require category and division capabilities. Personal reads check active owner binding/scopes and current administrator when reading other members. Repeated journal IDs with different payloads remain separate observations; do not infer a sum or a payment completion. Public participant names may use a bounded ESI batch; wallet records are local.","security":[{"SessionCookie":[]}],"parameters":[{"name":"owner_kind","in":"query","required":true,"schema":{"type":"string","enum":["character","corporation"]}},{"name":"owner_id","in":"query","required":true,"schema":{"type":"string","pattern":"^[1-9][0-9]*$"}},{"name":"division","in":"query","required":false,"schema":{"type":"integer","minimum":0,"maximum":7},"description":"Required 1–7 for corporation; 0 for character"},{"name":"part","in":"query","required":true,"schema":{"type":"string","enum":["balance","journal","transactions","divisions"]}},{"name":"before","in":"query","required":false,"schema":{"type":"string","pattern":"^[1-9][0-9]*(\\.[a-f0-9]{32})?$"},"description":"Opaque next_cursor from previous page; journal cursor includes payload fingerprint"},{"name":"id","in":"query","required":false,"schema":{"type":"string","pattern":"^[1-9][0-9]*$"}},{"name":"party_id","in":"query","required":false,"schema":{"type":"string","pattern":"^[1-9][0-9]*$"}},{"name":"from","in":"query","required":false,"schema":{"type":"string","format":"date-time"},"description":"Inclusive"},{"name":"until","in":"query","required":false,"schema":{"type":"string","format":"date-time"},"description":"Exclusive"},{"name":"search","in":"query","required":false,"schema":{"type":"string","maxLength":200},"description":"Literal description/reason search or exact record ID"},{"name":"ref_type","in":"query","required":false,"schema":{"type":"string","maxLength":100},"description":"Exact official ESI journal reference type"},{"name":"direction","in":"query","required":false,"schema":{"type":"string","enum":["in","out","buy","sell"]},"description":"in/out for journal; buy/sell for market transactions"}],"responses":{"200":{"description":"Local observations; no game payment or reimbursement mutation","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["items","names","next_cursor"],"properties":{"items":{"type":"array","maxItems":50,"items":{"$ref":"#/components/schemas/WalletRecord"}},"names":{"type":"object","additionalProperties":{"type":"string"}},"next_cursor":{"type":"string"}}}}}}}},"400":{"description":"Invalid query"},"401":{"description":"No active session"},"403":{"description":"Profile or capability denied"},"404":{"description":"Owner, binding, scope or division unavailable"},"503":{"description":"Storage unavailable"}}}}
   /api/v1/welfare/losses:
