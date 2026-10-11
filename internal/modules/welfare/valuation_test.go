@@ -83,7 +83,11 @@ func TestValuationApplyRefreshApproveAuditAndReplay(t *testing.T) {
 		if len(items) != 3 || items[0].TypeID != loss.ShipTypeID || items[0].Quantity != 1 || items[1].Quantity != 5 || items[2].Quantity != 7 {
 			t.Fatalf("lost cargo/dropped/hull: %+v", items)
 		}
-		return market.Appraisal{Complete: complete, RatioBPS: 8000, Adjusted: market.Amounts{Mid: "1000.01"}}, 2, nil
+		mid := "0"
+		if complete {
+			mid = "1000.01"
+		}
+		return market.Appraisal{Complete: complete, RatioBPS: 8000, Adjusted: market.Amounts{Mid: mid}}, 2, nil
 	}
 	apply := Command{Action: "apply", CorporationID: 10, Kind: "solo", RequestKey: key(501), Detail: Detail{CharacterID: 123, KillmailID: 987, ShipTypeID: 17715, SyncedLoss: true, Description: "PVP 损失", Evidence: "同步击毁报告", Valuation: &Valuation{State: "ready", AmountMinor: 1}}}
 	b, err := s.Execute(ctx, userID, apply)
@@ -165,6 +169,18 @@ func TestValuationApplyRefreshApproveAuditAndReplay(t *testing.T) {
 	refresh.RequestKey = key(504)
 	if _, err = s.Execute(ctx, userID, refresh); !errors.Is(err, ErrConflict) {
 		t.Fatal("approved repriced", err)
+	}
+}
+
+func TestValuationSkipsUnpricedMarketItems(t *testing.T) {
+	loss := valuationLoss()
+	s := &Service{EstimateLoss: func(context.Context, []market.Item) (market.Appraisal, int64, error) {
+		return market.Appraisal{Complete: false, RatioBPS: 10000, Adjusted: market.Amounts{Mid: "1234.56"}}, 3, nil
+	}}
+	d := Detail{CharacterID: 123, ShipTypeID: loss.ShipTypeID, KillmailID: loss.ID, SyncedLoss: true, LossEvidence: &loss}
+	v := s.valuate(context.Background(), userID, d)
+	if v.State != "ready" || v.AmountMinor != 123456 || v.SettingsVersion != 3 || v.Reason != "部分物品缺少价格，已跳过缺价物品" {
+		t.Fatalf("partial quote was not accepted with an explicit skip reason: %+v", v)
 	}
 }
 

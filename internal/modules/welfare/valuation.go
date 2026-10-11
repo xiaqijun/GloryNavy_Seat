@@ -134,16 +134,19 @@ func (s *Service) valuate(ctx context.Context, actor string, d Detail) *Valuatio
 		return v
 	}
 	v.Market, v.SettingsVersion = &a, version
-	if !a.Complete {
-		v.State, v.Reason = "incomplete", "部分物品缺少双边报价，不能按小计核准"
-		return v
-	}
 	n, ok := minorPrice(a.Adjusted.Mid)
 	if !ok {
-		v.Reason = "折算金额为零或超出核价范围"
+		if !a.Complete {
+			v.State, v.Reason = "incomplete", "没有可用价格的物品，需人工核价"
+		} else {
+			v.Reason = "折算金额为零或超出核价范围"
+		}
 		return v
 	}
-	v.State, v.Reason, v.AmountMinor = "ready", "", n
+	v.State, v.AmountMinor = "ready", n
+	if !a.Complete {
+		v.Reason = "部分物品缺少价格，已跳过缺价物品"
+	}
 	return v
 }
 

@@ -2,10 +2,10 @@
 
 正式发布与发布前开发记录分开维护。生产验收详情见 `docs/project-status.md`。
 
-## v0.1.0-welfare-valuation-state-20261011 — 2026-10-11
+## v0.1.0-welfare-valuation-skip-missing-20261011 — 2026-10-11
 
 - 福利补损核价状态在审批中心和福利详情中按实际状态显示：待核价、报价不完整、核价失败；不再把已完成但缺少市场双边报价的案件误显示为“待核价”。
-- 前端接受并展示初始 `valuation.state=pending`，保留“重新核价”与人工核价路径；无数据库或 River 迁移。
+- 自动核价跳过没有可用中间价的物品，使用其余物品继续计算；全部物品缺价时仍转人工核价。前端接受并展示初始 `valuation.state=pending`，无数据库或 River 迁移。
 
 ## v0.1.0-approval-detail-fast-20261010-r2 — 2026-10-10
 
