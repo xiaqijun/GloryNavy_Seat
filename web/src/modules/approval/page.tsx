@@ -1195,7 +1195,9 @@ function SettlementDetail({
             <summary>{msg("物品明细")}</summary>
             <ul>
               {batch.items.map((item) => (
-                <li key={`${item.type_id}:${item.quantity}`}>#{item.type_id} × {item.quantity}</li>
+                <li key={`${item.type_id}:${item.quantity}`}>
+                  {item.name || `#${item.type_id}`} × {item.quantity}
+                </li>
               ))}
             </ul>
           </details>

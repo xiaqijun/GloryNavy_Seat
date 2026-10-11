@@ -17,11 +17,12 @@ import (
 )
 
 // SettlementItemSummary is the frozen item multiset that the administrator
-// can copy into one in-game contract. Type IDs remain authoritative; names are
-// deliberately resolved by the existing SDE presentation layer.
+// can copy into one in-game contract. Type IDs remain authoritative; Name is
+// response decoration resolved by the existing SDE presentation layer.
 type SettlementItemSummary struct {
-	TypeID   int64 `json:"type_id,string"`
-	Quantity int64 `json:"quantity,string"`
+	TypeID   int64  `json:"type_id,string"`
+	Quantity int64  `json:"quantity,string"`
+	Name     string `json:"name,omitempty"`
 }
 
 const eveContractTitleLimit = 50

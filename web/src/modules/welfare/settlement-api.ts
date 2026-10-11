@@ -29,7 +29,7 @@ export type SettlementBatch = {
   settlement_reference?: string;
   account_id?: string;
   isk_minor: number;
-  items: { type_id: string; quantity: string }[];
+  items: { type_id: string; quantity: string; name?: string }[];
   recipient_ids: string[];
   recipient_names?: string[];
   delivery_status?: "awaiting_acceptance";

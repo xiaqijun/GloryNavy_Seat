@@ -29,10 +29,12 @@ func TestSettlementBatchForReadHidesLegacyAltRecipients(t *testing.T) {
 	s := &Service{
 		MainCharacterID:   func(context.Context, string) (int64, error) { return 456, nil },
 		MainCharacterName: func(context.Context, string) (string, error) { return "Main Pilot", nil },
+		Names:             &presentationNames{},
 	}
 	b := store.SettlementBatch{
 		AccountID:           "account-1",
 		SettlementReference: "BATCH-20260930-00000000-0000-4000-8000-000000000000",
+		Items:               []byte(`[{"type_id":"34","quantity":"10"}]`),
 		RecipientIDs:        []byte(`[123,456]`),
 	}
 	got, err := s.settlementBatchForRead(context.Background(), b)
@@ -45,8 +47,14 @@ func TestSettlementBatchForReadHidesLegacyAltRecipients(t *testing.T) {
 	if string(got.RecipientNames) != `["Main Pilot"]` {
 		t.Fatalf("recipient_names = %s, want [\"Main Pilot\"]", got.RecipientNames)
 	}
+	if string(got.Items) != `[{"type_id":"34","quantity":"10","name":"三钛合金"}]` {
+		t.Fatalf("items = %s, want localized item name", got.Items)
+	}
 	if string(b.RecipientIDs) != `[123,456]` {
 		t.Fatalf("stored snapshot mutated: %s", b.RecipientIDs)
+	}
+	if string(b.Items) != `[{"type_id":"34","quantity":"10"}]` {
+		t.Fatalf("stored item snapshot mutated: %s", b.Items)
 	}
 }
 

@@ -35,6 +35,9 @@ type SettlementBatchView struct {
 // untouched for audit purposes; the current main character is the only
 // recipient shown and used for a merged contract.
 func (s *Service) settlementBatchForRead(ctx context.Context, b store.SettlementBatch) (store.SettlementBatch, error) {
+	if err := s.decorateSettlementItems(ctx, &b); err != nil {
+		return b, err
+	}
 	if b.SettlementReference == "" || b.AccountID == "" {
 		return b, nil
 	}
@@ -63,6 +66,50 @@ func (s *Service) settlementBatchForRead(ctx context.Context, b store.Settlement
 		}
 	}
 	return b, nil
+}
+
+// decorateSettlementItems adds localized SDE names to the API projection.
+// The persisted snapshot and contract matching continue to use type IDs, so a
+// name lookup failure must not make an otherwise valid settlement unreadable.
+func (s *Service) decorateSettlementItems(ctx context.Context, b *store.SettlementBatch) error {
+	if s.Names == nil || len(b.Items) == 0 {
+		return nil
+	}
+	var items []SettlementItemSummary
+	if err := json.Unmarshal(b.Items, &items); err != nil {
+		return err
+	}
+	ids := make([]int64, 0, len(items))
+	seen := make(map[int64]bool, len(items))
+	for _, item := range items {
+		if item.TypeID > 0 && !seen[item.TypeID] {
+			ids = append(ids, item.TypeID)
+			seen[item.TypeID] = true
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	names, err := s.Names.TypeNames(ctx, ids)
+	if err != nil {
+		return nil
+	}
+	changed := false
+	for i := range items {
+		if name := names[items[i].TypeID].Name; name != "" {
+			items[i].Name = name
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	encoded, err := json.Marshal(items)
+	if err != nil {
+		return err
+	}
+	b.Items = encoded
+	return nil
 }
 
 func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input SettlementInput) (SettlementBatchView, error) {
