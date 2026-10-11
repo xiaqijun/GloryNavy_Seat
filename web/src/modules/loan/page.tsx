@@ -76,7 +76,7 @@ function ContributionRow({ csrf, item, pool, characters, onDone }: { csrf: strin
     catch (e) { setMessage(e instanceof Error ? e.message : msg("取消出借失败")); }
     finally { setBusy(false); }
   };
-  const sourceName = characters.find((character) => character.id === item.source_character_id)?.name ?? item.source_character_id;
+  const sourceName = item.source_character_name || characters.find((character) => character.id === item.source_character_id)?.name || item.source_character_id;
   const state = item.state === "funded" ? msg("已入池") : item.state === "pending" ? msg("待入金核验") : msg("已取消");
   const lender = item.lender_kind === "corporation" ? msg("军团出借") : msg("个人出借");
   const recipient = pool?.custodian_character_id;

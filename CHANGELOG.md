@@ -2,6 +2,10 @@
 
 正式发布与发布前开发记录分开维护。生产验收详情见 `docs/project-status.md`。
 
+## v0.1.0-loan-lender-name-20261011 — 2026-10-11
+
+- 出借记录接口批量返回出借角色名字，列表和详情优先显示名字；角色 ID 仅作为校验和名称不可用时的回退。无 Goose/River 新迁移。
+
 ## v0.1.0-loan-officer-name-20261011 — 2026-10-11
 
 - 贷款出借详情的合同复制字段改为显示贷款专员角色名字；接口新增 `custodian_character_name`，角色 ID 继续用于后台校验，名称不可用时页面回退显示 ID。无 Goose/River 新迁移。

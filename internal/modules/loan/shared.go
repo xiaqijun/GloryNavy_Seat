@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -174,20 +175,48 @@ func (s *Service) Contributions(ctx context.Context, actor string) ([]store.Cont
 		}
 	}
 	items, err := store.Contributions(ctx, s.db(), actor, admin)
-	if err != nil || admin || s.Contracts == nil {
-		return items, err
+	if err != nil {
+		return nil, err
 	}
 	// Contract snapshots are already synchronized by the EVE module. Reading
 	// contributions also advances pending deposits without requiring a UI action.
-	for i, item := range items {
-		if item.State != "pending" {
-			continue
-		}
-		if updated, verifyErr := s.AutoVerifyContribution(ctx, actor, item.ID, item.Version); verifyErr == nil {
-			items[i] = updated
+	if !admin && s.Contracts != nil {
+		for i, item := range items {
+			if item.State != "pending" {
+				continue
+			}
+			if updated, verifyErr := s.AutoVerifyContribution(ctx, actor, item.ID, item.Version); verifyErr == nil {
+				items[i] = updated
+			}
 		}
 	}
-	return items, nil
+	return s.decorateContributions(ctx, items), nil
+}
+
+func (s *Service) decorateContributions(ctx context.Context, items []store.Contribution) []store.Contribution {
+	if len(items) == 0 || s.CharacterNames == nil {
+		return items
+	}
+	ids := make([]int64, 0, len(items))
+	seen := make(map[int64]struct{}, len(items))
+	for _, item := range items {
+		if item.SourceCharacterID > 0 {
+			if _, ok := seen[item.SourceCharacterID]; !ok {
+				seen[item.SourceCharacterID] = struct{}{}
+				ids = append(ids, item.SourceCharacterID)
+			}
+		}
+	}
+	names, err := s.CharacterNames(ctx, ids)
+	if err != nil {
+		return items
+	}
+	for i := range items {
+		if name := strings.TrimSpace(names[items[i].SourceCharacterID]); name != "" {
+			items[i].SourceCharacterName = name
+		}
+	}
+	return items
 }
 func (s *Service) canContribute(ctx context.Context, actor string, c store.Contribution) error {
 	if actor != c.AccountID {

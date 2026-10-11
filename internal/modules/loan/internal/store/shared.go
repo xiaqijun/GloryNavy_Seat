@@ -12,6 +12,7 @@ type Contribution struct {
 	AccountID         string     `json:"account_id"`
 	LenderKind        string     `json:"lender_kind"`
 	SourceCharacterID int64      `json:"source_character_id,string"`
+	SourceCharacterName string   `json:"source_character_name,omitempty"`
 	CorporationID     *int64     `json:"corporation_id,string"`
 	AmountMinor       int64      `json:"amount_minor"`
 	State             string     `json:"state"`

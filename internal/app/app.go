@@ -662,15 +662,16 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
 		}
 		return out, err
-	}, CharacterName: func(ctx context.Context, id int64) (string, error) {
-		rows, err := identityService.Bindings(ctx, nil, []int64{id})
+	}, CharacterNames: func(ctx context.Context, ids []int64) (map[int64]string, error) {
+		rows, err := identityService.Bindings(ctx, nil, ids)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		if len(rows) == 0 {
-			return "", pgx.ErrNoRows
+		names := make(map[int64]string, len(rows))
+		for _, row := range rows {
+			names[row.ID] = row.Name
 		}
-		return rows[0].Name, nil
+		return names, nil
 	}, IsAdministrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts,
 		AccountForCharacter: func(ctx context.Context, characterID int64) (string, error) {
 			// Resolve only an active binding. A historical or revoked character
