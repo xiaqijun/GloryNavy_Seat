@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-approval-applicant-nickname-20261012 — 2026-10-12
+
+已发布来源提交 `844e1c8`。审批中心申请人列表和筛选改用账号昵称投影，未设置昵称时回退来源名称；无 Goose/River 新迁移。应用机与公网静态站点已原子切换，应用 `active/ready`、匿名审批接口 401、首页 200 和边缘 `nginx -t` 均已复核。
+
 ## v0.1.0-approval-detail-contract-20261011-r4 — 2026-10-11
 
 应用机将切换至 r4，修复审批详情 `actions: null` 导致前端响应格式校验失败的问题；详情统一保证 `actions` 为数组、`payload` 为空时为对象。公网静态站点继续使用 r3，无 Goose/River 新迁移。审批模块测试通过。
