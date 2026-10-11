@@ -98,6 +98,18 @@ func (s *Service) ActiveCharacters(ctx context.Context, user string) ([]OwnedCha
 	}
 	return result, nil
 }
+
+func (s *Service) AllActiveCharacters(ctx context.Context) ([]OwnedCharacter, error) {
+	rows, err := store.New(s.pool).AllActiveCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]OwnedCharacter, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, OwnedCharacter{Name: row.Name, ID: row.CharacterID})
+	}
+	return result, nil
+}
 func (s *Service) UserForCharacter(ctx context.Context, id int64) (string, error) {
 	user, err := store.New(s.pool).UserForCharacter(ctx, id)
 	return user.String(), err

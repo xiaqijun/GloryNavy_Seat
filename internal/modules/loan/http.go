@@ -105,10 +105,14 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	canManage := false
+	managerCharacters := []Character{}
 	if len(p) > 0 {
 		canManage, _ = h.Service.CanManageSharedPool(r.Context(), u)
+		if canManage && h.Service.ManageCharacters != nil {
+			managerCharacters, _ = h.Service.ManageCharacters(r.Context())
+		}
 	}
-	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage}, nil)
+	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "custodian_characters": managerCharacters}, nil)
 }
 func (h Handler) credit(w http.ResponseWriter, r *http.Request) {
 	c, e := h.Service.Credit(r.Context(), h.User(r))

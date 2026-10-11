@@ -662,6 +662,13 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
 		}
 		return out, err
+	}, ManageCharacters: func(ctx context.Context) ([]loan.Character, error) {
+		rows, err := identityService.AllActiveCharacters(ctx)
+		out := make([]loan.Character, 0, len(rows))
+		for _, row := range rows {
+			out = append(out, loan.Character{ID: row.ID, Name: row.Name})
+		}
+		return out, err
 	}, CharacterNames: func(ctx context.Context, ids []int64) (map[int64]string, error) {
 		rows, err := identityService.Bindings(ctx, nil, ids)
 		if err != nil {

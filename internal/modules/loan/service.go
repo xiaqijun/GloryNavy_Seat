@@ -82,6 +82,7 @@ func (a ContractAdapter) Claim(ctx context.Context, tx pgx.Tx, id int64, module 
 type Service struct {
 	Pool                *pgxpool.Pool
 	Characters          func(context.Context, string) ([]Character, error)
+	ManageCharacters    func(context.Context) ([]Character, error)
 	CharacterNames      func(context.Context, []int64) (map[int64]string, error)
 	CanManagePool       func(context.Context, string, string, int64) (bool, error)
 	IsAdministrator     func(context.Context, string) (bool, error)
