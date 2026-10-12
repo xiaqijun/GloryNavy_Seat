@@ -82,7 +82,7 @@
 }
 .loan-dashboard-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
 .loan-dashboard-metrics > div,
@@ -168,6 +168,24 @@
 .loan-dashboard-panel {
   display: grid;
   gap: 16px;
+}
+.loan-credit-summary {
+  display: grid;
+  gap: 16px;
+}
+.loan-credit-summary > .loan-section-head {
+  align-items: end;
+}
+.loan-pool-private {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--background);
 }
 .loan-dashboard-factors .loan-section-head { align-items: center; }
 .loan-factor-grid {
@@ -334,11 +352,15 @@
   margin: 0;
   font-size: 16px;
 }
-.loan-action-bar {
+.loan-action-card {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  padding: 4px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
 }
 .loan-action-option {
   display: grid;
@@ -350,7 +372,7 @@
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--card);
+  background: var(--background);
 }
 .loan-action-option strong {
   display: block;
@@ -359,7 +381,7 @@
 .loan-action-option > [data-slot="button"] {
   flex-shrink: 0;
 }
-.loan-action-bar > .loan-form-message {
+.loan-action-card > .loan-form-message {
   grid-column: 1 / -1;
   margin: 0;
 }
@@ -619,10 +641,12 @@
   .loan-admin-grid {
     grid-template-columns: 1fr;
   }
+  .loan-dashboard-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 800px) {
   .loan-credit,
-  .loan-dashboard-metrics,
   .loan-credit-factors,
   .loan-form,
   .loan-application-form,
@@ -630,9 +654,10 @@
   .loan-contribution-form {
     grid-template-columns: 1fr;
   }
+  .loan-dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .loan-dashboard-overview { grid-template-columns: 1fr; }
   .loan-factor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .loan-action-bar {
+  .loan-action-card {
     grid-template-columns: 1fr;
     gap: 14px;
   }
@@ -656,6 +681,9 @@
   }
 }
 @media (max-width: 600px) {
+  .loan-dashboard-metrics {
+    grid-template-columns: 1fr;
+  }
   .loan-dashboard-limits,
   .loan-factor-grid { grid-template-columns: 1fr; }
 }
