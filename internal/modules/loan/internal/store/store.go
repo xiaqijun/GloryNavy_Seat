@@ -33,27 +33,35 @@ type Pool struct {
 }
 
 type Credit struct {
-	AccountID           string    `json:"account_id"`
-	Score               *int      `json:"score"`
-	TotalLimitMinor     int64     `json:"total_limit_minor"`
-	UnsecuredLimitMinor int64     `json:"unsecured_limit_minor"`
-	State               string    `json:"state"`
-	RuleVersion         string    `json:"rule_version"`
-	Reason              string    `json:"reason"`
-	Version             int64     `json:"version"`
-	EvaluatedAt         time.Time `json:"evaluated_at"`
-	SettledLoans        int       `json:"settled_loans"`
-	ActiveLoans         int       `json:"active_loans"`
-	DefaultedLoans      int       `json:"defaulted_loans"`
-	PaidInstallments    int       `json:"paid_installments"`
-	TotalInstallments   int       `json:"total_installments"`
-	OverdueInstallments int       `json:"overdue_installments"`
-	RepaymentPoints     int       `json:"repayment_points"`
-	LeveragePoints      int       `json:"leverage_points"`
-	SecurityPoints      int       `json:"security_points"`
-	PAPPoints           int       `json:"pap_points"`
-	AssetPoints         int       `json:"asset_points"`
-	Evidence            string    `json:"evidence"`
+	AccountID                   string    `json:"account_id"`
+	Score                       *int      `json:"score"`
+	TotalLimitMinor             int64     `json:"total_limit_minor"`
+	UnsecuredLimitMinor         int64     `json:"unsecured_limit_minor"`
+	State                       string    `json:"state"`
+	RuleVersion                 string    `json:"rule_version"`
+	Reason                      string    `json:"reason"`
+	Version                     int64     `json:"version"`
+	EvaluatedAt                 time.Time `json:"evaluated_at"`
+	SettledLoans                int       `json:"settled_loans"`
+	ActiveLoans                 int       `json:"active_loans"`
+	DefaultedLoans              int       `json:"defaulted_loans"`
+	PaidInstallments            int       `json:"paid_installments"`
+	TotalInstallments           int       `json:"total_installments"`
+	OverdueInstallments         int       `json:"overdue_installments"`
+	RepaymentPoints             int       `json:"repayment_points"`
+	LeveragePoints              int       `json:"leverage_points"`
+	SecurityPoints              int       `json:"security_points"`
+	PAPPoints                   int       `json:"pap_points"`
+	CorporationAttendancePoints int       `json:"corporation_attendance_points"`
+	AllianceFulfillmentPoints   int       `json:"alliance_fulfillment_points"`
+	CorporationAttendanceBPS    int32     `json:"corporation_attendance_bps"`
+	CorporationEligibleEvents   int64     `json:"corporation_eligible_events"`
+	CorporationAttendedEvents   int64     `json:"corporation_attended_events"`
+	AllianceFulfillmentBPS      int32     `json:"alliance_fulfillment_bps"`
+	AllianceEligibleMonths      int64     `json:"alliance_eligible_months"`
+	AllianceFulfilledMonths     int64     `json:"alliance_fulfilled_months"`
+	AssetPoints                 int       `json:"asset_points"`
+	Evidence                    string    `json:"evidence"`
 }
 
 type CreditSignals struct {

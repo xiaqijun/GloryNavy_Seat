@@ -39,6 +39,16 @@ func minInt(a, b int) int {
 	return b
 }
 
+func scoreRateBPS(rate int32, max int) int {
+	if rate <= 0 || max <= 0 {
+		return 0
+	}
+	if rate >= 10000 {
+		return max
+	}
+	return minInt(max, int((int64(rate)*int64(max)+5000)/10000))
+}
+
 type AuthConfig struct {
 	Origin, ClientID, ClientSecret, TokenKey, ESIUserAgent string
 	SDEAutoUpdate                                          bool
@@ -667,17 +677,30 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}, ManageCharacters: func(ctx context.Context) ([]loan.Character, error) {
 		rows, err := identityService.AllActiveCharacters(ctx)
 		out := make([]loan.Character, 0, len(rows))
-		if err != nil { return out, err }
+		if err != nil {
+			return out, err
+		}
 		ids := make([]int64, 0, len(rows))
-		for _, row := range rows { ids = append(ids, row.ID) }
+		for _, row := range rows {
+			ids = append(ids, row.ID)
+		}
 		bindings, err := identityService.Bindings(ctx, nil, ids)
-		if err != nil { return out, err }
+		if err != nil {
+			return out, err
+		}
 		users := make([]string, 0, len(bindings))
-		for _, binding := range bindings { users = append(users, binding.UserID) }
+		for _, binding := range bindings {
+			users = append(users, binding.UserID)
+		}
 		nicknames, _ := communityService.Nicknames(ctx, users)
 		for _, row := range rows {
 			accountID := ""
-			for _, binding := range bindings { if binding.ID == row.ID { accountID = binding.UserID; break } }
+			for _, binding := range bindings {
+				if binding.ID == row.ID {
+					accountID = binding.UserID
+					break
+				}
+			}
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name, AccountID: accountID, Nickname: nicknames[accountID]})
 		}
 		return out, nil
@@ -719,8 +742,18 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			if err != nil {
 				return out, nil
 			}
-			// PAP is a capped activity signal, never a repayment proxy.
-			out.PAPPoints = minInt(5, int(pap.Points/4))
+			// PAP is split into two bounded signals: local six-month activity
+			// attendance (3 points) and six-month alliance requirement
+			// fulfillment (2 points). Missing evidence stays neutral at zero.
+			out.CorporationAttendancePoints = scoreRateBPS(pap.CorporationAttendanceBPS, 3)
+			out.AllianceFulfillmentPoints = scoreRateBPS(pap.AllianceFulfillmentBPS, 2)
+			out.PAPPoints = minInt(5, out.CorporationAttendancePoints+out.AllianceFulfillmentPoints)
+			out.CorporationAttendanceBPS = pap.CorporationAttendanceBPS
+			out.CorporationEligibleEvents = pap.CorporationEligibleEvents
+			out.CorporationAttendedEvents = pap.CorporationAttendedEvents
+			out.AllianceFulfillmentBPS = pap.AllianceFulfillmentBPS
+			out.AllianceEligibleMonths = pap.AllianceEligibleMonths
+			out.AllianceFulfilledMonths = pap.AllianceFulfilledMonths
 			out.PAPAvailable = pap.Complete
 			out.PAPSnapshotID = pap.SnapshotID
 			out.EvidenceCutoff = pap.ObservedAt

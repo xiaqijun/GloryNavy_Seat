@@ -15,14 +15,22 @@ const creditRuleVersion = "system-v2"
 // CreditEvidence is deliberately narrow. Authorization state and account age
 // are access/data freshness gates, never score inputs.
 type CreditEvidence struct {
-	PAPPoints       int
-	AssetPoints     int
-	AssetValueMinor int64
-	PAPAvailable    bool
-	AssetAvailable  bool
-	PAPSnapshotID   string
-	AssetSnapshotID string
-	EvidenceCutoff  time.Time
+	PAPPoints                   int
+	CorporationAttendancePoints int
+	AllianceFulfillmentPoints   int
+	CorporationAttendanceBPS    int32
+	CorporationEligibleEvents   int64
+	CorporationAttendedEvents   int64
+	AllianceFulfillmentBPS      int32
+	AllianceEligibleMonths      int64
+	AllianceFulfilledMonths     int64
+	AssetPoints                 int
+	AssetValueMinor             int64
+	PAPAvailable                bool
+	AssetAvailable              bool
+	PAPSnapshotID               string
+	AssetSnapshotID             string
+	EvidenceCutoff              time.Time
 }
 
 func clampScore(v, max int) int {
@@ -36,9 +44,9 @@ func clampScore(v, max int) int {
 }
 
 // assessCredit applies the published weights: repayment 55, leverage 20,
-// security history 10, PAP 5 and asset scale 10. Missing PAP/assets are
-// neutral and never negative. Account age and authorization are absent by
-// construction.
+// security history 10, PAP 5 (corporation attendance 3 plus alliance
+// fulfillment 2) and asset scale 10. Missing PAP/assets are neutral and never
+// negative. Account age and authorization are absent by construction.
 func assessCredit(account string, signals store.CreditSignals, maxPrincipal int64, now time.Time) store.Credit {
 	return assessCreditWithEvidence(account, signals, CreditEvidence{}, maxPrincipal, now)
 }
@@ -80,14 +88,17 @@ func assessCreditWithEvidence(account string, signals store.CreditSignals, evide
 	if evidenceCutoff.IsZero() {
 		evidenceCutoff = now
 	}
-	reason := fmt.Sprintf("system-evaluated-v2: repayment=%d/55 leverage=%d/20 security=%d/10 pap=%d/5 assets=%d/10 settled=%d active=%d defaulted=%d paid_installments=%d/%d overdue=%d", repayment, leverage, security, pap, assets, signals.SettledLoans, signals.ActiveLoans, signals.DefaultedLoans, signals.PaidInstallments, signals.TotalInstallments, signals.OverdueInstallments)
+	reason := fmt.Sprintf("system-evaluated-v2: repayment=%d/55 leverage=%d/20 security=%d/10 corporation_attendance=%d/3 alliance_pap_fulfillment=%d/2 assets=%d/10 settled=%d active=%d defaulted=%d paid_installments=%d/%d overdue=%d", repayment, leverage, security, evidence.CorporationAttendancePoints, evidence.AllianceFulfillmentPoints, assets, signals.SettledLoans, signals.ActiveLoans, signals.DefaultedLoans, signals.PaidInstallments, signals.TotalInstallments, signals.OverdueInstallments)
 	return store.Credit{
 		AccountID: account, Score: &score, TotalLimitMinor: total, UnsecuredLimitMinor: unsecured,
 		State: state, RuleVersion: creditRuleVersion, Reason: reason, Version: 1, EvaluatedAt: now,
 		SettledLoans: signals.SettledLoans, ActiveLoans: signals.ActiveLoans, DefaultedLoans: signals.DefaultedLoans,
 		PaidInstallments: signals.PaidInstallments, TotalInstallments: signals.TotalInstallments, OverdueInstallments: signals.OverdueInstallments,
-		RepaymentPoints: repayment, LeveragePoints: leverage, SecurityPoints: security, PAPPoints: pap, AssetPoints: assets,
-		Evidence: evidenceSummary(evidence, evidenceCutoff),
+		RepaymentPoints: repayment, LeveragePoints: leverage, SecurityPoints: security, PAPPoints: pap, CorporationAttendancePoints: evidence.CorporationAttendancePoints, AllianceFulfillmentPoints: evidence.AllianceFulfillmentPoints,
+		CorporationAttendanceBPS: evidence.CorporationAttendanceBPS, CorporationEligibleEvents: evidence.CorporationEligibleEvents, CorporationAttendedEvents: evidence.CorporationAttendedEvents,
+		AllianceFulfillmentBPS: evidence.AllianceFulfillmentBPS, AllianceEligibleMonths: evidence.AllianceEligibleMonths, AllianceFulfilledMonths: evidence.AllianceFulfilledMonths,
+		AssetPoints: assets,
+		Evidence:    evidenceSummary(evidence, evidenceCutoff),
 	}
 }
 
@@ -106,6 +117,8 @@ func evidenceSummary(e CreditEvidence, cutoff time.Time) string {
 		"pap_available": e.PAPAvailable, "asset_available": e.AssetAvailable,
 		"asset_value_minor": e.AssetValueMinor, "pap_snapshot_id": e.PAPSnapshotID,
 		"asset_snapshot_id": e.AssetSnapshotID, "evidence_cutoff": cutoff,
+		"corporation_attendance_bps": e.CorporationAttendanceBPS, "corporation_eligible_events": e.CorporationEligibleEvents, "corporation_attended_events": e.CorporationAttendedEvents,
+		"alliance_fulfillment_bps": e.AllianceFulfillmentBPS, "alliance_eligible_months": e.AllianceEligibleMonths, "alliance_fulfilled_months": e.AllianceFulfilledMonths,
 	})
 	return string(b)
 }
@@ -137,7 +150,7 @@ func (s *Service) recordCreditEvaluation(ctx context.Context, tx store.DBTX, c s
 	if c.Score == nil {
 		return nil
 	}
-	factors, _ := json.Marshal(map[string]int{"repayment": c.RepaymentPoints, "leverage": c.LeveragePoints, "security": c.SecurityPoints, "pap": c.PAPPoints, "assets": c.AssetPoints})
+	factors, _ := json.Marshal(map[string]int{"repayment": c.RepaymentPoints, "leverage": c.LeveragePoints, "security": c.SecurityPoints, "corporation_attendance": c.CorporationAttendancePoints, "alliance_pap_fulfillment": c.AllianceFulfillmentPoints, "pap": c.PAPPoints, "assets": c.AssetPoints})
 	returned, _ := json.Marshal(map[string]any{"reason": c.Reason, "evidence": c.Evidence})
 	_, err := store.RecordCreditEvaluation(ctx, tx, store.CreditEvaluation{AccountID: c.AccountID, PolicyVersion: c.RuleVersion, Score: *c.Score, TotalLimitMinor: c.TotalLimitMinor, UnsecuredLimitMinor: c.UnsecuredLimitMinor, State: c.State, FactorScores: factors, Evidence: returned, EvidenceCutoff: c.EvaluatedAt, EvaluatedAt: c.EvaluatedAt})
 	return err

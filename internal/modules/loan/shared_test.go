@@ -54,6 +54,21 @@ func TestAssessCreditAuxiliarySignalsAreCappedAndMissingIsNeutral(t *testing.T) 
 	}
 }
 
+func TestAssessCreditKeepsPAPSplitInEvaluation(t *testing.T) {
+	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
+	c := assessCreditWithEvidence("account", store.CreditSignals{}, CreditEvidence{
+		PAPPoints: 5, CorporationAttendancePoints: 3, AllianceFulfillmentPoints: 2,
+		CorporationAttendanceBPS: 8750, CorporationEligibleEvents: 8, CorporationAttendedEvents: 7,
+		AllianceFulfillmentBPS: 6667, AllianceEligibleMonths: 6, AllianceFulfilledMonths: 4,
+	}, 1_000_000, now)
+	if c.PAPPoints != 5 || c.CorporationAttendancePoints != 3 || c.AllianceFulfillmentPoints != 2 {
+		t.Fatalf("pap split=%+v", c)
+	}
+	if c.CorporationEligibleEvents != 8 || c.CorporationAttendedEvents != 7 || c.AllianceEligibleMonths != 6 || c.AllianceFulfilledMonths != 4 {
+		t.Fatalf("pap evidence counts=%+v", c)
+	}
+}
+
 func TestCoveredByHaircutAvoidsIntermediateOverflow(t *testing.T) {
 	if got := coveredByHaircut(9_000_000_000_000_000, 5000); got != 4_500_000_000_000_000 {
 		t.Fatalf("coveredByHaircut()=%d", got)
