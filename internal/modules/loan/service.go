@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/url"
 	"strconv"
 	"strings"
@@ -84,6 +85,7 @@ func (a ContractAdapter) Claim(ctx context.Context, tx pgx.Tx, id int64, module 
 type Service struct {
 	Pool                *pgxpool.Pool
 	Characters          func(context.Context, string) ([]Character, error)
+	GuaranteeCharacters func(context.Context) ([]Character, error)
 	ManageCharacters    func(context.Context) ([]Character, error)
 	CharacterNames      func(context.Context, []int64) (map[int64]string, error)
 	CanManagePool       func(context.Context, string, string, int64) (bool, error)
@@ -96,14 +98,85 @@ type Service struct {
 	IncomeEvidence      func(context.Context, string, time.Time) (IncomeEvidence, error)
 }
 
+// GuaranteeCandidates exposes public character names for invitation selection.
+// The account behind a character is resolved again when the invitation is
+// submitted, so this directory is never an authorization decision.
+func (s *Service) GuaranteeCandidates(ctx context.Context, actor string) ([]Character, error) {
+	if s.GuaranteeCharacters == nil || s.Characters == nil {
+		return nil, ErrRule
+	}
+	all, err := s.GuaranteeCharacters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	owned, err := s.Characters(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
+	exclude := make(map[int64]struct{}, len(owned))
+	for _, c := range owned {
+		exclude[c.ID] = struct{}{}
+	}
+	out := make([]Character, 0, len(all))
+	seen := make(map[int64]struct{}, len(all))
+	for _, c := range all {
+		if c.ID <= 0 || strings.TrimSpace(c.Name) == "" {
+			continue
+		}
+		if _, ok := exclude[c.ID]; ok {
+			continue
+		}
+		if _, ok := seen[c.ID]; ok {
+			continue
+		}
+		seen[c.ID] = struct{}{}
+		c.AccountID = ""
+		c.Nickname = ""
+		out = append(out, c)
+	}
+	return out, nil
+}
+
 type ApplicationInput struct {
 	PoolID              int64  `json:"pool_id"`
 	BorrowerCharacterID int64  `json:"borrower_character_id"`
 	PrincipalMinor      int64  `json:"principal_minor"`
-	InterestMinor       int64  `json:"interest_minor"`
+	// InterestMinor is retained for old clients but is ignored. New applications
+	// always use the current annual policy rate and store that rate on the case.
+	InterestMinor       int64  `json:"interest_minor,omitempty"`
 	InstallmentCount    int    `json:"installment_count"`
 	IntervalDays        int    `json:"interval_days"`
 	FirstDueAt          string `json:"first_due_at"`
+}
+
+const interestDayCountBasis = int64(365)
+
+func validLoanIntervalDays(days int) bool {
+	switch days {
+	case 1, 3, 7, 14, 30:
+		return true
+	default:
+		return false
+	}
+}
+
+// simpleAnnualInterest calculates fixed simple interest from an annual nominal
+// rate. The term is the requested number of repayment periods, including the
+// first period before the first due date. Integer arithmetic keeps ISK cents
+// deterministic and rounds only once at the end.
+func simpleAnnualInterest(principal int64, annualRateBPS, installmentCount, intervalDays int) (int64, error) {
+	if principal <= 0 || annualRateBPS < 0 || annualRateBPS > 10000 || installmentCount < 1 || intervalDays < 1 {
+		return 0, ErrInvalid
+	}
+	n := new(big.Int).Mul(big.NewInt(principal), big.NewInt(int64(annualRateBPS)))
+	n.Mul(n, big.NewInt(int64(installmentCount)*int64(intervalDays)))
+	d := big.NewInt(10000 * interestDayCountBasis)
+	n.Add(n, new(big.Int).Div(new(big.Int).Set(d), big.NewInt(2)))
+	n.Quo(n, d)
+	if !n.IsInt64() || n.Sign() < 0 {
+		return 0, ErrInvalid
+	}
+	return n.Int64(), nil
 }
 type ReviewInput struct {
 	State   string `json:"state"`
@@ -180,7 +253,7 @@ func (s *Service) CanManageSharedPool(ctx context.Context, actor string) (bool, 
 	return s.canManage(ctx, actor, p)
 }
 func (s *Service) CreateApplication(ctx context.Context, actor string, in ApplicationInput) (store.Case, error) {
-	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || in.IntervalDays < 1 || in.IntervalDays > 365 {
+	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || !validLoanIntervalDays(in.IntervalDays) {
 		return store.Case{}, ErrInvalid
 	}
 	first, e := time.Parse(time.RFC3339, in.FirstDueAt)
@@ -216,8 +289,8 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	if p.LenderKind == "personal" && p.LenderUserID != nil && *p.LenderUserID == actor {
 		return store.Case{}, ErrForbidden
 	}
-	// A pool must explicitly declare its amount and schedule bounds. There is no
-	// implicit interest, limit or haircut in the module.
+	// The pool declares amount and schedule bounds. Interest comes from the
+	// versioned annual policy and is frozen into this application below.
 	var cfg struct {
 		MinPrincipal    int64 `json:"min_principal_minor"`
 		MaxInstallments int   `json:"max_installments"`
@@ -228,18 +301,26 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	if in.PrincipalMinor < cfg.MinPrincipal || in.InstallmentCount > cfg.MaxInstallments {
 		return store.Case{}, ErrLimit
 	}
+	policy, e := store.ReadCreditPolicy(ctx, s.db())
+	if e != nil || !validCreditPolicy(policy) {
+		return store.Case{}, ErrRule
+	}
+	interest, e := simpleAnnualInterest(in.PrincipalMinor, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays)
+	if e != nil {
+		return store.Case{}, e
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return store.Case{}, e
 	}
 	defer tx.Rollback(ctx)
-	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, strconv.FormatInt(in.BorrowerCharacterID, 10), in.PrincipalMinor, in.InterestMinor, in.InstallmentCount, in.IntervalDays, first)
+	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, strconv.FormatInt(in.BorrowerCharacterID, 10), in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, first)
 	if e != nil {
 		return store.Case{}, e
 	}
 	rows := make([]store.Installment, 0, in.InstallmentCount)
 	pp, pr := in.PrincipalMinor/int64(in.InstallmentCount), in.PrincipalMinor%int64(in.InstallmentCount)
-	ip, ir := in.InterestMinor/int64(in.InstallmentCount), in.InterestMinor%int64(in.InstallmentCount)
+	ip, ir := interest/int64(in.InstallmentCount), interest%int64(in.InstallmentCount)
 	for n := 1; n <= in.InstallmentCount; n++ {
 		pc, ic := pp, ip
 		if n == in.InstallmentCount {
@@ -728,7 +809,7 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 	return out, nil
 }
 func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in CollateralInput) (store.Collateral, error) {
-	if id <= 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 || in.ValuationMinor <= 0 || in.HaircutBPS < 1 || in.HaircutBPS > 10000 || in.CoveredMinor <= 0 {
+	if id <= 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 || in.ValuationMinor <= 0 || in.HaircutBPS < 1 || in.HaircutBPS > 10000 {
 		return store.Collateral{}, ErrInvalid
 	}
 	c, e := store.GetCase(ctx, s.db(), id)
@@ -737,6 +818,22 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	}
 	if actor != c.BorrowerAccountID || c.State == "settled" || c.State == "rejected" || c.State == "cancelled" || c.State == "defaulted" {
 		return store.Collateral{}, ErrForbidden
+	}
+	p, e := store.GetPool(ctx, s.db(), c.PoolID)
+	if e != nil {
+		return store.Collateral{}, e
+	}
+	var cfg struct {
+		CollateralHaircutBPS int `json:"collateral_haircut_bps"`
+	}
+	if json.Unmarshal(p.Config, &cfg) != nil || cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 || in.HaircutBPS != cfg.CollateralHaircutBPS {
+		return store.Collateral{}, ErrRule
+	}
+	if in.CoveredMinor == 0 {
+		in.CoveredMinor = coveredByHaircut(in.ValuationMinor, in.HaircutBPS)
+	}
+	if in.CoveredMinor <= 0 {
+		return store.Collateral{}, ErrInvalid
 	}
 	if in.CoveredMinor > coveredByHaircut(in.ValuationMinor, in.HaircutBPS) {
 		return store.Collateral{}, ErrCoverage
@@ -747,10 +844,6 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	}
 	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
 		return store.Collateral{}, ErrCoverage
-	}
-	p, e := store.GetPool(ctx, s.db(), c.PoolID)
-	if e != nil {
-		return store.Collateral{}, e
 	}
 	if s.Contracts == nil {
 		return store.Collateral{}, ErrRule

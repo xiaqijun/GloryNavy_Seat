@@ -105,6 +105,7 @@ type Case struct {
 	BorrowerCharacterID int64      `json:"borrower_character_id,string"`
 	PrincipalMinor      int64      `json:"principal_minor"`
 	InterestMinor       int64      `json:"interest_minor"`
+	InterestRateBPS     int        `json:"interest_rate_bps"`
 	TotalDueMinor       int64      `json:"total_due_minor"`
 	InstallmentCount    int        `json:"installment_count"`
 	IntervalDays        int        `json:"interval_days"`
@@ -268,9 +269,9 @@ func SecurityAccounts(ctx context.Context, db DBTX, caseID int64) ([]string, err
 	return out, rows.Err()
 }
 
-func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, count, interval int, first time.Time) (Case, error) {
+func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, rateBPS, count, interval int, first time.Time) (Case, error) {
 	var c Case
-	err := db.QueryRow(ctx, `INSERT INTO loan_cases(public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,total_due_minor,installment_count,interval_days,first_due_at) VALUES($1,$2,$3::uuid,$4,$5,$6,$5+$6,$7,$8,$9) RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, public, poolID, borrower, character, principal, interest, count, interval, first).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
+	err := db.QueryRow(ctx, `INSERT INTO loan_cases(public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at) VALUES($1,$2,$3::uuid,$4,$5,$6,$7,$5+$6,$8,$9,$10) RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, public, poolID, borrower, character, principal, interest, rateBPS, count, interval, first).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
 	return c, err
 }
 
@@ -285,12 +286,12 @@ func CreateInstallments(ctx context.Context, db DBTX, caseID int64, rows []Insta
 
 func GetCase(ctx context.Context, db DBTX, id int64) (Case, error) {
 	var c Case
-	err := db.QueryRow(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.id=$1`, id).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
+	err := db.QueryRow(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.interest_rate_bps,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.id=$1`, id).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
 	return c, err
 }
 
 func ListCases(ctx context.Context, db DBTX, account string, all bool) ([]Case, error) {
-	query := `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.borrower_account_id=$1::uuid OR p.lender_kind='personal' AND p.lender_user_id=$1::uuid ORDER BY c.created_at DESC`
+	query := `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.interest_rate_bps,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.borrower_account_id=$1::uuid OR p.lender_kind='personal' AND p.lender_user_id=$1::uuid ORDER BY c.created_at DESC`
 	args := []any{account}
 	if all {
 		query = strings.Replace(query, "WHERE c.borrower_account_id=$1::uuid OR p.lender_kind='personal' AND p.lender_user_id=$1::uuid", "", 1)
@@ -304,7 +305,7 @@ func ListCases(ctx context.Context, db DBTX, account string, all bool) ([]Case, 
 	out := []Case{}
 	for rows.Next() {
 		var c Case
-		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -316,7 +317,7 @@ func ListCases(ctx context.Context, db DBTX, account string, all bool) ([]Case, 
 // projector. The central approval index applies reviewer corporation scope;
 // this function performs no actor authorization.
 func SnapshotCases(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) {
-	rows, err := db.Query(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at,coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM loan_audit WHERE case_id=c.id AND action='review'),'{}'::text[]),(c.state<>'submitted'),coalesce(a.audit_at,c.updated_at,c.created_at),coalesce(a.action,'') FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id LEFT JOIN LATERAL (SELECT created_at AS audit_at,action FROM loan_audit WHERE case_id=c.id AND action='review' ORDER BY id DESC LIMIT 1) a ON true ORDER BY c.id`)
+	rows, err := db.Query(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.interest_rate_bps,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at,coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM loan_audit WHERE case_id=c.id AND action='review'),'{}'::text[]),(c.state<>'submitted'),coalesce(a.audit_at,c.updated_at,c.created_at),coalesce(a.action,'') FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id LEFT JOIN LATERAL (SELECT created_at AS audit_at,action FROM loan_audit WHERE case_id=c.id AND action='review' ORDER BY id DESC LIMIT 1) a ON true ORDER BY c.id`)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +325,7 @@ func SnapshotCases(ctx context.Context, db DBTX) ([]ApprovalSnapshotRow, error) 
 	out := []ApprovalSnapshotRow{}
 	for rows.Next() {
 		var c ApprovalSnapshotRow
-		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt, &c.ProcessedBy, &c.History, &c.OccurredAt, &c.Action); err != nil {
+		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt, &c.ProcessedBy, &c.History, &c.OccurredAt, &c.Action); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -336,7 +337,7 @@ func ListCasesForCorporations(ctx context.Context, db DBTX, account string, corp
 	if len(corporations) == 0 {
 		return ListCases(ctx, db, account, false)
 	}
-	rows, err := db.Query(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.borrower_account_id=$1::uuid OR p.lender_kind='personal' AND p.lender_user_id=$1::uuid OR p.corporation_id=ANY($2::bigint[]) ORDER BY c.created_at DESC`, account, corporations)
+	rows, err := db.Query(ctx, `SELECT c.id,c.public_id,c.pool_id,p.lender_kind,p.lender_user_id,p.corporation_id,p.name,c.borrower_account_id,c.borrower_character_id,c.principal_minor,c.interest_minor,c.interest_rate_bps,c.total_due_minor,c.installment_count,c.interval_days,c.first_due_at,c.state,c.terms_version,c.version,c.reviewer_id,c.review_note,c.created_at,c.accepted_at,c.funded_at,c.settled_at FROM loan_cases c JOIN loan_pools p ON p.id=c.pool_id WHERE c.borrower_account_id=$1::uuid OR p.lender_kind='personal' AND p.lender_user_id=$1::uuid OR p.corporation_id=ANY($2::bigint[]) ORDER BY c.created_at DESC`, account, corporations)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +345,7 @@ func ListCasesForCorporations(ctx context.Context, db DBTX, account string, corp
 	out := []Case{}
 	for rows.Next() {
 		var c Case
-		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.PublicID, &c.PoolID, &c.LenderKind, &c.LenderUserID, &c.CorporationID, &c.PoolName, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -396,7 +397,7 @@ func Coverage(ctx context.Context, db DBTX, caseID int64) (int64, error) {
 
 func TransitionCase(ctx context.Context, db DBTX, id, version int64, state, actor, note string) (Case, error) {
 	var c Case
-	err := db.QueryRow(ctx, `UPDATE loan_cases SET state=$2,reviewer_id=$3::uuid,review_note=$4,version=version+1,updated_at=now(),accepted_at=CASE WHEN $2='approved' THEN now() ELSE accepted_at END,funded_at=CASE WHEN $2='active' THEN now() ELSE funded_at END,settled_at=CASE WHEN $2='settled' THEN now() ELSE settled_at END WHERE id=$1 AND version=$5 RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, id, state, actor, note, version).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
+	err := db.QueryRow(ctx, `UPDATE loan_cases SET state=$2,reviewer_id=$3::uuid,review_note=$4,version=version+1,updated_at=now(),accepted_at=CASE WHEN $2='approved' THEN now() ELSE accepted_at END,funded_at=CASE WHEN $2='active' THEN now() ELSE funded_at END,settled_at=CASE WHEN $2='settled' THEN now() ELSE settled_at END WHERE id=$1 AND version=$5 RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, id, state, actor, note, version).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
 	return c, err
 }
 

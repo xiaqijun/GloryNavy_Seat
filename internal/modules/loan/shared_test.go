@@ -1,6 +1,7 @@
 package loan
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -87,6 +88,48 @@ func TestAssessCreditPolicyUsesIncomeAndPoolCap(t *testing.T) {
 func TestCoveredByHaircutAvoidsIntermediateOverflow(t *testing.T) {
 	if got := coveredByHaircut(9_000_000_000_000_000, 5000); got != 4_500_000_000_000_000 {
 		t.Fatalf("coveredByHaircut()=%d", got)
+	}
+}
+
+func TestSimpleAnnualInterestUsesPolicySnapshot(t *testing.T) {
+	got, err := simpleAnnualInterest(100_000_00, 1200, 1, 365)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 100,000 ISK at 12% nominal annual rate for 365 days = 12,000 ISK.
+	if got != 1_200_000 {
+		t.Fatalf("simpleAnnualInterest()=%d, want %d", got, 1_200_000)
+	}
+	if got, err := simpleAnnualInterest(100, 1, 1, 1); err != nil || got != 0 {
+		t.Fatalf("sub-cent interest=(%d,%v), want 0,nil", got, err)
+	}
+}
+
+func TestValidLoanIntervalDays(t *testing.T) {
+	for _, days := range []int{1, 3, 7, 14, 30} {
+		if !validLoanIntervalDays(days) {
+			t.Fatalf("validLoanIntervalDays(%d) = false", days)
+		}
+	}
+	for _, days := range []int{0, 2, 5, 10, 31, 365} {
+		if validLoanIntervalDays(days) {
+			t.Fatalf("validLoanIntervalDays(%d) = true", days)
+		}
+	}
+}
+
+func TestGuaranteeCandidatesExcludeOwnCharactersAndAccountDetails(t *testing.T) {
+	s := &Service{
+		Characters: func(context.Context, string) ([]Character, error) {
+			return []Character{{ID: 1, Name: "Borrower"}}, nil
+		},
+		GuaranteeCharacters: func(context.Context) ([]Character, error) {
+			return []Character{{ID: 1, Name: "Borrower", AccountID: "self"}, {ID: 2, Name: "Guarantor", AccountID: "other", Nickname: "hidden"}}, nil
+		},
+	}
+	items, err := s.GuaranteeCandidates(context.Background(), "self")
+	if err != nil || len(items) != 1 || items[0].ID != 2 || items[0].AccountID != "" || items[0].Nickname != "" {
+		t.Fatalf("candidates=%+v, err=%v", items, err)
 	}
 }
 

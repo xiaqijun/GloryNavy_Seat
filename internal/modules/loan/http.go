@@ -29,6 +29,7 @@ func (h Handler) Module() module.Definition {
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
+		{"GET", "/guarantees/candidates", h.guaranteeCandidates},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "loan.self", Handler: r.fn})
@@ -275,6 +276,10 @@ func (h Handler) guaranteeDecision(w http.ResponseWriter, r *http.Request) {
 }
 func (h Handler) guarantees(w http.ResponseWriter, r *http.Request) {
 	v, e := h.Service.Guarantees(r.Context(), h.User(r))
+	respond(w, r, map[string]any{"items": v}, e)
+}
+func (h Handler) guaranteeCandidates(w http.ResponseWriter, r *http.Request) {
+	v, e := h.Service.GuaranteeCandidates(r.Context(), h.User(r))
 	respond(w, r, map[string]any{"items": v}, e)
 }
 func (h Handler) collateral(w http.ResponseWriter, r *http.Request) {

@@ -44,7 +44,7 @@ type CreditEvidence struct {
 }
 
 func defaultCreditPolicy() store.CreditPolicy {
-	return store.CreditPolicy{IncomeWindowDays: 180, DebtRatioBPS: 3000, TermMonths: 6, ScoreFactorBPS: 10000, HardCapMinor: 1_000_000_000, GuaranteeCapBPS: 10000, CollateralCapBPS: 10000, StaleAfterHours: 72, MinIncomeSamples: 3, InsufficientIncomePolicy: "fallback_pool", Version: 1}
+	return store.CreditPolicy{IncomeWindowDays: 180, AnnualRateBPS: 1200, DebtRatioBPS: 3000, TermMonths: 6, ScoreFactorBPS: 10000, HardCapMinor: 1_000_000_000, GuaranteeCapBPS: 10000, CollateralCapBPS: 10000, StaleAfterHours: 72, MinIncomeSamples: 3, InsufficientIncomePolicy: "fallback_pool", Version: 1}
 }
 
 func clampScore(v, max int) int {
