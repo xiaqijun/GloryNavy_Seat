@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-dashboard-20261013-r6 — 2026-10-13
+
+已发布来源提交 `0c3f3bf`，当前边缘目录为 `v0.1.0-loan-dashboard-20261013-r6`。申请、担保和出借入口在办理页合并为一个外层操作卡片，卡内并列动作。本次只切换公网静态前端，没有重启应用服务、没有执行 Goose/River 迁移。首页、`/loans`、`/loans/operations` 返回 200，匿名 `/api/v1/loan/context` 返回 401，容器内 OpenResty `nginx -t` 通过。
+
 ## v0.1.0-loan-dashboard-20261013-r5 — 2026-10-13
 
 已发布来源提交 `024079f`，当前边缘目录为 `v0.1.0-loan-dashboard-20261013-r5`。信用评分、额度和评分因子仅在“贷款办理”子页面顶部展示，“贷款看板”只展示整体借贷信息。本次只切换公网静态前端，没有重启应用服务、没有执行 Goose/River 迁移。首页、`/loans`、`/loans/operations` 返回 200，匿名 `/api/v1/loan/context` 返回 401，容器内 OpenResty `nginx -t` 通过。
