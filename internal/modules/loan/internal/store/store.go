@@ -33,6 +33,10 @@ type Pool struct {
 }
 
 type Credit struct {
+	GuaranteeLimitMinor         int64     `json:"guarantee_limit_minor"`
+	MonthlyIncomeMinor          int64     `json:"monthly_income_minor"`
+	IncomeAvailable             bool      `json:"income_available"`
+	PolicyVersion               int64     `json:"policy_version"`
 	AccountID                   string    `json:"account_id"`
 	Score                       *int      `json:"score"`
 	TotalLimitMinor             int64     `json:"total_limit_minor"`
@@ -76,17 +80,17 @@ type CreditSignals struct {
 }
 
 type CreditEvaluation struct {
-	ID                  int64
-	AccountID           string
-	PolicyVersion       string
-	Score               int
-	TotalLimitMinor     int64
-	UnsecuredLimitMinor int64
-	State               string
-	FactorScores        json.RawMessage
-	Evidence            json.RawMessage
-	EvidenceCutoff      time.Time
-	EvaluatedAt         time.Time
+	ID                  int64           `json:"id,string"`
+	AccountID           string          `json:"account_id"`
+	PolicyVersion       string          `json:"policy_version"`
+	Score               int             `json:"score"`
+	TotalLimitMinor     int64           `json:"total_limit_minor"`
+	UnsecuredLimitMinor int64           `json:"unsecured_limit_minor"`
+	State               string          `json:"state"`
+	FactorScores        json.RawMessage `json:"factor_scores"`
+	Evidence            json.RawMessage `json:"evidence"`
+	EvidenceCutoff      time.Time       `json:"evidence_cutoff"`
+	EvaluatedAt         time.Time       `json:"evaluated_at"`
 }
 
 type Case struct {
@@ -240,7 +244,7 @@ func RecordCreditEvaluation(ctx context.Context, db DBTX, e CreditEvaluation) (C
 	var out CreditEvaluation
 	err := db.QueryRow(ctx, `
         INSERT INTO loan_credit_evaluations(account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at)
-        VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         RETURNING id,account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at`,
 		e.AccountID, e.PolicyVersion, e.Score, e.TotalLimitMinor, e.UnsecuredLimitMinor, e.State, e.FactorScores, e.Evidence, e.EvidenceCutoff, e.EvaluatedAt).
 		Scan(&out.ID, &out.AccountID, &out.PolicyVersion, &out.Score, &out.TotalLimitMinor, &out.UnsecuredLimitMinor, &out.State, &out.FactorScores, &out.Evidence, &out.EvidenceCutoff, &out.EvaluatedAt)

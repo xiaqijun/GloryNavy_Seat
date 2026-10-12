@@ -7787,6 +7787,33 @@ paths:
       summary: Shared pool balance and borrower credit summary
       responses:
         '200': {description: Shared pool, balances, and credit}
+  /api/v1/loan/evaluations:
+    get:
+      operationId: loanCreditEvaluations
+      security: [{SessionCookie: []}]
+      summary: List the caller's immutable credit evaluations
+      responses:
+        '200': {description: Credit evaluation history}
+  /api/v1/loan/settings/policy:
+    get:
+      operationId: loanCreditPolicy
+      security: [{SessionCookie: []}]
+      summary: Read the shared loan credit policy
+      responses:
+        '200': {description: Credit policy and caller management capability}
+    post:
+      operationId: loanCreditPolicyUpdate
+      security: [{SessionCookie: []}]
+      summary: Update the shared loan credit policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanCreditPolicy'}
+      responses:
+        '200': {description: Updated credit policy}
+        '403': {description: Caller cannot manage the shared pool}
+        '409': {description: Policy version changed}
   /api/v1/loan/settings/custodian:
     post:
       operationId: loanCustodianUpdate
@@ -8058,6 +8085,22 @@ components:
       properties:
         pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
         character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        version: {type: integer, format: int64, minimum: 1}
+    LoanCreditPolicy:
+      type: object
+      additionalProperties: false
+      required: [income_window_days, debt_ratio_bps, term_months, score_factor_bps, hard_cap_minor, guarantee_cap_bps, collateral_cap_bps, stale_after_hours, min_income_samples, insufficient_income_policy, version]
+      properties:
+        income_window_days: {type: integer, minimum: 30, maximum: 730}
+        debt_ratio_bps: {type: integer, minimum: 0, maximum: 10000}
+        term_months: {type: integer, minimum: 1, maximum: 60}
+        score_factor_bps: {type: integer, minimum: 0, maximum: 20000}
+        hard_cap_minor: {type: integer, format: int64, minimum: 0}
+        guarantee_cap_bps: {type: integer, minimum: 0, maximum: 10000}
+        collateral_cap_bps: {type: integer, minimum: 0, maximum: 10000}
+        stale_after_hours: {type: integer, minimum: 1, maximum: 8760}
+        min_income_samples: {type: integer, minimum: 0, maximum: 12}
+        insufficient_income_policy: {type: string, enum: [fallback_pool, zero]}
         version: {type: integer, format: int64, minimum: 1}
     LoanGuaranteeInput:
       type: object

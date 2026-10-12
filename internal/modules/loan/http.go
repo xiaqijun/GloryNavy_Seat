@@ -25,7 +25,7 @@ func (h Handler) Module() module.Definition {
 		method, path string
 		fn           http.HandlerFunc
 	}{
-		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate},
+		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate},
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
@@ -117,6 +117,30 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 func (h Handler) credit(w http.ResponseWriter, r *http.Request) {
 	c, e := h.Service.Credit(r.Context(), h.User(r))
 	respond(w, r, c, e)
+}
+func (h Handler) evaluations(w http.ResponseWriter, r *http.Request) {
+	v, e := h.Service.CreditEvaluations(r.Context(), h.User(r))
+	respond(w, r, map[string]any{"items": v}, e)
+}
+func (h Handler) policy(w http.ResponseWriter, r *http.Request) {
+	v, e := h.Service.CreditPolicy(r.Context())
+	if e != nil {
+		respond(w, r, nil, e)
+		return
+	}
+	canManage := false
+	if pool, pe := store.SharedPool(r.Context(), h.Service.Pool, false); pe == nil {
+		canManage, _ = h.Service.canManage(r.Context(), h.User(r), pool)
+	}
+	respond(w, r, map[string]any{"policy": v, "can_manage": canManage}, nil)
+}
+func (h Handler) policyUpdate(w http.ResponseWriter, r *http.Request) {
+	var in store.CreditPolicy
+	if !read(w, r, &in) {
+		return
+	}
+	v, e := h.Service.UpdateCreditPolicy(r.Context(), h.User(r), in)
+	respond(w, r, v, e)
 }
 func (h Handler) cases(w http.ResponseWriter, r *http.Request) {
 	admin := false

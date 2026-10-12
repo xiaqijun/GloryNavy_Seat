@@ -93,6 +93,7 @@ type Service struct {
 	ReadContractTx      func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error)
 	AccountForCharacter func(context.Context, int64) (string, error)
 	CreditEvidence      func(context.Context, string) (CreditEvidence, error)
+	IncomeEvidence      func(context.Context, string, time.Time) (IncomeEvidence, error)
 }
 
 type ApplicationInput struct {
@@ -632,6 +633,13 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if guarantor == actor || in.AmountMinor > c.PrincipalMinor {
 		return store.Guarantee{}, ErrInvalid
 	}
+	policy, pe := s.CreditPolicy(ctx)
+	if pe != nil {
+		return store.Guarantee{}, pe
+	}
+	if in.AmountMinor > safeScaled(c.PrincipalMinor, int64(policy.GuaranteeCapBPS), 10000) {
+		return store.Guarantee{}, ErrCoverage
+	}
 	g, e := store.AddGuarantee(ctx, s.db(), id, guarantor, in.GuarantorCharacterID, in.AmountMinor, in.Note)
 	return g, e
 }
@@ -731,6 +739,13 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 		return store.Collateral{}, ErrForbidden
 	}
 	if in.CoveredMinor > coveredByHaircut(in.ValuationMinor, in.HaircutBPS) {
+		return store.Collateral{}, ErrCoverage
+	}
+	policy, pe := s.CreditPolicy(ctx)
+	if pe != nil {
+		return store.Collateral{}, pe
+	}
+	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
 		return store.Collateral{}, ErrCoverage
 	}
 	p, e := store.GetPool(ctx, s.db(), c.PoolID)

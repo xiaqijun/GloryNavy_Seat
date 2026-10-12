@@ -760,6 +760,11 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return out, nil
 		},
 	}
+	if syncService != nil {
+		loanService.IncomeEvidence = func(ctx context.Context, user string, from time.Time) (loan.IncomeEvidence, error) {
+			return loanIncomeEvidence(ctx, user, from, identityService, syncService)
+		}
+	}
 	loanService.CanManagePool = func(ctx context.Context, user, kind string, id int64) (bool, error) {
 		if kind != "corporation" {
 			return false, nil

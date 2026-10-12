@@ -15,6 +15,36 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+.loan-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.loan-tabs button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.loan-tabs button:hover { color: var(--foreground); background: var(--background); }
+.loan-tabs button.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+.loan-tabs button:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.loan-settings-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 24px; }
+.loan-policy-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.loan-policy-form label { display: grid; gap: 6px; font-size: 14px; }
+.loan-policy-form input, .loan-policy-form select { width: 100%; min-height: 44px; border: 1px solid color-mix(in srgb, var(--muted) 80%, var(--card)); border-radius: 8px; background: var(--card); color: var(--foreground); padding: 8px 10px; font: inherit; }
+.loan-policy-form input:focus-visible, .loan-policy-form select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.loan-policy-summary { display: grid; gap: 16px; margin: 20px 0 0; }
+.loan-policy-summary dt { color: var(--muted); font-size: 13px; }
+.loan-policy-summary dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.loan-history-table { min-width: 720px !important; }
 .loan-title {
   display: flex;
   align-items: center;
@@ -399,6 +429,10 @@
   .loan-deposit-row > svg { grid-column: 2; grid-row: 1 / 4; }
   .loan-deposit-amount { text-align: left; }
   .loan-deposit-summary { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 800px) {
+  .loan-settings-grid { grid-template-columns: 1fr; }
+  .loan-policy-form { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .loan-deposit-row { transition: none; } }
 .loan-detail-dialog h3 {
