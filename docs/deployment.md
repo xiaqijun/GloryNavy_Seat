@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-dashboard-20261013-r1 — 2026-10-13
+
+已发布来源提交 `35691d8`。本次只构建并切换公网静态前端：`/loans` 改为紧凑贷款业务数据看板，`/loans/operations` 保留贷款办理并增加返回看板入口，操作卡片移除重复长说明。没有重启应用服务，也没有执行 Goose/River 迁移。边缘发布脚本校验 `main` 干净来源、SHA256SUMS 并完成原子切换；当前版本目录为 `v0.1.0-loan-dashboard-20261013-r1`，公网首页、`/loans`、`/loans/operations` 均返回 200，容器内 OpenResty `nginx -t` 通过，`node scripts/check-deployment.mjs https://seat.kisectool.com` 浏览器验收通过。
+
 ## v0.1.0-loan-dashboard-20261013 — 2026-10-13
 
 已发布来源提交 `214693e`。贷款年利率、1/3/7/14/30 天还款间隔、放款后首期到期时间、担保责任额度复核、抵押合同选择和贷款业务/贷款办理双页面已上线；应用机与公网静态站点均已原子切换。激活脚本完成数据库与配置备份，生产 Goose 80–82 已执行，应用 `active/ready`、`NRestarts=0`；公网首页和 `/loans` 返回 200，匿名贷款及系统接口返回 401，OpenResty `nginx -t` 通过。`node scripts/check-deployment.mjs https://seat.kisectool.com` 使用本机 Chrome 完成真实登录表单、PKCE/scopes、Secure Cookie、Origin/CSRF 和匿名隔离检查。
