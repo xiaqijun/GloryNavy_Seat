@@ -381,13 +381,15 @@ func UsedPrincipal(ctx context.Context, db DBTX, account string) (int64, error) 
 	return n, err
 }
 
-// UsedResponsibility includes both the account's own active principal and
-// accepted guarantees. It is used when a guarantor accepts a new obligation.
+// UsedResponsibility includes the account's own approved or active principal
+// and every accepted guarantee whose case has not been rejected, cancelled, or
+// settled. Accepted guarantees reserve capacity even while their case is still
+// awaiting loan approval.
 func UsedResponsibility(ctx context.Context, db DBTX, account string) (int64, error) {
 	var n int64
 	err := db.QueryRow(ctx, `SELECT
 		COALESCE((SELECT sum(principal_minor) FROM loan_cases WHERE borrower_account_id=$1::uuid AND state IN ('approved','funding','active','defaulted')),0)
-		+ COALESCE((SELECT sum(g.amount_minor) FROM loan_guarantees g JOIN loan_cases c ON c.id=g.case_id WHERE g.guarantor_account_id=$1::uuid AND g.state IN ('accepted','active') AND c.state IN ('approved','funding','active','defaulted')),0)`, account).Scan(&n)
+		+ COALESCE((SELECT sum(g.amount_minor) FROM loan_guarantees g JOIN loan_cases c ON c.id=g.case_id WHERE g.guarantor_account_id=$1::uuid AND g.state IN ('accepted','active') AND c.state NOT IN ('rejected','cancelled','settled')),0)`, account).Scan(&n)
 	return n, err
 }
 
