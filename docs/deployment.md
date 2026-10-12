@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-dashboard-20261013-r2 — 2026-10-13
+
+已发布来源提交 `b19d32f`。主导航新增独立“贷款”分组，贷款业务看板与贷款办理为其两个子页面；路由保持 `/loans` 和 `/loans/operations`。本次只切换公网静态前端，没有重启应用服务，也没有执行 Goose/River 迁移。当前边缘目录为 `v0.1.0-loan-dashboard-20261013-r2`，首页、两个贷款页面返回 200，容器内 OpenResty `nginx -t` 通过，浏览器部署验收脚本通过。
+
 ## v0.1.0-loan-dashboard-20261013-r1 — 2026-10-13
 
 已发布来源提交 `35691d8`。本次只构建并切换公网静态前端：`/loans` 改为紧凑贷款业务数据看板，`/loans/operations` 保留贷款办理并增加返回看板入口，操作卡片移除重复长说明。没有重启应用服务，也没有执行 Goose/River 迁移。边缘发布脚本校验 `main` 干净来源、SHA256SUMS 并完成原子切换；当前版本目录为 `v0.1.0-loan-dashboard-20261013-r1`，公网首页、`/loans`、`/loans/operations` 均返回 200，容器内 OpenResty `nginx -t` 通过，`node scripts/check-deployment.mjs https://seat.kisectool.com` 浏览器验收通过。
