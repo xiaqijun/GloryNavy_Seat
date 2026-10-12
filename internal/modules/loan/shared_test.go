@@ -118,6 +118,21 @@ func TestValidLoanIntervalDays(t *testing.T) {
 	}
 }
 
+func TestRepaymentInstallmentsStartAtFundingInterval(t *testing.T) {
+	funded := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	first := funded.AddDate(0, 0, 7)
+	rows := repaymentInstallments(100_00, 11_00, 2, 7, first)
+	if len(rows) != 2 {
+		t.Fatalf("installment count=%d, want 2", len(rows))
+	}
+	if !rows[0].DueAt.Equal(first) || !rows[1].DueAt.Equal(first.AddDate(0, 0, 7)) {
+		t.Fatalf("due dates=%s/%s, want %s/%s", rows[0].DueAt, rows[1].DueAt, first, first.AddDate(0, 0, 7))
+	}
+	if rows[0].PrincipalMinor+rows[1].PrincipalMinor != 100_00 || rows[0].InterestMinor+rows[1].InterestMinor != 11_00 {
+		t.Fatalf("schedule totals=%d/%d, want 10000/1100", rows[0].PrincipalMinor+rows[1].PrincipalMinor, rows[0].InterestMinor+rows[1].InterestMinor)
+	}
+}
+
 func TestGuaranteeCandidatesExcludeOwnCharactersAndAccountDetails(t *testing.T) {
 	s := &Service{
 		Characters: func(context.Context, string) ([]Character, error) {

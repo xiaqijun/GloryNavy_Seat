@@ -138,15 +138,17 @@ func (s *Service) GuaranteeCandidates(ctx context.Context, actor string) ([]Char
 }
 
 type ApplicationInput struct {
-	PoolID              int64  `json:"pool_id"`
-	BorrowerCharacterID int64  `json:"borrower_character_id"`
-	PrincipalMinor      int64  `json:"principal_minor"`
+	PoolID              int64 `json:"pool_id"`
+	BorrowerCharacterID int64 `json:"borrower_character_id"`
+	PrincipalMinor      int64 `json:"principal_minor"`
 	// InterestMinor is retained for old clients but is ignored. New applications
 	// always use the current annual policy rate and store that rate on the case.
-	InterestMinor       int64  `json:"interest_minor,omitempty"`
-	InstallmentCount    int    `json:"installment_count"`
-	IntervalDays        int    `json:"interval_days"`
-	FirstDueAt          string `json:"first_due_at"`
+	InterestMinor    int64 `json:"interest_minor,omitempty"`
+	InstallmentCount int   `json:"installment_count"`
+	IntervalDays     int   `json:"interval_days"`
+	// FirstDueAt is retained for old clients but ignored. The server derives
+	// the first due time from successful disbursement plus the selected interval.
+	FirstDueAt string `json:"first_due_at,omitempty"`
 }
 
 const interestDayCountBasis = int64(365)
@@ -178,6 +180,22 @@ func simpleAnnualInterest(principal int64, annualRateBPS, installmentCount, inte
 	}
 	return n.Int64(), nil
 }
+
+func repaymentInstallments(principal, interest int64, count, interval int, first time.Time) []store.Installment {
+	rows := make([]store.Installment, 0, count)
+	pp, pr := principal/int64(count), principal%int64(count)
+	ip, ir := interest/int64(count), interest%int64(count)
+	for n := 1; n <= count; n++ {
+		pc, ic := pp, ip
+		if n == count {
+			pc += pr
+			ic += ir
+		}
+		rows = append(rows, store.Installment{Sequence: n, DueAt: first.AddDate(0, 0, (n-1)*interval), PrincipalMinor: pc, InterestMinor: ic})
+	}
+	return rows
+}
+
 type ReviewInput struct {
 	State   string `json:"state"`
 	Version int64  `json:"version"`
@@ -256,10 +274,6 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || !validLoanIntervalDays(in.IntervalDays) {
 		return store.Case{}, ErrInvalid
 	}
-	first, e := time.Parse(time.RFC3339, in.FirstDueAt)
-	if e != nil || first.Before(time.Now().UTC().Add(-time.Minute)) {
-		return store.Case{}, ErrInvalid
-	}
 	if s.Characters == nil {
 		return store.Case{}, ErrRule
 	}
@@ -314,22 +328,8 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 		return store.Case{}, e
 	}
 	defer tx.Rollback(ctx)
-	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, strconv.FormatInt(in.BorrowerCharacterID, 10), in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, first)
+	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, strconv.FormatInt(in.BorrowerCharacterID, 10), in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, nil)
 	if e != nil {
-		return store.Case{}, e
-	}
-	rows := make([]store.Installment, 0, in.InstallmentCount)
-	pp, pr := in.PrincipalMinor/int64(in.InstallmentCount), in.PrincipalMinor%int64(in.InstallmentCount)
-	ip, ir := interest/int64(in.InstallmentCount), interest%int64(in.InstallmentCount)
-	for n := 1; n <= in.InstallmentCount; n++ {
-		pc, ic := pp, ip
-		if n == in.InstallmentCount {
-			pc += pr
-			ic += ir
-		}
-		rows = append(rows, store.Installment{Sequence: n, DueAt: first.AddDate(0, 0, (n-1)*in.IntervalDays), PrincipalMinor: pc, InterestMinor: ic})
-	}
-	if e = store.CreateInstallments(ctx, tx, c.ID, rows); e != nil {
 		return store.Case{}, e
 	}
 	if e = store.Audit(ctx, tx, c.ID, actor, "submitted", nil, c); e != nil {
@@ -636,7 +636,14 @@ func (s *Service) CreatePayment(ctx context.Context, actor string, id int64, in 
 		return store.Payment{}, e
 	}
 	if in.Kind == "disbursement" {
-		_, e = store.TransitionCase(ctx, tx, id, c.Version, "active", actor, "合同已核验放款")
+		fundedAt := time.Now().UTC()
+		c, e = store.ActivateCase(ctx, tx, id, c.Version, actor, fundedAt.AddDate(0, 0, c.IntervalDays), fundedAt)
+		if e == nil && c.FirstDueAt == nil {
+			e = ErrRule
+		}
+		if e == nil {
+			e = store.CreateInstallments(ctx, tx, id, repaymentInstallments(c.PrincipalMinor, c.InterestMinor, c.InstallmentCount, c.IntervalDays, *c.FirstDueAt))
+		}
 	} else {
 		inst, e2 := store.Installments(ctx, tx, id)
 		if e2 != nil {

@@ -109,7 +109,7 @@ type Case struct {
 	TotalDueMinor       int64      `json:"total_due_minor"`
 	InstallmentCount    int        `json:"installment_count"`
 	IntervalDays        int        `json:"interval_days"`
-	FirstDueAt          time.Time  `json:"first_due_at"`
+	FirstDueAt          *time.Time `json:"first_due_at,omitempty"`
 	State               string     `json:"state"`
 	TermsVersion        int64      `json:"terms_version"`
 	Version             int64      `json:"version"`
@@ -269,7 +269,7 @@ func SecurityAccounts(ctx context.Context, db DBTX, caseID int64) ([]string, err
 	return out, rows.Err()
 }
 
-func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, rateBPS, count, interval int, first time.Time) (Case, error) {
+func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, rateBPS, count, interval int, first *time.Time) (Case, error) {
 	var c Case
 	err := db.QueryRow(ctx, `INSERT INTO loan_cases(public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at) VALUES($1,$2,$3::uuid,$4,$5,$6,$7,$5+$6,$8,$9,$10) RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, public, poolID, borrower, character, principal, interest, rateBPS, count, interval, first).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
 	return c, err
@@ -282,6 +282,12 @@ func CreateInstallments(ctx context.Context, db DBTX, caseID int64, rows []Insta
 		}
 	}
 	return nil
+}
+
+func ActivateCase(ctx context.Context, db DBTX, id, version int64, actor string, firstDueAt, fundedAt time.Time) (Case, error) {
+	var c Case
+	err := db.QueryRow(ctx, `UPDATE loan_cases SET state='active',reviewer_id=$2::uuid,review_note=$3,version=version+1,updated_at=$4,funded_at=$4,first_due_at=$5 WHERE id=$1 AND version=$6 AND state IN ('approved','funding') RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, id, actor, "合同已核验放款", fundedAt, firstDueAt, version).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
+	return c, err
 }
 
 func GetCase(ctx context.Context, db DBTX, id int64) (Case, error) {

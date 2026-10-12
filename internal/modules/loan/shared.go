@@ -510,7 +510,14 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	delta := amount
 	if in.Kind == "disbursement" {
 		delta = -amount
-		_, e = store.TransitionCase(ctx, tx, id, c.Version, "active", actor, "合同已核验放款")
+		fundedAt := time.Now().UTC()
+		c, e = store.ActivateCase(ctx, tx, id, c.Version, actor, fundedAt.AddDate(0, 0, c.IntervalDays), fundedAt)
+		if e == nil && c.FirstDueAt == nil {
+			e = ErrRule
+		}
+		if e == nil {
+			e = store.CreateInstallments(ctx, tx, id, repaymentInstallments(c.PrincipalMinor, c.InterestMinor, c.InstallmentCount, c.IntervalDays, *c.FirstDueAt))
+		}
 	} else {
 		inst, err := store.Installments(ctx, tx, id)
 		if err != nil {
