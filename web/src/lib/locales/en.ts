@@ -2578,7 +2578,7 @@ export const english: Record<string, string> = {
   "添加担保": "Add guarantee",
   "登记抵押": "Register collateral",
   "添加担保邀请": "Add guarantee invitation",
-  "选择已绑定的 EVE 角色，后台会在发送邀请时重新解析其本站账号。": "Choose a bound EVE character; the server resolves its site account again when sending the invitation.",
+  "选择已绑定的 EVE 角色，后台会在发送邀请时重新解析其本站账号；担保金额还受担保人当前可用责任额度限制，接受时由服务端重新核验。": "Choose a bound EVE character; the server resolves its site account again when sending the invitation. The amount is also limited by the guarantor's current available responsibility capacity and is rechecked when accepted.",
   "请输入担保人的已绑定角色 ID，后台会解析其本站账号。": "Enter the guarantor's bound character ID; the server resolves the site account.",
   担保角色: "Guarantor character",
   "担保角色 ID": "Guarantor character ID",

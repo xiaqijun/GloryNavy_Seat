@@ -728,8 +728,33 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if in.AmountMinor > safeScaled(c.PrincipalMinor, int64(policy.GuaranteeCapBPS), 10000) {
 		return store.Guarantee{}, ErrCoverage
 	}
+	credit, ce := s.Credit(ctx, guarantor)
+	if ce != nil {
+		return store.Guarantee{}, ce
+	}
+	if credit.State != "active" {
+		return store.Guarantee{}, ErrRule
+	}
+	usedResponsibility, ce := store.UsedResponsibility(ctx, s.db(), guarantor)
+	if ce != nil {
+		return store.Guarantee{}, ce
+	}
+	if in.AmountMinor > availableGuaranteeCapacity(credit, usedResponsibility) {
+		return store.Guarantee{}, ErrLimit
+	}
 	g, e := store.AddGuarantee(ctx, s.db(), id, guarantor, in.GuarantorCharacterID, in.AmountMinor, in.Note)
 	return g, e
+}
+
+func availableGuaranteeCapacity(credit store.Credit, usedResponsibility int64) int64 {
+	if credit.State != "active" || usedResponsibility < 0 {
+		return 0
+	}
+	responsibilityRemaining := credit.TotalLimitMinor - usedResponsibility
+	if responsibilityRemaining <= 0 {
+		return 0
+	}
+	return responsibilityRemaining
 }
 func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, in DecisionInput) (store.Guarantee, error) {
 	if in.State != "accepted" && in.State != "rejected" || in.Version <= 0 {
@@ -777,7 +802,10 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 			return g, ErrConflict
 		}
 		used, e := store.UsedResponsibility(ctx, tx, actor)
-		if e != nil || used > credit.TotalLimitMinor-g.AmountMinor {
+		if e != nil {
+			return g, e
+		}
+		if g.AmountMinor > availableGuaranteeCapacity(credit, used) {
 			return g, ErrLimit
 		}
 		out, e := store.DecideGuarantee(ctx, tx, id, in.Version, in.State)

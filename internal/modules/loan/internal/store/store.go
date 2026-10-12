@@ -390,6 +390,7 @@ func UsedResponsibility(ctx context.Context, db DBTX, account string) (int64, er
 		+ COALESCE((SELECT sum(g.amount_minor) FROM loan_guarantees g JOIN loan_cases c ON c.id=g.case_id WHERE g.guarantor_account_id=$1::uuid AND g.state IN ('accepted','active') AND c.state IN ('approved','funding','active','defaulted')),0)`, account).Scan(&n)
 	return n, err
 }
+
 func Coverage(ctx context.Context, db DBTX, caseID int64) (int64, error) {
 	var g, k int64
 	if err := db.QueryRow(ctx, `SELECT COALESCE(sum(amount_minor),0) FROM loan_guarantees WHERE case_id=$1 AND state IN ('accepted','active')`, caseID).Scan(&g); err != nil {

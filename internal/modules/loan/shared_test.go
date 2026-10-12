@@ -118,6 +118,19 @@ func TestValidLoanIntervalDays(t *testing.T) {
 	}
 }
 
+func TestAvailableGuaranteeCapacityUsesTotalResponsibility(t *testing.T) {
+	credit := store.Credit{State: "active", TotalLimitMinor: 100_000}
+	if got := availableGuaranteeCapacity(credit, 25_000); got != 75_000 {
+		t.Fatalf("capacity=%d, want 75000", got)
+	}
+	if got := availableGuaranteeCapacity(credit, 80_000); got != 20_000 {
+		t.Fatalf("capacity=%d, want 20000", got)
+	}
+	if got := availableGuaranteeCapacity(credit, 100_000); got != 0 {
+		t.Fatalf("capacity=%d, want 0", got)
+	}
+}
+
 func TestRepaymentInstallmentsStartAtFundingInterval(t *testing.T) {
 	funded := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	first := funded.AddDate(0, 0, 7)
