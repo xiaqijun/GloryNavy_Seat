@@ -39,6 +39,12 @@
 .loan-settings-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 24px; }
 .loan-policy-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .loan-policy-form label { display: grid; gap: 6px; font-size: 14px; }
+.loan-policy-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.loan-policy-label { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.loan-policy-help { display: inline-grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.loan-policy-help:hover { color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.loan-policy-help:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; color: var(--primary); }
+.loan-policy-tooltip { max-width: min(300px, calc(100vw - 32px)); }
 .loan-policy-form input, .loan-policy-form select { width: 100%; min-height: 44px; border: 1px solid color-mix(in srgb, var(--muted) 80%, var(--card)); border-radius: 8px; background: var(--card); color: var(--foreground); padding: 8px 10px; font: inherit; }
 .loan-policy-form input:focus-visible, .loan-policy-form select:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .loan-policy-summary { display: grid; gap: 16px; margin: 20px 0 0; }
