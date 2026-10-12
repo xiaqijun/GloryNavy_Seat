@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   ChevronDown,
+  ClipboardList,
   Crosshair,
   Landmark,
   Gift,
@@ -16,6 +17,7 @@ type Page = RegisteredModule["pages"][number];
 const groups = [
   { id: "operations", label: msg("作战与训练"), icon: Crosshair },
   { id: "finance", label: msg("财务与工具"), icon: Landmark },
+  { id: "loan", label: msg("贷款"), icon: ClipboardList },
   { id: "benefits", label: msg("福利与兑换"), icon: Gift },
   { id: "administration", label: msg("系统管理"), icon: Settings2 },
 ] as const;
