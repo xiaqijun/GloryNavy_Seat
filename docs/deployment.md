@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-dashboard-20261013 — 2026-10-13
+
+已发布来源提交 `214693e`。贷款年利率、1/3/7/14/30 天还款间隔、放款后首期到期时间、担保责任额度复核、抵押合同选择和贷款业务/贷款办理双页面已上线；应用机与公网静态站点均已原子切换。激活脚本完成数据库与配置备份，生产 Goose 80–82 已执行，应用 `active/ready`、`NRestarts=0`；公网首页和 `/loans` 返回 200，匿名贷款及系统接口返回 401，OpenResty `nginx -t` 通过。`node scripts/check-deployment.mjs https://seat.kisectool.com` 使用本机 Chrome 完成真实登录表单、PKCE/scopes、Secure Cookie、Origin/CSRF 和匿名隔离检查。
+
 ## v0.1.0-loan-policy-help-20261012 — 2026-10-12
 
 已发布来源提交 `8aad5a0`。风控设置字段旁新增可访问的小问号说明，涵盖 bps 换算、收入样本、抵押估值基数和数据不足处理；支持桌面悬停/键盘聚焦及移动端点击关闭。本次仅更新公网静态前端，未重启应用服务、未执行 Goose/River 迁移。边缘发布脚本完成原子切换，容器内 OpenResty `nginx -t` 通过；正式域名首页和 `/loans` 返回 200，贷款上下文/案件接口匿名返回 401。
