@@ -234,8 +234,30 @@ a.operations-metric:hover {
 .operations-tax-date {
   display: grid;
   gap: 4px;
+  min-width: 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.operations-tax-custom-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 8px;
+  width: 0;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  transition: width 180ms ease-out, max-width 180ms ease-out, opacity 140ms ease-out, transform 180ms ease-out;
+}
+
+.operations-tax-custom-fields.is-visible {
+  width: 292px;
+  max-width: 292px;
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 .operations-tax-date input {
@@ -540,7 +562,8 @@ a.operations-metric:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .operations-metric,
-  .queue-track span { transition: none; }
+  .queue-track span,
+  .operations-tax-custom-fields { transition: none; }
   .is-spinning { animation: none; }
 }
 
@@ -572,6 +595,8 @@ a.operations-metric:hover {
   .operations-tax-controls { justify-content: stretch; }
   .operations-tax-controls .ui-select-trigger,
   .operations-tax-date { flex: 1 1 140px; }
+  .operations-tax-custom-fields { flex: 0 0 auto; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .operations-tax-custom-fields.is-visible { flex: 1 1 100%; width: 100%; max-width: 100%; }
   .operations-tax-date input { width: 100%; }
   .operations-event-list > a { grid-template-columns: minmax(0, 1fr) 18px; gap: 8px; }
   .operations-event-meta { grid-column: 1; justify-content: flex-start; }

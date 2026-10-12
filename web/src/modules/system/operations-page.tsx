@@ -460,10 +460,10 @@ function OperationsWorkspace({ user }: { user: string }) {
                   { value: "custom", label: msg("自定义时间") },
                 ]}
               />
-              {taxRangePreset === "custom" && <>
-                <label className="operations-tax-date">{msg("开始日期")}<input type="date" value={taxCustomFrom} max={taxCustomUntil || dateInputValue(new Date())} onChange={(event) => setTaxCustomFrom(event.target.value)} /></label>
-                <label className="operations-tax-date">{msg("结束日期")}<input type="date" value={taxCustomUntil} max={dateInputValue(new Date())} onChange={(event) => setTaxCustomUntil(event.target.value)} /></label>
-              </>}
+              <div className={`operations-tax-custom-fields${taxRangePreset === "custom" ? " is-visible" : ""}`} aria-hidden={taxRangePreset !== "custom"}>
+                <label className="operations-tax-date">{msg("开始日期")}<input disabled={taxRangePreset !== "custom"} type="date" value={taxCustomFrom} max={taxCustomUntil || dateInputValue(new Date())} onChange={(event) => setTaxCustomFrom(event.target.value)} /></label>
+                <label className="operations-tax-date">{msg("结束日期")}<input disabled={taxRangePreset !== "custom"} type="date" value={taxCustomUntil} max={dateInputValue(new Date())} onChange={(event) => setTaxCustomUntil(event.target.value)} /></label>
+              </div>
             </div>
           </header>
           {!modules.has("wallet") || taxRanking.isError ? <Feedback error={taxRanking.error ?? undefined} retry={() => void taxRanking.refetch()} /> : !taxWindow.valid ? <p className="operations-empty">{msg("请选择有效的时间范围")}</p> : !taxRanking.data ? <Feedback /> : <TaxRanking rows={taxRanking.data.items} />}
