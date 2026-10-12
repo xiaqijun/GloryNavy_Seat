@@ -80,6 +80,50 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+.loan-dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.loan-dashboard-metrics > div,
+.loan-dashboard-panel {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+}
+.loan-dashboard-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+.loan-dashboard-metrics strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
+}
+.loan-dashboard-panel {
+  display: grid;
+  gap: 16px;
+}
+.loan-dashboard-panel .loan-section-head {
+  align-items: flex-start;
+}
+.loan-dashboard-credit {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.loan-dashboard-credit > div {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+}
+.loan-dashboard-note > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
 .loan-credit > div,
 .loan-list,
 .loan-admin {
@@ -497,6 +541,8 @@
 }
 @media (max-width: 800px) {
   .loan-credit,
+  .loan-dashboard-metrics,
+  .loan-dashboard-credit,
   .loan-credit-factors,
   .loan-form,
   .loan-application-form,
@@ -518,6 +564,8 @@
     font-size: 24px;
   }
   .loan-credit > div,
+  .loan-dashboard-metrics > div,
+  .loan-dashboard-panel,
   .loan-apply,
   .loan-list,
   .loan-admin {
