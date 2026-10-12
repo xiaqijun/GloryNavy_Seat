@@ -96,21 +96,24 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 		respond(w, r, nil, e)
 		return
 	}
-	var summary any = map[string]any{"pending_minor": int64(0), "funded_minor": int64(0), "cash_minor": int64(0), "reserved_minor": int64(0), "available_minor": int64(0)}
-	if len(p) > 0 {
-		if v, er := store.Summary(r.Context(), h.Service.Pool, p[0].ID); er == nil {
-			summary = v
-		} else {
-			respond(w, r, nil, er)
-			return
-		}
-	}
 	canManage := false
 	managerCharacters := []Character{}
 	if len(p) > 0 {
 		canManage, _ = h.Service.CanManageSharedPool(r.Context(), u)
 		if canManage && h.Service.ManageCharacters != nil {
 			managerCharacters, _ = h.Service.ManageCharacters(r.Context())
+		}
+	}
+	// Pool cash-flow totals are management data. Keep the response shape stable
+	// for ordinary users, but only resolve the real summary for administrators or
+	// accounts that can manage the shared pool.
+	var summary any = map[string]any{"pending_minor": int64(0), "funded_minor": int64(0), "cash_minor": int64(0), "reserved_minor": int64(0), "available_minor": int64(0)}
+	if len(p) > 0 && (admin || canManage) {
+		if v, er := store.Summary(r.Context(), h.Service.Pool, p[0].ID); er == nil {
+			summary = v
+		} else {
+			respond(w, r, nil, er)
+			return
 		}
 	}
 	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "custodian_characters": managerCharacters}, nil)

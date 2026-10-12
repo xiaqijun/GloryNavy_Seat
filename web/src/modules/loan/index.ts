@@ -6,7 +6,7 @@ export const loanModule: FrontendModule = {
   id: "loan",
   apiVersion: 1,
   pages: [
-    { id: "loan.home", path: "/loans", label: msg("贷款业务"), icon: Landmark, navigationGroup: "loan", load: () => import("./dashboard-page") },
-    { id: "loan.operations", path: "/loans/operations", label: msg("贷款办理"), icon: ClipboardList, navigationGroup: "loan", load: () => import("./page") },
+    { id: "loan.home", path: "/loans", label: msg("贷款业务"), icon: Landmark, navigation: false, load: () => import("./dashboard-page") },
+    { id: "loan.operations", path: "/loans/operations", label: msg("贷款"), icon: ClipboardList, navigationGroup: "finance", load: () => import("./page") },
   ],
 };
