@@ -67,6 +67,37 @@ function sixMonthStart() {
   return value;
 }
 
+type TaxRangePreset = "1d" | "3d" | "7d" | "1m" | "custom";
+
+function dateInputValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function taxRangeWindow(preset: TaxRangePreset, customFrom: string, customUntil: string) {
+  const now = new Date();
+  if (preset === "custom") {
+    if (!customFrom || !customUntil) return { valid: false, from: "", until: "" };
+    const from = new Date(`${customFrom}T00:00:00`);
+    const end = new Date(`${customUntil}T00:00:00`);
+    end.setDate(end.getDate() + 1);
+    if (!Number.isFinite(from.getTime()) || !Number.isFinite(end.getTime()) || from >= end) {
+      return { valid: false, from: "", until: "" };
+    }
+    const until = end > now ? now : end;
+    if (until <= from || until.getTime() - from.getTime() > 370 * 24 * 60 * 60 * 1000) {
+      return { valid: false, from: "", until: "" };
+    }
+    return { valid: true, from: from.toISOString(), until: until.toISOString() };
+  }
+  const from = new Date(now);
+  if (preset === "1m") from.setMonth(from.getMonth() - 1);
+  else from.setDate(from.getDate() - Number(preset.slice(0, -1)));
+  return { valid: true, from: from.toISOString(), until: now.toISOString() };
+}
+
 type TrendPoint = { label: string; value: number };
 
 function monthTrend<T>(items: T[], at: (item: T) => string, value: (item: T) => number) {
@@ -221,6 +252,13 @@ export default function OperationsPage() {
 
 function OperationsWorkspace({ user }: { user: string }) {
   const [selectedCorp, setSelectedCorp] = useState("");
+  const [taxRangePreset, setTaxRangePreset] = useState<TaxRangePreset>("7d");
+  const [taxCustomFrom, setTaxCustomFrom] = useState(() => {
+    const value = new Date();
+    value.setDate(value.getDate() - 6);
+    return dateInputValue(value);
+  });
+  const [taxCustomUntil, setTaxCustomUntil] = useState(() => dateInputValue(new Date()));
   const catalog = useQuery({
     queryKey: ["host", "modules"],
     queryFn: ({ signal }) => getModuleCatalog(signal),
@@ -306,10 +344,11 @@ function OperationsWorkspace({ user }: { user: string }) {
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+  const taxWindow = taxRangeWindow(taxRangePreset, taxCustomFrom, taxCustomUntil);
   const taxRanking = useQuery({
-    queryKey: ["operations", "personal-tax-ranking", user, corpId, incomeTrendFrom.toISOString().slice(0, 10)],
-    queryFn: ({ signal }) => walletApi.corporationPersonalTaxRanking(corpId, incomeTrendFrom.toISOString(), new Date().toISOString(), signal),
-    enabled: !!corpId && modules.has("wallet"),
+    queryKey: ["operations", "personal-tax-ranking", user, corpId, taxRangePreset, taxCustomFrom, taxCustomUntil],
+    queryFn: ({ signal }) => walletApi.corporationPersonalTaxRanking(corpId, taxWindow.from, taxWindow.until, signal),
+    enabled: !!corpId && modules.has("wallet") && taxWindow.valid,
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
@@ -359,7 +398,7 @@ function OperationsWorkspace({ user }: { user: string }) {
       finance.refetch(),
       financeTrend.refetch(),
       incomeTrend.refetch(),
-      taxRanking.refetch(),
+      taxWindow.valid ? taxRanking.refetch() : Promise.resolve(),
       welfareContext.refetch(),
       welfareCases.refetch(),
       publicCorp.refetch(),
@@ -406,8 +445,28 @@ function OperationsWorkspace({ user }: { user: string }) {
           {!modules.has("wallet") || incomeTrend.isError ? <Feedback error={incomeTrend.error ?? undefined} retry={() => void incomeTrend.refetch()} /> : !incomeTrend.data ? <Feedback /> : <MemberIncomeTrend points={incomeTrendPoints(incomeTrend.data.items)} />}
         </Card>
         <Card className="operations-panel operations-tax-ranking">
-          <header><h2>{msg("税收排行")}</h2><span className="operations-panel-note">{msg("近六个月 · 前十名")}</span></header>
-          {!modules.has("wallet") || taxRanking.isError ? <Feedback error={taxRanking.error ?? undefined} retry={() => void taxRanking.refetch()} /> : !taxRanking.data ? <Feedback /> : <TaxRanking rows={taxRanking.data.items} />}
+          <header className="operations-tax-header">
+            <h2>{msg("税收排行")}</h2>
+            <div className="operations-tax-controls">
+              <Select
+                label={msg("税收排行时间范围")}
+                value={taxRangePreset}
+                onValueChange={(value) => setTaxRangePreset(value as TaxRangePreset)}
+                options={[
+                  { value: "1d", label: msg("最近一天") },
+                  { value: "3d", label: msg("近三天") },
+                  { value: "7d", label: msg("近七天") },
+                  { value: "1m", label: msg("近一个月") },
+                  { value: "custom", label: msg("自定义时间") },
+                ]}
+              />
+              {taxRangePreset === "custom" && <>
+                <label className="operations-tax-date">{msg("开始日期")}<input type="date" value={taxCustomFrom} max={taxCustomUntil || dateInputValue(new Date())} onChange={(event) => setTaxCustomFrom(event.target.value)} /></label>
+                <label className="operations-tax-date">{msg("结束日期")}<input type="date" value={taxCustomUntil} max={dateInputValue(new Date())} onChange={(event) => setTaxCustomUntil(event.target.value)} /></label>
+              </>}
+            </div>
+          </header>
+          {!modules.has("wallet") || taxRanking.isError ? <Feedback error={taxRanking.error ?? undefined} retry={() => void taxRanking.refetch()} /> : !taxWindow.valid ? <p className="operations-empty">{msg("请选择有效的时间范围")}</p> : !taxRanking.data ? <Feedback /> : <TaxRanking rows={taxRanking.data.items} />}
         </Card>
         <Card className="operations-panel operations-pap">
           <header><h2>{msg("集结情况 · PAP结算")}</h2><Link to="/attendance?view=pap" className="operations-link">{msg("查看考勤")} <ArrowUpRight size={15} aria-hidden="true" /></Link></header>
