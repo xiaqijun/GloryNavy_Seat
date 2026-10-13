@@ -194,35 +194,6 @@
   color: var(--muted);
   font-size: 12px;
 }
-.loan-state-warning {
-  color: var(--warning-foreground, #8a5a00);
-  background: var(--warning-muted, #fff7e6);
-  border-color: var(--warning-border, #f2cc8f);
-}
-.loan-credit-explanation {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--warning-border, #f2cc8f);
-  border-radius: 10px;
-  background: var(--warning-muted, #fff7e6);
-}
-.loan-credit-explanation > svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--warning-foreground, #8a5a00);
-}
-.loan-credit-explanation strong {
-  display: block;
-  font-size: 14px;
-}
-.loan-credit-explanation p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
 .loan-business-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);

@@ -1,4 +1,4 @@
-import { Info, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { msg } from "@/lib/i18n";
 import * as api from "./api";
@@ -34,9 +34,8 @@ export function LoanDashboardPanel({ context }: { context: api.Context }) {
 }
 
 export function LoanCreditSummary({ credit }: { credit: api.Credit }) {
-  const noAvailableLimit = credit.total_limit_minor <= 0;
   return <section className="loan-credit-summary" aria-label={msg("我的额度与信用")}>
-    <div className="loan-section-head"><div><h2>{msg("我的额度与信用")}</h2><p>{msg("额度按统一贷款池资金、收入证据和信用评分综合计算")}</p></div>{noAvailableLimit && <span className="loan-state loan-state-warning">{msg("暂不可用")}</span>}</div>
+    <div className="loan-section-head"><h2>{msg("我的额度与信用")}</h2></div>
     <div className="loan-dashboard-overview loan-credit-overview">
       <div className="loan-credit-metric loan-credit-score">
         <span>{msg("系统信用评分")}</span>
@@ -44,6 +43,5 @@ export function LoanCreditSummary({ credit }: { credit: api.Credit }) {
       </div>
       <div className="loan-credit-metric loan-credit-limit"><span>{msg("个人额度")}</span><strong>{money(credit.total_limit_minor)}</strong><small>{msg("可申请本金上限")}</small></div>
     </div>
-    {noAvailableLimit && <div className="loan-credit-explanation" role="status"><Info size={18} aria-hidden="true" /><div><strong>{msg("额度为什么是 0？")}</strong><p>{msg("个人额度会先受统一贷款池可用资金和收入测算结果限制，再按信用评分折算。当前没有形成可用额度，通常是贷款池尚无已入池资金、收入数据未达到规则且策略设为暂停、信用状态被暂停，或评分系数被设为 0；完成资金登记或钱包同步后请刷新页面。")}</p></div></div>}
   </section>;
 }
