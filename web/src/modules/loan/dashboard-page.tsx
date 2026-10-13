@@ -15,11 +15,7 @@ export default function LoanDashboardPage() {
 export function LoanDashboardPanel({ context }: { context: api.Context }) {
   const { pool_summary: summary } = context;
   const canViewPool = context.administrator || context.can_manage_pool === true;
-  const pool = context.pools.find((item) => item.state === "open") ?? context.pools[0];
   const poolOpen = context.pools.some((item) => item.state === "open");
-  const fundingWallet = pool?.funding_wallet_owner_id
-    ? context.funding_wallets?.find((wallet) => wallet.kind === pool.funding_wallet_kind && wallet.owner_id === pool.funding_wallet_owner_id && wallet.division === (pool.funding_wallet_division ?? 0))
-    : undefined;
   return <div className="loan-dashboard">
     <section className="loan-dashboard-panel loan-pool-overview" aria-label={msg("整体借贷信息")}>
       <div className="loan-section-head"><div><h2>{msg("整体借贷信息")}</h2><p>{msg("统一贷款池的入金、放款和可用余额")}</p></div><span className="loan-state">{poolOpen ? msg("贷款池开放") : msg("统一贷款池暂不可用")}</span></div>
@@ -31,8 +27,7 @@ export function LoanDashboardPanel({ context }: { context: api.Context }) {
         <div><span>{msg("可放贷余额")}</span><strong>{money(summary.available_minor)}</strong></div>
       </div> : <div className="loan-pool-private"><ShieldCheck size={18} aria-hidden="true" /><span>{msg("整体资金金额仅对贷款管理者展示，当前账号可查看贷款池状态和个人办理信息。")}</span></div>}
       {canViewPool && <div className="loan-dashboard-funding">
-        <div><span>{msg("当前资金池钱包")}</span><strong>{fundingWallet?.name ?? msg("未配置")}</strong></div>
-        <p>{msg("选择钱包只设置合同归属，不会自动把钱包余额计入已入池资金；完成并核验入金合同后，资金才会进入贷款流水。")}</p>
+        <p>{msg("资金池资金来自已核验的出借入金或管理员直接登记；登记资金不需要游戏合同。")}</p>
       </div>}
     </section>
   </div>;

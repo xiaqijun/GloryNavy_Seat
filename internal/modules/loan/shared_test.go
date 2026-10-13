@@ -212,29 +212,9 @@ func TestCashMatchesCustodyDirections(t *testing.T) {
 	}
 }
 
-func TestFundingWalletPartyAndValidation(t *testing.T) {
-	if !validFundingWallet(FundingWallet{Kind: "character", OwnerID: 101}) {
-		t.Fatal("character wallet should be valid")
-	}
-	if !validFundingWallet(FundingWallet{Kind: "corporation", OwnerID: 202, Division: 7}) {
-		t.Fatal("corporation division should be valid")
-	}
-	for _, wallet := range []FundingWallet{{Kind: "character", OwnerID: 101, Division: 1}, {Kind: "corporation", OwnerID: 202}, {Kind: "corporation", OwnerID: 202, Division: 8}} {
-		if validFundingWallet(wallet) {
-			t.Fatalf("invalid wallet accepted: %+v", wallet)
-		}
-	}
-	for _, tt := range []struct {
-		pool store.Pool
-		want cashParty
-	}{
-		{pool: store.Pool{FundingWalletKind: "character", FundingWalletOwnerID: ptrInt64(101)}, want: cashParty{kind: "character", id: 101}},
-		{pool: store.Pool{FundingWalletKind: "corporation", FundingWalletOwnerID: ptrInt64(202), FundingWalletDivision: 3}, want: cashParty{kind: "corporation", id: 202}},
-	} {
-		if got := custody(tt.pool); got != tt.want {
-			t.Fatalf("custody(%+v)=%+v, want %+v", tt.pool, got, tt.want)
-		}
+func TestCustodyUsesConfiguredCustodianCharacter(t *testing.T) {
+	character := int64(101)
+	if got := custody(store.Pool{CustodianCharacterID: &character}); got != (cashParty{kind: "character", id: character}) {
+		t.Fatalf("custody=%+v, want character %d", got, character)
 	}
 }
-
-func ptrInt64(v int64) *int64 { return &v }

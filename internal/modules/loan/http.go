@@ -25,7 +25,7 @@ func (h Handler) Module() module.Definition {
 		method, path string
 		fn           http.HandlerFunc
 	}{
-		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate}, {"POST", "/settings/funding-wallet", h.fundingWalletUpdate},
+		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate}, {"POST", "/settings/funding", h.adminFunding},
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
@@ -98,14 +98,10 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 	}
 	canManage := false
 	managerCharacters := []Character{}
-	fundingWallets := []FundingWallet{}
 	if len(p) > 0 {
 		canManage, _ = h.Service.CanManageSharedPool(r.Context(), u)
 		if canManage && h.Service.ManageCharacters != nil {
 			managerCharacters, _ = h.Service.ManageCharacters(r.Context())
-		}
-		if canManage && h.Service.FundingWallets != nil {
-			fundingWallets, _ = h.Service.FundingWallets(r.Context(), u)
 		}
 	}
 	// Pool cash-flow totals are management data. Keep the response shape stable
@@ -120,7 +116,7 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "custodian_characters": managerCharacters, "funding_wallets": fundingWallets}, nil)
+	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "custodian_characters": managerCharacters}, nil)
 }
 func (h Handler) credit(w http.ResponseWriter, r *http.Request) {
 	c, e := h.Service.Credit(r.Context(), h.User(r))
@@ -191,18 +187,15 @@ func (h Handler) custodianUpdate(w http.ResponseWriter, r *http.Request) {
 	v, e := h.Service.ConfigureCustodian(r.Context(), h.User(r), in.PoolID, in.CharacterID, in.Version)
 	respond(w, r, v, e)
 }
-func (h Handler) fundingWalletUpdate(w http.ResponseWriter, r *http.Request) {
+func (h Handler) adminFunding(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		PoolID   int64 `json:"pool_id"`
-		Kind     string `json:"kind"`
-		OwnerID  int64 `json:"owner_id"`
-		Division int   `json:"division"`
-		Version  int64 `json:"version"`
+		PoolID      int64 `json:"pool_id"`
+		AmountMinor int64 `json:"amount_minor"`
 	}
 	if !read(w, r, &in) {
 		return
 	}
-	v, e := h.Service.ConfigureFundingWallet(r.Context(), h.User(r), in.PoolID, FundingWallet{Kind: in.Kind, OwnerID: in.OwnerID, Division: in.Division}, in.Version)
+	v, e := h.Service.AddAdminFunding(r.Context(), h.User(r), in.PoolID, in.AmountMinor)
 	respond(w, r, v, e)
 }
 func (h Handler) contributionAutoVerify(w http.ResponseWriter, r *http.Request) {

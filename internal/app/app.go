@@ -775,32 +775,6 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return out, nil
 		},
 	}
-	loanService.FundingWallets = func(ctx context.Context, actor string) ([]loan.FundingWallet, error) {
-		if walletModule.Owners == nil {
-			return nil, loan.ErrRule
-		}
-		owners, err := walletModule.Owners(ctx, actor, "")
-		if err != nil {
-			return nil, err
-		}
-		out := make([]loan.FundingWallet, 0, len(owners))
-		for _, owner := range owners {
-			if owner.Kind == "character" && len(owner.Divisions) == 1 && owner.Divisions[0] == 0 {
-				out = append(out, loan.FundingWallet{Kind: "character", OwnerID: owner.ID, Name: owner.Name})
-				continue
-			}
-			if owner.Kind != "corporation" || len(owner.Divisions) == 0 {
-				continue
-			}
-			for _, division := range owner.Divisions {
-				if division < 1 || division > 7 {
-					continue
-				}
-				out = append(out, loan.FundingWallet{Kind: "corporation", OwnerID: owner.ID, Division: division, Name: fmt.Sprintf("%s / 钱包 %d", owner.Name, division)})
-			}
-		}
-		return out, nil
-	}
 	if syncService != nil {
 		loanService.IncomeEvidence = func(ctx context.Context, user string, from time.Time) (loan.IncomeEvidence, error) {
 			return loanIncomeEvidence(ctx, user, from, identityService, syncService)

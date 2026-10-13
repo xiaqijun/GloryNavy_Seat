@@ -64,14 +64,6 @@ func cashMatches(c Contract, payer, receiver cashParty, amount int64) bool {
 	return false
 }
 func custody(p store.Pool) cashParty {
-	if p.FundingWalletOwnerID != nil {
-		if p.FundingWalletKind == "character" && p.FundingWalletDivision == 0 {
-			return cashParty{"character", *p.FundingWalletOwnerID}
-		}
-		if p.FundingWalletKind == "corporation" && p.FundingWalletDivision >= 1 && p.FundingWalletDivision <= 7 {
-			return cashParty{"corporation", *p.FundingWalletOwnerID}
-		}
-	}
 	if p.CustodianCharacterID != nil {
 		return cashParty{"character", *p.CustodianCharacterID}
 	}
@@ -99,19 +91,6 @@ func (s *Service) ownsCharacter(ctx context.Context, actor string, id int64) (bo
 	return false, nil
 }
 func (s *Service) validCustody(ctx context.Context, p store.Pool) error {
-	if p.FundingWalletOwnerID != nil {
-		if p.FundingWalletKind == "corporation" && p.FundingWalletDivision >= 1 && p.FundingWalletDivision <= 7 && p.CorporationID != nil && *p.CorporationID == *p.FundingWalletOwnerID {
-			return nil
-		}
-		if p.FundingWalletKind == "character" && p.FundingWalletDivision == 0 && s.AccountForCharacter != nil {
-			owner, err := s.AccountForCharacter(ctx, *p.FundingWalletOwnerID)
-			if err != nil || owner == "" {
-				return ErrRule
-			}
-			return nil
-		}
-		return ErrRule
-	}
 	if p.LenderKind == "personal" && p.LenderUserID != nil && p.CustodianCharacterID != nil {
 		ok, e := s.ownsCharacter(ctx, *p.LenderUserID, *p.CustodianCharacterID)
 		if e != nil {
@@ -130,77 +109,6 @@ func (s *Service) validCustody(ctx context.Context, p store.Pool) error {
 		return nil
 	}
 	return ErrRule
-}
-
-func validFundingWallet(w FundingWallet) bool {
-	return w.OwnerID > 0 && ((w.Kind == "character" && w.Division == 0) || (w.Kind == "corporation" && w.Division >= 1 && w.Division <= 7))
-}
-
-func sameFundingWallet(a FundingWallet, kind string, ownerID int64, division int) bool {
-	return a.Kind == kind && a.OwnerID == ownerID && a.Division == division
-}
-
-func (s *Service) ConfigureFundingWallet(ctx context.Context, actor string, poolID int64, wallet FundingWallet, version int64) (store.Pool, error) {
-	if poolID <= 0 || version <= 0 || !validFundingWallet(wallet) || s.FundingWallets == nil {
-		return store.Pool{}, ErrInvalid
-	}
-	p, err := store.SharedPool(ctx, s.db(), false)
-	if err != nil {
-		return p, err
-	}
-	if p.ID != poolID {
-		return p, ErrForbidden
-	}
-	ok, err := s.canManage(ctx, actor, p)
-	if err != nil || !ok {
-		return p, ErrForbidden
-	}
-	if wallet.Kind == "corporation" && (p.CorporationID == nil || *p.CorporationID != wallet.OwnerID) {
-		return p, ErrForbidden
-	}
-	options, err := s.FundingWallets(ctx, actor)
-	if err != nil {
-		return p, err
-	}
-	found := false
-	for _, option := range options {
-		if sameFundingWallet(option, wallet.Kind, wallet.OwnerID, wallet.Division) {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return p, ErrForbidden
-	}
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return p, err
-	}
-	defer tx.Rollback(ctx)
-	if err = s.guardAccounts(ctx, tx, actor); err != nil {
-		return p, err
-	}
-	locked, err := store.SharedPool(ctx, tx, true)
-	if err != nil {
-		return p, err
-	}
-	if locked.ID != poolID || locked.Version != version {
-		return p, ErrConflict
-	}
-	out, err := store.UpdateFundingWallet(ctx, tx, poolID, wallet.Kind, wallet.OwnerID, wallet.Division, version)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return p, ErrConflict
-		}
-		return p, err
-	}
-	if err = store.Audit(ctx, tx, 0, actor, "funding_wallet_updated", locked, out); err != nil {
-		return p, err
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return p, err
-	}
-	return s.decoratePool(ctx, out), nil
 }
 
 func (s *Service) ConfigureCustodian(ctx context.Context, actor string, poolID, characterID, version int64) (store.Pool, error) {
@@ -250,6 +158,50 @@ func (s *Service) ConfigureCustodian(ctx context.Context, actor string, poolID, 
 		return p, err
 	}
 	return s.decoratePool(ctx, out), nil
+}
+
+// AddAdminFunding records capital supplied directly by a site administrator.
+// It is a ledger entry by design, so no EVE contract is created or claimed.
+func (s *Service) AddAdminFunding(ctx context.Context, actor string, poolID, amountMinor int64) (store.PoolSummary, error) {
+	if poolID <= 0 || !validCash(amountMinor) || s.IsAdministrator == nil {
+		return store.PoolSummary{}, ErrInvalid
+	}
+	admin, err := s.IsAdministrator(ctx, actor)
+	if err != nil {
+		return store.PoolSummary{}, err
+	}
+	if !admin {
+		return store.PoolSummary{}, ErrForbidden
+	}
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return store.PoolSummary{}, err
+	}
+	defer tx.Rollback(ctx)
+	if err = s.guardAccounts(ctx, tx, actor); err != nil {
+		return store.PoolSummary{}, err
+	}
+	p, err := store.SharedPool(ctx, tx, true)
+	if err != nil {
+		return store.PoolSummary{}, err
+	}
+	if p.ID != poolID || p.State != "open" {
+		return store.PoolSummary{}, ErrConflict
+	}
+	if err = store.PoolLedger(ctx, tx, p.ID, 0, 0, amountMinor, "admin_deposit", actor); err != nil {
+		return store.PoolSummary{}, err
+	}
+	if err = store.Audit(ctx, tx, 0, actor, "admin_funding_added", nil, map[string]any{"pool_id": p.ID, "amount_minor": amountMinor}); err != nil {
+		return store.PoolSummary{}, err
+	}
+	summary, err := store.Summary(ctx, tx, p.ID)
+	if err != nil {
+		return store.PoolSummary{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return store.PoolSummary{}, err
+	}
+	return summary, nil
 }
 func (s *Service) guardAccounts(ctx context.Context, tx pgx.Tx, ids ...string) error {
 	if s.LockAccounts == nil {

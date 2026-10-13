@@ -36,15 +36,6 @@ type Character struct {
 	Nickname  string `json:"nickname,omitempty"`
 }
 
-// FundingWallet is an EVE wallet that a loan manager is currently authorized
-// to use as the shared pool's cash contract owner. Corporate wallets are
-// represented by one division (1-7); personal character wallets use division 0.
-type FundingWallet struct {
-	Kind     string `json:"kind"`
-	OwnerID  int64  `json:"owner_id,string"`
-	Division int    `json:"division"`
-	Name     string `json:"name"`
-}
 type Contract struct {
 	ID                  int64
 	OwnerKind           string
@@ -106,7 +97,6 @@ type Service struct {
 	AccountForCharacter func(context.Context, int64) (string, error)
 	CreditEvidence      func(context.Context, string) (CreditEvidence, error)
 	IncomeEvidence      func(context.Context, string, time.Time) (IncomeEvidence, error)
-	FundingWallets      func(context.Context, string) ([]FundingWallet, error)
 }
 
 // GuaranteeCandidates exposes public character names for invitation selection.
@@ -534,9 +524,6 @@ func sameJSON(a, b []byte) bool {
 func (s *Service) contractOwnerMatchesPool(ctx context.Context, p store.Pool, kind string, owner int64) (bool, error) {
 	if owner <= 0 {
 		return false, nil
-	}
-	if p.FundingWalletOwnerID != nil {
-		return kind == p.FundingWalletKind && owner == *p.FundingWalletOwnerID, nil
 	}
 	if p.LenderKind == "corporation" {
 		return kind == "corporation" && p.CorporationID != nil && *p.CorporationID == owner, nil
