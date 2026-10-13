@@ -30,7 +30,7 @@ type PoolSummary struct {
 }
 
 func SharedPool(ctx context.Context, db DBTX, lock bool) (Pool, error) {
-	q := `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE is_shared`
+	q := `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE is_shared`
 	if lock {
 		q += ` FOR UPDATE`
 	}
@@ -44,7 +44,7 @@ func UpdateCustodian(ctx context.Context, db DBTX, id, characterID, version int6
 	err := db.QueryRow(ctx, `UPDATE loan_pools
 SET custodian_character_id=$2,version=version+1,updated_at=now()
 WHERE id=$1 AND is_shared AND version=$3
-	RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division`, id, characterID, version).
+	RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division`, id, characterID, version).
 		Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID, &p.FundingWalletKind, &p.FundingWalletOwnerID, &p.FundingWalletDivision)
 	return p, err
 }
@@ -54,7 +54,7 @@ func UpdateFundingWallet(ctx context.Context, db DBTX, id int64, kind string, ow
 	err := db.QueryRow(ctx, `UPDATE loan_pools
 SET funding_wallet_kind=$2,funding_wallet_owner_id=$3,funding_wallet_division=$4,version=version+1,updated_at=now()
 WHERE id=$1 AND is_shared AND version=$5
-RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division`, id, kind, ownerID, division, version).
+	RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division`, id, kind, ownerID, division, version).
 		Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID, &p.FundingWalletKind, &p.FundingWalletOwnerID, &p.FundingWalletDivision)
 	return p, err
 }

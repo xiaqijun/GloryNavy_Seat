@@ -191,7 +191,7 @@ type Collateral struct {
 }
 
 func ListPools(ctx context.Context, db DBTX, user string) ([]Pool, error) {
-	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE state='open' AND (lender_kind='personal' AND lender_user_id=$1::uuid OR lender_kind='corporation') ORDER BY id`, user)
+	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE state='open' AND (lender_kind='personal' AND lender_user_id=$1::uuid OR lender_kind='corporation') ORDER BY id`, user)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func ListPools(ctx context.Context, db DBTX, user string) ([]Pool, error) {
 }
 
 func ListAllPools(ctx context.Context, db DBTX) ([]Pool, error) {
-	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE state<>'closed' ORDER BY id`)
+	rows, err := db.Query(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE state<>'closed' ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func ListAllPools(ctx context.Context, db DBTX) ([]Pool, error) {
 
 func GetPool(ctx context.Context, db DBTX, id int64) (Pool, error) {
 	var p Pool
-	err := db.QueryRow(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,funding_wallet_kind,funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE id=$1`, id).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID, &p.FundingWalletKind, &p.FundingWalletOwnerID, &p.FundingWalletDivision)
+	err := db.QueryRow(ctx, `SELECT id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id,COALESCE(funding_wallet_kind,''),funding_wallet_owner_id,funding_wallet_division FROM loan_pools WHERE id=$1`, id).Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID, &p.FundingWalletKind, &p.FundingWalletOwnerID, &p.FundingWalletDivision)
 	return p, err
 }
 
