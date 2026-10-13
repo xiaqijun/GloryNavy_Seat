@@ -1,6 +1,7 @@
 -- Module: loan. Administrators may record capital added directly to the shared pool.
 -- The entry is an auditable ledger deposit and does not require an EVE contract.
 -- +goose Up
+-- +goose StatementBegin
 DO $$
 DECLARE
   constraint_name text;
@@ -14,6 +15,7 @@ BEGIN
     EXECUTE format('ALTER TABLE loan_pool_ledger DROP CONSTRAINT %I', constraint_name);
   END LOOP;
 END $$;
+-- +goose StatementEnd
 
 ALTER TABLE loan_pool_ledger
   ADD CONSTRAINT loan_pool_ledger_delta_check CHECK (delta_minor <> 0),
