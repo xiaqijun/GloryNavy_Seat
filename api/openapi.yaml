@@ -7831,6 +7831,23 @@ paths:
         '401': {description: No active session}
         '403': {description: Caller cannot manage the shared pool}
         '409': {description: Pool configuration changed}
+  /api/v1/loan/settings/funding:
+    post:
+      operationId: loanAdminFundingAdd
+      security: [{SessionCookie: []}]
+      summary: Register shared-pool capital directly
+      description: Requires a site administrator. The amount is written as an auditable loan-pool ledger deposit; no in-game contract is created or verified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanAdminFundingInput'}
+      responses:
+        '200': {description: Updated shared-pool cash summary}
+        '400': {description: Invalid pool or whole-ISK amount}
+        '401': {description: No active session}
+        '403': {description: Caller is not a site administrator}
+        '409': {description: Pool is unavailable}
   /api/v1/loan/cases:
     get:
       operationId: loanCases
@@ -8086,6 +8103,13 @@ components:
         pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
         character_id: {type: string, pattern: '^[1-9][0-9]*$'}
         version: {type: integer, format: int64, minimum: 1}
+    LoanAdminFundingInput:
+      type: object
+      additionalProperties: false
+      required: [pool_id, amount_minor]
+      properties:
+        pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        amount_minor: {type: integer, format: int64, minimum: 100, description: Whole-ISK amount in hundredths; written directly to the loan-pool ledger without a game contract}
     LoanCreditPolicy:
       type: object
       additionalProperties: false
