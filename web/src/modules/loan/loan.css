@@ -110,45 +110,7 @@
   gap: 24px;
   align-items: stretch;
 }
-.loan-dashboard-score {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 8px;
-  padding: 20px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--primary) 8%, var(--card));
-}
-.loan-dashboard-score-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--primary);
-  color: var(--color-primary-foreground, #fff);
-}
-.loan-dashboard-score > span:not(.loan-state) {
-  color: var(--muted);
-  font-size: 13px;
-}
-.loan-dashboard-score > strong {
-  font-size: 36px;
-  line-height: 1;
-}
-.loan-dashboard-score > strong small {
-  margin-left: 3px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
-}
-.loan-dashboard-limits {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  align-content: center;
-}
-.loan-dashboard-limits > div {
+.loan-credit-metric {
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -157,13 +119,19 @@
   border-radius: 10px;
   background: var(--background);
 }
-.loan-dashboard-limits span {
+.loan-credit-metric span {
   color: var(--muted);
   font-size: 13px;
 }
-.loan-dashboard-limits strong {
+.loan-credit-metric strong {
   overflow-wrap: anywhere;
   font-size: 18px;
+}
+.loan-credit-metric strong small {
+  margin-left: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 .loan-dashboard-panel {
   display: grid;
@@ -641,5 +609,4 @@
   .loan-dashboard-metrics {
     grid-template-columns: 1fr;
   }
-  .loan-dashboard-limits { grid-template-columns: 1fr; }
 }

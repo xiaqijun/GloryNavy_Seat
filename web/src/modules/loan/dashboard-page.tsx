@@ -1,4 +1,4 @@
-import { Gauge, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { msg } from "@/lib/i18n";
 import * as api from "./api";
@@ -34,14 +34,11 @@ export function LoanCreditSummary({ credit }: { credit: api.Credit }) {
   return <section className="loan-credit-summary" aria-label={msg("我的额度与信用")}>
     <div className="loan-section-head"><h2>{msg("我的额度与信用")}</h2></div>
     <div className="loan-dashboard-overview">
-      <div className="loan-dashboard-score">
-        <div className="loan-dashboard-score-icon"><Gauge size={20} aria-hidden="true" /></div>
+      <div className="loan-credit-metric">
         <span>{msg("系统信用评分")}</span>
         <strong>{credit.score == null ? "—" : credit.score}<small>/100</small></strong>
       </div>
-      <div className="loan-dashboard-limits">
-        <div><span>{msg("个人额度")}</span><strong>{money(credit.total_limit_minor)}</strong></div>
-      </div>
+      <div className="loan-credit-metric"><span>{msg("个人额度")}</span><strong>{money(credit.total_limit_minor)}</strong></div>
     </div>
   </section>;
 }
