@@ -2445,6 +2445,7 @@ export const english: Record<string, string> = {
   "信用审批配置": "Credit approval settings",
   "系统信用评分": "System credit score",
   "系统总额度": "System total limit",
+  "个人额度": "Personal limit",
   "系统无担保额度": "System unsecured limit",
   评分因子: "Score factors",
   履约: "Repayment",
