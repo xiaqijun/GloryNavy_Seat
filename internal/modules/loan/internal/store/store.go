@@ -65,6 +65,7 @@ type Credit struct {
 	AllianceEligibleMonths      int64     `json:"alliance_eligible_months"`
 	AllianceFulfilledMonths     int64     `json:"alliance_fulfilled_months"`
 	AssetPoints                 int       `json:"asset_points"`
+	AssetValueMinor             int64     `json:"asset_value_minor"`
 	Evidence                    string    `json:"evidence"`
 }
 

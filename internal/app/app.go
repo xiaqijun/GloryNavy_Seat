@@ -742,28 +742,36 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		},
 		CreditEvidence: func(ctx context.Context, user string) (loan.CreditEvidence, error) {
 			var out loan.CreditEvidence
-			if !slices.Contains(enabled, "attendance") {
-				return out, nil
+			if slices.Contains(enabled, "attendance") {
+				pap, err := attendanceModule.Service.CreditPAP(ctx, user)
+				if err == nil {
+					// PAP is split into two bounded signals: local six-month activity
+					// attendance (3 points) and six-month alliance requirement
+					// fulfillment (2 points). Missing evidence stays neutral at zero.
+					out.CorporationAttendancePoints = scoreRateBPS(pap.CorporationAttendanceBPS, 3)
+					out.AllianceFulfillmentPoints = scoreRateBPS(pap.AllianceFulfillmentBPS, 2)
+					out.PAPPoints = minInt(5, out.CorporationAttendancePoints+out.AllianceFulfillmentPoints)
+					out.CorporationAttendanceBPS = pap.CorporationAttendanceBPS
+					out.CorporationEligibleEvents = pap.CorporationEligibleEvents
+					out.CorporationAttendedEvents = pap.CorporationAttendedEvents
+					out.AllianceFulfillmentBPS = pap.AllianceFulfillmentBPS
+					out.AllianceEligibleMonths = pap.AllianceEligibleMonths
+					out.AllianceFulfilledMonths = pap.AllianceFulfilledMonths
+					out.PAPAvailable = pap.Complete
+					out.PAPSnapshotID = pap.SnapshotID
+					out.EvidenceCutoff = pap.ObservedAt
+				}
 			}
-			pap, err := attendanceModule.Service.CreditPAP(ctx, user)
-			if err != nil {
-				return out, nil
+			if syncService != nil {
+				if assets, err := loanAssetEvidence(ctx, user, identityService, syncService); err == nil {
+					out.AssetAvailable = assets.AssetAvailable
+					out.AssetValueMinor = assets.AssetValueMinor
+					out.AssetSnapshotID = assets.AssetSnapshotID
+					if out.EvidenceCutoff.IsZero() || (!assets.EvidenceCutoff.IsZero() && assets.EvidenceCutoff.Before(out.EvidenceCutoff)) {
+						out.EvidenceCutoff = assets.EvidenceCutoff
+					}
+				}
 			}
-			// PAP is split into two bounded signals: local six-month activity
-			// attendance (3 points) and six-month alliance requirement
-			// fulfillment (2 points). Missing evidence stays neutral at zero.
-			out.CorporationAttendancePoints = scoreRateBPS(pap.CorporationAttendanceBPS, 3)
-			out.AllianceFulfillmentPoints = scoreRateBPS(pap.AllianceFulfillmentBPS, 2)
-			out.PAPPoints = minInt(5, out.CorporationAttendancePoints+out.AllianceFulfillmentPoints)
-			out.CorporationAttendanceBPS = pap.CorporationAttendanceBPS
-			out.CorporationEligibleEvents = pap.CorporationEligibleEvents
-			out.CorporationAttendedEvents = pap.CorporationAttendedEvents
-			out.AllianceFulfillmentBPS = pap.AllianceFulfillmentBPS
-			out.AllianceEligibleMonths = pap.AllianceEligibleMonths
-			out.AllianceFulfilledMonths = pap.AllianceFulfilledMonths
-			out.PAPAvailable = pap.Complete
-			out.PAPSnapshotID = pap.SnapshotID
-			out.EvidenceCutoff = pap.ObservedAt
 			return out, nil
 		},
 	}

@@ -41,7 +41,7 @@ func TestAssessCreditAuxiliarySignalsAreCappedAndMissingIsNeutral(t *testing.T) 
 	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
 	withEvidence := assessCreditWithEvidence("account", store.CreditSignals{}, CreditEvidence{
 		PAPPoints: 99, AssetPoints: 99, PAPAvailable: true, AssetAvailable: true,
-		AssetValueMinor: 9_000_000, EvidenceCutoff: now,
+		AssetValueMinor: 10_000_000_000 * 100, EvidenceCutoff: now,
 	}, 1_000_000, now)
 	if withEvidence.Score == nil || *withEvidence.Score != 70 {
 		t.Fatalf("score=%v, want capped auxiliary score 70", withEvidence.Score)
@@ -52,6 +52,28 @@ func TestAssessCreditAuxiliarySignalsAreCappedAndMissingIsNeutral(t *testing.T) 
 	missing := assessCreditWithEvidence("account", store.CreditSignals{}, CreditEvidence{}, 1_000_000, now)
 	if missing.Score == nil || *missing.Score != 55 || missing.PAPPoints != 0 || missing.AssetPoints != 0 {
 		t.Fatalf("missing evidence=%+v, want neutral score 55", missing)
+	}
+}
+
+func TestAssetScaleScoreUsesTotalPersonalAssetBands(t *testing.T) {
+	tests := []struct {
+		name  string
+		value int64
+		want  int
+	}{
+		{"below first band", 99_999_999 * 100, 0},
+		{"one hundred million", 100_000_000 * 100, 2},
+		{"five hundred million", 500_000_000 * 100, 4},
+		{"one billion", 1_000_000_000 * 100, 6},
+		{"five billion", 5_000_000_000 * 100, 8},
+		{"ten billion", 10_000_000_000 * 100, 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := assetScaleScore(tt.value); got != tt.want {
+				t.Fatalf("assetScaleScore(%d)=%d, want %d", tt.value, got, tt.want)
+			}
+		})
 	}
 }
 

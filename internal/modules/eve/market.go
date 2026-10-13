@@ -65,6 +65,54 @@ type marketAveragePrice struct {
 	AveragePrice json.Number `json:"average_price"`
 }
 
+// MarketAveragePrices reads EVE's published average-price table in one
+// request. It is intended for broad, conservative inventory estimates where a
+// Jita order-book request per type would be both slow and rate-limit heavy.
+func (s *ESIService) MarketAveragePrices(ctx context.Context) (map[int64]MarketPrices, error) {
+	var rows []marketAveragePrice
+	var meta ESIResponse
+	var err error
+	for attempt := 0; attempt < 4; attempt++ {
+		meta, err = s.Request(ctx, ESIRequest{Method: "GET", Path: "/markets/prices/"}, &rows)
+		var retry retryError
+		if !errors.As(err, &retry) || time.Until(retry.Until) > 300*time.Millisecond {
+			break
+		}
+		timer := time.NewTimer(max(time.Millisecond, time.Until(retry.Until)))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	observed := meta.ContentUpdatedAt
+	if observed.IsZero() {
+		observed = meta.ValidatedAt
+	}
+	out := make(map[int64]MarketPrices, len(rows))
+	for _, row := range rows {
+		if row.TypeID <= 0 {
+			return nil, errors.New("invalid market average type")
+		}
+		// ESI publishes rows without a trade average as null. Leave those
+		// types absent so an asset snapshot that needs one remains neutral.
+		if row.AveragePrice.String() == "" {
+			continue
+		}
+		price, ok := new(big.Rat).SetString(row.AveragePrice.String())
+		if !ok || price.Sign() <= 0 {
+			return nil, errors.New("invalid market average price")
+		}
+		value := price.FloatString(2)
+		out[row.TypeID] = MarketPrices{Mid: &value, ObservedAt: observed, ExpiresAt: meta.ExpiresAt}
+	}
+	return out, nil
+}
+
 const (
 	plexTypeID       int64 = 44992
 	plexMarketRegion       = 19000001

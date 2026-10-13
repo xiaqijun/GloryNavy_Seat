@@ -89,3 +89,21 @@ func TestJitaPricesPLEXUsesESIAverageWhenGlobalOrderBookIsEmpty(t *testing.T) {
 		t.Fatal(v, err)
 	}
 }
+
+func TestMarketAveragePricesReturnsValidatedBulkQuotes(t *testing.T) {
+	p := testutil.Database(t)
+	s := newESI(p, nil)
+	s.http.Transport = transportFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.Path != "/markets/prices/" {
+			t.Fatal(r.URL)
+		}
+		if _, err := p.Exec(r.Context(), `UPDATE eve_esi_limits SET next_request_at='epoch'`); err != nil {
+			t.Fatal(err)
+		}
+		return esiResponse([]map[string]any{{"type_id": 34, "average_price": 4.25}, {"type_id": 35, "average_price": 12}}), nil
+	})
+	quotes, err := s.MarketAveragePrices(context.Background())
+	if err != nil || quotes[34].Mid == nil || *quotes[34].Mid != "4.25" || quotes[35].Mid == nil || *quotes[35].Mid != "12.00" {
+		t.Fatalf("quotes=%v, err=%v", quotes, err)
+	}
+}

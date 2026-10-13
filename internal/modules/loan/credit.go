@@ -13,6 +13,19 @@ import (
 
 const creditRuleVersion = "system-v2"
 
+// Asset scale is scored from aggregate personal ESI assets. Values are stored
+// in ISK minor units (1 ISK = 100 minor units).
+var assetScaleBands = [...]struct {
+	ThresholdMinor int64
+	Points         int
+}{
+	{100_000_000 * 100, 2},
+	{500_000_000 * 100, 4},
+	{1_000_000_000 * 100, 6},
+	{5_000_000_000 * 100, 8},
+	{10_000_000_000 * 100, 10},
+}
+
 type IncomeEvidence struct {
 	MonthlyNetIncomeMinor int64
 	Samples               int
@@ -57,6 +70,17 @@ func clampScore(v, max int) int {
 	return v
 }
 
+func assetScaleScore(valueMinor int64) int {
+	points := 0
+	for _, band := range assetScaleBands {
+		if valueMinor < band.ThresholdMinor {
+			break
+		}
+		points = band.Points
+	}
+	return points
+}
+
 // assessCredit applies the published weights: repayment 55, leverage 20,
 // security history 10, PAP 5 (corporation attendance 3 plus alliance
 // fulfillment 2) and asset scale 10. Missing PAP/assets are neutral and never
@@ -86,7 +110,10 @@ func assessCreditWithEvidence(account string, signals store.CreditSignals, evide
 	leverage = clampScore(leverage, 20)
 	security := clampScore(10-signals.SecurityDisputes*5, 10)
 	pap := clampScore(evidence.PAPPoints, 5)
-	assets := clampScore(evidence.AssetPoints, 10)
+	assets := 0
+	if evidence.AssetAvailable {
+		assets = assetScaleScore(evidence.AssetValueMinor)
+	}
 	score := clampScore(repayment+leverage+security+pap+assets, 100)
 	state := "active"
 	if signals.DefaultedLoans > 0 {
@@ -111,7 +138,7 @@ func assessCreditWithEvidence(account string, signals store.CreditSignals, evide
 		RepaymentPoints: repayment, LeveragePoints: leverage, SecurityPoints: security, PAPPoints: pap, CorporationAttendancePoints: evidence.CorporationAttendancePoints, AllianceFulfillmentPoints: evidence.AllianceFulfillmentPoints,
 		CorporationAttendanceBPS: evidence.CorporationAttendanceBPS, CorporationEligibleEvents: evidence.CorporationEligibleEvents, CorporationAttendedEvents: evidence.CorporationAttendedEvents,
 		AllianceFulfillmentBPS: evidence.AllianceFulfillmentBPS, AllianceEligibleMonths: evidence.AllianceEligibleMonths, AllianceFulfilledMonths: evidence.AllianceFulfilledMonths,
-		AssetPoints: assets,
+		AssetPoints: assets, AssetValueMinor: evidence.AssetValueMinor,
 		Evidence:    evidenceSummary(evidence, evidenceCutoff),
 	}
 }
