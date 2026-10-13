@@ -2444,6 +2444,8 @@ export const english: Record<string, string> = {
   统一贷款池: "Shared loan pool",
   整体借贷信息: "Overall lending information",
   "统一贷款池的入金、放款和可用余额": "Shared-pool deposits, disbursements, and available balance",
+  当前资金池钱包: "Current funding wallet",
+  "选择钱包只设置合同归属，不会自动把钱包余额计入已入池资金；完成并核验入金合同后，资金才会进入贷款流水。": "Selecting a wallet only sets the contract owner; its wallet balance is not added to pool cash automatically. Funds enter the loan ledger after the deposit contract is completed and verified.",
   贷款池开放: "Loan pool open",
   "整体资金金额仅对贷款管理者展示，当前账号可查看贷款池状态和个人办理信息。": "Pool amounts are visible to loan managers; this account can view the pool status and personal operations.",
   "统一贷款池暂不可用": "The shared loan pool is temporarily unavailable",

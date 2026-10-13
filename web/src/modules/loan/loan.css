@@ -104,6 +104,28 @@
   margin-top: 8px;
   font-size: 22px;
 }
+.loan-dashboard-funding {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+}
+.loan-dashboard-funding span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.loan-dashboard-funding strong {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+.loan-dashboard-funding p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
 .loan-dashboard-overview {
   display: grid;
   grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr);
