@@ -162,10 +162,81 @@
 .loan-credit-summary {
   display: grid;
   gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
 }
 .loan-credit-summary > .loan-section-head {
   align-items: end;
 }
+.loan-credit-overview {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.loan-credit-metric {
+  align-content: center;
+  min-height: 112px;
+}
+.loan-credit-metric strong {
+  font-size: 28px;
+  line-height: 1.15;
+}
+.loan-credit-limit strong {
+  color: var(--primary);
+}
+.loan-credit-metric > small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.loan-state-warning {
+  color: var(--warning-foreground, #8a5a00);
+  background: var(--warning-muted, #fff7e6);
+  border-color: var(--warning-border, #f2cc8f);
+}
+.loan-credit-explanation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--warning-border, #f2cc8f);
+  border-radius: 10px;
+  background: var(--warning-muted, #fff7e6);
+}
+.loan-credit-explanation > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--warning-foreground, #8a5a00);
+}
+.loan-credit-explanation strong {
+  display: block;
+  font-size: 14px;
+}
+.loan-credit-explanation p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.loan-business-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+  grid-template-areas:
+    "actions actions"
+    "loans guarantees"
+    "loans contributions";
+  gap: 24px;
+  align-items: start;
+}
+.loan-business-layout > .loan-action-card { grid-area: actions; }
+.loan-business-loans { grid-area: loans; min-width: 0; }
+.loan-business-guarantees { grid-area: guarantees; min-width: 0; }
+.loan-business-contributions { grid-area: contributions; min-width: 0; }
 .loan-pool-private {
   display: flex;
   align-items: center;
@@ -594,6 +665,14 @@
   }
 }
 @media (max-width: 800px) {
+  .loan-business-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "actions"
+      "guarantees"
+      "contributions"
+      "loans";
+  }
   .loan-credit,
   .loan-form,
   .loan-application-form,
@@ -621,6 +700,7 @@
   .loan-dashboard-metrics > div,
   .loan-dashboard-panel,
   .loan-dashboard-overview,
+  .loan-credit-summary,
   .loan-apply,
   .loan-list,
   .loan-admin {
