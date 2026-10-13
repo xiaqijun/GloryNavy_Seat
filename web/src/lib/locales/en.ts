@@ -2485,7 +2485,6 @@ export const english: Record<string, string> = {
   已预留本金: "Reserved principal",
   "可放贷余额": "Available to lend",
   担保办理: "Guarantee handling",
-  查看担保邀请: "View guarantee invitations",
   "提交出借额度": "Submit contribution",
   "出借方先提交额度，再创建转入统一托管方的 ISK 合同；完成核验后才计入可放贷余额。": "Submit a contribution, then create an ISK contract to the custodian. It becomes lendable after verification.",
   出借类型: "Contribution type",
