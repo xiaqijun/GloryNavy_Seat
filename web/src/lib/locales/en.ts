@@ -2414,7 +2414,6 @@ export const english: Record<string, string> = {
   "收入负债率（bps）": "Income debt ratio (bps)",
   "授信期限（月）": "Credit term (months)",
   "评分系数（bps）": "Score factor (bps)",
-  "个人授信硬上限（ISK）": "Personal credit cap (ISK)",
   最低收入样本数: "Minimum income samples",
   "收入数据最长有效时间（小时）": "Income freshness (hours)",
   "担保覆盖上限（bps）": "Guarantee coverage cap (bps)",
