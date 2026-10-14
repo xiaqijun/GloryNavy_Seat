@@ -27,11 +27,12 @@ var assetScaleBands = [...]struct {
 }
 
 type IncomeEvidence struct {
-	MonthlyNetIncomeMinor int64
-	Samples               int
-	Available             bool
-	ObservedAt            time.Time
-	SnapshotID            string
+	MonthlyIncomeMinor  int64
+	MonthlyExpenseMinor int64
+	Samples             int
+	Available           bool
+	ObservedAt          time.Time
+	SnapshotID          string
 }
 
 // CreditEvidence is deliberately narrow. Authorization state and account age
@@ -57,7 +58,7 @@ type CreditEvidence struct {
 }
 
 func defaultCreditPolicy() store.CreditPolicy {
-	return store.CreditPolicy{IncomeWindowDays: 180, AnnualRateBPS: 1200, DebtRatioBPS: 3000, TermMonths: 6, ScoreFactorBPS: 10000, HardCapMinor: 1_000_000_000, GuaranteeCapBPS: 10000, CollateralCapBPS: 10000, StaleAfterHours: 72, MinIncomeSamples: 3, InsufficientIncomePolicy: "fallback_pool", Version: 1}
+	return store.CreditPolicy{IncomeWindowDays: 180, AnnualRateBPS: 1200, DebtRatioBPS: 3000, TermMonths: 6, ScoreFactorBPS: 10000, IncomeWeightBPS: 7000, GuaranteeCapBPS: 10000, CollateralCapBPS: 10000, StaleAfterHours: 72, MinIncomeSamples: 3, InsufficientIncomePolicy: "fallback_pool", Version: 1}
 }
 
 func clampScore(v, max int) int {
@@ -139,7 +140,7 @@ func assessCreditWithEvidence(account string, signals store.CreditSignals, evide
 		CorporationAttendanceBPS: evidence.CorporationAttendanceBPS, CorporationEligibleEvents: evidence.CorporationEligibleEvents, CorporationAttendedEvents: evidence.CorporationAttendedEvents,
 		AllianceFulfillmentBPS: evidence.AllianceFulfillmentBPS, AllianceEligibleMonths: evidence.AllianceEligibleMonths, AllianceFulfilledMonths: evidence.AllianceFulfilledMonths,
 		AssetPoints: assets, AssetValueMinor: evidence.AssetValueMinor,
-		Evidence:    evidenceSummary(evidence, evidenceCutoff),
+		Evidence: evidenceSummary(evidence, evidenceCutoff),
 	}
 }
 
@@ -158,21 +159,24 @@ func safeScaled(value, numerator, denominator int64) int64 {
 func assessCreditWithPolicy(account string, signals store.CreditSignals, evidence CreditEvidence, poolCash int64, policy store.CreditPolicy, now time.Time) store.Credit {
 	c := assessCreditWithEvidence(account, signals, evidence, poolCash, now)
 	income := evidence.Income
-	// A zero or negative net income does not provide a usable repayment
-	// capacity. Treat it as insufficient income so the configured fallback
-	// policy can use the funded pool instead of reducing every limit to zero.
-	usable := income.Available && income.MonthlyNetIncomeMinor > 0 && income.Samples >= policy.MinIncomeSamples && !income.ObservedAt.IsZero() && !income.ObservedAt.After(now) && now.Sub(income.ObservedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
+	// Income and consumption are separate positive observations. They are
+	// converted to independent capacity signals and combined by policy weight;
+	// no net-income subtraction is performed.
+	usable := income.Available && (income.MonthlyIncomeMinor > 0 || income.MonthlyExpenseMinor > 0) && income.Samples >= policy.MinIncomeSamples && !income.ObservedAt.IsZero() && !income.ObservedAt.After(now) && now.Sub(income.ObservedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
 	base := poolCash
+	consumptionWeight := 10000 - policy.IncomeWeightBPS
 	if usable {
-		incomeCapacity := safeScaled(income.MonthlyNetIncomeMinor, int64(policy.DebtRatioBPS)*int64(policy.TermMonths), 10000)
-		if incomeCapacity < base {
-			base = incomeCapacity
+		factor := int64(policy.DebtRatioBPS) * int64(policy.TermMonths)
+		incomeCapacity := safeScaled(income.MonthlyIncomeMinor, factor, 10000)
+		expenseCapacity := safeScaled(income.MonthlyExpenseMinor, factor, 10000)
+		incomePart := safeScaled(incomeCapacity, int64(policy.IncomeWeightBPS), 10000)
+		expensePart := safeScaled(expenseCapacity, int64(consumptionWeight), 10000)
+		base = incomePart + expensePart
+		if base > poolCash {
+			base = poolCash
 		}
 	} else if policy.InsufficientIncomePolicy == "zero" {
 		base = 0
-	}
-	if policy.HardCapMinor > 0 && base > policy.HardCapMinor {
-		base = policy.HardCapMinor
 	}
 	total := safeScaled(base, int64(*c.Score), 100)
 	total = safeScaled(total, int64(policy.ScoreFactorBPS), 10000)
@@ -182,9 +186,10 @@ func assessCreditWithPolicy(account string, signals store.CreditSignals, evidenc
 	if c.State != "active" {
 		c.TotalLimitMinor, c.UnsecuredLimitMinor, c.GuaranteeLimitMinor = 0, 0, 0
 	}
-	c.IncomeAvailable, c.MonthlyIncomeMinor = usable, income.MonthlyNetIncomeMinor
-	c.PolicyVersion, c.RuleVersion = policy.Version, fmt.Sprintf("income-v1-policy-%d", policy.Version)
-	c.Reason = fmt.Sprintf("%s; base=%d; income_available=%t; income_samples=%d; monthly_income=%d; debt_ratio_bps=%d; term_months=%d; score_factor_bps=%d", c.Reason, base, usable, income.Samples, income.MonthlyNetIncomeMinor, policy.DebtRatioBPS, policy.TermMonths, policy.ScoreFactorBPS)
+	c.IncomeAvailable, c.MonthlyIncomeMinor = usable, income.MonthlyIncomeMinor
+	c.MonthlyExpenseMinor = income.MonthlyExpenseMinor
+	c.PolicyVersion, c.RuleVersion = policy.Version, fmt.Sprintf("capacity-v2-policy-%d", policy.Version)
+	c.Reason = fmt.Sprintf("%s; base=%d; income_available=%t; income_samples=%d; monthly_income=%d; monthly_consumption=%d; income_weight_bps=%d; consumption_weight_bps=%d; debt_ratio_bps=%d; term_months=%d; score_factor_bps=%d", c.Reason, base, usable, income.Samples, income.MonthlyIncomeMinor, income.MonthlyExpenseMinor, policy.IncomeWeightBPS, consumptionWeight, policy.DebtRatioBPS, policy.TermMonths, policy.ScoreFactorBPS)
 	return c
 }
 
@@ -195,7 +200,7 @@ func evidenceSummary(e CreditEvidence, cutoff time.Time) string {
 		"asset_snapshot_id": e.AssetSnapshotID, "evidence_cutoff": cutoff,
 		"corporation_attendance_bps": e.CorporationAttendanceBPS, "corporation_eligible_events": e.CorporationEligibleEvents, "corporation_attended_events": e.CorporationAttendedEvents,
 		"alliance_fulfillment_bps": e.AllianceFulfillmentBPS, "alliance_eligible_months": e.AllianceEligibleMonths, "alliance_fulfilled_months": e.AllianceFulfilledMonths,
-		"income_available": e.Income.Available, "monthly_net_income_minor": e.Income.MonthlyNetIncomeMinor, "income_samples": e.Income.Samples, "income_snapshot_id": e.Income.SnapshotID, "income_observed_at": e.Income.ObservedAt,
+		"income_available": e.Income.Available, "monthly_income_minor": e.Income.MonthlyIncomeMinor, "monthly_consumption_minor": e.Income.MonthlyExpenseMinor, "income_samples": e.Income.Samples, "income_snapshot_id": e.Income.SnapshotID, "income_observed_at": e.Income.ObservedAt,
 	})
 	return string(b)
 }

@@ -92,18 +92,22 @@ func TestAssessCreditKeepsPAPSplitInEvaluation(t *testing.T) {
 	}
 }
 
-func TestAssessCreditPolicyUsesIncomeAndPoolCap(t *testing.T) {
+func TestAssessCreditPolicyUsesWeightedIncomeAndConsumption(t *testing.T) {
 	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
 	policy := defaultCreditPolicy()
-	c := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyNetIncomeMinor: 100_000, ObservedAt: now}}, 1_000_000, policy, now)
-	// 100,000 × 30% × 6 months = 180,000; the score then scales the
-	// responsibility limit while the pool remains the hard cash ceiling.
+	c := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 100_000, MonthlyExpenseMinor: 100_000, ObservedAt: now}}, 1_000_000, policy, now)
+	// Both signals produce 180,000 of capacity; the 70/30 blend remains
+	// 180,000, then the score scales the responsibility limit.
 	if c.TotalLimitMinor != 99_000 || c.UnsecuredLimitMinor != 71_280 || !c.IncomeAvailable {
 		t.Fatalf("credit=%+v", c)
 	}
-	poolCapped := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyNetIncomeMinor: 10_000_000, ObservedAt: now}}, 100_000, policy, now)
+	poolCapped := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 10_000_000, MonthlyExpenseMinor: 10_000_000, ObservedAt: now}}, 100_000, policy, now)
 	if poolCapped.TotalLimitMinor != 55_000 {
 		t.Fatalf("pool cap credit=%+v", poolCapped)
+	}
+	consumptionWeighted := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 100_000, MonthlyExpenseMinor: 10_000, ObservedAt: now}}, 1_000_000, policy, now)
+	if consumptionWeighted.TotalLimitMinor != 72_270 {
+		t.Fatalf("weighted credit=%+v", consumptionWeighted)
 	}
 }
 

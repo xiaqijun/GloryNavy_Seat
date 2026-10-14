@@ -35,6 +35,7 @@ type Pool struct {
 type Credit struct {
 	GuaranteeLimitMinor         int64     `json:"guarantee_limit_minor"`
 	MonthlyIncomeMinor          int64     `json:"monthly_income_minor"`
+	MonthlyExpenseMinor         int64     `json:"monthly_expense_minor"`
 	IncomeAvailable             bool      `json:"income_available"`
 	PolicyVersion               int64     `json:"policy_version"`
 	AccountID                   string    `json:"account_id"`

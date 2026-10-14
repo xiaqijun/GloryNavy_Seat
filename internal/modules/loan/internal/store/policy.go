@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// CreditPolicy controls the income-to-credit conversion and security caps.
+// CreditPolicy controls the income/consumption-to-credit conversion and security caps.
 // It is a singleton because the loan pool is a singleton.
 type CreditPolicy struct {
 	IncomeWindowDays         int       `json:"income_window_days"`
@@ -14,7 +14,7 @@ type CreditPolicy struct {
 	DebtRatioBPS             int       `json:"debt_ratio_bps"`
 	TermMonths               int       `json:"term_months"`
 	ScoreFactorBPS           int       `json:"score_factor_bps"`
-	HardCapMinor             int64     `json:"hard_cap_minor"`
+	IncomeWeightBPS          int       `json:"income_weight_bps"`
 	GuaranteeCapBPS          int       `json:"guarantee_cap_bps"`
 	CollateralCapBPS         int       `json:"collateral_cap_bps"`
 	StaleAfterHours          int       `json:"stale_after_hours"`
@@ -27,21 +27,21 @@ type CreditPolicy struct {
 
 func ReadCreditPolicy(ctx context.Context, db DBTX) (CreditPolicy, error) {
 	var p CreditPolicy
-	err := db.QueryRow(ctx, `SELECT income_window_days,annual_rate_bps,debt_ratio_bps,term_months,score_factor_bps,hard_cap_minor,guarantee_cap_bps,collateral_cap_bps,stale_after_hours,min_income_samples,insufficient_income_policy,version,updated_by::text,updated_at FROM loan_credit_policy WHERE singleton`).
-		Scan(&p.IncomeWindowDays, &p.AnnualRateBPS, &p.DebtRatioBPS, &p.TermMonths, &p.ScoreFactorBPS, &p.HardCapMinor, &p.GuaranteeCapBPS, &p.CollateralCapBPS, &p.StaleAfterHours, &p.MinIncomeSamples, &p.InsufficientIncomePolicy, &p.Version, &p.UpdatedBy, &p.UpdatedAt)
+	err := db.QueryRow(ctx, `SELECT income_window_days,annual_rate_bps,debt_ratio_bps,term_months,score_factor_bps,income_weight_bps,guarantee_cap_bps,collateral_cap_bps,stale_after_hours,min_income_samples,insufficient_income_policy,version,updated_by::text,updated_at FROM loan_credit_policy WHERE singleton`).
+		Scan(&p.IncomeWindowDays, &p.AnnualRateBPS, &p.DebtRatioBPS, &p.TermMonths, &p.ScoreFactorBPS, &p.IncomeWeightBPS, &p.GuaranteeCapBPS, &p.CollateralCapBPS, &p.StaleAfterHours, &p.MinIncomeSamples, &p.InsufficientIncomePolicy, &p.Version, &p.UpdatedBy, &p.UpdatedAt)
 	return p, err
 }
 
 func SaveCreditPolicy(ctx context.Context, db DBTX, actor string, p CreditPolicy) (CreditPolicy, error) {
 	var out CreditPolicy
 	err := db.QueryRow(ctx, `UPDATE loan_credit_policy
-SET income_window_days=$1,annual_rate_bps=$2,debt_ratio_bps=$3,term_months=$4,score_factor_bps=$5,hard_cap_minor=$6,
-    guarantee_cap_bps=$7,collateral_cap_bps=$8,stale_after_hours=$9,min_income_samples=$10,
-    insufficient_income_policy=$11,version=version+1,updated_by=$12::uuid,updated_at=now()
+SET income_window_days=$1,annual_rate_bps=$2,debt_ratio_bps=$3,term_months=$4,score_factor_bps=$5,income_weight_bps=$6,
+	guarantee_cap_bps=$7,collateral_cap_bps=$8,stale_after_hours=$9,min_income_samples=$10,
+	insufficient_income_policy=$11,version=version+1,updated_by=$12::uuid,updated_at=now()
 WHERE singleton AND version=$13
-RETURNING income_window_days,annual_rate_bps,debt_ratio_bps,term_months,score_factor_bps,hard_cap_minor,guarantee_cap_bps,collateral_cap_bps,stale_after_hours,min_income_samples,insufficient_income_policy,version,updated_by::text,updated_at`,
-		p.IncomeWindowDays, p.AnnualRateBPS, p.DebtRatioBPS, p.TermMonths, p.ScoreFactorBPS, p.HardCapMinor, p.GuaranteeCapBPS, p.CollateralCapBPS, p.StaleAfterHours, p.MinIncomeSamples, p.InsufficientIncomePolicy, actor, p.Version).
-		Scan(&out.IncomeWindowDays, &out.AnnualRateBPS, &out.DebtRatioBPS, &out.TermMonths, &out.ScoreFactorBPS, &out.HardCapMinor, &out.GuaranteeCapBPS, &out.CollateralCapBPS, &out.StaleAfterHours, &out.MinIncomeSamples, &out.InsufficientIncomePolicy, &out.Version, &out.UpdatedBy, &out.UpdatedAt)
+RETURNING income_window_days,annual_rate_bps,debt_ratio_bps,term_months,score_factor_bps,income_weight_bps,guarantee_cap_bps,collateral_cap_bps,stale_after_hours,min_income_samples,insufficient_income_policy,version,updated_by::text,updated_at`,
+		p.IncomeWindowDays, p.AnnualRateBPS, p.DebtRatioBPS, p.TermMonths, p.ScoreFactorBPS, p.IncomeWeightBPS, p.GuaranteeCapBPS, p.CollateralCapBPS, p.StaleAfterHours, p.MinIncomeSamples, p.InsufficientIncomePolicy, actor, p.Version).
+		Scan(&out.IncomeWindowDays, &out.AnnualRateBPS, &out.DebtRatioBPS, &out.TermMonths, &out.ScoreFactorBPS, &out.IncomeWeightBPS, &out.GuaranteeCapBPS, &out.CollateralCapBPS, &out.StaleAfterHours, &out.MinIncomeSamples, &out.InsufficientIncomePolicy, &out.Version, &out.UpdatedBy, &out.UpdatedAt)
 	if err != nil {
 		return out, err
 	}

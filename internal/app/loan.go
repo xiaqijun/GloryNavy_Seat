@@ -122,7 +122,8 @@ func loanIncomeEvidence(ctx context.Context, account string, from time.Time, ide
 	if err != nil {
 		return loan.IncomeEvidence{}, err
 	}
-	net := new(big.Rat)
+	incomeTotal := new(big.Rat)
+	expenseTotal := new(big.Rat)
 	samples := 0
 	var observed time.Time
 	for _, row := range rows {
@@ -131,8 +132,12 @@ func loanIncomeEvidence(ctx context.Context, account string, from time.Time, ide
 		if !okIncome || !okExpense {
 			continue
 		}
-		net.Add(net, income)
-		net.Sub(net, expense)
+		if income.Sign() > 0 {
+			incomeTotal.Add(incomeTotal, income)
+		}
+		if expense.Sign() > 0 {
+			expenseTotal.Add(expenseTotal, expense)
+		}
 		if row.Observed != nil {
 			samples++
 			if row.Observed.After(observed) {
@@ -143,20 +148,21 @@ func loanIncomeEvidence(ctx context.Context, account string, from time.Time, ide
 	if samples == 0 {
 		return loan.IncomeEvidence{Available: false}, nil
 	}
-	// Convert the observed window to a conservative monthly minor-unit value.
-	minor := new(big.Rat).Mul(net, big.NewRat(100, 1))
-	minorNum := new(big.Int).Quo(minor.Num(), minor.Denom())
-	if minorNum.Sign() < 0 {
-		minorNum.SetInt64(0)
-	}
 	days := int64(time.Since(from).Hours() / 24)
 	if days < 1 {
 		days = 1
 	}
-	monthly := new(big.Int).Mul(minorNum, big.NewInt(30))
-	monthly.Quo(monthly, big.NewInt(days))
-	if !monthly.IsInt64() {
-		monthly.SetInt64(^int64(0))
+	monthly := func(total *big.Rat) int64 {
+		// Keep income and consumption as separate positive observations. Never
+		// subtract the two into a net-income value.
+		minor := new(big.Rat).Mul(total, big.NewRat(100, 1))
+		minorNum := new(big.Int).Quo(minor.Num(), minor.Denom())
+		monthlyMinor := new(big.Int).Mul(minorNum, big.NewInt(30))
+		monthlyMinor.Quo(monthlyMinor, big.NewInt(days))
+		if !monthlyMinor.IsInt64() {
+			monthlyMinor.SetInt64(^int64(0))
+		}
+		return monthlyMinor.Int64()
 	}
-	return loan.IncomeEvidence{MonthlyNetIncomeMinor: monthly.Int64(), Samples: samples, Available: true, ObservedAt: observed, SnapshotID: observed.UTC().Format(time.RFC3339)}, nil
+	return loan.IncomeEvidence{MonthlyIncomeMinor: monthly(incomeTotal), MonthlyExpenseMinor: monthly(expenseTotal), Samples: samples, Available: true, ObservedAt: observed, SnapshotID: observed.UTC().Format(time.RFC3339)}, nil
 }
