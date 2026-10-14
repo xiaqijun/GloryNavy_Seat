@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-credit-cleanup-20261014 — 2026-10-14
+
+已发布来源提交 `404de96`，公网静态站点已原子切换至 `v0.1.0-loan-credit-cleanup-20261014`。贷款办理页移除额度为 0 时的通用原因说明和“暂不可用”状态标记，仅保留信用评分与个人额度。后端、数据库、Goose、River 和应用服务未修改；首页、`/loans/operations?view=business`、`/loans/operations?view=dashboard` 返回 200，匿名贷款上下文接口返回 401，OpenResty `nginx -t` 通过。
+
 ## v0.1.0-loan-dashboard-20261013-r7 — 2026-10-13
 
 已发布来源提交 `9125034`，当前边缘目录为 `v0.1.0-loan-dashboard-20261013-r7`。贷款办理页移除重复的“查看担保邀请”按钮，担保人直接在下方列表查看并处理邀请；申请与出借入口调整为双列操作卡片。本次只切换公网静态前端，没有重启应用服务、没有执行 Goose/River 迁移。首页和 `/loans/operations` 返回 200，匿名贷款接口保持 401，容器内 OpenResty `nginx -t` 通过。
