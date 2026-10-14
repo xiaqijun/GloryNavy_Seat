@@ -158,7 +158,10 @@ func safeScaled(value, numerator, denominator int64) int64 {
 func assessCreditWithPolicy(account string, signals store.CreditSignals, evidence CreditEvidence, poolCash int64, policy store.CreditPolicy, now time.Time) store.Credit {
 	c := assessCreditWithEvidence(account, signals, evidence, poolCash, now)
 	income := evidence.Income
-	usable := income.Available && income.Samples >= policy.MinIncomeSamples && !income.ObservedAt.IsZero() && !income.ObservedAt.After(now) && now.Sub(income.ObservedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
+	// A zero or negative net income does not provide a usable repayment
+	// capacity. Treat it as insufficient income so the configured fallback
+	// policy can use the funded pool instead of reducing every limit to zero.
+	usable := income.Available && income.MonthlyNetIncomeMinor > 0 && income.Samples >= policy.MinIncomeSamples && !income.ObservedAt.IsZero() && !income.ObservedAt.After(now) && now.Sub(income.ObservedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
 	base := poolCash
 	if usable {
 		incomeCapacity := safeScaled(income.MonthlyNetIncomeMinor, int64(policy.DebtRatioBPS)*int64(policy.TermMonths), 10000)

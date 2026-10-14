@@ -107,6 +107,21 @@ func TestAssessCreditPolicyUsesIncomeAndPoolCap(t *testing.T) {
 	}
 }
 
+func TestAssessCreditPolicyFallsBackForZeroIncome(t *testing.T) {
+	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
+	policy := defaultCreditPolicy()
+	fallback := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
+	if fallback.TotalLimitMinor != 550_000 || fallback.IncomeAvailable {
+		t.Fatalf("zero income should use the funded pool fallback: credit=%+v", fallback)
+	}
+
+	policy.InsufficientIncomePolicy = "zero"
+	paused := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
+	if paused.TotalLimitMinor != 0 {
+		t.Fatalf("zero-income policy should pause credit: credit=%+v", paused)
+	}
+}
+
 func TestCoveredByHaircutAvoidsIntermediateOverflow(t *testing.T) {
 	if got := coveredByHaircut(9_000_000_000_000_000, 5000); got != 4_500_000_000_000_000 {
 		t.Fatalf("coveredByHaircut()=%d", got)
