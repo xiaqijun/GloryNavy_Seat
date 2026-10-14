@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## v0.1.0-loan-credit-income-consumption-20261014 — 2026-10-14
+
+后端应用和公网静态前端已切换至同名版本；后端来源提交 `714ddc8`，前端来源提交 `3f7a499`。Goose 85 新增收入能力权重（生产值 7000 bps），个人授信分别汇总收入和消费，不再计算净收入，也不再读取或写入个人硬上限。贷款模块与宿主应用测试通过，应用 `active`、`/health/ready` 200，数据库策略读取为 `income_weight_bps=7000`，公网首页和 `/loans/operations?view=risk` 200，匿名 `/api/v1/loan/context` 401，OpenResty `nginx -t` 通过。
+
 ## v0.1.0-loan-credit-zero-income-20261014 — 2026-10-14
 
 后端应用已切换至 `v0.1.0-loan-credit-zero-income-20261014`，代码来源提交 `4497b3c`；公网静态前端保持 `v0.1.0-loan-credit-cleanup-20261014`。零或负月净收入按收入不足策略处理，默认回退到贷款池资金、个人基础上限和信用评分。贷款模块测试通过，发布包校验通过，应用 `active`、`/health/ready` 200，公网首页与贷款办理页 200，匿名贷款上下文接口 401；本次无新增迁移。
