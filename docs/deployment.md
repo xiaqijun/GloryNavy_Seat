@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## v0.1.0-loan-application-cancel-20261016 — 2026-10-16
+
+前后端来自干净且已推送的 `main` 提交 `86dcc46a70d695d93d3aede0882581313311f89f`。本轮新增本人待审核申请撤销，原子释放担保/抵押额度并保留审计，防止撤销后的保障资料迟到写入；贷款申请与出借表单精简，手机贷款记录直接显示操作。无新增迁移，Goose 保持 87。
+
+激活前备份：`/var/backups/glorynavy/before-v0.1.0-loan-application-cancel-20261016-20261016T085608Z.{dump,env}`，数据库备份 450408385 字节，两者权限均为 0600。已核对应用和边缘 current、发布包 SHA256、二进制 vcs.revision/vcs.modified=false、active/running、NRestarts=0、ready、Goose 87、OpenResty 配置、公网首页和贷款办理页 200、匿名贷款读取与新增撤销接口 401。
+
+本轮验证：隔离 PostgreSQL 18.6 的 `go test -p 2 ./internal/modules/loan/... ./internal/app ./cmd/server -count=1` 与相关 `go vet` 通过；覆盖撤销对象权限、终态与版本限制、释放额度、审计失败回滚、与审核并发、迟到抵押登记拒绝，以及既有还款流程。前端 tsc、相关 oxlint、生产构建、5 项语言测试通过；1440px/375px/320px 中英文共 12 项浏览器流程通过，补齐英文词条后 6 项英文流程再次通过。截图与构建输出位于本地 `.local/loan-cancel/`。GitNexus 单符号影响为 LOW（路由为 UNKNOWN）；提交前聚合检测报告 critical/22 条流程，部分未改函数受新增代码行号偏移误归属，已按实际 diff 复核，贷款付款逻辑未改。临时测试数据库容器和本地预览已关闭。
+
+未在生产创建或撤销成员贷款进行测试，真实 EVE 合同及抵押物返还仍待业务联调；撤销只释放额度，既有游戏合同唯一占用及现金账本不变，不能把自动化演示数据当作真实交付验收。
+
 ## v0.1.0-loan-repayment-options-20261016 — 2026-10-16
 
 前后端已从干净且已推送的 `main` 提交 `d599bdbdebc55348540f6d091a6deb038497a37e` 构建并发布；应用及边缘 `current` 均为该版本。新增 Goose 87 `loan_cases.requested_due_at`，支持按期限一次还清和指定日期一次还清，保留原分期。指定日期利息按合同实际完成日确定，贷款付款可精确结清 0.01 ISK；已有指定日期贷款后不得回退忽略日期的二进制，Down 会拒绝删除已有约定日期。
