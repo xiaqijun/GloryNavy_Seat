@@ -9,6 +9,13 @@ async function setup(page: Page, en = false, admin = true) {
   let settings = {
     enabled: false,
     corporation_ids: [] as string[],
+    corporation_options: [
+      { id: "10", name: "Glory Navy" },
+      {
+        id: "30",
+        name: "LongCorporationNameWithoutSpacesABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      },
+    ],
     version: "1",
     next_run_at: null as string | null,
     run_started_at: null,
@@ -116,9 +123,31 @@ for (const en of [false, true])
       name: en ? "Save" : "保存",
       exact: true,
     });
-    await dialog.getByRole("checkbox").check();
+    await dialog
+      .getByRole("checkbox", {
+        name: en ? "Automatic weekly cleanup" : "每周自动清理",
+      })
+      .check();
     await expect(save).toBeDisabled();
-    await dialog.getByRole("textbox").fill("10，30\n10");
+    await dialog.getByRole("searchbox").fill("glory");
+    await expect(
+      dialog.getByRole("button", { name: /LongCorporationName/ }),
+    ).toHaveCount(0);
+    await dialog
+      .getByRole("button", {
+        name: en ? "Add corporation: Glory Navy" : "添加军团：Glory Navy",
+      })
+      .click();
+    await dialog
+      .getByRole("button", {
+        name: /^(Add corporation: |添加军团：)LongCorporationName/,
+      })
+      .click();
+    await expect(
+      dialog.getByRole("button", {
+        name: en ? "Remove corporation: Glory Navy" : "移除军团：Glory Navy",
+      }),
+    ).toBeVisible();
     await dialog
       .getByRole("button", {
         name: en ? "Preview cleanup" : "预览清理",
@@ -164,7 +193,7 @@ for (const en of [false, true])
     await expect(dialog.getByRole("checkbox")).toBeChecked();
     // The shared close icon opens a tooltip on focus; move into the form
     // before testing the dialog's Escape behavior.
-    await dialog.getByRole("textbox").focus();
+    await dialog.getByRole("searchbox").focus();
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
   });
@@ -176,11 +205,13 @@ test("cleanup errors retain draft and ordinary managers have no entry", async ({
   await page.goto("/members");
   await page.getByRole("button", { name: "清理规则", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("textbox").fill("10");
+  await dialog.getByRole("button", { name: "添加军团：Glory Navy" }).click();
   fixture.fail();
   await dialog.getByRole("button", { name: "保存", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("清理规则已更新");
-  await expect(dialog.getByRole("textbox")).toHaveValue("10");
+  await expect(
+    dialog.getByRole("button", { name: "移除军团：Glory Navy" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
   await page.unrouteAll();
   const ordinary = await setup(page, false, false);

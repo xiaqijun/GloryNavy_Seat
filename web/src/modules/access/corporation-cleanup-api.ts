@@ -3,6 +3,7 @@ import { APIError, apiFetch, getData } from "@/lib/http";
 export type CleanupSettings = {
   enabled: boolean;
   corporation_ids: string[];
+  corporation_options: { id: string; name: string }[];
   version: string;
   next_run_at: string | null;
   run_started_at: string | null;
@@ -37,6 +38,10 @@ export const isCleanupSettings = (v: unknown): v is CleanupSettings =>
   id(v.version) &&
   Array.isArray(v.corporation_ids) &&
   v.corporation_ids.every(id) &&
+  Array.isArray(v.corporation_options) &&
+  v.corporation_options.every(
+    (c) => record(c) && id(c.id) && typeof c.name === "string",
+  ) &&
   [v.next_run_at, v.run_started_at, v.last_run_at].every(date) &&
   [
     v.removed_count,

@@ -1,5 +1,8 @@
 # 模块架构与扩展边界
 
+2026-10-17：identity 私有清理策略的军团名单通过 `CorporationCleanup.ConfiguredCorporations` 由宿主注入 access，作为军团业务范围外层边界，不受清理开关影响。access 同时限制非管理员为本人有效角色所属军团，再判断原业务能力。EVE 的 `KnownCorporationNames` 只向管理员配置投影名称，不提供授权事实；模块不跨读私有 store。
+
+
 2026-10-17：identity 增加 Goose 90 军团清理策略、审计与被清理角色归属保留。宿主注入 EVE 的军团证据读取/凭据移除和当前管理员检查，复用共享 River。逐账号事务处理及游标恢复，保留业务账号，普通 SSO 恢复原归属；显式合并在 identity 私有事务中迁移保留归属。见[清理生命周期](integrations/corporation-cleanup.zh-CN.md)，不得跨模块导入 store 或用空名单执行删除。
 
 ## 2026-09-23 元数据收敛（已发布）

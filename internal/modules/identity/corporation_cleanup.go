@@ -28,14 +28,16 @@ type CorporationEvidence struct {
 	Reliable      bool
 }
 type CorporationCleanup struct {
-	Pool          *pgxpool.Pool
-	Administrator func(context.Context, string) (bool, error)
-	Evidence      func(context.Context, pgx.Tx, []int64) ([]CorporationEvidence, error)
-	Remove        CharacterCleanup
+	Pool             *pgxpool.Pool
+	Administrator    func(context.Context, string) (bool, error)
+	Evidence         func(context.Context, pgx.Tx, []int64) ([]CorporationEvidence, error)
+	Remove           CharacterCleanup
+	CorporationNames func(context.Context) ([]CleanupCorporation, error)
 }
 type CleanupSettings struct {
 	store.CleanupPolicy
-	CorporationIDs []string `json:"corporation_ids"`
+	CorporationIDs     []string             `json:"corporation_ids"`
+	CorporationOptions []CleanupCorporation `json:"corporation_options"`
 }
 type CleanupInput struct {
 	Enabled        bool     `json:"enabled"`
@@ -88,7 +90,16 @@ func (s *CorporationCleanup) Settings(ctx context.Context, actor string) (Cleanu
 		return CleanupSettings{}, err
 	}
 	p, err := store.ReadCleanupPolicy(ctx, s.Pool, false)
-	out := CleanupSettings{CleanupPolicy: p, CorporationIDs: []string{}}
+	out := CleanupSettings{CleanupPolicy: p, CorporationIDs: []string{}, CorporationOptions: []CleanupCorporation{}}
+	if err != nil {
+		return out, err
+	}
+	if s.CorporationNames != nil {
+		out.CorporationOptions, err = s.CorporationNames(ctx)
+		if err != nil {
+			return out, err
+		}
+	}
 	for _, id := range p.Corporations {
 		out.CorporationIDs = append(out.CorporationIDs, strconv.FormatInt(id, 10))
 	}

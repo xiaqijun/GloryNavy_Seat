@@ -17,6 +17,9 @@ import (
 func TestMultiCharacterCorporationAccessRemainsScoped(t *testing.T) {
 	pool := testutil.Database(t)
 	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `UPDATE identity_corporation_cleanup SET corporation_ids=ARRAY[101,202]::bigint[]`); err != nil {
+		t.Fatal(err)
+	}
 	users := identity.New(pool)
 	token, err := users.SignIn(ctx, 101, "A", "owner", "")
 	if err != nil {

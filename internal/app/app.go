@@ -245,6 +245,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
 	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
+	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
 	identityHandler.CorporationCleanup = characterCleanup
 	var sentryRemote sentry.Remote
 	if auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != "" {

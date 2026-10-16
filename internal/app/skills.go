@@ -79,6 +79,13 @@ func skillsHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acces
 			return nil, err
 		}
 		for _, id := range ids {
+			visible, err := policy.CanViewCorporation(ctx, user, id)
+			if err != nil {
+				return nil, err
+			}
+			if !visible {
+				continue
+			}
 			manage, err := s.Manage(ctx, user, id)
 			if err != nil {
 				return nil, err

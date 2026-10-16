@@ -86,6 +86,13 @@ func wireWelfareLosses(s *welfare.Service, accounts *identity.Service, reader *e
 		return rows, nil
 	}
 	s.Losses = func(ctx context.Context, user string, corp, char, before, id int64) ([]welfare.Loss, error) {
+		visible, err := s.Scope(ctx, user, corp, false)
+		if err != nil {
+			return nil, err
+		}
+		if !visible {
+			return nil, pgx.ErrNoRows
+		}
 		chars, e := s.Characters(ctx, user)
 		if e != nil {
 			return nil, e

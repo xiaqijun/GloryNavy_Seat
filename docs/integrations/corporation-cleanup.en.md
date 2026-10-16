@@ -1,10 +1,19 @@
 # Scheduled character cleanup by corporation
 
+## 2026-10-17: Configured corporations and business scope
+
+Cleanup rules now search and select synced corporations by name. Candidates come from local EVE role snapshots, including expired name labels; labels are not authorization evidence. HTTP and storage continue to use stable corporation IDs. Existing selections are preserved; missing names are marked pending sync and can be removed.
+
+Saved `corporation_ids` also bound corporation business access independently of the weekly cleanup switch. Site administrators can access only configured corporations. Other members, including corporation managers, can access only the intersection with their own actively bound characters' corporations, subject to existing business permissions. Global/manual corporation/alliance grants cannot expand this boundary. Multiple characters contribute the union of their current corporations; expired or invalid facts do not establish membership. An empty configuration exposes no business corporations but does not block administrator access to configuration. Losses/welfare, operations/attendance, skills/fitting libraries, corporation wallets/contracts/structures/loan abilities enforce the boundary on the server, including direct object requests.
+
+Personal account management, personal history and administrator member-data reads retain their existing object rules. This is not an SSO admission gate and does not run cleanup immediately. Saving refreshes local page caches; other sessions are checked on their next request. No migration beyond Goose 90. Rolling back to an older application removes this access boundary.
+
+
 [中文](corporation-cleanup.zh-CN.md) · [Character rules](seat-multi-character.en.md) · [Members UI](../ui/members.md) · [Current status](../project-status.md)
 
 ## Configuration and scope
 
-Current site administrators configure **Cleanup rules** on `/members`: up to 50 corporation IDs separated by commas or new lines. Preview before enabling and saving. Defaults are disabled with an empty list; enabling an empty list is rejected. Each save of an enabled rule schedules a run seven days later; completion schedules the next run seven days after completion. Disabling clears the schedule. Timestamps use UTC in storage and the browser timezone/current language in the UI. There is no immediate cleanup endpoint.
+Current site administrators configure **Cleanup rules** on `/members`: search and select up to 50 synced corporations by name. Preview before enabling and saving. Defaults are disabled with an empty list; enabling an empty list is rejected. Each save of an enabled rule schedules a run seven days later; completion schedules the next run seven days after completion. Disabling clears the schedule. Timestamps use UTC in storage and the browser timezone/current language in the UI. There is no immediate cleanup endpoint.
 
 Evaluate each character separately, including external alts of members with an allowed main, main characters, last characters and administrators' characters. Preview provides removal/retention/uncertain counts and the first 100 removal candidates, without deleting anything. Execution rechecks membership. Every read, write and preview requires the current site administrator flag; site roles and EVE roles do not substitute. PUT/POST require Origin and CSRF; stale configuration versions return 409.
 

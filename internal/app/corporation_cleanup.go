@@ -14,6 +14,14 @@ func corporationCleanupService(pool *pgxpool.Pool, acl *access.Service, reader *
 		reader = eve.ReadAuthorization(pool)
 	}
 	return &identity.CorporationCleanup{Pool: pool, Administrator: acl.IsAdministrator, Remove: eve.RemoveCharacterTx,
+		CorporationNames: func(ctx context.Context) ([]identity.CleanupCorporation, error) {
+			rows, err := reader.KnownCorporationNames(ctx)
+			out := make([]identity.CleanupCorporation, 0, len(rows))
+			for _, r := range rows {
+				out = append(out, identity.CleanupCorporation{ID: r.ID, Name: r.Name})
+			}
+			return out, err
+		},
 		Evidence: func(ctx context.Context, tx pgx.Tx, ids []int64) ([]identity.CorporationEvidence, error) {
 			rows, err := reader.CleanupMembership(ctx, tx, ids)
 			if err != nil {

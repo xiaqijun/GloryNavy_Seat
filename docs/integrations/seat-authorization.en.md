@@ -1,5 +1,14 @@
 # SeAT-style corporation authorization
 
+## 2026-10-17: Configured corporations and business scope
+
+Cleanup rules now search and select synced corporations by name. Candidates come from local EVE role snapshots, including expired name labels; labels are not authorization evidence. HTTP and storage continue to use stable corporation IDs. Existing selections are preserved; missing names are marked pending sync and can be removed.
+
+Saved `corporation_ids` also bound corporation business access independently of the weekly cleanup switch. Site administrators can access only configured corporations. Other members, including corporation managers, can access only the intersection with their own actively bound characters' corporations, subject to existing business permissions. Global/manual corporation/alliance grants cannot expand this boundary. Multiple characters contribute the union of their current corporations; expired or invalid facts do not establish membership. An empty configuration exposes no business corporations but does not block administrator access to configuration. Losses/welfare, operations/attendance, skills/fitting libraries, corporation wallets/contracts/structures/loan abilities enforce the boundary on the server, including direct object requests.
+
+Personal account management, personal history and administrator member-data reads retain their existing object rules. This is not an SSO admission gate and does not run cleanup immediately. Saving refreshes local page caches; other sessions are checked on their next request. No migration beyond Goose 90. Rolling back to an older application removes this access boundary.
+
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 2026-09-16: local wallets are delivered. ManageableCatalog now includes corporation.journal, corporation.transaction and wallet divisions 1…7. Reads require both category and division permissions. ESI source roles are checked separately; current administrators may read active members’ wallets. See [wallet authorization](wallet.en.md).
@@ -43,7 +52,7 @@ Accountant maps to summary, journal and transaction; Junior_Accountant and Audit
 
 Only the `roles` array grants default abilities. HQ, base and other-location roles are stored separately and do not become global roles. Grantable roles are not held roles. CEO comes from `ceo_id`. The referenced mapping's second-container index and contract/project names are corrected to their intended abilities and ESI enum values.
 
-An empty corporation/alliance filter means unrestricted entity scope, matching SeAT 4+. The two filter categories are OR conditions. `access.manage` is global and cannot have entity filters. Game IDs cross JSON boundaries as decimal strings. A target's alliance must come from server-side data, never the request body.
+An empty corporation/alliance filter adds no further grant filter, but still respects the configured-corporation and own-membership boundary above. The two filter categories are OR conditions. `access.manage` is global and cannot have entity filters. Game IDs cross JSON boundaries as decimal strings. A target's alliance must come from server-side data, never the request body.
 
 ## Configuration
 

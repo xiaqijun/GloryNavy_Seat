@@ -1,5 +1,17 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "保留军团": "Retained corporations",
+  "搜索军团名称": "Search corporation names",
+  "已选军团": "Selected corporations",
+  "可选军团": "Available corporations",
+  "移除军团：{0}": "Remove corporation: {0}",
+  "添加军团：{0}": "Add corporation: {0}",
+  "军团名称待同步": "Corporation name pending sync",
+  "尚未选择军团": "No corporations selected",
+  "没有匹配的军团": "No matching corporations",
+  "按名称选择已同步军团，最多 50 个。该名单同时限定业务页面的军团范围，停用自动清理后仍生效。": "Select up to 50 synced corporations by name. This list also limits corporation access in business pages, even when automatic cleanup is off.",
+  "启用并保存后 7 天执行，之后每周一次。": "Runs 7 days after enabling and saving, then weekly.",
+  "最多选择 50 个军团": "Select up to 50 corporations",
   "查看详情": "View details",
   "自定义": "Custom",
   "撤销申请": "Withdraw application",

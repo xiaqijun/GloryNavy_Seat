@@ -71,15 +71,24 @@ function CleanupForm({
   reload: () => void;
 }) {
   const [enabled, setEnabled] = useState(initial.enabled);
-  const [raw, setRaw] = useState(initial.corporation_ids.join("\n"));
+  const [ids, setIDs] = useState(initial.corporation_ids);
+  const [search, setSearch] = useState("");
   const session = useSession();
   const client = useQueryClient();
-  const ids = [...new Set(raw.split(/[\s,，]+/).filter(Boolean))];
-  const valid =
-    ids.length <= 50 &&
-    ids.every(
-      (id) => /^[1-9]\d{0,18}$/.test(id) && BigInt(id) <= 9223372036854775807n,
-    );
+  const valid = ids.length <= 50;
+  const names = new Map(initial.corporation_options.map((c) => [c.id, c.name]));
+  const options = initial.corporation_options
+    .filter(
+      (c) =>
+        !ids.includes(c.id) &&
+        c.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, getLocale()));
+  const change = (next: string[]) => {
+    setIDs(next);
+    preview.reset();
+    save.reset();
+  };
   const csrf = session.data?.session?.csrf_token ?? "";
   const preview = useMutation({ mutationFn: () => previewCleanup(ids, csrf) });
   const save = useMutation({
@@ -90,6 +99,9 @@ function CleanupForm({
       ),
     onSuccess: (data) => {
       client.setQueryData(["identity", "cleanup", actor], data);
+      void client.invalidateQueries({
+        predicate: (q) => q.queryKey[0] !== "identity",
+      });
       close();
     },
   });
@@ -130,33 +142,69 @@ function CleanupForm({
         <span>{msg("每周自动清理")}</span>
       </label>
       <label className="corp-cleanup-field">
-        {msg("保留军团 ID")}
-        <textarea
-          value={raw}
-          rows={3}
+        {msg("保留军团")}
+        <input
+          type="search"
+          value={search}
           disabled={busy}
-          onChange={(e) => {
-            setRaw(e.target.value);
-            preview.reset();
-            save.reset();
-          }}
-          aria-describedby="cleanup-ids-help"
-          aria-invalid={!valid || (enabled && !ids.length)}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={msg("搜索军团名称")}
+          aria-describedby="cleanup-corporations-help"
         />
       </label>
-      <p id="cleanup-ids-help" className="corp-cleanup-note">
-        {msg(
-          "用逗号或换行分隔，最多 50 个。启用并保存后 7 天执行，之后每周一次。",
+      <div className="corp-cleanup-selected" aria-label={msg("已选军团")}>
+        {ids.map((id) => (
+          <Button
+            key={id}
+            variant="outline"
+            disabled={busy}
+            onClick={() => change(ids.filter((v) => v !== id))}
+            aria-label={msg(
+              "移除军团：{0}",
+              names.get(id) ?? msg("军团名称待同步"),
+            )}
+          >
+            {names.get(id) ?? msg("军团名称待同步")}{" "}
+            <span aria-hidden="true">×</span>
+          </Button>
+        ))}
+        {!ids.length && (
+          <p className="corp-cleanup-note">{msg("尚未选择军团")}</p>
         )}
+      </div>
+      <div className="corp-cleanup-options" aria-label={msg("可选军团")}>
+        {options.map((c) => (
+          <Button
+            key={c.id}
+            variant="outline"
+            disabled={busy || ids.length >= 50}
+            onClick={() => {
+              change([...ids, c.id]);
+              setSearch("");
+            }}
+            aria-label={msg("添加军团：{0}", c.name)}
+          >
+            {c.name} <span aria-hidden="true">+</span>
+          </Button>
+        ))}
+        {!options.length && (
+          <p className="corp-cleanup-note">{msg("没有匹配的军团")}</p>
+        )}
+      </div>
+      <p id="cleanup-corporations-help" className="corp-cleanup-note">
+        {msg(
+          "按名称选择已同步军团，最多 50 个。该名单同时限定业务页面的军团范围，停用自动清理后仍生效。",
+        )}
+      </p>
+      <p className="corp-cleanup-note">
+        {msg("启用并保存后 7 天执行，之后每周一次。")}
       </p>
       <p className="corp-cleanup-note">
         {msg(
           "名单外角色均解除绑定，包括小号、主角色和最后一个角色。相关授权与登录失效，账号和业务记录保留；军团信息不确定时跳过。",
         )}
       </p>
-      {!valid && (
-        <p role="alert">{msg("请填写有效的保留军团 ID，启用时名单不能为空")}</p>
-      )}
+      {!valid && <p role="alert">{msg("最多选择 50 个军团")}</p>}
       <dl className="corp-cleanup-stats">
         <div>
           <dt>{msg("下次清理")}</dt>

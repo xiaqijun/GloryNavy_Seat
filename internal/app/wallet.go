@@ -19,6 +19,13 @@ import (
 func walletHandler(accounts *identity.Service, acl *access.Service, reader *eve.AuthorizationService, static *eve.StaticDataService, canRead func(context.Context, string, int64) (bool, error), nickname func(context.Context, []string) (map[string]string, error)) wallet.Handler {
 	h := wallet.Handler{User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }, Data: reader.WalletData, Summaries: reader.WalletSummaries, CorporationSummary: reader.WalletCorporationSummary, CorporationFinanceTrend: reader.WalletCorporationFinanceTrend, Names: reader.WalletNames, Types: static}
 	readableCharacters := func(ctx context.Context, actor string, corporationID int64) ([]identity.Binding, error) {
+		visible, err := acl.CanViewCorporation(ctx, actor, corporationID)
+		if err != nil {
+			return nil, err
+		}
+		if !visible {
+			return nil, pgx.ErrNoRows
+		}
 		allowed, e := acl.Can(ctx, actor, "access.members.read", access.Corporation{ID: corporationID})
 		if e != nil {
 			return nil, e

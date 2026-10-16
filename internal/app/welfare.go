@@ -131,6 +131,10 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityPro
 		return out, nil
 	}
 	s.Scope = func(ctx context.Context, user string, corp int64, manage bool) (bool, error) {
+		visible, err := policy.CanViewCorporation(ctx, user, corp)
+		if err != nil || !visible {
+			return false, err
+		}
 		c, e := reader.Corporation(ctx, corp)
 		if e != nil {
 			return false, e
@@ -148,6 +152,10 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityPro
 		return false, e
 	}
 	s.CompensationScope = func(ctx context.Context, user string, corp int64) (bool, error) {
+		visible, err := policy.CanViewCorporation(ctx, user, corp)
+		if err != nil || !visible {
+			return false, err
+		}
 		c, e := reader.Corporation(ctx, corp)
 		if e != nil {
 			return false, e

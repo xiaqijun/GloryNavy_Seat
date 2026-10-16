@@ -8326,10 +8326,19 @@ components:
       items: {type: string, pattern: '^[1-9][0-9]*$'}
     CorporationCleanupSettings:
       type: object
-      required: [enabled, corporation_ids, version, next_run_at, run_started_at, last_run_at, removed_count, skipped_count, last_removed_count, last_skipped_count]
+      required: [enabled, corporation_ids, corporation_options, version, next_run_at, run_started_at, last_run_at, removed_count, skipped_count, last_removed_count, last_skipped_count]
       properties:
         enabled: {type: boolean}
         corporation_ids: {$ref: '#/components/schemas/CleanupCorporationIDs'}
+        corporation_options:
+          type: array
+          description: Synced corporation names for administrator configuration only; not authorization facts. Saved corporation_ids independently bound business scope even when cleanup is disabled.
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: {type: string, pattern: '^[1-9][0-9]*$'}
+              name: {type: string}
         version: {type: string}
         next_run_at: {type: string, format: date-time, nullable: true}
         run_started_at: {type: string, format: date-time, nullable: true}

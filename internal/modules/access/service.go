@@ -17,16 +17,17 @@ import (
 type Facts func(context.Context, string) ([]Fact, error)
 type Lookup func(context.Context, int64) (Corporation, error)
 type Service struct {
-	pool   *pgxpool.Pool
-	facts  Facts
-	lookup Lookup
+	pool                   *pgxpool.Pool
+	facts                  Facts
+	lookup                 Lookup
+	ConfiguredCorporations func(context.Context) ([]int64, error)
 }
 
 var ErrInvalid = errors.New("invalid access change")
 var ErrConflict = errors.New("access role changed")
 
 func New(pool *pgxpool.Pool, facts Facts, lookup Lookup) *Service {
-	return &Service{pool, facts, lookup}
+	return &Service{pool: pool, facts: facts, lookup: lookup}
 }
 
 // IsAdministrator always reads the current site flag; management grants and
@@ -46,11 +47,13 @@ type Role struct {
 	Version int64   `json:"version,string"`
 }
 type Account struct {
-	Administrator bool   `json:"administrator"`
-	CanManage     bool   `json:"can_manage"`
-	CanManageSync bool   `json:"can_manage_sync"`
-	Roles         []Role `json:"site_roles"`
-	Characters    []Fact `json:"characters"`
+	corporations         []int64
+	restrictCorporations bool
+	Administrator        bool   `json:"administrator"`
+	CanManage            bool   `json:"can_manage"`
+	CanManageSync        bool   `json:"can_manage_sync"`
+	Roles                []Role `json:"site_roles"`
+	Characters           []Fact `json:"characters"`
 }
 
 func uuid(raw string) (pgtype.UUID, error) {
@@ -94,11 +97,24 @@ func (s *Service) Account(ctx context.Context, user string) (Account, error) {
 	if s.facts != nil {
 		a.Characters, err = s.facts(ctx, user)
 	}
+	if err != nil {
+		return a, err
+	}
+	if s.ConfiguredCorporations != nil {
+		a.restrictCorporations = true
+		a.corporations, err = s.ConfiguredCorporations(ctx)
+		if err != nil {
+			return a, err
+		}
+	}
 	a.CanManage = a.Can("access.manage", Corporation{})
 	a.CanManageSync = a.Can("eve.sync.manage", Corporation{})
 	return a, err
 }
 func (a Account) Can(permission string, target Corporation) bool {
+	if strings.HasPrefix(permission, "corporation.") && !a.CanViewCorporation(target.ID) {
+		return false
+	}
 	grants := []Grant{}
 	for _, r := range a.Roles {
 		grants = append(grants, r.Grants...)

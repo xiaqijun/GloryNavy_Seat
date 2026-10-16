@@ -26,7 +26,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     queryKey: ["welfare", "context", user],
     queryFn: ({ signal }) => api.context("", signal),
   });
-  const corp = selected || root.data?.corporations[0]?.id || "";
+  const corp = root.data?.corporations.find((c) => c.id === selected)?.id || root.data?.corporations[0]?.id || "";
   return (
     <div className="welfare-page losses-page">
       <header className="welfare-heading">

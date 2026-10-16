@@ -39,6 +39,7 @@ func TestWelfareLossHostObjectAccess(t *testing.T) {
 	}, Members: func(context.Context, string, int64) ([]welfare.Character, error) {
 		return []welfare.Character{{ID: 123, CorporationID: 10}}, nil
 	}}
+	s.Scope = func(_ context.Context, _ string, corp int64, _ bool) (bool, error) { return corp == 10, nil }
 	wireWelfareLosses(s, accounts, eve.ReadAuthorization(pool), eve.NewStaticData(pool, "", time.Hour))
 	if _, e = s.Losses(ctx, session.UserID, 10, 123, 0, 0); e != nil {
 		t.Fatal("self read", e)

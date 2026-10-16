@@ -19,6 +19,9 @@ import (
 func TestAttendanceHostPermissionsAndCSRF(t *testing.T) {
 	pool := testutil.Database(t)
 	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `UPDATE identity_corporation_cleanup SET corporation_ids=ARRAY[10]::bigint[]`); err != nil {
+		t.Fatal(err)
+	}
 	accounts := identity.New(pool)
 	token, err := accounts.SignIn(ctx, 101, "Pilot", "owner", "")
 	if err != nil {
