@@ -20,6 +20,14 @@
 
 ## v0.1.0-loan-collateral-assets-20261016 — 2026-10-16
 
+## v0.1.0-loan-guarantor-details-20261016 — 2026-10-16
+
+前后端来自干净且已推送的 `main` 提交 `757362cf3f6c0065543ee6ef3864c7c7391c893d`，生产分支守卫通过。详情接口在案件对象授权后批量解析已有担保角色，增加可选显示名称；页面逐笔显示担保人、精确金额与状态，名称缺失回退编号，历史缺角色时回退账号。担保归属、授信与决策审计不变，无新迁移，Goose 88。
+
+应用与公网边缘 current 均已切换；应用 active/running、ready、NRestarts=0，首页与 `/loans`、`/loans/operations` 返回 200，匿名详情、上下文与审批返回 401。发布 SHA256 清单、OpenResty `nginx -t`、公网入口 HTML 与发布包一致性均通过，入口 SHA256 为 `07cce9dbfb6f014c28871cfef31158cff234f929624b76074dd9a830abae8971`。数据库备份为 `/var/backups/glorynavy/before-v0.1.0-loan-guarantor-details-20261016-20261016T135039Z.dump`（452012336 bytes），同前缀环境备份与数据库备份均为 0600，旧发布保留。未在生产创建测试业务数据，独立测试容器已清理，本地预览已关闭。
+
+独立 PostgreSQL 贷款模块回归、宿主/server 编译与相关 go vet 通过，覆盖对象鉴权前不解析名称、批量去重、缺失/失败回退、JSON 字段兼容与读取不修改担保。前端类型、lint、构建和 5 项语言测试通过；1440px、375px、320px 中英文多笔担保身份/金额/状态与回退 6 项、原抵押流程 6 项通过，截图已核对。GitNexus 提交前检查为 medium（14 个文件、21 个索引符号、4 条详情读取/展示流程），实际差异已复核。日志与演示截图在本地 `.local/loan-guarantor-detail/`；真实游戏合同仍按[待办](backlog.md)验收。
+
 前后端来自干净且已推送的 `main` 提交 `08b3cc1ca298d7fde104b19b9be49748fbb2523f`，生产分支守卫通过。新增个人资产先选后交付、Goose 88 待交付记录与详情分组排版；合同匹配、占用、登记及审计原子提交，待交付不计算抵押覆盖。已有请求后禁止回退忽略请求的程序，迁移 Down 拒绝删除非空请求表。
 
 应用与公网边缘 current 均已切换；应用 active/running、ready、NRestarts=0，Goose 88；首页、/loans、/loans/operations 返回 200，匿名贷款上下文、资产候选 GET、待交付创建 POST 与取消 POST 均为 401。发布 SHA256 清单、公网入口 HTML 与发布包一致性、OpenResty `nginx -t` 通过。公网入口 SHA256 为 `94d981718a874a92b5d83332863e2e7b248476b6c9aa9bb1f8205ee86d4cf930`。未在生产创建测试业务记录，发布核对时新请求表为 0 条。
