@@ -274,9 +274,9 @@ func SecurityAccounts(ctx context.Context, db DBTX, caseID int64) ([]string, err
 	return out, rows.Err()
 }
 
-func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower, character string, principal, interest int64, rateBPS, count, interval int, first *time.Time) (Case, error) {
+func CreateCase(ctx context.Context, db DBTX, public string, poolID int64, borrower string, character, principal, interest int64, rateBPS, count, interval int, first *time.Time) (Case, error) {
 	var c Case
-	err := db.QueryRow(ctx, `INSERT INTO loan_cases(public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at) VALUES($1,$2,$3::uuid,$4,$5,$6,$7,$5+$6,$8,$9,$10) RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, public, poolID, borrower, character, principal, interest, rateBPS, count, interval, first).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
+	err := db.QueryRow(ctx, `INSERT INTO loan_cases(public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at) VALUES($1,$2,$3::uuid,$4,$5,$6,$7,$5::bigint+$6::bigint,$8,$9,$10) RETURNING id,public_id,pool_id,borrower_account_id,borrower_character_id,principal_minor,interest_minor,interest_rate_bps,total_due_minor,installment_count,interval_days,first_due_at,state,terms_version,version,reviewer_id,review_note,created_at,accepted_at,funded_at,settled_at`, public, poolID, borrower, character, principal, interest, rateBPS, count, interval, first).Scan(&c.ID, &c.PublicID, &c.PoolID, &c.BorrowerAccountID, &c.BorrowerCharacterID, &c.PrincipalMinor, &c.InterestMinor, &c.InterestRateBPS, &c.TotalDueMinor, &c.InstallmentCount, &c.IntervalDays, &c.FirstDueAt, &c.State, &c.TermsVersion, &c.Version, &c.ReviewerID, &c.ReviewNote, &c.CreatedAt, &c.AcceptedAt, &c.FundedAt, &c.SettledAt)
 	return c, err
 }
 
@@ -415,7 +415,7 @@ func TransitionCase(ctx context.Context, db DBTX, id, version int64, state, acto
 	return c, err
 }
 
-func CreatePayment(ctx context.Context, db DBTX, public string, caseID int64, kind, payer, recipient, character string, expected int64, contractKind string, owner, contractID int64, actor string) (Payment, error) {
+func CreatePayment(ctx context.Context, db DBTX, public string, caseID int64, kind, payer, recipient string, character, expected int64, contractKind string, owner, contractID int64, actor string) (Payment, error) {
 	var p Payment
 	err := db.QueryRow(ctx, `INSERT INTO loan_payment_intents(public_id,case_id,kind,payer_account_id,recipient_account_id,recipient_character_id,expected_minor,contract_kind,contract_owner_id,contract_id,created_by) VALUES($1,$2,$3,NULLIF($4,'')::uuid,NULLIF($5,'')::uuid,$6,$7,$8,$9,$10,$11::uuid) RETURNING id,public_id,case_id,kind,payer_account_id,recipient_account_id,recipient_character_id,expected_minor,contract_kind,contract_owner_id,contract_id,state,evidence,version`, public, caseID, kind, payer, recipient, character, expected, contractKind, owner, contractID, actor).Scan(&p.ID, &p.PublicID, &p.CaseID, &p.Kind, &p.PayerAccountID, &p.RecipientAccountID, &p.RecipientCharacterID, &p.ExpectedMinor, &p.ContractKind, &p.ContractOwnerID, &p.ContractID, &p.State, &p.Evidence, &p.Version)
 	return p, err

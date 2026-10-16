@@ -14,6 +14,8 @@
 
 ## 接口与权限
 
+申请与付款写入的角色 ID 在服务和私有 store 之间保持 `int64`，SQL 金额加法显式使用 `bigint`，避免驱动编码或 PostgreSQL 参数推断失败。2026-10-16 修复不改变 HTTP 字段格式，无新增迁移；提交申请保存待审记录及利息快照，尚不生成还款日期、放款或增加池内现金。
+
 - `GET /api/v1/loan/context`：当前账号可见贷款池与信用摘要。
 - `GET /api/v1/loan/contributions`、`POST /api/v1/loan/contributions`：查看并提交统一池个人/军团出借额度。
 - `POST /api/v1/loan/settings/custodian`：由贷款管理者设置接收合同的个人 EVE 角色；角色必须仍绑定到有效本站账号。

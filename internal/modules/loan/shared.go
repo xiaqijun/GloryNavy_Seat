@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
@@ -542,7 +541,7 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	if in.Kind == "disbursement" {
 		payerAccount, receiverAccount = receiverAccount, payerAccount
 	}
-	payment, e := store.CreatePayment(ctx, tx, publicID("LNP"), id, in.Kind, payerAccount, receiverAccount, strconv.FormatInt(receiver.id, 10), amount, in.ContractKind, in.ContractOwnerID, in.ContractID, actor)
+	payment, e := store.CreatePayment(ctx, tx, publicID("LNP"), id, in.Kind, payerAccount, receiverAccount, receiver.id, amount, in.ContractKind, in.ContractOwnerID, in.ContractID, actor)
 	if e != nil {
 		return payment, e
 	}

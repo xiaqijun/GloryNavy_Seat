@@ -354,7 +354,7 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 		return store.Case{}, e
 	}
 	defer tx.Rollback(ctx)
-	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, strconv.FormatInt(in.BorrowerCharacterID, 10), in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, nil)
+	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, in.BorrowerCharacterID, in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, nil)
 	if e != nil {
 		return store.Case{}, e
 	}
@@ -636,7 +636,7 @@ func (s *Service) CreatePayment(ctx context.Context, actor string, id int64, in 
 		return store.Payment{}, e
 	}
 	defer tx.Rollback(ctx)
-	payment, e := store.CreatePayment(ctx, tx, publicID("LNP"), id, in.Kind, payer, recipient, strconv.FormatInt(recipientCharacter, 10), expected, in.ContractKind, in.ContractOwnerID, in.ContractID, actor)
+	payment, e := store.CreatePayment(ctx, tx, publicID("LNP"), id, in.Kind, payer, recipient, recipientCharacter, expected, in.ContractKind, in.ContractOwnerID, in.ContractID, actor)
 	if e != nil {
 		return store.Payment{}, e
 	}
