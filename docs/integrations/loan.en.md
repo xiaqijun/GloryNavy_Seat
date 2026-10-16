@@ -1,5 +1,7 @@
 # Loan module
 
+Loan detail identities added on 2026-10-16: show the case's `pool_name` as the lender, falling back to the matching pool context name or pool ID, with a shared-pool marker where applicable. Show the pool's current `custodian_character_name` as the current loan officer, falling back to the character ID; distinguish an unconfigured officer from unavailable pool context. Shared-pool contributions are not allocated from an individual contributor to each case. The current officer is not evidence of the original contributor or historical disbursement character. This uses existing authorized context/detail responses, with no API or migration change.
+
 ## One personal limit (2026-10-16)
 
 The single visible and actionable personal limit is `total_limit_minor` from the latest valid evaluation. Income, consumption, score and asset calculations stay unchanged. `unsecured_limit_minor`, `asset_support_limit_minor` and other legacy components remain historical evidence and API compatibility fields, not separate approval thresholds. Existing snapshots are not rewritten.

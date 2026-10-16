@@ -528,6 +528,9 @@
 .loan-detail-section + .loan-detail-section { border-top: 1px solid var(--border); padding-top: 16px; }
 .loan-detail-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 10px 0 0; }
 .loan-detail-facts dd, .loan-installment dd { margin: 4px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.loan-detail-parties { margin-top: 0; }
+.loan-detail-parties dd { font-weight: 600; }
+.loan-detail-parties small { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--muted); }
 .loan-detail-terms { font-size: 14px; }
 .loan-detail-terms p { margin: 6px 0; line-height: 1.5; }
 .loan-detail-empty { margin: 0; color: var(--muted); font-size: 14px; }

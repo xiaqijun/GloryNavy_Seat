@@ -2757,4 +2757,8 @@ export const english: Record<string, string> = {
   "年利率": "Annual interest rate",
   "抵押额度": "Collateral coverage",
   "显示更多": "Show more",
+  "当前贷款专员": "Current loan officer",
+  "暂无处理人信息": "Officer information unavailable",
+  "贷款池 #{0}": "Loan pool #{0}",
+
 };
