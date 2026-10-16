@@ -7785,6 +7785,7 @@ paths:
       operationId: loanContext
       security: [{SessionCookie: []}]
       summary: Shared pool balance and borrower credit summary
+      description: total_limit_minor is the single personal credit limit. Existing loans and guarantees consume it; only new principal above the remainder requires accepted guarantees or approved collateral. Legacy unsecured_limit_minor and asset_support_limit_minor remain evidence components, not separate borrowing thresholds.
       responses:
         '200': {description: Shared pool, balances, and credit}
   /api/v1/loan/evaluations:
@@ -7792,6 +7793,7 @@ paths:
       operationId: loanCreditEvaluations
       security: [{SessionCookie: []}]
       summary: List the caller's immutable credit evaluations
+      description: Periodic and approval snapshots retain historical fields. Show total_limit_minor as the one personal limit; unsecured_limit_minor is retained for compatibility and does not independently constrain approval.
       responses:
         '200': {description: Credit evaluation history}
   /api/v1/loan/settings/policy:
@@ -7864,6 +7866,34 @@ paths:
       responses:
         '200': {description: Loan case, installments, guarantees and collateral}
         '403': {description: Case is outside the caller's object scope}
+  /api/v1/loan/cases/{id}/review:
+    post:
+      operationId: loanCaseReview
+      security: [{SessionCookie: []}]
+      summary: Approve or reject a submitted loan
+      description: A scoped manager other than the borrower may review with the current version. Approval requires a fresh active evaluation and sufficient shared-pool cash. Required security is max(0, principal - max(0, total_limit_minor - used responsibility)). Only this case's accepted/active guarantees and approved/held collateral count; they may be combined. There is no separate unsecured threshold or hard total-credit ceiling for a covered loan. Account credit and pool reservations are serialized; case, evaluation snapshot and single-credit-v1 audit commit together.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [state, version]
+              properties:
+                state: {type: string, enum: [approved, rejected]}
+                version: {type: integer, format: int64, minimum: 1}
+                note: {type: string, maxLength: 1000}
+      responses:
+        '200': {description: Reviewed loan case}
+        '400': {description: Invalid input}
+        '401': {description: No active session}
+        '403': {description: Missing permission or self-review}
+        '404': {description: Case or pool not found}
+        '409': {description: State/version conflict, stale or inactive credit, insufficient pool cash, or insufficient effective coverage}
   /api/v1/loan/cases/{id}/cancel:
     post:
       operationId: loanApplicationCancel
@@ -7929,6 +7959,7 @@ paths:
       operationId: loanGuaranteeDecision
       security: [{SessionCookie: []}]
       summary: Accept or reject a guarantee invitation
+      description: Acceptance guards active accounts, serializes credit commitments for the guarantor and borrower, locks the case, and rereads fresh active credit and used responsibility. The guarantee must fit the guarantor's remaining total_limit_minor. Pending invitations do not consume capacity.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true

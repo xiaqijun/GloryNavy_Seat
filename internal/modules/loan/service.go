@@ -415,10 +415,43 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 	if actor == c.BorrowerAccountID {
 		return store.Case{}, ErrForbidden
 	}
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return store.Case{}, e
+	}
+	defer tx.Rollback(ctx)
+	if in.State == "approved" {
+		if e = s.guardAccounts(ctx, tx, c.BorrowerAccountID); e != nil {
+			return store.Case{}, e
+		}
+		if e = store.LockCreditAccounts(ctx, tx, c.BorrowerAccountID); e != nil {
+			return store.Case{}, e
+		}
+		// Match payment creation's pool-before-case lock order. The pool row
+		// serializes cash reservations across different borrowers as well.
+		if p.IsShared {
+			shared, se := store.SharedPool(ctx, tx, true)
+			if se != nil {
+				return store.Case{}, se
+			}
+			if shared.ID != p.ID {
+				return store.Case{}, ErrConflict
+			}
+		}
+	}
+	locked, e := store.LockCase(ctx, tx, id)
+	if e != nil {
+		return store.Case{}, e
+	}
+	if locked.Version != in.Version || locked.State != "submitted" || locked.BorrowerAccountID != c.BorrowerAccountID || locked.PoolID != p.ID {
+		return store.Case{}, ErrConflict
+	}
+	c = locked
 	var evaluatedCredit store.Credit
+	var used, required, coverage int64
 	if in.State == "approved" {
 		if p.IsShared {
-			summary, se := store.Summary(ctx, s.db(), p.ID)
+			summary, se := store.Summary(ctx, tx, p.ID)
 			if se != nil {
 				return store.Case{}, se
 			}
@@ -426,95 +459,23 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 				return store.Case{}, ErrLimit
 			}
 		}
-		cr, e := s.Credit(ctx, c.BorrowerAccountID)
-		policy, pe := s.CreditPolicy(ctx)
-		if e != nil || pe != nil || !creditFresh(cr, policy, time.Now().UTC()) {
+		evaluation, ce := store.LatestCreditEvaluation(ctx, tx, c.BorrowerAccountID)
+		policy, pe := store.ReadCreditPolicy(ctx, tx)
+		evaluatedCredit = creditFromEvaluation(evaluation)
+		if ce != nil || pe != nil || evaluatedCredit.State != "active" || !creditFresh(evaluatedCredit, policy, time.Now().UTC()) {
 			return store.Case{}, ErrRule
 		}
-		if cr.State != "active" {
-			return store.Case{}, ErrRule
-		}
-		evaluatedCredit = cr
-		used, e := store.UsedResponsibility(ctx, s.db(), c.BorrowerAccountID)
+		used, e = store.UsedResponsibility(ctx, tx, c.BorrowerAccountID)
 		if e != nil {
 			return store.Case{}, e
 		}
-		if used+c.PrincipalMinor > cr.TotalLimitMinor {
-			return store.Case{}, ErrLimit
-		}
-		directUsed, e := store.UsedPrincipal(ctx, s.db(), c.BorrowerAccountID)
+		required = requiredCreditCoverage(evaluatedCredit.TotalLimitMinor, used, c.PrincipalMinor)
+		coverage, e = store.Coverage(ctx, tx, c.ID)
 		if e != nil {
 			return store.Case{}, e
 		}
-		unsecured := cr.UnsecuredLimitMinor - directUsed
-		if unsecured < 0 {
-			unsecured = 0
-		}
-		if c.PrincipalMinor > unsecured {
-			cov, e := store.Coverage(ctx, s.db(), c.ID)
-			if e != nil {
-				return store.Case{}, e
-			}
-			if c.PrincipalMinor-unsecured > cov {
-				return store.Case{}, ErrCoverage
-			}
-		}
-	}
-	tx, e := s.Pool.Begin(ctx)
-	if e != nil {
-		return store.Case{}, e
-	}
-	defer tx.Rollback(ctx)
-	if in.State == "approved" && s.LockAccounts != nil {
-		if e = s.guardAccounts(ctx, tx, c.BorrowerAccountID); e != nil {
-			return store.Case{}, e
-		}
-		locked, le := store.GetCase(ctx, tx, id)
-		if le != nil {
-			return store.Case{}, le
-		}
-		if locked.Version != in.Version || locked.State != "submitted" {
-			return store.Case{}, ErrConflict
-		}
-		c = locked
-		p, e = store.GetPool(ctx, tx, c.PoolID)
-		if e != nil {
-			return store.Case{}, e
-		}
-		if p.IsShared {
-			summary, se := store.Summary(ctx, tx, p.ID)
-			if se != nil || summary.AvailableMinor < c.PrincipalMinor {
-				if se != nil {
-					return store.Case{}, se
-				}
-				return store.Case{}, ErrLimit
-			}
-		}
-		evaluatedCredit, e = s.Credit(ctx, c.BorrowerAccountID)
-		policy, pe := s.CreditPolicy(ctx)
-		if e != nil || pe != nil || evaluatedCredit.State != "active" || !creditFresh(evaluatedCredit, policy, time.Now().UTC()) {
-			return store.Case{}, ErrRule
-		}
-		used, ue := store.UsedResponsibility(ctx, tx, c.BorrowerAccountID)
-		if ue != nil || used > evaluatedCredit.TotalLimitMinor-c.PrincipalMinor {
-			return store.Case{}, ErrLimit
-		}
-		directUsed, ue := store.UsedPrincipal(ctx, tx, c.BorrowerAccountID)
-		if ue != nil {
-			return store.Case{}, ue
-		}
-		unsecured := evaluatedCredit.UnsecuredLimitMinor - directUsed
-		if unsecured < 0 {
-			unsecured = 0
-		}
-		if c.PrincipalMinor > unsecured {
-			cov, ce := store.Coverage(ctx, tx, c.ID)
-			if ce != nil {
-				return store.Case{}, ce
-			}
-			if c.PrincipalMinor-unsecured > cov {
-				return store.Case{}, ErrCoverage
-			}
+		if coverage < required {
+			return store.Case{}, ErrCoverage
 		}
 	}
 	out, e := store.TransitionCase(ctx, tx, id, in.Version, in.State, actor, in.Note)
@@ -526,6 +487,13 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 	}
 	if in.State == "approved" {
 		if e = s.recordCreditEvaluation(ctx, tx, evaluatedCredit); e != nil {
+			return store.Case{}, e
+		}
+		if e = store.Audit(ctx, tx, id, actor, "credit_coverage_checked", nil, map[string]any{
+			"model": "single-credit-v1", "total_limit_minor": evaluatedCredit.TotalLimitMinor,
+			"used_responsibility_minor": used, "principal_minor": c.PrincipalMinor,
+			"required_coverage_minor": required, "approved_coverage_minor": coverage,
+		}); e != nil {
 			return store.Case{}, e
 		}
 	}
@@ -828,11 +796,6 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 		if caseRow.State != "submitted" && caseRow.State != "awaiting_acceptance" {
 			return g, ErrConflict
 		}
-		credit, e := s.Credit(ctx, actor)
-		policy, pe := s.CreditPolicy(ctx)
-		if e != nil || pe != nil || credit.State != "active" || !creditFresh(credit, policy, time.Now().UTC()) {
-			return g, ErrRule
-		}
 		tx, e := s.Pool.Begin(ctx)
 		if e != nil {
 			return g, e
@@ -841,13 +804,22 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 		if e = s.guardAccounts(ctx, tx, actor, caseRow.BorrowerAccountID); e != nil {
 			return g, e
 		}
-		lockedCase, e := store.GetCase(ctx, tx, g.CaseID)
+		if e = store.LockCreditAccounts(ctx, tx, actor, caseRow.BorrowerAccountID); e != nil {
+			return g, e
+		}
+		lockedCase, e := store.LockCase(ctx, tx, g.CaseID)
 		if e != nil || (lockedCase.State != "submitted" && lockedCase.State != "awaiting_acceptance") {
 			return g, ErrConflict
 		}
 		locked, e := store.GetGuarantee(ctx, tx, id)
 		if e != nil || locked.Version != in.Version || locked.State != "invited" {
 			return g, ErrConflict
+		}
+		evaluation, ce := store.LatestCreditEvaluation(ctx, tx, actor)
+		policy, pe := store.ReadCreditPolicy(ctx, tx)
+		credit := creditFromEvaluation(evaluation)
+		if ce != nil || pe != nil || credit.State != "active" || !creditFresh(credit, policy, time.Now().UTC()) {
+			return g, ErrRule
 		}
 		used, e := store.UsedResponsibility(ctx, tx, actor)
 		if e != nil {

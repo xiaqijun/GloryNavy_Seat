@@ -50,7 +50,10 @@
 .loan-policy-summary { display: grid; gap: 16px; margin: 20px 0 0; }
 .loan-policy-summary dt { color: var(--muted); font-size: 13px; }
 .loan-policy-summary dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-.loan-history-table { min-width: 720px !important; }
+.loan-history-table { min-width: 600px !important; }
+.loan-page[data-view="evaluations"] { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.loan-page[data-view="evaluations"] > .loan-list { min-width: 0; }
+.loan-page[data-view="evaluations"] .loan-table-wrap { position: relative; }
 .loan-title {
   display: flex;
   align-items: center;
