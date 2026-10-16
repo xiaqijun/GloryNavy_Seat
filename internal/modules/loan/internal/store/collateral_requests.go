@@ -12,6 +12,8 @@ import (
 // Ownership follows CaseID, so the existing loan account-merge participant moves
 // requests together with their case and preserves the case's original account.
 type CollateralRequest struct {
+	CoverageMinor        int64           `json:"coverage_minor"`
+	ValuationMinor       int64           `json:"valuation_minor"`
 	ID                   int64           `json:"id,string"`
 	PublicID             string          `json:"public_id"`
 	CaseID               int64           `json:"case_id,string"`
@@ -28,11 +30,11 @@ type CollateralRequest struct {
 
 const collateralRequestColumns = `r.id,r.public_id,r.case_id,r.source_character_id,r.recipient_character_id,r.selections,r.items,r.observed_at,
 CASE WHEN r.state='awaiting_delivery' AND c.state NOT IN ('submitted','awaiting_acceptance','approved') THEN 'cancelled' ELSE r.state END,
-r.collateral_id,r.version,r.created_at`
+r.collateral_id,r.version,r.created_at,r.coverage_minor,r.valuation_minor`
 
 func scanCollateralRequest(row pgx.Row) (CollateralRequest, error) {
 	var v CollateralRequest
-	err := row.Scan(&v.ID, &v.PublicID, &v.CaseID, &v.SourceCharacterID, &v.RecipientCharacterID, &v.Selections, &v.Items, &v.ObservedAt, &v.State, &v.CollateralID, &v.Version, &v.CreatedAt)
+	err := row.Scan(&v.ID, &v.PublicID, &v.CaseID, &v.SourceCharacterID, &v.RecipientCharacterID, &v.Selections, &v.Items, &v.ObservedAt, &v.State, &v.CollateralID, &v.Version, &v.CreatedAt, &v.CoverageMinor, &v.ValuationMinor)
 	return v, err
 }
 
@@ -59,7 +61,7 @@ func ListCollateralRequests(ctx context.Context, db DBTX, caseID int64) ([]Colla
 
 func InsertCollateralRequest(ctx context.Context, db DBTX, v CollateralRequest) (CollateralRequest, error) {
 	var id int64
-	err := db.QueryRow(ctx, `INSERT INTO loan_collateral_requests(public_id,case_id,source_character_id,recipient_character_id,selections,items,observed_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`, v.PublicID, v.CaseID, v.SourceCharacterID, v.RecipientCharacterID, v.Selections, v.Items, v.ObservedAt).Scan(&id)
+	err := db.QueryRow(ctx, `INSERT INTO loan_collateral_requests(public_id,case_id,source_character_id,recipient_character_id,selections,items,observed_at,coverage_minor,valuation_minor) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`, v.PublicID, v.CaseID, v.SourceCharacterID, v.RecipientCharacterID, v.Selections, v.Items, v.ObservedAt, v.CoverageMinor, v.ValuationMinor).Scan(&id)
 	if err != nil {
 		return CollateralRequest{}, err
 	}

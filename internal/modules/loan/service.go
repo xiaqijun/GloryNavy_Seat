@@ -698,7 +698,7 @@ func (s *Service) CreatePayment(ctx context.Context, actor string, id int64, in 
 }
 
 func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in GuaranteeInput) (store.Guarantee, error) {
-	if id <= 0 || in.AmountMinor <= 0 || in.GuarantorCharacterID <= 0 || len(in.Note) > 500 || !validCash(in.AmountMinor) {
+	if id <= 0 || in.AmountMinor < 0 || in.GuarantorCharacterID <= 0 || len(in.Note) > 500 || in.AmountMinor > 0 && !validLoanPaymentAmount(in.AmountMinor) {
 		return store.Guarantee{}, ErrInvalid
 	}
 	c, e := store.GetCase(ctx, s.db(), id)
@@ -747,12 +747,41 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if e = s.guardAccounts(ctx, tx, actor, guarantor); e != nil {
 		return store.Guarantee{}, e
 	}
+	if e = store.LockCreditAccounts(ctx, tx, actor, guarantor); e != nil {
+		return store.Guarantee{}, e
+	}
 	locked, e := store.LockCase(ctx, tx, id)
 	if e != nil {
 		return store.Guarantee{}, e
 	}
 	if locked.BorrowerAccountID != actor || (locked.State != "submitted" && locked.State != "awaiting_acceptance") {
 		return store.Guarantee{}, ErrConflict
+	}
+	security, e := s.caseSecurity(ctx, tx, locked, 0)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	amount, e := securityTarget(security, in.AmountMinor)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	if amount > safeScaled(locked.PrincipalMinor, int64(policy.GuaranteeCapBPS), 10000) {
+		return store.Guarantee{}, ErrCoverage
+	}
+	// An invitation reserves this case's gap, never the guarantor's credit.
+	// Acceptance independently checks and commits the guarantor's capacity.
+	if amount > availableGuaranteeCapacity(credit, usedResponsibility) {
+		return store.Guarantee{}, ErrLimit
+	}
+	in.AmountMinor = amount
+	previous, e := store.ListGuarantees(ctx, tx, id)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	for _, g := range previous {
+		if g.GuarantorAccountID == guarantor && g.State != "rejected" && g.State != "released" {
+			return store.Guarantee{}, ErrConflict
+		}
 	}
 	g, e := store.AddGuarantee(ctx, tx, id, guarantor, in.GuarantorCharacterID, in.AmountMinor, in.Note)
 	if e != nil {
@@ -828,6 +857,13 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 		if g.AmountMinor > availableGuaranteeCapacity(credit, used) {
 			return g, ErrLimit
 		}
+		security, e := s.caseSecurity(ctx, tx, lockedCase, g.ID)
+		if e != nil {
+			return g, e
+		}
+		if security.CreditReady && g.AmountMinor > security.UnallocatedMinor {
+			return g, ErrConflict
+		}
 		out, e := store.DecideGuarantee(ctx, tx, id, in.Version, in.State)
 		if e != nil {
 			return g, e
@@ -864,7 +900,7 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 	return out, nil
 }
 func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in CollateralInput) (store.Collateral, error) {
-	if id <= 0 || in.RequestID < 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 || in.HaircutBPS < 1 || in.HaircutBPS > 10000 {
+	if id <= 0 || in.RequestID < 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 {
 		return store.Collateral{}, ErrInvalid
 	}
 	c, e := store.GetCase(ctx, s.db(), id)
@@ -877,16 +913,6 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	p, e := store.GetPool(ctx, s.db(), c.PoolID)
 	if e != nil {
 		return store.Collateral{}, e
-	}
-	var cfg struct {
-		CollateralHaircutBPS int `json:"collateral_haircut_bps"`
-	}
-	if json.Unmarshal(p.Config, &cfg) != nil || cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 || in.HaircutBPS != cfg.CollateralHaircutBPS {
-		return store.Collateral{}, ErrRule
-	}
-	policy, pe := s.CreditPolicy(ctx)
-	if pe != nil {
-		return store.Collateral{}, pe
 	}
 	if s.Contracts == nil {
 		return store.Collateral{}, ErrRule
@@ -906,6 +932,17 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 		}
 		sourceCharacter = request.SourceCharacterID
 	}
+	if request.ID > 0 && request.CoverageMinor == 0 {
+		var cfg struct {
+			CollateralHaircutBPS int `json:"collateral_haircut_bps"`
+		}
+		if json.Unmarshal(p.Config, &cfg) != nil || cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 {
+			return store.Collateral{}, ErrRule
+		}
+		in.HaircutBPS = cfg.CollateralHaircutBPS
+	} else {
+		in.HaircutBPS = collateralAdvanceBPS
+	}
 	contract, e := s.Contracts.Read(ctx, actor, in.ContractKind, in.ContractOwnerID, in.ContractID)
 	if e != nil || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID || contract.Type != "item_exchange" || contract.Status != "finished" || !contract.ItemsReady || len(contract.Items) == 0 || !hasParty(contract, sourceCharacter) || !collateralMatchesPool(p, contract) || !exactAmount(contract.Price, 0) || !exactAmount(contract.Reward, 0) {
 		return store.Collateral{}, ErrContract
@@ -923,16 +960,14 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	if ve != nil || valuation <= 0 {
 		return store.Collateral{}, ErrContract
 	}
-	// Client supplied valuation and coverage are intentionally ignored. The
-	// completed contract snapshot and pool haircut are the sole sources of
-	// collateral value.
+	// Delivery revalues the exact contract items; request coverage remains frozen.
 	in.ValuationMinor = valuation
-	in.CoveredMinor = coveredByHaircut(in.ValuationMinor, in.HaircutBPS)
-	if in.CoveredMinor <= 0 {
-		return store.Collateral{}, ErrInvalid
-	}
-	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
-		return store.Collateral{}, ErrCoverage
+	in.CoveredMinor = coveredByHaircut(valuation, in.HaircutBPS)
+	if request.CoverageMinor > 0 {
+		if in.CoveredMinor < request.CoverageMinor {
+			return store.Collateral{}, ErrCollateralValue
+		}
+		in.CoveredMinor = request.CoverageMinor
 	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
@@ -942,12 +977,32 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	if e = s.guardAccounts(ctx, tx, actor); e != nil {
 		return store.Collateral{}, e
 	}
+	if e = store.LockCreditAccounts(ctx, tx, actor); e != nil {
+		return store.Collateral{}, e
+	}
 	locked, e := store.LockCase(ctx, tx, id)
 	if e != nil {
 		return store.Collateral{}, e
 	}
 	if locked.BorrowerAccountID != actor || locked.State == "settled" || locked.State == "rejected" || locked.State == "cancelled" || locked.State == "defaulted" {
 		return store.Collateral{}, ErrConflict
+	}
+	if in.RequestID == 0 {
+		if locked.State != "submitted" && locked.State != "awaiting_acceptance" {
+			return store.Collateral{}, ErrConflict
+		}
+		security, err := s.caseSecurity(ctx, tx, locked, 0)
+		if err != nil {
+			return store.Collateral{}, err
+		}
+		target, err := securityTarget(security, 0)
+		if err != nil {
+			return store.Collateral{}, err
+		}
+		if in.CoveredMinor < target {
+			return store.Collateral{}, ErrCollateralValue
+		}
+		in.CoveredMinor = target
 	}
 	if in.RequestID > 0 {
 		current, err := store.GetCollateralRequest(ctx, tx, in.RequestID)
@@ -1020,7 +1075,7 @@ func (s *Service) DecideCollateral(ctx context.Context, actor string, id int64, 
 		var cfg struct {
 			CollateralHaircutBPS int `json:"collateral_haircut_bps"`
 		}
-		if json.Unmarshal(p.Config, &cfg) != nil || cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 || c.HaircutBPS != cfg.CollateralHaircutBPS || c.CoveredMinor > coveredByHaircut(c.ValuationMinor, c.HaircutBPS) {
+		if json.Unmarshal(p.Config, &cfg) != nil || (c.HaircutBPS != collateralAdvanceBPS && (cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 || c.HaircutBPS != cfg.CollateralHaircutBPS)) || c.CoveredMinor > coveredByHaircut(c.ValuationMinor, c.HaircutBPS) {
 			return c, ErrRule
 		}
 		if s.Contracts == nil {
@@ -1108,7 +1163,15 @@ func (s *Service) Detail(ctx context.Context, actor string, id int64) (map[strin
 	if e != nil {
 		return nil, e
 	}
-	return map[string]any{"case": c, "installments": ins, "guarantees": s.guaranteeDetails(ctx, gs), "collateral": cs, "collateral_requests": requests}, nil
+	out := map[string]any{"case": c, "installments": ins, "guarantees": s.guaranteeDetails(ctx, gs), "collateral": cs, "collateral_requests": requests}
+	if c.State == "submitted" || c.State == "awaiting_acceptance" {
+		security, err := s.caseSecurity(ctx, s.db(), c, 0)
+		if err != nil {
+			return nil, err
+		}
+		out["security"] = security
+	}
+	return out, nil
 }
 func (s *Service) Guarantees(ctx context.Context, actor string) ([]store.Guarantee, error) {
 	return store.ListGuaranteesForAccount(ctx, s.db(), actor)

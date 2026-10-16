@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { getLocale, msg } from "@/lib/i18n";
 import type { CaseDetail, Collateral, Pool } from "./api";
+import { SecuritySummaryView } from "./security-summary";
 import { RepaymentSummary } from "./repayment";
 
 const exactMoney = (minor: number) => `${new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 2 }).format(minor / 100)} ISK`;
@@ -23,6 +24,7 @@ export function LoanCaseDetail({ detail, pool, status, collateralAction, request
       <div><dt>{msg("当前贷款专员")}</dt><dd>{officer}</dd></div>
     </dl>
     <dl className="loan-detail-metrics"><div><dt>{msg("本金")}</dt><dd>{exactMoney(item.principal_minor)}</dd></div><div><dt>{msg("利息")}</dt><dd>{exactMoney(item.interest_minor)}</dd></div><div><dt>{msg("总应还")}{item.requested_due_at && !item.first_due_at && msg("（预计）")}</dt><dd>{exactMoney(item.total_due_minor)}</dd></div></dl>
+    {detail.security && <SecuritySummaryView value={detail.security} />}
     <section className="loan-detail-section"><h3>{msg("还款安排")}</h3><div className="loan-detail-terms"><RepaymentSummary item={item} /></div><dl className="loan-detail-facts"><div><dt>{msg("年利率")}</dt><dd>{item.interest_rate_bps == null ? "—" : `${item.interest_rate_bps / 100}%`}</dd></div><div><dt>{msg("申请时间")}</dt><dd>{new Date(item.created_at).toLocaleString(getLocale())}</dd></div></dl>
       {!!detail.installments?.length && <div className="loan-installments">{detail.installments.map(row => <div className="loan-installment" key={row.id}><div><strong>{msg("第 {0} 期", row.sequence)}</strong><span className="loan-state">{securityState(row.state)}</span></div><time dateTime={row.due_at}>{new Date(row.due_at).toLocaleString(getLocale())}</time><dl><div><dt>{msg("本期应还")}</dt><dd>{exactMoney(row.principal_minor + row.interest_minor)}</dd></div><div><dt>{msg("已还")}</dt><dd>{exactMoney(row.paid_principal_minor + row.paid_interest_minor)}</dd></div></dl></div>)}</div>}
     </section>

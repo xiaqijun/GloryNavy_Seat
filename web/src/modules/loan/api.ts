@@ -12,8 +12,10 @@ export type Installment = { id: string; sequence: number; due_at: string; princi
 export type AssetItem = { item_id?: string; type_id: string; quantity: string; name: string; included: boolean };
 export type AssetChoice = { item_id: string; type_id: string; name: string; quantity: string; available: string; location_id: string; items: AssetItem[] };
 export type AssetCatalog = { character_id: string; observed_at: string; items: AssetChoice[] };
-export type CollateralRequest = { id: string; public_id: string; case_id: string; source_character_id: string; recipient_character_id: string; items: AssetItem[]; observed_at: string; state: "awaiting_delivery" | "delivered" | "cancelled"; collateral_id?: string; version: number; created_at: string };
-export type CaseDetail = { case: Case; installments: Installment[]; guarantees: Guarantee[]; collateral: Collateral[]; collateral_requests?: CollateralRequest[] };
+export type CollateralRequest = { coverage_minor?: number; valuation_minor?: number; id: string; public_id: string; case_id: string; source_character_id: string; recipient_character_id: string; items: AssetItem[]; observed_at: string; state: "awaiting_delivery" | "delivered" | "cancelled"; collateral_id?: string; version: number; created_at: string };
+export type SecuritySummary = { credit_ready: boolean; available_credit_minor: number; required_minor: number; effective_minor: number; pending_minor: number; unallocated_minor: number; legacy_pending: boolean };
+export type CollateralQuote = { security: SecuritySummary; valuation_minor: number; covered_minor: number; required_minor: number; shortfall_minor: number; can_submit: boolean };
+export type CaseDetail = { security?: SecuritySummary; case: Case; installments: Installment[]; guarantees: Guarantee[]; collateral: Collateral[]; collateral_requests?: CollateralRequest[] };
 export type Character = { id: string; name: string; account_id?: string; nickname?: string };
 export type Context = { pools: Pool[]; pool_summary: PoolSummary; credit: Credit; administrator: boolean; can_manage_pool?: boolean; custodian_characters?: Character[] };
 export type CreditPolicy = { income_window_days: number; annual_rate_bps: number; term_months: number; debt_ratio_bps: number; score_factor_bps: number; income_weight_bps: number; asset_credit_ltv_bps: number; guarantee_cap_bps: number; collateral_cap_bps: number; stale_after_hours: number; min_income_samples: number; insufficient_income_policy: "fallback_pool" | "zero"; version: number; updated_by?: string; updated_at: string };
@@ -50,5 +52,7 @@ export const createCollateral = (csrf: string, id: string, body: Record<string, 
 export const decideCollateral = (csrf: string, id: string, body: Record<string, unknown>) => mutate<Collateral>(csrf, `/api/v1/loan/collateral/${encodeURIComponent(id)}/decision`, "POST", body, "抵押审批失败");
 
 export const collateralAssets = (caseID: string, characterID: string, signal?: AbortSignal) => getData(`/api/v1/loan/cases/${encodeURIComponent(caseID)}/collateral-assets?character_id=${encodeURIComponent(characterID)}`, (v): v is AssetCatalog => object(v) && Array.isArray(v.items) && typeof v.observed_at === "string", signal);
-export const createCollateralRequest = (csrf: string, caseID: string, body: { character_id: string; items: { item_id: string; quantity: string }[] }) => mutate<CollateralRequest>(csrf, `/api/v1/loan/cases/${encodeURIComponent(caseID)}/collateral-requests`, "POST", body, msg("保存抵押物失败"));
+export const createCollateralRequest = (csrf: string, caseID: string, body: { character_id: string; coverage_minor?: number; items: { item_id: string; quantity: string }[] }) => mutate<CollateralRequest>(csrf, `/api/v1/loan/cases/${encodeURIComponent(caseID)}/collateral-requests`, "POST", body, msg("保存抵押物失败"));
 export const cancelCollateralRequest = (csrf: string, id: string, version: number) => mutate<CollateralRequest>(csrf, `/api/v1/loan/collateral-requests/${encodeURIComponent(id)}/cancel`, "POST", { version }, msg("取消抵押物失败"));
+
+export const quoteCollateral = (csrf: string, caseID: string, body: { character_id: string; items: { item_id: string; quantity: string }[] }) => mutate<CollateralQuote>(csrf, `/api/v1/loan/cases/${encodeURIComponent(caseID)}/collateral-quote`, "POST", body, msg("抵押估值失败"));

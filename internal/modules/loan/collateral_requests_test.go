@@ -25,6 +25,9 @@ func TestCollateralRequestLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: "test", Score: 80, TotalLimitMinor: 30000, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
 	var poolID int64
 	if err := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,corporation_id,name,state,config,created_by,is_shared,custodian_character_id) VALUES('corporation',98000001,'Test pool','open','{"collateral_haircut_bps":7000}',$1::uuid,true,333) RETURNING id`, manager).Scan(&poolID); err != nil {
 		t.Fatal(err)
@@ -108,6 +111,12 @@ func TestCollateralRequestLifecycle(t *testing.T) {
 	}}
 	s.ReadContractTx = func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error) { return contract, nil }
 	in := CollateralInput{RequestID: request.ID, OwnerAccountID: borrower, ContractKind: "character", ContractOwnerID: 222, ContractID: 9001, HaircutBPS: 7000}
+	originalValue := s.CollateralValue
+	s.CollateralValue = func(context.Context, json.RawMessage) (int64, error) { return 87499, nil }
+	if _, err := s.AddCollateral(ctx, borrower, c.ID, in); !errors.Is(err, ErrCollateralValue) {
+		t.Fatal("price fell below frozen target", err)
+	}
+	s.CollateralValue = originalValue
 	valid := contract
 	mutations := []func(*Contract){func(c *Contract) { c.IssuerID = 111 }, func(c *Contract) { c.AcceptorID = 444 }, func(c *Contract) { c.Price = "1" }, func(c *Contract) { c.Reward = "1" }, func(c *Contract) { c.Status = "outstanding" }, func(c *Contract) { c.Completed = request.CreatedAt.Add(-time.Hour).Format(time.RFC3339) }, func(c *Contract) { c.Items = json.RawMessage(`[{"type_id":34,"quantity":5,"included":true}]`) }, func(c *Contract) {
 		c.Items = json.RawMessage(`[{"type_id":34,"quantity":6,"included":true},{"type_id":35,"quantity":1,"included":true}]`)
@@ -142,6 +151,9 @@ func TestCollateralRequestLifecycle(t *testing.T) {
 	col, e := s.AddCollateral(ctx, borrower, c.ID, in)
 	if e != nil {
 		t.Fatal(e)
+	}
+	if col.HaircutBPS != 8000 || col.CoveredMinor != 70000 {
+		t.Fatal("new delivery did not use 80% and frozen target", col)
 	}
 	current, e = store.GetCollateralRequest(ctx, db, request.ID)
 	if e != nil || current.State != "delivered" || current.CollateralID == nil || *current.CollateralID != col.ID {
@@ -208,6 +220,9 @@ func TestCollateralRequestRoutes(t *testing.T) {
 	if e := db.QueryRow(ctx, `INSERT INTO identity_users DEFAULT VALUES RETURNING id::text`).Scan(&borrower); e != nil {
 		t.Fatal(e)
 	}
+	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: "test", Score: 80, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
+		t.Fatal(err)
+	}
 	var poolID int64
 	if e := db.QueryRow(ctx, `INSERT INTO loan_pools(lender_kind,corporation_id,name,state,config,created_by,is_shared,custodian_character_id) VALUES('corporation',98000001,'Pool','open','{}',$1::uuid,true,333) RETURNING id`, borrower).Scan(&poolID); e != nil {
 		t.Fatal(e)
@@ -216,7 +231,7 @@ func TestCollateralRequestRoutes(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	s := &Service{Pool: db, LockAccounts: func(context.Context, pgx.Tx, []string) error { return nil }, AssetChoices: func(context.Context, string, int64) (AssetCatalog, error) {
+	s := &Service{Pool: db, CollateralValue: func(context.Context, json.RawMessage) (int64, error) { return 125000, nil }, LockAccounts: func(context.Context, pgx.Tx, []string) error { return nil }, AssetChoices: func(context.Context, string, int64) (AssetCatalog, error) {
 		return AssetCatalog{CharacterID: 111, ObservedAt: time.Now(), Items: []AssetChoice{{ItemID: 1, TypeID: 34, Quantity: 1, LocationID: 60, Items: []AssetItem{{ItemID: 1, TypeID: 34, Quantity: 1, Included: true}}}}}, nil
 	}}
 	h := Handler{Service: s, User: func(*http.Request) string { return borrower }}

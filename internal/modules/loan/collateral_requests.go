@@ -36,8 +36,9 @@ type AssetSelection struct {
 	Quantity int64 `json:"quantity,string"`
 }
 type CollateralRequestInput struct {
-	CharacterID int64            `json:"character_id,string"`
-	Items       []AssetSelection `json:"items"`
+	CoverageMinor int64            `json:"coverage_minor,omitempty"`
+	CharacterID   int64            `json:"character_id,string"`
+	Items         []AssetSelection `json:"items"`
 }
 
 func (s *Service) collateralRequestCase(ctx context.Context, actor string, id int64) (store.Case, error) {
@@ -79,61 +80,16 @@ func (s *Service) CollateralAssets(ctx context.Context, actor string, caseID, ch
 }
 
 func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, caseID int64, in CollateralRequestInput) (store.CollateralRequest, error) {
-	if caseID <= 0 || in.CharacterID <= 0 || len(in.Items) == 0 || len(in.Items) > 100 {
-		return store.CollateralRequest{}, ErrInvalid
-	}
-	c, err := s.collateralRequestCase(ctx, actor, caseID)
+	prepared, err := s.prepareCollateralSelection(ctx, actor, caseID, in)
 	if err != nil {
 		return store.CollateralRequest{}, err
 	}
-	pool, err := store.GetPool(ctx, s.db(), c.PoolID)
+	value, err := s.selectionValue(ctx, prepared.items)
 	if err != nil {
 		return store.CollateralRequest{}, err
 	}
-	if pool.CustodianCharacterID == nil || *pool.CustodianCharacterID == in.CharacterID {
-		return store.CollateralRequest{}, ErrRule
-	}
-	if s.AssetChoices == nil {
-		return store.CollateralRequest{}, ErrRule
-	}
-	// Fetch and name the authoritative asset snapshot before opening a write transaction.
-	catalog, err := s.AssetChoices(ctx, actor, in.CharacterID)
-	if err != nil {
-		return store.CollateralRequest{}, err
-	}
-	if catalog.CharacterID != in.CharacterID || catalog.ObservedAt.IsZero() {
-		return store.CollateralRequest{}, ErrRule
-	}
-	candidates := map[int64]AssetChoice{}
-	for _, v := range catalog.Items {
-		candidates[v.ItemID] = v
-	}
-	seen := map[int64]bool{}
-	items := []AssetItem{}
-	var location int64
-	for _, selection := range in.Items {
-		candidate, ok := candidates[selection.ItemID]
-		if !ok || seen[selection.ItemID] || selection.Quantity <= 0 || selection.Quantity > candidate.Quantity || len(candidate.Items) == 0 {
-			return store.CollateralRequest{}, ErrInvalid
-		}
-		if location != 0 && location != candidate.LocationID {
-			return store.CollateralRequest{}, ErrInvalid
-		}
-		location = candidate.LocationID
-		if len(candidate.Items) > 1 && selection.Quantity != candidate.Quantity {
-			return store.CollateralRequest{}, ErrInvalid
-		}
-		seen[selection.ItemID] = true
-		for _, item := range candidate.Items {
-			if item.ItemID == selection.ItemID {
-				item.Quantity = selection.Quantity
-			}
-			items = append(items, item)
-		}
-	}
-	if len(items) > 500 {
-		return store.CollateralRequest{}, ErrInvalid
-	}
+	pool, catalog, candidates, items := prepared.pool, prepared.catalog, prepared.candidates, prepared.items
+
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return store.CollateralRequest{}, err
@@ -142,12 +98,26 @@ func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, cas
 	if err = s.guardAccounts(ctx, tx, actor); err != nil {
 		return store.CollateralRequest{}, err
 	}
+	if err = store.LockCreditAccounts(ctx, tx, actor); err != nil {
+		return store.CollateralRequest{}, err
+	}
 	locked, err := store.LockCase(ctx, tx, caseID)
 	if err != nil {
 		return store.CollateralRequest{}, err
 	}
 	if locked.BorrowerAccountID != actor || locked.State != "submitted" && locked.State != "awaiting_acceptance" {
 		return store.CollateralRequest{}, ErrConflict
+	}
+	security, err := s.caseSecurity(ctx, tx, locked, 0)
+	if err != nil {
+		return store.CollateralRequest{}, err
+	}
+	target, err := securityTarget(security, in.CoverageMinor)
+	if err != nil {
+		return store.CollateralRequest{}, err
+	}
+	if coveredByHaircut(value, collateralAdvanceBPS) < target {
+		return store.CollateralRequest{}, ErrCollateralValue
 	}
 	if err = store.LockCollateralAssets(ctx, tx, in.CharacterID); err != nil {
 		return store.CollateralRequest{}, err
@@ -163,7 +133,7 @@ func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, cas
 	}
 	selections, _ := json.Marshal(in.Items)
 	snapshot, _ := json.Marshal(items)
-	out, err := store.InsertCollateralRequest(ctx, tx, store.CollateralRequest{PublicID: publicID("LNC"), CaseID: caseID, SourceCharacterID: in.CharacterID, RecipientCharacterID: *pool.CustodianCharacterID, Selections: selections, Items: snapshot, ObservedAt: catalog.ObservedAt})
+	out, err := store.InsertCollateralRequest(ctx, tx, store.CollateralRequest{PublicID: publicID("LNC"), CaseID: caseID, SourceCharacterID: in.CharacterID, RecipientCharacterID: *pool.CustodianCharacterID, Selections: selections, Items: snapshot, ObservedAt: catalog.ObservedAt, CoverageMinor: target, ValuationMinor: value})
 	if err != nil {
 		return out, err
 	}

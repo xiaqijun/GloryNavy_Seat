@@ -10,6 +10,7 @@ for (const language of ["zh-CN", "en"]) {
       { item_id: "502", type_id: "35", name: "Pyerite", quantity: "1", available: "1", location_id: "6002", items: [{ item_id: "502", type_id: "35", quantity: "1", name: "Pyerite", included: true }] },
     ] };
     const pending: any[] = [], collateral: any[] = [];
+    const security = () => ({ credit_ready: true, available_credit_minor: loan.principal_minor - 200000, required_minor: 200000, effective_minor: 0, pending_minor: pending.length ? 200000 : 0, unallocated_minor: pending.length ? 0 : 200000, legacy_pending: false });
     let contractReads = 0, writes = 0;
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), language);
     await page.route("https://images.evetech.net/**", r => r.abort());
@@ -23,14 +24,18 @@ for (const language of ["zh-CN", "en"]) {
       else if (path.endsWith("/community/profile")) data = { version: "1", complete: true, qq: { value: "10000", version: "1", confirmation: "confirmed" }, kook: { value: "Pilot", version: "1", confirmation: "confirmed" } };
       else if (path.endsWith("/loan/context")) data = { administrator: true, can_manage_pool: true, pools: [{ id: "1", name: "Shared pool", is_shared: true, lender_kind: "corporation", state: "open", custodian_character_id: "333", custodian_character_name: "Loan Custodian", config: {}, version: 1 }], credit: { score: 80, total_limit_minor: 100000000, state: "active" }, pool_summary: { pending_minor: 0, funded_minor: 0, cash_minor: 100000000, reserved_minor: 0, available_minor: 100000000 } };
       else if (path.endsWith("/loan/cases")) data = { items: [loan] };
-      else if (path.endsWith("/cases/1")) data = { case: loan, guarantees: [], collateral, collateral_requests: pending, installments: [] };
+      else if (path.endsWith("/cases/1")) data = { security: security(), case: loan, guarantees: [], collateral, collateral_requests: pending, installments: [] };
       else if (path.endsWith("/collateral-assets")) data = assets;
+      else if (path.endsWith("/collateral-quote")) {
+        const amount = r.request().postDataJSON().items.reduce((sum: number, i: { quantity: string }) => sum + Number(i.quantity) * 125000, 0);
+        data = { security: security(), valuation_minor: amount, covered_minor: Math.floor(amount * 0.8), required_minor: 200000, shortfall_minor: Math.max(0, 200000 - Math.floor(amount * 0.8)), can_submit: amount * 0.8 >= 200000 };
+      }
       else if (path.endsWith("/collateral-requests")) {
         expect(r.request().headers()["x-csrf-token"]).toBe("csrf");
-        expect(r.request().postDataJSON()).toEqual({ character_id: "111", items: [{ item_id: "501", quantity: "3" }] });
+        expect(r.request().postDataJSON()).toEqual({ character_id: "111", coverage_minor: 200000, items: [{ item_id: "501", quantity: "3" }] });
         writes++;
         if (writes === 1) return r.fulfill({ status: 409, json: { error: { message: "Assets changed; retry" } } });
-        data = { id: "1", public_id: "LNC-TEST-DELIVERY", case_id: "1", source_character_id: "111", recipient_character_id: "333", items: [{ type_id: "34", quantity: "3", name: "Tritanium", included: true }], state: "awaiting_delivery", version: 1, created_at: "2026-10-16T00:00:00Z" };
+        data = { coverage_minor: 200000, valuation_minor: 375000, id: "1", public_id: "LNC-TEST-DELIVERY", case_id: "1", source_character_id: "111", recipient_character_id: "333", items: [{ type_id: "34", quantity: "3", name: "Tritanium", included: true }], state: "awaiting_delivery", version: 1, created_at: "2026-10-16T00:00:00Z" };
         pending.push(data);
       } else if (path.includes("/eve/contracts/")) {
         contractReads++;
@@ -39,8 +44,9 @@ for (const language of ["zh-CN", "en"]) {
       } else if (path.endsWith("/cases/1/collateral")) {
         expect(r.request().postDataJSON().request_id).toBe("1");
         expect(r.request().postDataJSON().contract_id).toBe(9001);
+        expect(r.request().postDataJSON().haircut_bps).toBe(8000);
         pending[0].state = "delivered";
-        data = { id: "1", case_id: "1", contract_id: "9001", valuation_minor: 123456, covered_minor: 86419, state: "proposed", version: 1, items: pending[0].items };
+        data = { id: "1", case_id: "1", contract_id: "9001", valuation_minor: 375000, haircut_bps: 8000, covered_minor: 200000, state: "proposed", version: 1, items: pending[0].items };
         collateral.push(data);
       } else if (path.includes("/loan/")) data = { items: [] };
       return r.fulfill({ json: { data } });
@@ -55,6 +61,13 @@ for (const language of ["zh-CN", "en"]) {
     dialog = page.getByRole("dialog");
     await dialog.getByRole("checkbox", { name: /Tritanium/ }).check();
     await expect(dialog.getByRole("checkbox", { name: /Pyerite/ })).toBeDisabled();
+    await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toHaveValue("2000");
+    await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toHaveAttribute("readonly", "");
+    await expect(dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true })).toBeDisabled();
+    await expect(dialog).toContainText(tr("还差 {0} 可抵额度，请增加物品或数量。").replace("{0}", "1,000 ISK"));
+    await dialog.getByRole("spinbutton").fill("2");
+    await expect(dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true })).toBeEnabled();
+    await expect(dialog).toContainText("2,500 ISK");
     await dialog.getByRole("spinbutton").fill("3");
     await dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true }).click();
     await expect(dialog.getByRole("alert")).toHaveText("Assets changed; retry");

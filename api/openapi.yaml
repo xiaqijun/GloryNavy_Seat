@@ -7862,7 +7862,7 @@ paths:
       operationId: loanCaseDetail
       security: [{SessionCookie: []}]
       summary: Read a visible loan case and its security records
-      description: Each guarantees item includes optional guarantor_character_name, resolved in one batch from stored positive character IDs after case-object authorization. Missing names or lookup failure omit the name without failing the detail read. Existing IDs, amounts, states and ownership are unchanged; empty guarantees remain an array. The UI falls back to character ID, then guarantor account for legacy records without a character.
+      description: Each guarantees item includes optional guarantor_character_name, resolved in one batch from stored positive character IDs after case-object authorization. Missing names or lookup failure omit the name without failing the detail read. Existing IDs, amounts, states and ownership are unchanged; empty guarantees remain an array. The UI falls back to character ID, then guarantor account for legacy records without a character. Submitted/awaiting_acceptance details also include security (LoanSecuritySummary); pending allocations prevent duplicate applications but never count as effective approval coverage.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       responses:
         '200': {description: Loan case, installments, guarantees and collateral}
@@ -7945,7 +7945,8 @@ paths:
     post:
       operationId: loanGuaranteeCreate
       security: [{SessionCookie: []}]
-      summary: Invite a bound character to guarantee a loan
+      summary: Invite a bound character to guarantee the uncovered excess
+      description: Borrower-only, fresh active credit and pending case required. The server locks account credit then the case and derives the remaining gap after effective and pending security. Omitted or zero amount_minor is automatic; a positive expected amount must match. No gap rejects creation. Guarantor capacity and guarantee-share limits still apply. Rejected/released invitations remain as history and permit reinvitation; an unresolved invitation for the same account blocks it.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true
@@ -7954,13 +7955,13 @@ paths:
             schema: {$ref: '#/components/schemas/LoanGuaranteeInput'}
       responses:
         '200': {description: Pending guarantee invitation}
-        '409': {description: Case state or guarantor capacity conflict}
+        '409': {description: No security needed, changed expected amount, inactive/stale credit, pending legacy delivery, case state or guarantor capacity conflict}
   /api/v1/loan/guarantees/{id}/decision:
     post:
       operationId: loanGuaranteeDecision
       security: [{SessionCookie: []}]
       summary: Accept or reject a guarantee invitation
-      description: Acceptance guards active accounts, serializes credit commitments for the guarantor and borrower, locks the case, and rereads fresh active credit and used responsibility. The guarantee must fit the guarantor's remaining total_limit_minor. Pending invitations do not consume capacity.
+      description: Acceptance guards active accounts, serializes credit commitments for the guarantor and borrower, locks the case, and rereads fresh active credit and used responsibility. The guarantee must fit the guarantor's remaining total_limit_minor. Pending invitations do not consume guarantor capacity. Acceptance also rejects an invitation exceeding the current remaining case gap when fresh active borrower credit exists; legacy missing borrower snapshots remain compatible, while loan approval always requires fresh active credit.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true
@@ -7983,11 +7984,40 @@ paths:
         '200': {description: 'Asset catalog: character_id, observed_at, items (item_id, type_id, name, quantity, available, location_id, nested items). IDs and quantities are decimal strings.'}
         '403': {description: Not the borrower or character not currently bound}
         '409': {description: Case no longer accepts asset selection}
+  /api/v1/loan/cases/{id}/collateral-quote:
+    post:
+      operationId: loanCollateralQuote
+      security: [{SessionCookie: []}]
+      summary: Value selected items against the automatic excess target
+      description: Requires loan.self, CSRF, the case borrower and currently bound personal assets on a submitted/awaiting_acceptance case. Reads authoritative assets and market prices without accepting client valuations. Every item must have a valid price. covered_minor is floor(total value * 0.8); equality with required_minor is sufficient. No records or contract claims are created.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanCollateralRequestInput'}
+      responses:
+        '200':
+          description: Current target and complete valuation; can_submit requires valid credit and sufficient unallocated security value
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/LoanCollateralQuote'}
+        '400': {description: Invalid selection or different locations}
+        '401': {description: No active session}
+        '403': {description: Not the borrower, unbound character or invalid CSRF}
+        '409': {description: Case or quantity changed, or loan_collateral_quote_unavailable}
   /api/v1/loan/cases/{id}/collateral-requests:
     post:
       operationId: loanCollateralRequestCreate
       security: [{SessionCookie: []}]
       summary: Save selected personal items awaiting in-game delivery
+      description: Requires CSRF and fresh active borrower credit. Revalue the complete selection, lock account credit before the case and asset quantities, and recompute the unallocated target. A positive coverage_minor is an expected amount and must match. Fixed 80% of total value must be at least the target. Pending requests reserve the target for this case but grant no effective coverage.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true
@@ -7995,10 +8025,10 @@ paths:
           application/json:
             schema: {$ref: '#/components/schemas/LoanCollateralRequestInput'}
       responses:
-        '200': {description: 'Pending delivery record, with frozen items, source and recipient character IDs, public_id and version. No collateral coverage is granted.'}
+        '200': {description: 'Pending delivery record with frozen coverage_minor, valuation_minor, items, source and recipient character IDs, public_id and version. Legacy target/value are zero. No effective collateral coverage is granted.'}
         '400': {description: Invalid selection or items at different locations}
         '403': {description: Not the borrower or character not currently bound}
-        '409': {description: Case or available quantity changed}
+        '409': {description: Case, quantity or expected target changed; no security needed; legacy delivery pending; missing credit; loan_collateral_value_insufficient or loan_collateral_quote_unavailable}
   /api/v1/loan/collateral-requests/{id}/cancel:
     post:
       operationId: loanCollateralRequestCancel
@@ -8024,6 +8054,7 @@ paths:
       operationId: loanCollateralCreate
       security: [{SessionCookie: []}]
       summary: Register a completed item contract as proposed collateral
+      description: New requests revalue exact delivered items at 80%; this must cover the frozen target, which becomes covered_minor. Pre-Goose-89 requests with zero target retain the pool haircut. Client valuation, haircut and covered values are ignored. Direct registration without request_id requires a pending case and enough value at 80% for the current unallocated gap. Contract evidence, claim, request transition and audit remain atomic; value below the target returns loan_collateral_value_insufficient (409).
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       requestBody:
         required: true
@@ -8232,7 +8263,7 @@ components:
         income_weight_bps: {type: integer, minimum: 0, maximum: 10000}
         asset_credit_ltv_bps: {type: integer, minimum: 0, maximum: 10000, description: Personal asset-supported capacity ratio; 1000 bps is 10%}
         guarantee_cap_bps: {type: integer, minimum: 0, maximum: 10000}
-        collateral_cap_bps: {type: integer, minimum: 0, maximum: 10000}
+        collateral_cap_bps: {type: integer, minimum: 0, maximum: 10000, description: Legacy compatibility field; new item collateral uses fixed 80 percent without an additional cap multiplier}
         stale_after_hours: {type: integer, minimum: 1, maximum: 8760}
         min_income_samples: {type: integer, minimum: 0, maximum: 12}
         insufficient_income_policy: {type: string, enum: [fallback_pool, zero]}
@@ -8240,15 +8271,15 @@ components:
     LoanGuaranteeInput:
       type: object
       additionalProperties: false
-      required: [guarantor_character_id, amount_minor]
+      required: [guarantor_character_id]
       properties:
         guarantor_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
-        amount_minor: {type: integer, format: int64, minimum: 100}
+        amount_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional expected gap in 0.01 ISK units; omitted or zero computes automatically and a positive mismatch is rejected}
         note: {type: string, maxLength: 500}
     LoanCollateralInput:
       type: object
       additionalProperties: false
-      required: [owner_account_id, contract_kind, contract_owner_id, contract_id, haircut_bps]
+      required: [owner_account_id, contract_kind, contract_owner_id, contract_id]
       properties:
         request_id: {type: string, pattern: '^[1-9][0-9]*$', description: 'Optional pending delivery ID. Requires exact frozen type/quantity match, personal source-to-recipient contract and completion after request creation. Legacy completed-contract registration remains compatible.'}
         owner_account_id: {type: string, format: uuid}
@@ -8256,14 +8287,15 @@ components:
         contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
         contract_id: {type: string, pattern: '^[1-9][0-9]*$'}
         valuation_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server values the completed contract snapshot}
-        haircut_bps: {type: integer, minimum: 1, maximum: 10000}
-        covered_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server applies the pool haircut}
+        haircut_bps: {type: integer, description: Ignored; new collateral uses fixed 8000 bps and legacy saved requests use their pool policy}
+        covered_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server uses the frozen target or current automatic gap}
         description: {type: string, maxLength: 500}
     LoanCollateralRequestInput:
       type: object
       additionalProperties: false
       required: [character_id, items]
       properties:
+        coverage_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional expected target for saving; omitted or zero computes automatically and a positive mismatch is rejected. Quote requests do not reserve this value.}
         character_id: {type: string, pattern: '^[1-9][0-9]*$'}
         items:
           type: array
@@ -8276,6 +8308,27 @@ components:
             properties:
               item_id: {type: string, pattern: '^[1-9][0-9]*$'}
               quantity: {type: string, pattern: '^[1-9][0-9]*$'}
+    LoanSecuritySummary:
+      type: object
+      required: [credit_ready, available_credit_minor, required_minor, effective_minor, pending_minor, unallocated_minor, legacy_pending]
+      properties:
+        credit_ready: {type: boolean}
+        available_credit_minor: {type: integer, format: int64, minimum: 0}
+        required_minor: {type: integer, format: int64, minimum: 0}
+        effective_minor: {type: integer, format: int64, minimum: 0}
+        pending_minor: {type: integer, format: int64, minimum: 0}
+        unallocated_minor: {type: integer, format: int64, minimum: 0}
+        legacy_pending: {type: boolean, description: Finish or cancel old requests before allocating new security}
+    LoanCollateralQuote:
+      type: object
+      required: [security, valuation_minor, covered_minor, required_minor, shortfall_minor, can_submit]
+      properties:
+        security: {$ref: '#/components/schemas/LoanSecuritySummary'}
+        valuation_minor: {type: integer, format: int64, minimum: 0}
+        covered_minor: {type: integer, format: int64, minimum: 0}
+        required_minor: {type: integer, format: int64, minimum: 0}
+        shortfall_minor: {type: integer, format: int64, minimum: 0}
+        can_submit: {type: boolean}
     LoanDecisionInput:
       type: object
       additionalProperties: false

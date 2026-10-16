@@ -30,7 +30,7 @@ func (h Handler) Module() module.Definition {
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
 		{"GET", "/guarantees/candidates", h.guaranteeCandidates},
-		{"GET", "/cases/{id}/collateral-assets", h.collateralAssets}, {"POST", "/cases/{id}/collateral-requests", h.collateralRequest}, {"POST", "/collateral-requests/{id}/cancel", h.collateralRequestCancel},
+		{"POST", "/cases/{id}/collateral-quote", h.collateralQuote}, {"GET", "/cases/{id}/collateral-assets", h.collateralAssets}, {"POST", "/cases/{id}/collateral-requests", h.collateralRequest}, {"POST", "/collateral-requests/{id}/cancel", h.collateralRequestCancel},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "loan.self", Handler: r.fn})
@@ -61,6 +61,12 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 	}
 	code, status, msg := "loan_unavailable", 503, "贷款服务暂不可用"
 	switch {
+	case errors.Is(e, ErrNoSecurityNeeded):
+		code, status, msg = "loan_security_not_needed", 409, "无需新增担保或抵押，请查看已有保障记录"
+	case errors.Is(e, ErrCollateralValue):
+		code, status, msg = "loan_collateral_value_insufficient", 409, "物品总估值的八折不足抵押额度，请增加物品或数量"
+	case errors.Is(e, ErrCollateralQuote):
+		code, status, msg = "loan_collateral_quote_unavailable", 409, "所选物品暂时无法完整估值，请调整选择或稍后重试"
 	case errors.Is(e, ErrInvalid):
 		code, status, msg = "invalid_loan", 400, "贷款参数无效"
 	case errors.Is(e, ErrForbidden):
