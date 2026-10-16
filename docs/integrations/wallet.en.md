@@ -1,5 +1,13 @@
 # EVE ISK wallets
 
+## Personal wallet withholding (2026-10-17)
+
+The journal `tax` field carries withholding attached to income; `amount` remains the actual received amount and must not have the tax subtracted again. Lists and details expose the exact tax and corporation name for `tax_receiver_id`, falling back to the ID. Absent, zero and negative taxes are not withheld expenses.
+
+For personal journals, `records?direction=out` now matches `amount<0 OR tax>0`. New `direction=tax` is accepted only for personal journals and matches `tax>0`. Filtering precedes pagination; date/type filters and composite cursors remain effective. Original amounts are neither rewritten nor split into invented debit records: one income observation can carry both received ISK and withholding. Personal journal `party_id` also matches the tax recipient. Corporation and market trade directions are unchanged.
+
+Workbench and loan aggregates retain their independent queries over original received/debited amounts, without subtracting withholding twice. No migration, collection-window or scope change is needed; existing observations work immediately. Deploy frontend and backend together.
+
 ## Workbench speeds exclude transfers (2026-10-16)
 
 The personal `/workspace` uses `GET /api/v1/wallet/summary?from=...`. Each character gains decimal ISK strings `earned_income` and `spent_expense`: positive income and absolute negative expense after excluding direct transfers. A real zero is `"0"`. Existing `income/expense` remain gross cash flows; balances, journal records and loan wallet evidence remain unchanged. Corporation summaries/trends, scopes, migrations, ESI collection and business writes are unchanged.

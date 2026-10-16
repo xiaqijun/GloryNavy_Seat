@@ -256,6 +256,28 @@
 .wallet-out {
   color: var(--color-destructive);
 }
+.wallet-amount-lines {
+  display: grid;
+  gap: 4px;
+}
+.wallet-withheld-tax,
+.wallet-tax-party,
+.wallet-tax-help {
+  font-size: 12px;
+}
+.wallet-tax-party {
+  display: block;
+  max-width: 260px;
+  margin-top: 4px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.wallet-tax-help {
+  color: var(--muted);
+}
+.wallet-history > .wallet-tax-help {
+  margin: 0 24px 16px;
+}
 .wallet-tag {
   font-size: 12px;
   border: 1px solid var(--border);

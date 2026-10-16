@@ -7,8 +7,6 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  ArrowDownLeft,
-  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   List,
@@ -22,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
 import { Modal } from "@/components/ui/dialog";
 import * as api from "./api";
+import { JournalAmount } from "./journal-amount";
+import { hasWithheldTax } from "./tax";
 import "./wallet.css";
 
 const date = (v?: string) =>
@@ -128,8 +128,18 @@ function Account({ owner, user }: { owner: api.Owner; user: string }) {
     if (!balance.data || !owner.journal || !owner.transactions) return;
     const alternate = active === "journal" ? "transactions" : "journal";
     void client.prefetchQuery({
-      queryKey: ["wallet", user, owner.kind, owner.id, current, alternate, {}, ""],
-      queryFn: ({ signal }) => api.records(owner, current, alternate, {}, signal),
+      queryKey: [
+        "wallet",
+        user,
+        owner.kind,
+        owner.id,
+        current,
+        alternate,
+        {},
+        "",
+      ],
+      queryFn: ({ signal }) =>
+        api.records(owner, current, alternate, {}, signal),
       staleTime: 30_000,
     });
   }, [active, balance.data, client, current, owner, user]);
@@ -244,9 +254,24 @@ function History({
     if (!q.data?.next_cursor) return;
     const next = q.data.next_cursor;
     void client.prefetchQuery({
-      queryKey: ["wallet", user, owner.kind, owner.id, division, part, filters, next],
+      queryKey: [
+        "wallet",
+        user,
+        owner.kind,
+        owner.id,
+        division,
+        part,
+        filters,
+        next,
+      ],
       queryFn: ({ signal }) =>
-        api.records(owner, division, part, { ...filters, before: next }, signal),
+        api.records(
+          owner,
+          division,
+          part,
+          { ...filters, before: next },
+          signal,
+        ),
       staleTime: 30_000,
     });
   }, [client, division, filters, owner, part, q.data?.next_cursor, user]);
@@ -302,6 +327,9 @@ function History({
               ? [
                   { value: "in", label: msg("收入") },
                   { value: "out", label: msg("支出") },
+                  ...(owner.kind === "character"
+                    ? [{ value: "tax", label: msg("交税") }]
+                    : []),
                 ]
               : [
                   { value: "buy", label: msg("买入") },
@@ -387,6 +415,13 @@ function History({
           </div>
         )}
       </form>
+      {journal &&
+        owner.kind === "character" &&
+        (filters.direction === "out" || filters.direction === "tax") && (
+          <p className="wallet-tax-help">
+            {msg("代扣税附在收入流水中，到账金额已扣税。")}
+          </p>
+        )}
       {error && <p role="alert">{error}</p>}
       {q.isError && (
         <p role="alert">
@@ -461,6 +496,12 @@ function History({
                         <span className="wallet-note">
                           {party(row.second_party_id)}
                         </span>
+                        {owner.kind === "character" &&
+                          hasWithheldTax(row.tax) && (
+                            <span className="wallet-tax-party">
+                              {msg("收税军团：{0}", party(row.tax_receiver_id))}
+                            </span>
+                          )}
                       </>
                     ) : (
                       party(row.client_id)
@@ -469,17 +510,19 @@ function History({
                   {!journal && (
                     <td className="wallet-number">{row.quantity}</td>
                   )}
-                  <td
-                    className={`wallet-number ${journal && row.amount ? (row.amount.startsWith("-") ? "wallet-out" : "wallet-in") : ""}`}
-                  >
-                    {journal &&
-                      row.amount != null &&
-                      (row.amount.startsWith("-") ? (
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      ) : (
-                        <ArrowDownLeft size={14} aria-hidden="true" />
-                      ))}
-                    {api.money(journal ? row.amount : row.unit_price)}
+                  <td className="wallet-number">
+                    {journal ? (
+                      <JournalAmount
+                        row={row}
+                        personal={owner.kind === "character"}
+                        taxFirst={
+                          filters.direction === "out" ||
+                          filters.direction === "tax"
+                        }
+                      />
+                    ) : (
+                      api.money(row.unit_price)
+                    )}
                   </td>
                   <td className="wallet-number">
                     {journal ? (
@@ -590,6 +633,12 @@ function History({
                   msg("税额（ISK）"),
                   selected.tax != null ? api.money(selected.tax) : undefined,
                 ],
+                [
+                  msg("收税军团"),
+                  selected.tax_receiver_id
+                    ? party(selected.tax_receiver_id)
+                    : undefined,
+                ],
                 [msg("原始类型"), selected.ref_type],
                 [msg("原始说明"), selected.description],
                 [msg("备注"), selected.reason],
@@ -604,6 +653,13 @@ function History({
                 </div>
               ))}
           </dl>
+          {journal &&
+            owner.kind === "character" &&
+            hasWithheldTax(selected.tax) && (
+              <p className="wallet-tax-help">
+                {msg("代扣税附在收入流水中，到账金额已扣税。")}
+              </p>
+            )}
         </Modal>
       )}
     </section>

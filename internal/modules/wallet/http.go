@@ -266,7 +266,7 @@ func parseFilter(r *http.Request) (eve.WalletFilter, error) {
 			return f, errors.New("invalid division")
 		}
 	}
-	if f.Direction != "" && !((f.Part == "journal" && (f.Direction == "in" || f.Direction == "out")) || (f.Part == "transactions" && (f.Direction == "buy" || f.Direction == "sell"))) {
+	if f.Direction != "" && !((f.Part == "journal" && (f.Direction == "in" || f.Direction == "out" || (f.Direction == "tax" && f.Kind == "character"))) || (f.Part == "transactions" && (f.Direction == "buy" || f.Direction == "sell"))) {
 		return f, errors.New("invalid direction")
 	}
 	for k, dst := range map[string]**time.Time{"from": &f.From, "until": &f.Until} {

@@ -1,5 +1,11 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "交税": "Tax",
+  "到账 {0}": "Received {0}",
+  "代扣税 −{0}": "Tax withheld −{0}",
+  "收税军团：{0}": "Tax recipient: {0}",
+  "收税军团": "Tax recipient",
+  "代扣税附在收入流水中，到账金额已扣税。": "Withheld tax is included in the income record. The received amount is already after tax.",
   "保留军团": "Retained corporations",
   "搜索军团名称": "Search corporation names",
   "已选军团": "Selected corporations",

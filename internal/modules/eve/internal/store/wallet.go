@@ -413,8 +413,11 @@ func ReadWallet(ctx context.Context, db DBTX, f WalletFilter) ([]WalletRow, erro
  AND ($7::timestamptz IS NULL OR w.occurred_at>=$7) AND ($8::timestamptz IS NULL OR w.occurred_at<$8)
  AND ($9::text='' OR strpos(lower(coalesce(w.payload->>'description','')||' '||coalesce(w.payload->>'reason','')),lower($9))>0 OR w.record_id::text=$9)
  AND ($10::text='' OR w.payload->>'ref_type'=$10)
- AND ($11::bigint=0 OR w.payload->>'first_party_id'=$11::text OR w.payload->>'second_party_id'=$11::text OR w.payload->>'client_id'=$11::text)
- AND ($12::text='' OR ($12='in' AND (w.payload->>'amount')::numeric>0) OR ($12='out' AND (w.payload->>'amount')::numeric<0) OR ($12='buy' AND (w.payload->>'is_buy')::boolean) OR ($12='sell' AND NOT (w.payload->>'is_buy')::boolean))
+ AND ($11::bigint=0 OR w.payload->>'first_party_id'=$11::text OR w.payload->>'second_party_id'=$11::text OR w.payload->>'client_id'=$11::text OR (w.owner_kind='character' AND w.kind='journal' AND w.payload->>'tax_receiver_id'=$11::text))
+ AND ($12::text='' OR ($12='in' AND (w.payload->>'amount')::numeric>0)
+ OR ($12='out' AND ((w.payload->>'amount')::numeric<0 OR (w.owner_kind='character' AND w.kind='journal' AND (w.payload->>'tax')::numeric>0)))
+ OR ($12='tax' AND w.owner_kind='character' AND w.kind='journal' AND (w.payload->>'tax')::numeric>0)
+ OR ($12='buy' AND (w.payload->>'is_buy')::boolean) OR ($12='sell' AND NOT (w.payload->>'is_buy')::boolean))
  ORDER BY w.record_id DESC,w.entry_key,w.division LIMIT 51`, f.Kind, f.Owner, f.Part, f.Division, f.Before, f.ID, f.From, f.Until, f.Search, f.Ref, f.Party, f.Direction, f.BeforeEntry)
 	if e != nil {
 		return nil, e
