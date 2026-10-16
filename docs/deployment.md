@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## v0.1.0-corporation-scope-20261017 — 2026-10-17
+
+前后端来自干净且已推送的 `main` 提交 `a73343bb590cd249a72f7dbe830b90658ece67c2`，生产分支守卫通过。清理规则按已同步军团名称搜索、多选；名单同时限制军团业务范围，非站点管理员再与本人有效绑定角色所属军团取交集。清理开关不影响范围，原权限仍需满足；空名单没有业务军团选项，成员配置入口仍可访问。无新迁移，Goose 90。
+
+隔离 PostgreSQL 中 access/identity 全套及宿主/server 回归已执行：旧考勤夹具增加配置名单后，考勤、军团边界、多角色和损失对象权限 4 项复验通过；其余宿主测试通过，相关 go vet 通过。前端类型/构建、7 项语言/access 测试、9 项中英文桌面/375px/320px 浏览器检查通过；lint 保留 4 条旧警告。检查名称搜索、选择去重、保存失败保留、非管理员入口、手机名称换行。EVE 全套的历史失败见 TEST-01，本轮未重跑该全套。GitNexus staged 检查 35 文件、73 符号、23 条调用链，权限公共边界标记 critical，已提示并核对范围；无 partial/error。
+
+备份 `/var/backups/glorynavy/before-v0.1.0-corporation-scope-20261017-20261016T172121Z.dump` 为 454004679 字节，数据库和 env 备份权限 0600。上线后后端 active/running/ready、NRestarts=0；成员/军团运营/舰船损失页面 200，匿名清理 GET/PUT/POST、成员和福利/考勤/技能上下文 401。公网页面 SHA256 `0b1a66da148a1bd7912d034f594acdb57f4d6643a50f98efcc6d5202fa838f71` 与发布包一致，OpenResty 配置检查通过。生产清理策略仍关闭、名单 0、移除归属 0，未实际清理角色；管理员需先按名称配置名单。
+
+日志和截图在本地 `.local/corporation-scope/`；测试容器已清理，本地预览已停止。回退旧版会撤销新增的业务范围限制，且继续遵守 Goose 90 角色归属保留的回退约束，见[清理指南](integrations/corporation-cleanup.zh-CN.md)。
+
 ## v0.1.0-corporation-cleanup-20261017 — 2026-10-17
 
 前后端来自干净且已推送的 `main` 提交 `2e86a3d04dc3038e176f67719328867acc03457b`，生产分支守卫通过。Goose 90 增加按军团每周清理的策略、归属保留和审计；管理员在 `/members` 配置及预览，首次启用保存 7 天后执行，完成后每周一次。生产保持 disabled、空白名单、next_run_at 空、removed/skipped 0、归属保留记录 0；共享 River 的 `identity.corporation-cleanup.v1` 已完成 1 次空扫描。没有实际清理生产角色或创建测试业务记录。
