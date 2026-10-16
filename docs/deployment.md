@@ -1,5 +1,14 @@
 # Linux 生产部署
 
+## v0.1.0-loan-asset-evidence-20261014-r5 — 2026-10-14
+
+修复资产授信证据被 ESI 大响应体限制清零的问题：资产分页和全服市场均价表使用受控的 8 MiB 响应上限，未报价物品跳过并保留其他可报价资产，部分角色读取失败记录在快照证据中。规则版本递增后 River 自动重评估现有账号；最新 29 条快照均为 `capacity-v6`，其中 28 条有正资产估值、24 条产生资产支持额度，1 条仍需 EVE 授权续期。Goose 保持 86，应用服务 active、`/health/ready` ready，贷款队列评估任务完成；公网边缘 current 已切换同名版本，首页和贷款页面 200，OpenResty `nginx -t` 通过。贷款模块、宿主应用和 EVE 模块测试通过。
+
+## v0.1.0-loan-periodic-credit-20261014 — 2026-10-14
+
+应用机已切换修正版后端并执行 Goose 86；生产策略默认资产 LTV 为 1000 bps、钱包样本门槛为 1、证据不足策略为 zero，周期性信用评估表已生成 29 条快照，服务 active、/health/ready 返回 ready。应用修正版发布包来源为本轮贷款额度、周期任务和抵押自动估值改动。公网边缘已通过应用机跳板完成静态前端原子切换，当前目录为 v0.1.0-loan-periodic-credit-20261014；OpenResty 配置检查通过，首页和贷款页面返回 200。
+
+
 ## v0.1.0-loan-credit-income-consumption-20261014 — 2026-10-14
 
 后端应用和公网静态前端已切换至同名版本；后端来源提交 `714ddc8`，前端来源提交 `3f7a499`。Goose 85 新增收入能力权重（生产值 7000 bps），个人授信分别汇总收入和消费，不再计算净收入，也不再读取或写入个人硬上限。贷款模块与宿主应用测试通过，应用 `active`、`/health/ready` 200，数据库策略读取为 `income_weight_bps=7000`，公网首页和 `/loans/operations?view=risk` 200，匿名 `/api/v1/loan/context` 401，OpenResty `nginx -t` 通过。
