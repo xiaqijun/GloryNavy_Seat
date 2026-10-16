@@ -27,6 +27,9 @@ func CancelApplication(ctx context.Context, tx pgx.Tx, id, version int64, actor 
 }
 
 func ReleaseApplicationSecurity(ctx context.Context, tx pgx.Tx, caseID int64) error {
+	if _, err := tx.Exec(ctx, `UPDATE loan_collateral_requests SET state='cancelled',version=version+1,updated_at=now() WHERE case_id=$1 AND state='awaiting_delivery'`, caseID); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(ctx, `UPDATE loan_guarantees SET state='released',version=version+1,decided_at=now() WHERE case_id=$1 AND state IN ('invited','accepted','active')`, caseID); err != nil {
 		return err
 	}

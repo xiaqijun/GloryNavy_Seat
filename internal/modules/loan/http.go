@@ -30,6 +30,7 @@ func (h Handler) Module() module.Definition {
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
 		{"GET", "/guarantees/candidates", h.guaranteeCandidates},
+		{"GET", "/cases/{id}/collateral-assets", h.collateralAssets}, {"POST", "/cases/{id}/collateral-requests", h.collateralRequest}, {"POST", "/collateral-requests/{id}/cancel", h.collateralRequestCancel},
 		{"POST", "/cases/{id}/collateral", h.collateral}, {"POST", "/collateral/{id}/decision", h.collateralDecision},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "loan.self", Handler: r.fn})

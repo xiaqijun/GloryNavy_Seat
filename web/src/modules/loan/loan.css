@@ -513,6 +513,55 @@
   display: flex;
   gap: 8px;
 }
+.loan-case-detail { display: grid; gap: 16px; min-width: 0; }
+.loan-detail-identity { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; font-size: 14px; }
+.loan-detail-identity strong { min-width: 0; overflow-wrap: anywhere; }
+.loan-detail-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 14px 0; border-block: 1px solid var(--border); }
+.loan-detail-metrics dt, .loan-detail-facts dt, .loan-installment dt { font-size: 13px; color: var(--muted); }
+.loan-detail-metrics dd { margin: 6px 0 0; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.loan-detail-metrics > div:last-child dd { color: var(--primary); }
+.loan-detail-dialog .loan-detail-section h3 { margin: 0 0 10px; font-size: 16px; }
+.loan-detail-section { min-width: 0; }
+.loan-detail-section + .loan-detail-section { border-top: 1px solid var(--border); padding-top: 16px; }
+.loan-detail-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 10px 0 0; }
+.loan-detail-facts dd, .loan-installment dd { margin: 4px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.loan-detail-terms { font-size: 14px; }
+.loan-detail-terms p { margin: 6px 0; line-height: 1.5; }
+.loan-detail-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.loan-installments { display: grid; gap: 0; margin-top: 12px; }
+.loan-installment { padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.loan-installment > div { display: flex; justify-content: space-between; gap: 12px; }
+.loan-installment time { display: block; margin-top: 6px; color: var(--muted); }
+.loan-installment dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 8px 0 0; }
+.loan-collateral-record { padding: 12px 0; }
+.loan-collateral-record + .loan-collateral-record { border-top: 1px solid var(--border); }
+.loan-collateral-record .loan-dialog-note, .loan-asset-picker .loan-dialog-note { margin: 10px 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.loan-collateral-items { display: grid; gap: 6px; padding: 0; margin: 12px 0; list-style: none; font-size: 14px; }
+.loan-collateral-items li { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.loan-collateral-items span { min-width: 0; overflow-wrap: anywhere; }
+.loan-collateral-items strong { white-space: nowrap; font-weight: 500; font-variant-numeric: tabular-nums; }
+.loan-asset-picker { display: grid; gap: 12px; min-width: 0; }
+.loan-asset-picker > .loan-dialog-note { margin: 0; }
+.loan-asset-picker label { display: grid; gap: 6px; min-width: 0; font-size: 14px; }
+.loan-asset-picker input:not([type="checkbox"]), .loan-asset-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; font: inherit; color: var(--foreground); background: var(--card); border: 1px solid var(--muted); border-radius: 8px; }
+.loan-asset-picker input:focus-visible, .loan-asset-picker select:focus-visible, .loan-asset-row summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.loan-asset-meta { font-size: 13px; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+.loan-asset-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px; align-items: center; gap: 8px 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.loan-asset-row .loan-asset-choice { display: flex; align-items: center; min-height: 44px; gap: 10px; cursor: pointer; }
+.loan-asset-choice input { flex: 0 0 20px; width: 20px; height: 20px; accent-color: var(--primary); }
+.loan-asset-choice:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
+.loan-asset-choice span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.loan-asset-choice small { color: var(--muted); font-size: 12px; }
+.loan-asset-row details { grid-column: 1 / -1; font-size: 13px; overflow-wrap: anywhere; }
+.loan-asset-row summary { min-height: 44px; align-content: center; cursor: pointer; }
+.loan-asset-row ul { padding-left: 24px; margin: 0; line-height: 1.6; }
+@media (max-width: 520px) {
+  .loan-detail-metrics { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .loan-detail-metrics > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .loan-detail-metrics dd { margin: 0; text-align: right; font-size: 15px; }
+  .loan-detail-facts { grid-template-columns: minmax(0, 1fr); }
+  .loan-asset-row { grid-template-columns: minmax(0, 1fr) 76px; }
+}
 .loan-form input::placeholder {
   color: var(--muted);
   opacity: 1;

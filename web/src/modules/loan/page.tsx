@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Check, ChevronRight, Copy, Landmark, RefreshCw, ShieldCheck } from "lucide-react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { initialRepayment, repaymentInput } from "./repayment-model";
-import { RepaymentFields, RepaymentSummary } from "./repayment";
+import { RepaymentFields } from "./repayment";
 import { PolicyField } from "./policy-field";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/form-dialog";
@@ -13,7 +13,9 @@ import { AccountCharacterSelect, type AccountCharacterOption } from "@/component
 import { getLocale, msg } from "@/lib/i18n";
 import { getCharacters, useSession } from "@/modules/identity";
 import { getProfile } from "@/modules/community/api";
-import { getContractOwners, getContracts, type Contract, type Owner } from "@/modules/eve/contracts-api";
+import { CollateralPicker } from "./collateral-picker";
+import { CollateralDelivery } from "./collateral-delivery";
+import { LoanCaseDetail, CollateralItems } from "./case-detail";
 import * as api from "./api";
 import { LoanCreditSummary, LoanDashboardPanel } from "./dashboard-page";
 import { LoanAmount } from "./amount";
@@ -44,27 +46,7 @@ function Workspace({ csrf, userId }: { csrf: string; userId: string }) {
   const contributions = useQuery({ queryKey: ["loan", "contributions", userId], queryFn: ({ signal }) => api.contributions(signal), staleTime: 15_000, refetchOnWindowFocus: false });
   const guarantees = useQuery({ queryKey: ["loan", "guarantees", userId], queryFn: ({ signal }) => api.guarantees(signal), staleTime: 15_000, refetchOnWindowFocus: false });
   const guarantorCandidates = useQuery({ queryKey: ["loan", "guarantee-candidates", userId], queryFn: ({ signal }) => api.guaranteeCandidates(signal), staleTime: 60_000, refetchOnWindowFocus: false });
-  const collateralContracts = useQuery({ queryKey: ["loan", "collateral-contracts", userId], queryFn: async ({ signal }) => {
-    try {
-      const owners = (await getContractOwners(signal)).owners;
-      const results = await Promise.all(owners.map(async (owner) => {
-        const items: Contract[] = [];
-        let before = "";
-        do {
-          const params = new URLSearchParams({ type: "item_exchange", status: "finished" });
-          if (before) params.set("before", before);
-          const page = await getContracts(owner, params, signal);
-          items.push(...page.items);
-          before = page.next_cursor;
-        } while (before);
-        return { owner, items };
-      }));
-      return results.flatMap(({ owner, items }) => items.filter((contract) => contract.type === "item_exchange" && contract.status.startsWith("finished")).map((contract) => ({ owner, contract })));
-    } catch {
-      return [] as CollateralOption[];
-    }
-  }, staleTime: 30_000, refetchOnWindowFocus: false });
-  const refresh = () => void Promise.all([context.refetch(), boundCharacters.refetch(), profile.refetch(), list.refetch(), contributions.refetch(), guarantees.refetch(), guarantorCandidates.refetch(), collateralContracts.refetch()]);
+  const refresh = () => void Promise.all([context.refetch(), boundCharacters.refetch(), profile.refetch(), list.refetch(), contributions.refetch(), guarantees.refetch(), guarantorCandidates.refetch()]);
   const submit = async (event: FormEvent) => { event.preventDefault(); setMessage(""); const sharedPool = pools[0]; const borrowerCharacterID = character || characterOptions[0]?.id; if (!sharedPool) { setMessage(msg("统一贷款池暂不可用")); return; } if (!borrowerCharacterID) { setMessage(msg("当前账号没有可用的绑定角色")); return; } setApplicationBusy(true); try { await api.createApplication(csrf, { pool_id: Number(sharedPool.id), borrower_character_id: Number(borrowerCharacterID), principal_minor: Math.round(Number(principal) * 100), ...repaymentInput(repayment) }); setMessage(""); setApplicationOpen(false); await Promise.all([context.refetch(), list.refetch()]); } catch (e) { setMessage(e instanceof Error ? e.message : msg("贷款申请失败")); } finally { setApplicationBusy(false); } };
   const contribute = async (event: FormEvent) => { event.preventDefault(); setContributionMessage(""); const sourceCharacterID = contributionCharacter || characterOptions[0]?.id; if (!sourceCharacterID) { setContributionMessage(msg("当前账号没有可用的绑定角色")); return; } setContributionBusy(true); try { await api.createContribution(csrf, { lender_kind: contributionKind, source_character_id: Number(sourceCharacterID), corporation_id: contributionKind === "corporation" ? Number(contributionCorporation) : 0, amount_minor: Math.round(Number(contributionAmount) * 100) }); setContributionMessage(msg("出借额度已提交，请完成入金合同")); setContributionAmount(""); setContributionOpen(false); await Promise.all([contributions.refetch(), context.refetch()]); } catch (e) { setContributionMessage(e instanceof Error ? e.message : msg("出借额度提交失败")); } finally { setContributionBusy(false); } };
   if (context.isError || boundCharacters.isError || list.isError || contributions.isError || guarantees.isError) return <div className="loan-feedback" role="alert"><p>{(context.error ?? boundCharacters.error ?? list.error ?? contributions.error ?? guarantees.error)?.message}</p><Button variant="outline" onClick={refresh}>{msg("重试")}</Button></div>;
@@ -74,7 +56,7 @@ function Workspace({ csrf, userId }: { csrf: string; userId: string }) {
     {activeView === "dashboard" && (context.data ? <LoanDashboardPanel context={context.data} /> : <p role="status">{msg("正在读取")}</p>)}
     {activeView === "business" && <div className="loan-business-layout">
     <section className="loan-business-toolbar" aria-label={msg("贷款办理")}>{context.data ? <LoanCreditSummary credit={context.data.credit} /> : <p role="status">{msg("正在读取")}</p>}<div className="loan-business-actions"><Button variant="outline" onClick={() => { setContributionMessage(""); setContributionOpen(true); }} disabled={pools.length === 0 || characterOptions.length === 0}>{msg("出借资金")}</Button><Button onClick={() => { setMessage(""); setApplicationOpen(true); }} disabled={context.isPending || pools.length === 0 || characterOptions.length === 0}>{msg("申请借款")}</Button></div>{contributionMessage && !contributionOpen && <p className="loan-form-message" role="status">{contributionMessage}</p>}{message && !applicationOpen && <p className="loan-form-message" role="alert">{message}</p>}{contributionOpen && <FormDialog size="form" title={msg("出借资金")} close={() => { if (!contributionBusy) setContributionOpen(false); }} busy={contributionBusy} submitLabel={msg("提交出借")} disabled={pools.length === 0 || characterOptions.length === 0} className="loan-form loan-contribution-form" onSubmit={contribute}><AccountCharacterSelect label={msg("出借角色")} characters={characterOptions} value={contributionCharacter || characterOptions[0]?.id || ""} onChange={setContributionCharacter} autoFocus /><label>{msg("出借额度（ISK）")}<input value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} inputMode="decimal" required /></label><label>{msg("出借类型")}<select aria-label={msg("出借类型")} value={contributionKind} onChange={(e) => setContributionKind(e.target.value as "personal" | "corporation")}><option value="personal">{msg("个人")}</option><option value="corporation">{msg("军团")}</option></select></label>{contributionKind === "corporation" && <label>{msg("出借军团 ID")}<input value={contributionCorporation} onChange={(e) => setContributionCorporation(e.target.value)} inputMode="numeric" required /></label>}{contributionMessage && <p className="loan-form-message" role="alert">{contributionMessage}</p>}</FormDialog>}{applicationOpen && <FormDialog size="form" title={msg("申请借款")} close={() => { if (!applicationBusy) setApplicationOpen(false); }} busy={applicationBusy} submitLabel={msg("提交申请")} disabled={pools.length === 0 || characterOptions.length === 0} className="loan-form loan-application-form" onSubmit={submit}><AccountCharacterSelect label={msg("收款角色")} characters={characterOptions} value={character || characterOptions[0]?.id || ""} onChange={setCharacter} autoFocus /><label>{msg("本金（ISK）")}<input value={principal} onChange={(e) => setPrincipal(e.target.value)} inputMode="decimal" required /></label><div className="loan-repayment-fields"><RepaymentFields value={repayment} onChange={setRepayment} /></div>{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}</section>
-    <section className="loan-list loan-business-loans"><div className="loan-section-head"><h2>{msg("我的贷款")}</h2></div>{list.isPending ? <p role="status">{msg("正在读取")}</p> : list.data?.items.length ? <div className="loan-table-wrap"><table className="loan-cases-table"><thead><tr><th>{msg("编号")}</th><th>{msg("状态")}</th><th>{msg("本金")}</th><th>{msg("总应还")}</th><th>{msg("操作")}</th></tr></thead><tbody>{list.data.items.map((item) => <CaseRow key={item.id} csrf={csrf} userId={userId} item={item} administrator={Boolean(context.data?.administrator)} guarantors={guarantorCandidates.data?.items ?? []} contracts={collateralContracts.data ?? []} defaultHaircutBPS={Number(pools[0]?.config?.collateral_haircut_bps) || 7000} onDone={refresh} />)}</tbody></table></div> : <p className="loan-empty-inline">{msg("暂无贷款记录")}</p>}</section>
+    <section className="loan-list loan-business-loans"><div className="loan-section-head"><h2>{msg("我的贷款")}</h2></div>{list.isPending ? <p role="status">{msg("正在读取")}</p> : list.data?.items.length ? <div className="loan-table-wrap"><table className="loan-cases-table"><thead><tr><th>{msg("编号")}</th><th>{msg("状态")}</th><th>{msg("本金")}</th><th>{msg("总应还")}</th><th>{msg("操作")}</th></tr></thead><tbody>{list.data.items.map((item) => <CaseRow key={item.id} csrf={csrf} userId={userId} item={item} administrator={Boolean(context.data?.administrator)} guarantors={guarantorCandidates.data?.items ?? []} characters={characterOptions} pool={context.data?.pools.find(p => p.id === item.pool_id)} defaultHaircutBPS={Number(pools[0]?.config?.collateral_haircut_bps) || 7000} onDone={refresh} />)}</tbody></table></div> : <p className="loan-empty-inline">{msg("暂无贷款记录")}</p>}</section>
     <div className="loan-business-secondary">
     <section id="loan-guarantees" className="loan-list loan-business-guarantees"><div className="loan-section-head"><h2>{msg("我的担保邀请")}</h2></div>{guarantees.isPending ? <p role="status">{msg("正在读取")}</p> : guarantees.data?.items.length ? <div className="loan-contributions">{guarantees.data.items.map((item) => <GuaranteeInvite key={item.id} csrf={csrf} item={item} onDone={() => void Promise.all([guarantees.refetch(), context.refetch()])} />)}</div> : <p className="loan-empty-inline">{msg("暂无担保邀请")}</p>}</section>
     {(contributions.data?.items.length ?? 0) > 0 && <section className="loan-list loan-business-contributions"><div className="loan-section-head"><h2>{msg("出借记录")}</h2></div><div className="loan-deposit-list" role="list">{contributions.data?.items.map((item) => <ContributionRow key={item.id} csrf={csrf} item={item} pool={pools[0]} characters={characterOptions} onDone={() => void Promise.all([contributions.refetch(), context.refetch()])} />)}</div></section>}
@@ -180,45 +162,61 @@ function GuaranteeInvite({ csrf, item, onDone }: { csrf: string; item: api.Guara
   return <article className="loan-contribution"><div><strong><LoanAmount minor={item.amount_minor} /></strong><span>{item.case_public_id ? `${msg("贷款申请")} ${item.case_public_id}` : msg("贷款担保邀请")} · {item.state}</span></div>{item.state === "invited" && <div className="loan-form-actions"><Button disabled={busy} onClick={() => void decide("accepted")}>{msg("接受担保")}</Button><Button disabled={busy} variant="outline" onClick={() => void decide("rejected")}>{msg("拒绝")}</Button></div>}{message && <p className="loan-form-message" role="alert">{message}</p>}</article>;
 }
 
-type CollateralOption = { owner: Owner; contract: Contract };
-
-function CaseRow({ csrf, userId, item, administrator, guarantors, contracts, defaultHaircutBPS, onDone }: { csrf: string; userId: string; item: api.Case; administrator: boolean; guarantors: api.Character[]; contracts: CollateralOption[]; defaultHaircutBPS: number; onDone: () => void }) {
+function CaseRow({ csrf, userId, item, administrator, guarantors, characters, pool, defaultHaircutBPS, onDone }: { csrf: string; userId: string; item: api.Case; administrator: boolean; guarantors: api.Character[]; characters: AccountCharacterOption[]; pool?: api.Pool; defaultHaircutBPS: number; onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"guarantee" | "collateral" | null>(null);
+  const [delivery, setDelivery] = useState<api.CollateralRequest | null>(null);
+  const [cancelRequest, setCancelRequest] = useState<api.CollateralRequest | null>(null);
   const [guarantorCharacter, setGuarantorCharacter] = useState("");
   const [guaranteeAmount, setGuaranteeAmount] = useState("");
-  const [collateralSelection, setCollateralSelection] = useState("");
-  const haircut = String(defaultHaircutBPS);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
-  const detail = useQuery({ queryKey: ["loan", "case", item.id], queryFn: ({ signal }) => api.detail(item.id, signal), enabled: open, staleTime: 10_000 });
-  const borrower = userId === item.borrower_account_id;
+  const detail = useQuery({ queryKey: ["loan", "case", item.id], queryFn: ({ signal }) => api.detail(item.id, signal), enabled: open, staleTime: 0 });
+  const current = detail.data?.case ?? item;
+  const borrower = userId === current.borrower_account_id;
+  const editable = borrower && ["submitted", "awaiting_acceptance"].includes(current.state);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const saved = () => { setMode(null); setDelivery(null); setMessage(""); setOpen(true); onDone(); void detail.refetch(); };
   const cancelApplication = async () => {
     if (busy) return;
     setBusy(true); setMessage("");
-    try { await api.cancelApplication(csrf, item.id, item.version); setCancelOpen(false); setOpen(false); onDone(); await detail.refetch(); }
-    catch (e) { setMessage(e instanceof Error ? e.message : msg("撤销申请失败")); onDone(); }
+    try { await api.cancelApplication(csrf, item.id, current.version); setCancelOpen(false); setOpen(false); onDone(); await detail.refetch(); }
+    catch (e) { setMessage(e instanceof Error ? e.message : msg("撤销申请失败")); onDone(); await detail.refetch(); }
     finally { setBusy(false); }
   };
   const requestCancel = () => { setMessage(""); setOpen(false); setCancelOpen(true); };
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setMessage("");
-    try {
-      if (mode === "guarantee") await api.createGuarantee(csrf, item.id, { guarantor_character_id: Number(guarantorCharacter), amount_minor: Math.round(Number(guaranteeAmount) * 100) });
-      if (mode === "collateral") {
-        const selected = contracts.find(({ owner, contract }) => `${owner.kind}:${owner.id}:${contract.id}` === collateralSelection);
-        if (!selected) throw new Error(msg("请选择可用的已完成物品合同"));
-        await api.createCollateral(csrf, item.id, { owner_account_id: userId, contract_kind: selected.owner.kind, contract_owner_id: Number(selected.owner.id), contract_id: Number(selected.contract.id), valuation_minor: 0, haircut_bps: Number(haircut), covered_minor: 0 });
-      }
-      setMode(null); setOpen(true); onDone(); await detail.refetch();
-    } catch (e) { setMessage(e instanceof Error ? e.message : msg("贷款保障资料提交失败")); }
+    try { await api.createGuarantee(csrf, item.id, { guarantor_character_id: Number(guarantorCharacter), amount_minor: Math.round(Number(guaranteeAmount) * 100) }); saved(); }
+    catch (e) { setMessage(e instanceof Error ? e.message : msg("贷款保障资料提交失败")); }
     finally { setBusy(false); }
   };
   const decideCollateral = async (id: string, version: number, state: "approved" | "disputed") => { setBusy(true); setMessage(""); try { await api.decideCollateral(csrf, id, { version, state }); await detail.refetch(); onDone(); } catch (e) { setMessage(e instanceof Error ? e.message : msg("抵押审批失败")); } finally { setBusy(false); } };
   return <><tr><td data-label={msg("编号")}>{item.public_id}</td><td data-label={msg("状态")}><span className={`loan-state loan-state-${item.state}`}>{loanState(item.state)}</span></td><td data-label={msg("本金")}><LoanAmount minor={item.principal_minor} /></td><td data-label={msg("总应还")}><LoanAmount minor={item.total_due_minor} />{item.requested_due_at && !item.first_due_at && ` ${msg("（预计）")}`}</td><td className="loan-case-actions"><Button variant="outline" onClick={() => { setMessage(""); setOpen(true); }}>{msg("查看详情")}</Button>{borrower && item.state === "submitted" && <Button variant="outline" disabled={busy} onClick={requestCancel}>{msg("撤销申请")}</Button>}</td></tr>
     {cancelOpen && <ConfirmDialog title={msg("撤销贷款申请")} description={msg("撤销后将结束此申请，相关担保和抵押额度会释放。")} confirmLabel={msg("确认撤销申请")} busy={busy} error={message} onConfirm={() => void cancelApplication()} onClose={() => setCancelOpen(false)} />}
-    {open && <FormDialog extraActions={borrower && item.state === "submitted" ? <Button variant="outline" disabled={busy} onClick={requestCancel}>{msg("撤销申请")}</Button> : undefined} title={`${msg("贷款详情")} · ${item.public_id}`} close={() => { if (!busy) setOpen(false); }} busy={busy} showSubmit={false} onSubmit={() => undefined} className="loan-detail-dialog"><RepaymentSummary item={item} />{detail.isPending && <p role="status">{msg("正在读取")}</p>}{detail.data && <><h3>{msg("担保")}</h3>{detail.data.guarantees.length ? detail.data.guarantees.map((g) => <div className="loan-security-row" key={g.id}><span>{money(g.amount_minor)} · {g.state}</span></div>) : <p>{msg("暂无担保记录")}</p>}<h3>{msg("抵押")}</h3>{detail.data.collateral.length ? detail.data.collateral.map((c) => <div className="loan-security-row" key={c.id}><span>{money(c.covered_minor)} · {c.state}</span>{administrator && c.state === "proposed" && <span><Button disabled={busy} onClick={() => void decideCollateral(c.id, c.version, "approved")}>{msg("批准抵押")}</Button><Button variant="outline" disabled={busy} onClick={() => void decideCollateral(c.id, c.version, "disputed")}>{msg("提出异议")}</Button></span>}</div>) : <p>{msg("暂无抵押记录")}</p>}</>}{borrower && (item.state === "submitted" || item.state === "awaiting_acceptance") && <div className="loan-form-actions"><Button disabled={guarantors.length === 0} onClick={() => { setMessage(""); setOpen(false); setMode("guarantee"); }}>{msg("添加担保")}</Button><Button variant="outline" disabled={contracts.length === 0} onClick={() => { setMessage(""); setOpen(false); setMode("collateral"); }}>{msg("登记抵押")}</Button></div>}{borrower && (item.state === "submitted" || item.state === "awaiting_acceptance") && guarantors.length === 0 && <p role="status">{msg("暂无可邀请的担保角色")}</p>}{borrower && (item.state === "submitted" || item.state === "awaiting_acceptance") && contracts.length === 0 && <p role="status">{msg("暂无可选抵押合同")}</p>}{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}
-    {mode === "guarantee" && <FormDialog title={msg("添加担保邀请")} close={() => { if (!busy) setMode(null); }} busy={busy} submitLabel={msg("发送邀请")} className="loan-form loan-application-form" onSubmit={submit}><p className="loan-dialog-note">{msg("选择已绑定的 EVE 角色，后台会在发送邀请时重新解析其本站账号；担保金额还受担保人当前可用责任额度限制，接受时由服务端重新核验。")}</p>{guarantors.length ? <AccountCharacterSelect label={msg("担保角色")} characters={guarantors} value={guarantorCharacter} onChange={setGuarantorCharacter} autoFocus /> : <p role="status">{msg("暂无可邀请的担保角色")}</p>}<label>{msg("担保金额（ISK）")}<input value={guaranteeAmount} onChange={(e) => setGuaranteeAmount(e.target.value)} inputMode="decimal" required /></label>{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}
-    {mode === "collateral" && <FormDialog title={msg("登记抵押")} close={() => { if (!busy) setMode(null); }} busy={busy} submitLabel={msg("提交抵押")} className="loan-form loan-application-form" onSubmit={submit}><p className="loan-dialog-note">{msg("从当前账号可查看的已完成物品交换合同中选择，后台仍会核验收款方向、贷款角色和物品快照。组装船只会按合同中的整组物品逐项估值，缺少任一价格时整笔抵押不会提交。")}</p>{contracts.length ? <label>{msg("抵押合同")}<select autoFocus value={collateralSelection} onChange={(e) => setCollateralSelection(e.target.value)} required><option value="" disabled>{msg("请选择已完成合同")}</option>{contracts.map(({ owner, contract }) => <option key={`${owner.kind}:${owner.id}:${contract.id}`} value={`${owner.kind}:${owner.id}:${contract.id}`}>{owner.name} · {contract.title || `#${contract.id}`}</option>)}</select></label> : <p role="status">{msg("暂无可选抵押合同")}</p>}<p className="loan-dialog-note">{msg("抵押估值由后台读取合同物品快照和 ESI 市场均价自动计算，页面不允许手工填写估值。抵押折扣")}: {Number(haircut) / 100}%</p>{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}
+    {open && <Modal title={msg("贷款详情")} size="form" close={() => setOpen(false)} busy={busy} className="loan-detail-dialog" footer={<>
+      {borrower && current.state === "submitted" && <Button variant="outline" disabled={busy} onClick={requestCancel}>{msg("撤销申请")}</Button>}
+      {editable && detail.data && !detail.isError && <><Button variant="outline" disabled={busy || guarantors.length === 0} onClick={() => { setMessage(""); setOpen(false); setMode("guarantee"); }}>{msg("找人担保")}</Button><Button disabled={busy || characters.length === 0} onClick={() => { setMessage(""); setOpen(false); setMode("collateral"); }}>{msg("物品抵押")}</Button></>}
+    </>}>
+      {detail.isPending && <p role="status">{msg("正在读取")}</p>}
+      {detail.isError ? <div role="alert"><p>{detail.error.message}</p><Button variant="outline" onClick={() => void detail.refetch()}>{msg("重试")}</Button></div> : detail.data && <LoanCaseDetail detail={detail.data} status={loanState(current.state)} collateralAction={c => administrator && !borrower && c.state === "proposed" ? <div className="loan-contract-actions"><Button disabled={busy} onClick={() => void decideCollateral(c.id, c.version, "approved")}>{msg("批准抵押")}</Button><Button variant="outline" disabled={busy} onClick={() => void decideCollateral(c.id, c.version, "disputed")}>{msg("提出异议")}</Button></div> : null} requests={detail.data.collateral_requests?.filter(r => r.state !== "delivered").map(r => <article className="loan-collateral-record" key={r.id}>
+        <div className="loan-detail-identity"><strong>{r.public_id}</strong><span className="loan-state">{r.state === "awaiting_delivery" ? msg("待交付") : msg("已取消")}</span></div>
+        <CollateralItems items={r.items} />
+        {r.state === "awaiting_delivery" && <><p className="loan-dialog-note">{msg("在游戏中创建个人物品交换合同，交付以下全部物品，收取与支付均为 0 ISK。")}</p><div className="loan-contract-copy-grid">
+          <CopyField label={msg("交付角色")} value={characters.find(c => c.id === r.source_character_id)?.name || r.source_character_id} />
+          <CopyField label={msg("接收角色")} value={pool?.custodian_character_id === r.recipient_character_id && pool.custodian_character_name || r.recipient_character_id} />
+          <CopyField label={msg("合同备注")} value={r.public_id} />
+        </div>{borrower && ["submitted", "awaiting_acceptance", "approved"].includes(current.state) && <div className="loan-contract-actions"><Button onClick={() => { setOpen(false); setDelivery(r); }}>{msg("关联已完成合同")}</Button><Button variant="outline" onClick={() => { setMessage(""); setOpen(false); setCancelRequest(r); }}>{msg("取消待交付")}</Button></div>}</>}
+      </article>)} />}
+      {message && <p className="loan-form-message" role="alert">{message}</p>}
+    </Modal>}
+    {mode === "guarantee" && <FormDialog title={msg("找人担保")} close={() => { setMode(null); setOpen(true); }} busy={busy} submitLabel={msg("发送邀请")} className="loan-form loan-application-form" onSubmit={submit}><AccountCharacterSelect label={msg("担保角色")} characters={guarantors} value={guarantorCharacter} onChange={setGuarantorCharacter} autoFocus /><label>{msg("担保金额（ISK）")}<input value={guaranteeAmount} onChange={e => setGuaranteeAmount(e.target.value)} inputMode="decimal" required /></label>{message && <p className="loan-form-message" role="alert">{message}</p>}</FormDialog>}
+    {mode === "collateral" && <CollateralPicker csrf={csrf} item={current} characters={characters} close={() => { setMode(null); setOpen(true); }} saved={saved} />}
+    {delivery && <CollateralDelivery csrf={csrf} userId={userId} request={delivery} haircut={defaultHaircutBPS} close={() => { setDelivery(null); setOpen(true); }} saved={saved} />}
+    {cancelRequest && <ConfirmDialog title={msg("取消待交付")} description={msg("取消后可重新选择物品。若游戏合同已交付，请先联系贷款专员处理退还。")} busy={busy} error={message} onClose={() => { setCancelRequest(null); setOpen(true); }} onConfirm={async () => {
+      setBusy(true); setMessage("");
+      try { await api.cancelCollateralRequest(csrf, cancelRequest.id, cancelRequest.version); setCancelRequest(null); saved(); }
+      catch (e) { setMessage(e instanceof Error ? e.message : msg("取消抵押物失败")); }
+      finally { setBusy(false); }
+    }} />}
   </>;
 }

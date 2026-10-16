@@ -9,7 +9,7 @@ import (
 // Loan obligations and funded contributions follow the target account. The
 // original account is retained on every moved row for audit and reconciliation.
 func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target string, apply bool) (json.RawMessage, error) {
-	var contributions, cases, guarantees, collateral, evaluations int64
+	var contributions, cases, guarantees, collateral, evaluations, requests int64
 	for _, q := range []struct {
 		sql string
 		out *int64
@@ -19,6 +19,7 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 		{`SELECT count(*) FROM loan_guarantees WHERE guarantor_account_id=$1`, &guarantees},
 		{`SELECT count(*) FROM loan_collateral WHERE owner_account_id=$1`, &collateral},
 		{`SELECT count(*) FROM loan_credit_evaluations WHERE account_id=$1`, &evaluations},
+		{`SELECT count(*) FROM loan_collateral_requests r JOIN loan_cases c ON c.id=r.case_id WHERE c.borrower_account_id=$1`, &requests},
 	} {
 		if err := tx.QueryRow(ctx, q.sql, source).Scan(q.out); err != nil {
 			return nil, err
@@ -44,5 +45,5 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 			return nil, err
 		}
 	}
-	return json.Marshal(map[string]any{"contributions": contributions, "borrower_cases": cases, "guarantees": guarantees, "collateral": collateral, "credit_evaluations": evaluations})
+	return json.Marshal(map[string]any{"contributions": contributions, "borrower_cases": cases, "guarantees": guarantees, "collateral": collateral, "credit_evaluations": evaluations, "collateral_requests": requests})
 }

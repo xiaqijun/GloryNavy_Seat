@@ -7938,6 +7938,55 @@ paths:
       responses:
         '200': {description: Guarantee decision}
         '409': {description: Capacity, version or case conflict}
+  /api/v1/loan/cases/{id}/collateral-assets:
+    get:
+      operationId: loanCollateralAssets
+      security: [{SessionCookie: []}]
+      summary: Read deliverable personal assets for the borrower
+      description: Only the case borrower may read their currently bound character. Hangar roots include all fitted or contained items; blueprint copies are excluded. Pending selections reduce available quantities.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+        - {name: character_id, in: query, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+      responses:
+        '200': {description: 'Asset catalog: character_id, observed_at, items (item_id, type_id, name, quantity, available, location_id, nested items). IDs and quantities are decimal strings.'}
+        '403': {description: Not the borrower or character not currently bound}
+        '409': {description: Case no longer accepts asset selection}
+  /api/v1/loan/cases/{id}/collateral-requests:
+    post:
+      operationId: loanCollateralRequestCreate
+      security: [{SessionCookie: []}]
+      summary: Save selected personal items awaiting in-game delivery
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoanCollateralRequestInput'}
+      responses:
+        '200': {description: 'Pending delivery record, with frozen items, source and recipient character IDs, public_id and version. No collateral coverage is granted.'}
+        '400': {description: Invalid selection or items at different locations}
+        '403': {description: Not the borrower or character not currently bound}
+        '409': {description: Case or available quantity changed}
+  /api/v1/loan/collateral-requests/{id}/cancel:
+    post:
+      operationId: loanCollateralRequestCancel
+      security: [{SessionCookie: []}]
+      summary: Borrower cancels a pending item delivery
+      parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version]
+              properties:
+                version: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Cancelled delivery record; no in-game return is performed}
+        '403': {description: Not the borrower}
+        '409': {description: Version changed or delivery already registered}
   /api/v1/loan/cases/{id}/collateral:
     post:
       operationId: loanCollateralCreate
@@ -8169,6 +8218,7 @@ components:
       additionalProperties: false
       required: [owner_account_id, contract_kind, contract_owner_id, contract_id, haircut_bps]
       properties:
+        request_id: {type: string, pattern: '^[1-9][0-9]*$', description: 'Optional pending delivery ID. Requires exact frozen type/quantity match, personal source-to-recipient contract and completion after request creation. Legacy completed-contract registration remains compatible.'}
         owner_account_id: {type: string, format: uuid}
         contract_kind: {type: string, enum: [character, corporation]}
         contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
@@ -8177,6 +8227,23 @@ components:
         haircut_bps: {type: integer, minimum: 1, maximum: 10000}
         covered_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server applies the pool haircut}
         description: {type: string, maxLength: 500}
+    LoanCollateralRequestInput:
+      type: object
+      additionalProperties: false
+      required: [character_id, items]
+      properties:
+        character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [item_id, quantity]
+            properties:
+              item_id: {type: string, pattern: '^[1-9][0-9]*$'}
+              quantity: {type: string, pattern: '^[1-9][0-9]*$'}
     LoanDecisionInput:
       type: object
       additionalProperties: false

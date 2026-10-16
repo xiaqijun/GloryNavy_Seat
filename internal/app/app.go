@@ -848,6 +848,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed}, nil
 		}
 	}
+	loanService.AssetChoices = func(ctx context.Context, actor string, character int64) (loan.AssetCatalog, error) {
+		return loanAssetChoices(ctx, actor, character, identityService, reader, staticData)
+	}
 	creditJobs.Service = loanService
 	creditJobs.Users = identityService.AllUserIDs
 	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
