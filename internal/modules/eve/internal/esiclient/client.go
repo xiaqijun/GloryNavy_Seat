@@ -46,6 +46,11 @@ type Client struct {
 // upstream detail, even if the normal route cache is still fresh.
 type ForceRefreshKey struct{}
 
+// ResponseLimitKey permits a narrowly scoped endpoint to request a larger
+// bounded response while retaining the default 1 MiB limit for ordinary ESI
+// routes.
+type ResponseLimitKey struct{}
+
 // RequestEvent carries operational metadata only, never headers, paths or bodies.
 type RequestEvent struct {
 	Status                             int
@@ -254,7 +259,11 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 		}
 		content = cached.ContentUpdatedAt.Time
 	} else {
-		incoming, e := readResponseBody(res.Body, res.StatusCode)
+		limit := 1 << 20
+		if requested, ok := ctx.Value(ResponseLimitKey{}).(int); ok && requested > limit && requested <= 16<<20 {
+			limit = requested
+		}
+		incoming, e := readResponseBody(res.Body, res.StatusCode, limit)
 		if e != nil {
 			return now, e
 		}

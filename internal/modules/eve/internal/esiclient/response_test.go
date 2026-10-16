@@ -33,7 +33,7 @@ func TestReadResponseBodyDistinguishesTruncationFromSize(t *testing.T) {
 		{"timeout after valid JSON", &interruptedResponse{`[]`, context.DeadlineExceeded}, "network_error", true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			data, err := readResponseBody(tt.body, 200)
+			data, err := readResponseBody(tt.body, 200, 1<<20)
 			if tt.reason == "" {
 				if err != nil || len(data) == 0 {
 					t.Fatal(err)

@@ -73,7 +73,7 @@ func (s *ESIService) MarketAveragePrices(ctx context.Context) (map[int64]MarketP
 	var meta ESIResponse
 	var err error
 	for attempt := 0; attempt < 4; attempt++ {
-		meta, err = s.Request(ctx, ESIRequest{Method: "GET", Path: "/markets/prices/"}, &rows)
+		meta, err = s.Request(ctx, ESIRequest{Method: "GET", Path: "/markets/prices/", MaxResponseBytes: 8 << 20}, &rows)
 		var retry retryError
 		if !errors.As(err, &retry) || time.Until(retry.Until) > 300*time.Millisecond {
 			break
@@ -198,7 +198,7 @@ func (s *ESIService) JitaPrices(ctx context.Context, id int64) (MarketPrices, er
 		var meta ESIResponse
 		var err error
 		for attempt := 0; attempt < 4; attempt++ {
-			meta, err = s.Request(ctx, ESIRequest{Method: "GET", Path: "/markets/prices/"}, &rows)
+			meta, err = s.Request(ctx, ESIRequest{Method: "GET", Path: "/markets/prices/", MaxResponseBytes: 8 << 20}, &rows)
 			var retry retryError
 			if !errors.As(err, &retry) || time.Until(retry.Until) > 300*time.Millisecond {
 				break

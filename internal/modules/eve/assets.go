@@ -11,21 +11,22 @@ import (
 )
 
 const (
-	assetSnapshotMaxPages = 1000
-	assetSnapshotMaxItems = 100000
+	assetSnapshotMaxPages      = 1000
+	assetSnapshotMaxItems      = 100000
+	assetSnapshotResponseLimit = 8 << 20
 )
 
 // AssetHolding is a validated personal asset row returned by ESI. Corporation
 // assets are deliberately outside this type and are never requested here.
 type AssetHolding struct {
-	ItemID       int64
-	TypeID       int64
-	Quantity     int64
-	LocationID   int64
-	LocationType string
-	LocationFlag string
+	ItemID        int64
+	TypeID        int64
+	Quantity      int64
+	LocationID    int64
+	LocationType  string
+	LocationFlag  string
 	BlueprintCopy bool
-	Singleton    bool
+	Singleton     bool
 }
 
 // AssetSnapshot is one complete, owner-bound ESI observation for a character.
@@ -74,12 +75,13 @@ func (s *AuthorizationService) AssetSnapshot(ctx context.Context, id int64, owne
 			Singleton     bool   `json:"is_singleton"`
 		}
 		meta, err := s.esi.Request(ctx, ESIRequest{
-			Method:      "GET",
-			Path:        fmt.Sprintf("/characters/%d/assets/?page=%d", id, page),
-			CharacterID: id,
-			Generation:  c.GrantGeneration,
-			Scopes:      []string{AssetsReadScope},
-			ExpectPages: true,
+			Method:           "GET",
+			Path:             fmt.Sprintf("/characters/%d/assets/?page=%d", id, page),
+			CharacterID:      id,
+			Generation:       c.GrantGeneration,
+			Scopes:           []string{AssetsReadScope},
+			ExpectPages:      true,
+			MaxResponseBytes: assetSnapshotResponseLimit,
 		}, &rows)
 		if err != nil {
 			return AssetSnapshot{}, err

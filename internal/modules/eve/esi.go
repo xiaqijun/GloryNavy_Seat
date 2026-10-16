@@ -40,6 +40,7 @@ type ESIRequest struct {
 	ExpectPages, LimitTrust bool
 	ForceRefresh            bool
 	Mutation                bool
+	MaxResponseBytes        int
 }
 type ESIResponse struct {
 	Cached                                               bool
@@ -59,6 +60,9 @@ func (c *ESIService) Request(ctx context.Context, r ESIRequest, out any) (ESIRes
 	}
 	if r.Mutation {
 		ctx = context.WithValue(ctx, esiclient.MutationKey{}, true)
+	}
+	if r.MaxResponseBytes > 0 {
+		ctx = context.WithValue(ctx, esiclient.ResponseLimitKey{}, r.MaxResponseBytes)
 	}
 	var until time.Time
 	var err error
