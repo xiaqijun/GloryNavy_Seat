@@ -474,7 +474,7 @@ function WalletBalances({
           </span>
           <strong>{speeds.income == null ? "—" : number(speeds.income)}</strong>
           <small>
-            ISK / {msg("日")} · {msg("本月日均")}
+            ISK / {msg("日")} · {msg("本月日均，不含转账")}
           </small>
         </div>
         <div>
@@ -486,7 +486,7 @@ function WalletBalances({
             {speeds.expense == null ? "—" : number(speeds.expense)}
           </strong>
           <small>
-            ISK / {msg("日")} · {msg("本月日均")}
+            ISK / {msg("日")} · {msg("本月日均，不含转账")}
           </small>
         </div>
       </div>
@@ -534,8 +534,8 @@ function walletSpeeds(
 ) {
   if (rows.length !== characterCount)
     return { income: null as number | null, expense: null as number | null };
-  const incomeTotal = sumWalletBalances(rows.map((row) => row.income));
-  const expenseTotal = sumWalletBalances(rows.map((row) => row.expense));
+  const incomeTotal = sumWalletBalances(rows.map((row) => row.earned_income));
+  const expenseTotal = sumWalletBalances(rows.map((row) => row.spent_expense));
   if (incomeTotal === null || expenseTotal === null)
     return { income: null as number | null, expense: null as number | null };
   const income = Number(incomeTotal);

@@ -122,6 +122,8 @@ func TestWalletSummaryBatchesOwnCharactersAndUsesLatestJournalVariant(t *testing
 		{201, "journal", 500, "a", `{"amount":10.00}`, observed.Add(-time.Minute)},
 		{201, "journal", 500, "b", `{"amount":12.50}`, observed},
 		{202, "journal", 501, "c", `{"amount":-2.25}`, observed},
+		{201, "journal", 502, "d", `{"amount":1000,"ref_type":"player_donation","first_party_id":202,"second_party_id":201}`, observed},
+		{202, "journal", 502, "e", `{"amount":-1000,"ref_type":"player_donation","first_party_id":202,"second_party_id":201}`, observed},
 	} {
 		if _, e = pool.Exec(ctx, `INSERT INTO eve_wallet_observations(owner_kind,owner_id,division,kind,record_id,source_character_id,owner_hash,observed_at,occurred_at,payload,entry_key)
  VALUES('character',$1,0,$2,$3,$1,(SELECT owner_hash FROM eve_credentials WHERE character_id=$1),$4,$4,$5::jsonb,$6)`, row.id, row.part, row.record, row.at, row.payload, row.entry); e != nil {
@@ -152,10 +154,12 @@ func TestWalletSummaryBatchesOwnCharactersAndUsesLatestJournalVariant(t *testing
 	var body struct {
 		Data struct {
 			Items []struct {
-				OwnerID string `json:"owner_id"`
-				Balance string `json:"balance"`
-				Income  string `json:"income"`
-				Expense string `json:"expense"`
+				EarnedIncome string `json:"earned_income"`
+				SpentExpense string `json:"spent_expense"`
+				OwnerID      string `json:"owner_id"`
+				Balance      string `json:"balance"`
+				Income       string `json:"income"`
+				Expense      string `json:"expense"`
 			} `json:"items"`
 		} `json:"data"`
 	}
@@ -163,8 +167,8 @@ func TestWalletSummaryBatchesOwnCharactersAndUsesLatestJournalVariant(t *testing
 		t.Fatal(e)
 	}
 	if len(body.Data.Items) != 2 || body.Data.Items[0].OwnerID != "201" || body.Data.Items[1].OwnerID != "202" ||
-		body.Data.Items[0].Balance != "1000.25" || body.Data.Items[0].Income != "12.50" ||
-		body.Data.Items[1].Balance != "0.75" || body.Data.Items[1].Expense != "2.25" {
+		body.Data.Items[0].Balance != "1000.25" || body.Data.Items[0].Income != "1012.50" || body.Data.Items[0].EarnedIncome != "12.50" ||
+		body.Data.Items[1].Balance != "0.75" || body.Data.Items[1].Expense != "1002.25" || body.Data.Items[1].SpentExpense != "2.25" {
 		t.Fatal(body.Data.Items)
 	}
 	if _, e = pool.Exec(ctx, `UPDATE eve_credentials SET scopes='{}' WHERE character_id=202`); e != nil {

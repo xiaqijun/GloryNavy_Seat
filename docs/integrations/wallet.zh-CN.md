@@ -1,5 +1,13 @@
 # ISK 钱包
 
+## 工作台收支速度排除转账（2026-10-16）
+
+个人首页 `/workspace` 使用 `GET /api/v1/wallet/summary?from=...`。每个角色新增 `earned_income`、`spent_expense` 十进制 ISK 字符串，分别是排除直接转账后的正数收入和负数支出绝对值；真实无收入/支出返回 `"0"`。原有 `income/expense` 仍为全部收支，余额和原流水不变，贷款钱包证据继续使用原字段。本次不改变军团汇总/趋势，不新增 scope、迁移、ESI 抓取或业务写入。
+
+统计按 `(owner_id,record_id)` 先选最新观察版本，再根据该版本 `ref_type` 排除 `player_donation`、`corporation_account_withdrawal`、`corporation_payment`、`corporation_bulk_payment`。不通过备注关键词、相近金额、双方绑定状态或成对流水猜测转账，只有一侧已同步、跨本站账号或未绑定小号也可排除。保留赏金、`ess_escrow_transfer`、任务奖励、市场/玩家交易、分红及其他原统计项；未知或缺失类型沿用原汇总规则，不能用包含 transfer/payment 的模糊关键词误删收入。类型枚举依据项目固定兼容日期的[官方 ESI OpenAPI](https://esi.evetech.net/meta/openapi.json?compatibility_date=2026-08-18)。纯 ISK 合同、退款等并未一概判作直接转账，此指标不是利润表。
+
+继续只读取当前账号有效绑定、当前 owner、可用凭据和钱包 scope 的本地快照；金额在 PostgreSQL numeric 中精确求和。首页仅用新字段计算月日均，缺字段/缺角色显示不可用，禁止静默退回原始收支。上线后读取已有本月流水立即重算，无需重新同步历史或重写记录；前后端一起发布。
+
 > 状态索引（2026-09-23）：本指南对应的业务已上线；未交付的扩展与真实验收缺口见[待办](../backlog.md)，当前版本见[项目状态](../project-status.md)。下文带日期/Goose 的发布前记录保留当时语境，不能据此认定当前未发布；升级执行仓库最新迁移，不停在模块初始版本。
 
 2026-09-20 生产术语修正（前端 `v0.1.0-terminology-20260920`）：162 项流水名称现从官方 SDE accountingEntryTypes 生成，中英文均使用原名；例如 ESS 为“事件监测装置保证金支付 / ESS Escrow Payment”。关联对象 10 项使用客户端标签，2 项保留英文技术名称，不再猜译。来源及更新方法见[术语指南](eve-terminology.zh-CN.md)。不改变 ESI 代码、筛选值或历史数据，发布验收见[项目状态](../project-status.md)。
@@ -45,7 +53,7 @@ ESI 流水端点仅提供最近 30 天；同步按记录 ID＋内容指纹去重
 
 `GET /api/v1/wallet/context?member=...` 返回可读归属、分部与数据类别；指定其他成员仅管理员可用。`GET /api/v1/wallet/records` 参数见 [OpenAPI](../../api/openapi.yaml)：归属、分部、类别必选；流水支持类型、收支、参与方 ID、说明/备注/记录编号、时间；交易支持买卖方向、参与方 ID、交易编号、时间。每页 50 条，以 `before=记录ID.内容指纹` 复合游标翻页（交易为记录 ID）。日期 `from` 包含、`until` 不包含，页面结束日期覆盖当地整天。
 
-工作台个人钱包使用 `GET /api/v1/wallet/personal-corporation-summary?corporation_id=...&from=...`，汇总当前军团成员中有效绑定角色的最新余额及本月收支。服务端仅纳入仍属于该军团、当前凭据所有者匹配、凭据未阻塞且具备 `esi-wallet.read_character_wallet.v1` 的角色；请求还要求当前站点管理员的 `access.members.read`。这是军团范围汇总，不接收任意成员参数，也不返回逐角色明细。`from` 必须在过去 45 天内；接口只读本地快照，同一流水编号多份历史观察只取最新版本，缺失余额返回 `null`，金额和军团 ID 使用十进制字符串。工作台的“个人钱包”因此代表全体成员可读角色的合计，个人钱包详情页仍使用原有当前账号/管理员成员读取接口。
+军团工作台个人钱包使用 `GET /api/v1/wallet/personal-corporation-summary?corporation_id=...&from=...`，汇总当前军团成员中有效绑定角色的最新余额及本月收支。服务端仅纳入仍属于该军团、当前凭据所有者匹配、凭据未阻塞且具备 `esi-wallet.read_character_wallet.v1` 的角色；请求还要求当前站点管理员的 `access.members.read`。这是军团范围汇总，不接收任意成员参数，也不返回逐角色明细。`from` 必须在过去 45 天内；接口只读本地快照，同一流水编号多份历史观察只取最新版本，缺失余额返回 `null`，金额和军团 ID 使用十进制字符串。军团工作台的“个人钱包”因此代表全体成员可读角色的合计，个人钱包详情页仍使用原有当前账号/管理员成员读取接口。
 
 军团运营面板使用 `GET /api/v1/wallet/corporation-summary?owner_id=...&from=...` 汇总当前管理员可读的军团钱包分部，并使用上面的 `personal-corporation-summary` 汇总成员个人钱包，返回最新余额、本月收入和本月支出。服务端分别重查军团钱包能力、成员数据权限与有效角色范围；缺少权限、快照或同步时不显示为零。两个接口只读本地快照，不创建付款，也不绕过 ESI 缓存；无新迁移和 scope。
 

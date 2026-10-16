@@ -44,6 +44,8 @@ export type Records = {
 };
 export type Summary = {
   items: {
+    earned_income?: string;
+    spent_expense?: string;
     owner_id: string;
     balance: string | null;
     observed_at: string | null;
@@ -125,7 +127,9 @@ export function isSummary(v: unknown): v is Summary {
     object(row) && id(row.owner_id) &&
     (row.balance === null || typeof row.balance === "string") &&
     (row.observed_at === null || (typeof row.observed_at === "string" && Number.isFinite(Date.parse(row.observed_at)))) &&
-    typeof row.income === "string" && typeof row.expense === "string",
+    typeof row.income === "string" && typeof row.expense === "string" &&
+    (row.earned_income === undefined || typeof row.earned_income === "string") &&
+    (row.spent_expense === undefined || typeof row.spent_expense === "string"),
   );
 }
 export const context = (member: string, signal?: AbortSignal) =>

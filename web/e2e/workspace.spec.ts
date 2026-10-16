@@ -149,8 +149,8 @@ async function setup(
     else if (p.endsWith("/wallet/summary"))
       data = {
         items: empty ? [] : [
-          { owner_id: "125", balance: "0", observed_at: "2026-09-21T03:00:00Z", income: "0", expense: "1000000000" },
-          { owner_id: "124", balance: "1234567890.12", observed_at: "2026-09-21T03:00:00Z", income: "3000000000", expense: "0" },
+          { owner_id: "125", balance: "0", observed_at: "2026-09-21T03:00:00Z", income: "0", expense: "1000000000", earned_income: "0", spent_expense: "1000000000" },
+          { owner_id: "124", balance: "1234567890.12", observed_at: "2026-09-21T03:00:00Z", income: "3000000000", expense: "0", earned_income: "3000000000", spent_expense: "0" },
         ],
       };
     else if (p.endsWith("/wallet/records"))

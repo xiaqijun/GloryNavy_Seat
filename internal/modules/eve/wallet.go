@@ -420,11 +420,13 @@ func (s *AuthorizationService) WalletData(ctx context.Context, f WalletFilter) (
 }
 
 type WalletSummary struct {
-	OwnerID  int64      `json:"owner_id,string"`
-	Balance  *string    `json:"balance"`
-	Observed *time.Time `json:"observed_at"`
-	Income   string     `json:"income"`
-	Expense  string     `json:"expense"`
+	EarnedIncome string     `json:"earned_income,omitempty"`
+	SpentExpense string     `json:"spent_expense,omitempty"`
+	OwnerID      int64      `json:"owner_id,string"`
+	Balance      *string    `json:"balance"`
+	Observed     *time.Time `json:"observed_at"`
+	Income       string     `json:"income"`
+	Expense      string     `json:"expense"`
 }
 
 type WalletIncomeTrend struct {
@@ -457,6 +459,7 @@ func (s *AuthorizationService) WalletSummaries(ctx context.Context, ownerIDs []i
 		out = append(out, WalletSummary{
 			OwnerID: row.OwnerID, Balance: row.Balance, Observed: row.Observed,
 			Income: row.Income, Expense: row.Expense,
+			EarnedIncome: row.EarnedIncome, SpentExpense: row.SpentExpense,
 		})
 	}
 	return out, nil

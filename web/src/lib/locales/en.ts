@@ -2788,4 +2788,5 @@ export const english: Record<string, string> = {
   "还差 {0} 可抵额度，请增加物品或数量。": "Eligible value is {0} short. Add more items or quantity.",
   "已达到抵押额度，可保存并交付物品。": "The required amount is covered. You can save and deliver the items.",
   "所选物品总估值 × 80% 须达到抵押额度。": "Selected item value × 80% must cover the required collateral amount.",
+  "本月日均，不含转账": "Monthly daily average, excluding transfers",
 };

@@ -83,7 +83,7 @@ paths:
     get:
       operationId: walletWorkbenchSummary
       summary: Current account's authorized character wallet balances and monthly income/expense in one local read
-      description: Uses active bindings and wallet scopes; no member selector, no corporation wallets or ESI network request. The latest observed variant of each journal reference contributes once. Missing balance remains null.
+      description: Uses active bindings and wallet scopes; no member selector, no corporation wallets or ESI network request. The latest observed variant of each journal reference contributes once. Missing balance remains null. earned_income/spent_expense exclude player_donation, corporation_account_withdrawal, corporation_payment and corporation_bulk_payment after latest-variant selection, irrespective of counterpart binding. Gross income/expense remain unchanged for existing consumers, including loan evidence. Other types retain their original classification; these adjusted figures are not net profit.
       security: [{SessionCookie: []}]
       parameters:
         - name: from
@@ -108,13 +108,15 @@ paths:
                         type: array
                         items:
                           type: object
-                          required: [owner_id, balance, observed_at, income, expense]
+                          required: [owner_id, balance, observed_at, income, expense, earned_income, spent_expense]
                           properties:
                             owner_id: {type: string, pattern: '^[0-9]+$'}
                             balance: {type: string, nullable: true}
                             observed_at: {type: string, format: date-time, nullable: true}
                             income: {type: string}
                             expense: {type: string}
+                            earned_income: {type: string, description: Positive journal total excluding direct transfers; decimal ISK}
+                            spent_expense: {type: string, description: Absolute negative journal total excluding direct transfers; decimal ISK}
         '400': {description: Invalid month start}
         '401': {description: No active session}
         '403': {description: Profile or capability denied}

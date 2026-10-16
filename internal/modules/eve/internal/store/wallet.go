@@ -67,11 +67,13 @@ type WalletRow struct {
 }
 
 type WalletSummaryRow struct {
-	OwnerID  int64
-	Balance  *string
-	Observed *time.Time
-	Income   string
-	Expense  string
+	EarnedIncome string
+	SpentExpense string
+	OwnerID      int64
+	Balance      *string
+	Observed     *time.Time
+	Income       string
+	Expense      string
 }
 
 type WalletIncomeTrendRow struct {
@@ -97,6 +99,8 @@ type WalletFinanceTrendRow struct {
 // ReadCharacterWalletSummaries returns only current credential-owned local
 // observations. A record ID can have several historical journal variants;
 // only its latest observation contributes to the current monthly total.
+// EarnedIncome/SpentExpense exclude direct transfers for workbench speeds.
+// Income/Expense remain gross cash flows for existing consumers, including credit.
 func ReadCharacterWalletSummaries(ctx context.Context, db DBTX, ownerIDs []int64, from time.Time) ([]WalletSummaryRow, error) {
 	if len(ownerIDs) == 0 {
 		return []WalletSummaryRow{}, nil
@@ -112,7 +116,7 @@ func ReadCharacterWalletSummaries(ctx context.Context, db DBTX, ownerIDs []int64
 	}
 	byID := make(map[int64]*WalletSummaryRow, len(ownerIDs))
 	for _, id := range ownerIDs {
-		byID[id] = &WalletSummaryRow{OwnerID: id, Income: "0", Expense: "0"}
+		byID[id] = &WalletSummaryRow{OwnerID: id, Income: "0", Expense: "0", EarnedIncome: "0", SpentExpense: "0"}
 	}
 	for balances.Next() {
 		var id int64
@@ -132,26 +136,32 @@ func ReadCharacterWalletSummaries(ctx context.Context, db DBTX, ownerIDs []int64
 		return nil, e
 	}
 	journal, e := db.Query(ctx, `WITH latest AS (
- SELECT DISTINCT ON (w.owner_id,w.record_id) w.owner_id,w.record_id,(w.payload->>'amount')::numeric AS amount
+ SELECT DISTINCT ON (w.owner_id,w.record_id) w.owner_id,w.record_id,(w.payload->>'amount')::numeric AS amount,w.payload->>'ref_type' AS ref_type
  FROM eve_wallet_observations w JOIN eve_credentials c ON c.character_id=w.source_character_id
  WHERE w.owner_kind='character' AND w.owner_id=ANY($1::bigint[]) AND w.kind='journal'
  AND w.occurred_at >= $2 AND w.owner_hash=c.owner_hash AND c.state<>'reauthorize'
  AND 'esi-wallet.read_character_wallet.v1'=ANY(c.scopes)
  ORDER BY w.owner_id,w.record_id,w.observed_at DESC,w.entry_key DESC
  ) SELECT owner_id,COALESCE(sum(greatest(amount,0)),0)::text,
- COALESCE(sum(greatest(-amount,0)),0)::text FROM latest GROUP BY owner_id`, ownerIDs, from)
+ COALESCE(sum(greatest(-amount,0)),0)::text,
+ COALESCE(sum(greatest(amount,0)) FILTER (WHERE NOT (COALESCE(ref_type,'')=ANY($3::text[]))),0)::text,
+ COALESCE(sum(greatest(-amount,0)) FILTER (WHERE NOT (COALESCE(ref_type,'')=ANY($3::text[]))),0)::text
+ FROM latest GROUP BY owner_id`, ownerIDs, from, []string{
+		"player_donation", "corporation_account_withdrawal", "corporation_payment", "corporation_bulk_payment",
+	})
 	if e != nil {
 		return nil, e
 	}
 	for journal.Next() {
 		var id int64
-		var income, expense string
-		if e = journal.Scan(&id, &income, &expense); e != nil {
+		var income, expense, earnedIncome, spentExpense string
+		if e = journal.Scan(&id, &income, &expense, &earnedIncome, &spentExpense); e != nil {
 			journal.Close()
 			return nil, e
 		}
 		if row := byID[id]; row != nil {
 			row.Income, row.Expense = income, expense
+			row.EarnedIncome, row.SpentExpense = earnedIncome, spentExpense
 		}
 	}
 	e = journal.Err()
