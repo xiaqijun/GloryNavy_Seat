@@ -16,11 +16,49 @@ import (
 	"glorynavy.local/seat/internal/modules/loan"
 )
 
-// loanAssetEvidence aggregates complete personal asset snapshots for every
-// active bound character. It intentionally excludes wallets, corporation
-// assets, and any holding whose market average is unavailable; an incomplete
-// observation remains neutral rather than inflating a member's score.
-func loanAssetEvidence(ctx context.Context, account string, identities *identity.Service, reader *eve.AuthorizationService) (loan.CreditEvidence, error) {
+type loanAssetValuation struct {
+	total         *big.Rat
+	pricedTypes   int
+	unpricedTypes int
+	cutoff        time.Time
+}
+
+// valueLoanAssets converts only positively quoted holdings to ISK minor units.
+// ESI's market average table legitimately omits items with no recent trades;
+// those holdings remain in the unpriced count and do not erase other values.
+func valueLoanAssets(counts map[int64]*big.Int, prices map[int64]eve.MarketPrices, cutoff time.Time) loanAssetValuation {
+	result := loanAssetValuation{total: new(big.Rat), cutoff: cutoff}
+	ids := make([]int64, 0, len(counts))
+	for id := range counts {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for _, id := range ids {
+		quote, ok := prices[id]
+		if !ok || quote.Mid == nil {
+			result.unpricedTypes++
+			continue
+		}
+		price, ok := new(big.Rat).SetString(*quote.Mid)
+		if !ok || price.Sign() <= 0 {
+			result.unpricedTypes++
+			continue
+		}
+		result.pricedTypes++
+		if !quote.ObservedAt.IsZero() && (result.cutoff.IsZero() || quote.ObservedAt.Before(result.cutoff)) {
+			result.cutoff = quote.ObservedAt
+		}
+		result.total.Add(result.total, new(big.Rat).Mul(price, new(big.Rat).SetInt(counts[id])))
+	}
+	return result
+}
+
+// loanAssetEvidence aggregates personal asset snapshots for every active bound
+// character. It intentionally excludes wallets and corporation assets. A
+// character snapshot that cannot be read is recorded as a partial observation;
+// holdings with no ESI market average are skipped rather than invalidating all
+// other priced holdings. Both cases are retained in the evidence metadata.
+func loanAssetEvidence(ctx context.Context, account string, identities *identity.Service, reader *eve.AuthorizationService, pledged func(context.Context, string) (map[int64]int64, error)) (loan.CreditEvidence, error) {
 	if reader == nil || reader.ESI() == nil {
 		return loan.CreditEvidence{}, eve.ErrReauthorize
 	}
@@ -34,11 +72,15 @@ func loanAssetEvidence(ctx context.Context, account string, identities *identity
 	counts := map[int64]*big.Int{}
 	var cutoff time.Time
 	parts := make([]string, 0, len(characters)+1)
+	assetErrors := make([]string, 0)
+	snapshotsRead := 0
 	for _, character := range characters {
 		snapshot, err := reader.AssetSnapshot(ctx, character.ID, character.OwnerHash)
 		if err != nil {
-			return loan.CreditEvidence{}, err
+			assetErrors = append(assetErrors, fmt.Sprintf("character %d: %v", character.ID, err))
+			continue
 		}
+		snapshotsRead++
 		observed := snapshot.ContentUpdatedAt
 		if observed.IsZero() {
 			observed = snapshot.ObservedAt
@@ -59,38 +101,45 @@ func loanAssetEvidence(ctx context.Context, account string, identities *identity
 			quantity.Add(quantity, big.NewInt(item.Quantity))
 		}
 	}
+	if pledged != nil {
+		reserved, err := pledged(ctx, account)
+		if err != nil {
+			return loan.CreditEvidence{}, err
+		}
+		for typeID, quantity := range reserved {
+			if current := counts[typeID]; current != nil {
+				current.Sub(current, big.NewInt(quantity))
+				if current.Sign() <= 0 {
+					delete(counts, typeID)
+				}
+			}
+		}
+	}
 	if len(counts) == 0 {
 		if cutoff.IsZero() {
 			cutoff = time.Now().UTC()
 		}
 		sort.Strings(parts)
 		hash := sha256.Sum256([]byte(strings.Join(parts, "|")))
-		return loan.CreditEvidence{AssetAvailable: true, AssetSnapshotID: "assets-v1-" + hex.EncodeToString(hash[:8]), EvidenceCutoff: cutoff}, nil
+		evidence := loan.CreditEvidence{AssetAvailable: snapshotsRead > 0, AssetSnapshotID: "assets-v1-" + hex.EncodeToString(hash[:8]), EvidenceCutoff: cutoff}
+		if len(assetErrors) > 0 {
+			evidence.AssetEvidenceError = strings.Join(assetErrors, "; ")
+		}
+		if snapshotsRead == 0 {
+			return evidence, fmt.Errorf("personal asset snapshots unavailable: %s", evidence.AssetEvidenceError)
+		}
+		return evidence, nil
 	}
 	prices, err := reader.ESI().MarketAveragePrices(ctx)
 	if err != nil {
-		return loan.CreditEvidence{}, err
+		return loan.CreditEvidence{AssetEvidenceError: err.Error()}, err
 	}
 	total := new(big.Rat)
-	ids := make([]int64, 0, len(counts))
-	for id := range counts {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-	for _, id := range ids {
-		quote, ok := prices[id]
-		if !ok || quote.Mid == nil {
-			return loan.CreditEvidence{}, fmt.Errorf("asset price unavailable for type %d", id)
-		}
-		price, ok := new(big.Rat).SetString(*quote.Mid)
-		if !ok || price.Sign() <= 0 {
-			return loan.CreditEvidence{}, fmt.Errorf("invalid asset price for type %d", id)
-		}
-		if !quote.ObservedAt.IsZero() && (cutoff.IsZero() || quote.ObservedAt.Before(cutoff)) {
-			cutoff = quote.ObservedAt
-		}
-		total.Add(total, new(big.Rat).Mul(price, new(big.Rat).SetInt(counts[id])))
-	}
+	valuation := valueLoanAssets(counts, prices, cutoff)
+	pricedTypes := valuation.pricedTypes
+	unpricedTypes := valuation.unpricedTypes
+	total = valuation.total
+	cutoff = valuation.cutoff
 	// Convert ISK to the application's integer minor-unit representation.
 	minorRat := new(big.Rat).Mul(total, big.NewRat(100, 1))
 	minor := new(big.Int).Quo(minorRat.Num(), minorRat.Denom())
@@ -102,7 +151,24 @@ func loanAssetEvidence(ctx context.Context, account string, identities *identity
 	}
 	sort.Strings(parts)
 	hash := sha256.Sum256([]byte(strings.Join(parts, "|") + fmt.Sprintf("|market:%s", cutoff.UTC().Format(time.RFC3339Nano))))
-	return loan.CreditEvidence{AssetAvailable: true, AssetValueMinor: minor.Int64(), AssetSnapshotID: "assets-v1-" + hex.EncodeToString(hash[:8]), EvidenceCutoff: cutoff}, nil
+	evidence := loan.CreditEvidence{
+		AssetAvailable:     pricedTypes > 0,
+		AssetValueMinor:    minor.Int64(),
+		AssetPricedTypes:   pricedTypes,
+		AssetUnpricedTypes: unpricedTypes,
+		AssetSnapshotID:    "assets-v1-" + hex.EncodeToString(hash[:8]),
+		EvidenceCutoff:     cutoff,
+	}
+	if len(assetErrors) > 0 {
+		evidence.AssetEvidenceError = strings.Join(assetErrors, "; ")
+	}
+	if pricedTypes == 0 {
+		if evidence.AssetEvidenceError == "" {
+			evidence.AssetEvidenceError = "no personal asset holdings have a usable market average"
+		}
+		return evidence, fmt.Errorf("%s", evidence.AssetEvidenceError)
+	}
+	return evidence, nil
 }
 
 // loanIncomeEvidence aggregates only the account's current character-wallet

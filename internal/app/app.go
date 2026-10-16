@@ -243,6 +243,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	exchangeService.LockAccounts = identityService.LockActiveAccounts
 	exchangeJobs := &exchange.DeliveryJobs{Service: exchangeService, Enabled: slices.Contains(enabled, "exchange")}
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
+	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
 	var sentryRemote sentry.Remote
 	if auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != "" {
 		remote, remoteErr := sentry.NewHTTPRemote(auth.SentryIntegrationURL, auth.SentryIntegrationToken)
@@ -273,7 +274,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
-		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled))
+		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled))
 		if err != nil {
 			return nil, err
 		}
@@ -666,6 +667,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		exchangeService.EstimateReward = marketModule.Service.EstimateItems
 	}
 	sentryHandler := sentry.Handler{Service: sentryService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
+	var pledgedCollateral func(context.Context, string) (map[int64]int64, error)
 	loanService := &loan.Service{Pool: pool, Characters: func(ctx context.Context, user string) ([]loan.Character, error) {
 		rows, err := identityService.ActiveCharacters(ctx, user)
 		out := make([]loan.Character, 0, len(rows))
@@ -763,21 +765,44 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 				}
 			}
 			if syncService != nil {
-				if assets, err := loanAssetEvidence(ctx, user, identityService, syncService); err == nil {
-					out.AssetAvailable = assets.AssetAvailable
-					out.AssetValueMinor = assets.AssetValueMinor
-					out.AssetSnapshotID = assets.AssetSnapshotID
-					if out.EvidenceCutoff.IsZero() || (!assets.EvidenceCutoff.IsZero() && assets.EvidenceCutoff.Before(out.EvidenceCutoff)) {
-						out.EvidenceCutoff = assets.EvidenceCutoff
-					}
+				assets, err := loanAssetEvidence(ctx, user, identityService, syncService, pledgedCollateral)
+				out.AssetAvailable = assets.AssetAvailable
+				out.AssetValueMinor = assets.AssetValueMinor
+				out.AssetPricedTypes = assets.AssetPricedTypes
+				out.AssetUnpricedTypes = assets.AssetUnpricedTypes
+				out.AssetSnapshotID = assets.AssetSnapshotID
+				out.AssetEvidenceError = assets.AssetEvidenceError
+				if err != nil && out.AssetEvidenceError == "" {
+					out.AssetEvidenceError = err.Error()
+				}
+				if out.EvidenceCutoff.IsZero() || (!assets.EvidenceCutoff.IsZero() && assets.EvidenceCutoff.Before(out.EvidenceCutoff)) {
+					out.EvidenceCutoff = assets.EvidenceCutoff
 				}
 			}
 			return out, nil
 		},
 	}
+	pledgedCollateral = loanService.PledgedCollateralQuantities
 	if syncService != nil {
 		loanService.IncomeEvidence = func(ctx context.Context, user string, from time.Time) (loan.IncomeEvidence, error) {
 			return loanIncomeEvidence(ctx, user, from, identityService, syncService)
+		}
+		loanService.CollateralValue = func(ctx context.Context, items json.RawMessage) (int64, error) {
+			return loan.ValueCollateralItems(ctx, items, func(ctx context.Context, typeIDs []int64) (map[int64]string, error) {
+				quotes, err := syncService.ESI().MarketAveragePrices(ctx)
+				if err != nil {
+					return nil, err
+				}
+				prices := make(map[int64]string, len(typeIDs))
+				for _, typeID := range typeIDs {
+					quote, ok := quotes[typeID]
+					if !ok || quote.Mid == nil {
+						continue
+					}
+					prices[typeID] = *quote.Mid
+				}
+				return prices, nil
+			})
 		}
 	}
 	loanService.CanManagePool = func(ctx context.Context, user, kind string, id int64) (bool, error) {
@@ -823,6 +848,8 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return loan.Contract{ID: c.ID, OwnerKind: c.OwnerKind, OwnerID: c.OwnerID, Type: c.Type, Status: c.Status, Price: c.Price, Reward: c.Reward, IssuerID: c.IssuerID, AssigneeID: c.AssigneeID, AcceptorID: c.AcceptorID, ForCorporation: c.ForCorporation, IssuerCorporationID: c.IssuerCorporationID, Items: items, ItemsReady: c.ItemsReady, Completed: c.Completed}, nil
 		}
 	}
+	creditJobs.Service = loanService
+	creditJobs.Users = identityService.AllUserIDs
 	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
 	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 	approvalModule, approvalProjection, err := approvalHandler(pool, auth.ApprovalDualRead, auth.ApprovalIndexAccounts, enabled, communityService.Nicknames, welfareModule.Service, exchangeService, loanService)

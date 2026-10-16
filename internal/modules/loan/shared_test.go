@@ -98,11 +98,11 @@ func TestAssessCreditPolicyUsesWeightedIncomeAndConsumption(t *testing.T) {
 	c := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 100_000, MonthlyExpenseMinor: 100_000, ObservedAt: now}}, 1_000_000, policy, now)
 	// Both signals produce 180,000 of capacity; the 70/30 blend remains
 	// 180,000, then the score scales the responsibility limit.
-	if c.TotalLimitMinor != 99_000 || c.UnsecuredLimitMinor != 71_280 || !c.IncomeAvailable {
+	if c.TotalLimitMinor != 99_000 || c.UnsecuredLimitMinor != 99_000 || !c.IncomeAvailable {
 		t.Fatalf("credit=%+v", c)
 	}
 	poolCapped := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 10_000_000, MonthlyExpenseMinor: 10_000_000, ObservedAt: now}}, 100_000, policy, now)
-	if poolCapped.TotalLimitMinor != 55_000 {
+	if poolCapped.TotalLimitMinor != 100_000 {
 		t.Fatalf("pool cap credit=%+v", poolCapped)
 	}
 	consumptionWeighted := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, MonthlyIncomeMinor: 100_000, MonthlyExpenseMinor: 10_000, ObservedAt: now}}, 1_000_000, policy, now)
@@ -114,15 +114,26 @@ func TestAssessCreditPolicyUsesWeightedIncomeAndConsumption(t *testing.T) {
 func TestAssessCreditPolicyFallsBackForZeroIncome(t *testing.T) {
 	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
 	policy := defaultCreditPolicy()
-	fallback := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
-	if fallback.TotalLimitMinor != 550_000 || fallback.IncomeAvailable {
-		t.Fatalf("zero income should use the funded pool fallback: credit=%+v", fallback)
+	zero := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
+	if zero.TotalLimitMinor != 0 || zero.IncomeAvailable {
+		t.Fatalf("zero income should pause credit by default: credit=%+v", zero)
 	}
 
-	policy.InsufficientIncomePolicy = "zero"
-	paused := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
-	if paused.TotalLimitMinor != 0 {
-		t.Fatalf("zero-income policy should pause credit: credit=%+v", paused)
+	policy.InsufficientIncomePolicy = "fallback_pool"
+	fallback := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{Income: IncomeEvidence{Available: true, Samples: 3, ObservedAt: now}}, 1_000_000, policy, now)
+	if fallback.TotalLimitMinor != 550_000 {
+		t.Fatalf("explicit fallback policy should use the funded pool: credit=%+v", fallback)
+	}
+}
+
+func TestAssessCreditAddsAssetSupportedCapacity(t *testing.T) {
+	now := time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC)
+	policy := defaultCreditPolicy()
+	c := assessCreditWithPolicy("account", store.CreditSignals{}, CreditEvidence{
+		AssetAvailable: true, AssetValueMinor: 1_000_000, Income: IncomeEvidence{Available: true, Samples: 1, MonthlyIncomeMinor: 100_000, ObservedAt: now},
+	}, 2_000_000, policy, now)
+	if c.AssetSupportLimitMinor != 100_000 || c.TotalLimitMinor != 169_300 {
+		t.Fatalf("asset support=%d total=%d, want 100000 and 169300", c.AssetSupportLimitMinor, c.TotalLimitMinor)
 	}
 }
 

@@ -110,6 +110,21 @@ func (s *Service) AllActiveCharacters(ctx context.Context) ([]OwnedCharacter, er
 	}
 	return result, nil
 }
+
+// AllUserIDs is exposed as a narrow host callback for periodic account-level
+// evaluations. The caller receives identifiers only; identity remains the
+// owner of the account query and loan keeps its own SQL private.
+func (s *Service) AllUserIDs(ctx context.Context) ([]string, error) {
+	rows, err := store.AllUserIDs(ctx, s.pool)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(rows))
+	for _, id := range rows {
+		out = append(out, id.String())
+	}
+	return out, nil
+}
 func (s *Service) UserForCharacter(ctx context.Context, id int64) (string, error) {
 	user, err := store.New(s.pool).UserForCharacter(ctx, id)
 	return user.String(), err

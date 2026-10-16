@@ -8113,13 +8113,15 @@ components:
     LoanCreditPolicy:
       type: object
       additionalProperties: false
-      required: [income_window_days, debt_ratio_bps, term_months, score_factor_bps, hard_cap_minor, guarantee_cap_bps, collateral_cap_bps, stale_after_hours, min_income_samples, insufficient_income_policy, version]
+      required: [income_window_days, annual_rate_bps, debt_ratio_bps, term_months, score_factor_bps, income_weight_bps, asset_credit_ltv_bps, guarantee_cap_bps, collateral_cap_bps, stale_after_hours, min_income_samples, insufficient_income_policy, version]
       properties:
         income_window_days: {type: integer, minimum: 30, maximum: 730}
+        annual_rate_bps: {type: integer, minimum: 0, maximum: 10000}
         debt_ratio_bps: {type: integer, minimum: 0, maximum: 10000}
         term_months: {type: integer, minimum: 1, maximum: 60}
         score_factor_bps: {type: integer, minimum: 0, maximum: 20000}
-        hard_cap_minor: {type: integer, format: int64, minimum: 0}
+        income_weight_bps: {type: integer, minimum: 0, maximum: 10000}
+        asset_credit_ltv_bps: {type: integer, minimum: 0, maximum: 10000, description: Personal asset-supported capacity ratio; 1000 bps is 10%}
         guarantee_cap_bps: {type: integer, minimum: 0, maximum: 10000}
         collateral_cap_bps: {type: integer, minimum: 0, maximum: 10000}
         stale_after_hours: {type: integer, minimum: 1, maximum: 8760}
@@ -8137,15 +8139,15 @@ components:
     LoanCollateralInput:
       type: object
       additionalProperties: false
-      required: [owner_account_id, contract_kind, contract_owner_id, contract_id, valuation_minor, haircut_bps, covered_minor]
+      required: [owner_account_id, contract_kind, contract_owner_id, contract_id, haircut_bps]
       properties:
         owner_account_id: {type: string, format: uuid}
         contract_kind: {type: string, enum: [character, corporation]}
         contract_owner_id: {type: string, pattern: '^[1-9][0-9]*$'}
         contract_id: {type: string, pattern: '^[1-9][0-9]*$'}
-        valuation_minor: {type: integer, format: int64, minimum: 1}
+        valuation_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server values the completed contract snapshot}
         haircut_bps: {type: integer, minimum: 1, maximum: 10000}
-        covered_minor: {type: integer, format: int64, minimum: 1}
+        covered_minor: {type: integer, format: int64, minimum: 0, description: Ignored; server applies the pool haircut}
         description: {type: string, maxLength: 500}
     LoanDecisionInput:
       type: object

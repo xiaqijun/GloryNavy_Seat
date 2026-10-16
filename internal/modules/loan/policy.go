@@ -16,7 +16,7 @@ func validCreditPolicy(p store.CreditPolicy) bool {
 	return p.Version > 0 && p.IncomeWindowDays >= 30 && p.IncomeWindowDays <= 730 &&
 		p.AnnualRateBPS >= 0 && p.AnnualRateBPS <= 10000 &&
 		p.DebtRatioBPS >= 0 && p.DebtRatioBPS <= 10000 && p.TermMonths >= 1 && p.TermMonths <= 60 &&
-		p.ScoreFactorBPS >= 0 && p.ScoreFactorBPS <= 20000 && p.IncomeWeightBPS >= 0 && p.IncomeWeightBPS <= 10000 &&
+		p.ScoreFactorBPS >= 0 && p.ScoreFactorBPS <= 20000 && p.IncomeWeightBPS >= 0 && p.IncomeWeightBPS <= 10000 && p.AssetCreditLTVBPS >= 0 && p.AssetCreditLTVBPS <= 10000 &&
 		p.GuaranteeCapBPS >= 0 && p.GuaranteeCapBPS <= 10000 && p.CollateralCapBPS >= 0 && p.CollateralCapBPS <= 10000 &&
 		p.StaleAfterHours >= 1 && p.StaleAfterHours <= 8760 && p.MinIncomeSamples >= 0 && p.MinIncomeSamples <= 12 &&
 		(p.InsufficientIncomePolicy == "fallback_pool" || p.InsufficientIncomePolicy == "zero")

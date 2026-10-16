@@ -34,6 +34,7 @@ type Pool struct {
 
 type Credit struct {
 	GuaranteeLimitMinor         int64     `json:"guarantee_limit_minor"`
+	AssetSupportLimitMinor      int64     `json:"asset_support_limit_minor"`
 	MonthlyIncomeMinor          int64     `json:"monthly_income_minor"`
 	MonthlyExpenseMinor         int64     `json:"monthly_expense_minor"`
 	IncomeAvailable             bool      `json:"income_available"`
@@ -82,17 +83,19 @@ type CreditSignals struct {
 }
 
 type CreditEvaluation struct {
-	ID                  int64           `json:"id,string"`
-	AccountID           string          `json:"account_id"`
-	PolicyVersion       string          `json:"policy_version"`
-	Score               int             `json:"score"`
-	TotalLimitMinor     int64           `json:"total_limit_minor"`
-	UnsecuredLimitMinor int64           `json:"unsecured_limit_minor"`
-	State               string          `json:"state"`
-	FactorScores        json.RawMessage `json:"factor_scores"`
-	Evidence            json.RawMessage `json:"evidence"`
-	EvidenceCutoff      time.Time       `json:"evidence_cutoff"`
-	EvaluatedAt         time.Time       `json:"evaluated_at"`
+	ID                     int64           `json:"id,string"`
+	AccountID              string          `json:"account_id"`
+	PolicyVersion          string          `json:"policy_version"`
+	Score                  int             `json:"score"`
+	TotalLimitMinor        int64           `json:"total_limit_minor"`
+	UnsecuredLimitMinor    int64           `json:"unsecured_limit_minor"`
+	GuaranteeLimitMinor    int64           `json:"guarantee_limit_minor"`
+	AssetSupportLimitMinor int64           `json:"asset_support_limit_minor"`
+	State                  string          `json:"state"`
+	FactorScores           json.RawMessage `json:"factor_scores"`
+	Evidence               json.RawMessage `json:"evidence"`
+	EvidenceCutoff         time.Time       `json:"evidence_cutoff"`
+	EvaluatedAt            time.Time       `json:"evaluated_at"`
 }
 
 type Case struct {
@@ -246,11 +249,11 @@ func CreditSignalsFor(ctx context.Context, db DBTX, account string) (CreditSigna
 func RecordCreditEvaluation(ctx context.Context, db DBTX, e CreditEvaluation) (CreditEvaluation, error) {
 	var out CreditEvaluation
 	err := db.QueryRow(ctx, `
-        INSERT INTO loan_credit_evaluations(account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at)
-        VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-        RETURNING id,account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at`,
-		e.AccountID, e.PolicyVersion, e.Score, e.TotalLimitMinor, e.UnsecuredLimitMinor, e.State, e.FactorScores, e.Evidence, e.EvidenceCutoff, e.EvaluatedAt).
-		Scan(&out.ID, &out.AccountID, &out.PolicyVersion, &out.Score, &out.TotalLimitMinor, &out.UnsecuredLimitMinor, &out.State, &out.FactorScores, &out.Evidence, &out.EvidenceCutoff, &out.EvaluatedAt)
+		INSERT INTO loan_credit_evaluations(account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,guarantee_limit_minor,asset_support_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at)
+		VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+		RETURNING id,account_id,policy_version,score,total_limit_minor,unsecured_limit_minor,guarantee_limit_minor,asset_support_limit_minor,state,factor_scores,evidence,evidence_cutoff,evaluated_at`,
+		e.AccountID, e.PolicyVersion, e.Score, e.TotalLimitMinor, e.UnsecuredLimitMinor, e.GuaranteeLimitMinor, e.AssetSupportLimitMinor, e.State, e.FactorScores, e.Evidence, e.EvidenceCutoff, e.EvaluatedAt).
+		Scan(&out.ID, &out.AccountID, &out.PolicyVersion, &out.Score, &out.TotalLimitMinor, &out.UnsecuredLimitMinor, &out.GuaranteeLimitMinor, &out.AssetSupportLimitMinor, &out.State, &out.FactorScores, &out.Evidence, &out.EvidenceCutoff, &out.EvaluatedAt)
 	return out, err
 }
 
@@ -528,6 +531,23 @@ func GetCollateral(ctx context.Context, db DBTX, id int64) (Collateral, error) {
 	var c Collateral
 	err := db.QueryRow(ctx, `SELECT id,case_id,owner_account_id,contract_kind,contract_owner_id,contract_id,items,valuation_minor,haircut_bps,covered_minor,state,version FROM loan_collateral WHERE id=$1`, id).Scan(&c.ID, &c.CaseID, &c.OwnerAccountID, &c.ContractKind, &c.ContractOwnerID, &c.ContractID, &c.Items, &c.ValuationMinor, &c.HaircutBPS, &c.CoveredMinor, &c.State, &c.Version)
 	return c, err
+}
+
+func CollateralItemsForAccount(ctx context.Context, db DBTX, account string) ([]json.RawMessage, error) {
+	rows, err := db.Query(ctx, `SELECT items FROM loan_collateral WHERE owner_account_id=$1::uuid AND state IN ('proposed','approved','held') ORDER BY id`, account)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []json.RawMessage{}
+	for rows.Next() {
+		var items json.RawMessage
+		if err := rows.Scan(&items); err != nil {
+			return nil, err
+		}
+		out = append(out, items)
+	}
+	return out, rows.Err()
 }
 
 func Audit(ctx context.Context, db DBTX, caseID int64, actor, action string, before, after any) error {

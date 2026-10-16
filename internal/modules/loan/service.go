@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"net/url"
 	"strconv"
@@ -97,6 +98,30 @@ type Service struct {
 	AccountForCharacter func(context.Context, int64) (string, error)
 	CreditEvidence      func(context.Context, string) (CreditEvidence, error)
 	IncomeEvidence      func(context.Context, string, time.Time) (IncomeEvidence, error)
+	CollateralValue     func(context.Context, json.RawMessage) (int64, error)
+}
+
+// PledgedCollateralQuantities exposes only the type/quantity totals needed to
+// keep periodic personal asset support from counting collateral twice.
+func (s *Service) PledgedCollateralQuantities(ctx context.Context, account string) (map[int64]int64, error) {
+	rows, err := store.CollateralItemsForAccount(ctx, s.db(), account)
+	if err != nil {
+		return nil, err
+	}
+	out := map[int64]int64{}
+	for _, raw := range rows {
+		items, err := collateralQuantities(raw)
+		if err != nil {
+			return nil, err
+		}
+		for typeID, quantity := range items {
+			if out[typeID] > math.MaxInt64-quantity {
+				return nil, ErrRule
+			}
+			out[typeID] += quantity
+		}
+	}
+	return out, nil
 }
 
 // GuaranteeCandidates exposes public character names for invitation selection.
@@ -394,7 +419,8 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 			}
 		}
 		cr, e := s.Credit(ctx, c.BorrowerAccountID)
-		if e != nil {
+		policy, pe := s.CreditPolicy(ctx)
+		if e != nil || pe != nil || !creditFresh(cr, policy, time.Now().UTC()) {
 			return store.Case{}, ErrRule
 		}
 		if cr.State != "active" {
@@ -457,7 +483,8 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 			}
 		}
 		evaluatedCredit, e = s.Credit(ctx, c.BorrowerAccountID)
-		if e != nil || evaluatedCredit.State != "active" {
+		policy, pe := s.CreditPolicy(ctx)
+		if e != nil || pe != nil || evaluatedCredit.State != "active" || !creditFresh(evaluatedCredit, policy, time.Now().UTC()) {
 			return store.Case{}, ErrRule
 		}
 		used, ue := store.UsedResponsibility(ctx, tx, c.BorrowerAccountID)
@@ -733,7 +760,7 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if ce != nil {
 		return store.Guarantee{}, ce
 	}
-	if credit.State != "active" {
+	if credit.State != "active" || !creditFresh(credit, policy, time.Now().UTC()) {
 		return store.Guarantee{}, ErrRule
 	}
 	usedResponsibility, ce := store.UsedResponsibility(ctx, s.db(), guarantor)
@@ -783,7 +810,8 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 			return g, ErrConflict
 		}
 		credit, e := s.Credit(ctx, actor)
-		if e != nil || credit.State != "active" {
+		policy, pe := s.CreditPolicy(ctx)
+		if e != nil || pe != nil || credit.State != "active" || !creditFresh(credit, policy, time.Now().UTC()) {
 			return g, ErrRule
 		}
 		tx, e := s.Pool.Begin(ctx)
@@ -845,7 +873,7 @@ func (s *Service) DecideGuarantee(ctx context.Context, actor string, id int64, i
 	return out, nil
 }
 func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in CollateralInput) (store.Collateral, error) {
-	if id <= 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 || in.ValuationMinor <= 0 || in.HaircutBPS < 1 || in.HaircutBPS > 10000 {
+	if id <= 0 || in.OwnerAccountID != actor || in.ContractKind != "character" && in.ContractKind != "corporation" || in.ContractOwnerID <= 0 || in.ContractID <= 0 || in.HaircutBPS < 1 || in.HaircutBPS > 10000 {
 		return store.Collateral{}, ErrInvalid
 	}
 	c, e := store.GetCase(ctx, s.db(), id)
@@ -865,21 +893,9 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	if json.Unmarshal(p.Config, &cfg) != nil || cfg.CollateralHaircutBPS < 1 || cfg.CollateralHaircutBPS > 10000 || in.HaircutBPS != cfg.CollateralHaircutBPS {
 		return store.Collateral{}, ErrRule
 	}
-	if in.CoveredMinor == 0 {
-		in.CoveredMinor = coveredByHaircut(in.ValuationMinor, in.HaircutBPS)
-	}
-	if in.CoveredMinor <= 0 {
-		return store.Collateral{}, ErrInvalid
-	}
-	if in.CoveredMinor > coveredByHaircut(in.ValuationMinor, in.HaircutBPS) {
-		return store.Collateral{}, ErrCoverage
-	}
 	policy, pe := s.CreditPolicy(ctx)
 	if pe != nil {
 		return store.Collateral{}, pe
-	}
-	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
-		return store.Collateral{}, ErrCoverage
 	}
 	if s.Contracts == nil {
 		return store.Collateral{}, ErrRule
@@ -890,6 +906,24 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	}
 	if len(in.Items) > 0 && !sameJSON(in.Items, contract.Items) {
 		return store.Collateral{}, ErrContract
+	}
+	if s.CollateralValue == nil {
+		return store.Collateral{}, ErrRule
+	}
+	valuation, ve := s.CollateralValue(ctx, contract.Items)
+	if ve != nil || valuation <= 0 {
+		return store.Collateral{}, ErrContract
+	}
+	// Client supplied valuation and coverage are intentionally ignored. The
+	// completed contract snapshot and pool haircut are the sole sources of
+	// collateral value.
+	in.ValuationMinor = valuation
+	in.CoveredMinor = coveredByHaircut(in.ValuationMinor, in.HaircutBPS)
+	if in.CoveredMinor <= 0 {
+		return store.Collateral{}, ErrInvalid
+	}
+	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
+		return store.Collateral{}, ErrCoverage
 	}
 	return store.AddCollateral(ctx, s.db(), id, actor, in.ContractKind, in.ContractOwnerID, in.ContractID, contract.Items, in.ValuationMinor, int64(in.HaircutBPS), in.CoveredMinor)
 }
