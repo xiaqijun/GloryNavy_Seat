@@ -6,7 +6,7 @@
 
 回归基线修复（TEST-01 / 中，2026-10-17）：未修改 `1081d98` 基线复现 `TestSyncRunRetentionMigrationRoundTrip`、`TestSlidingMigrationPreservesOutstandingBudget` 在 Goose 73 Down 的 dollar-quoted SQL 解析错误，以及 `TestSyncTransactionalDispatchAndDuplicateScanners` 预期 2 个作业但实际 3 个。修复迁移解析/断言与当前派发规则的一致性，并在合理超时预算下完成 EVE 全量回归；本轮 EVE 全量触发默认 10 分钟上限，不能计为通过。证据在本地 `.local/corporation-cleanup/backend.log`、`extra.log`；不属于本轮角色清理产生的失败。
 
-角色清理真实验收（CLEANUP-01）：Goose 90 与每周规则本地实现；生产需管理员选择军团名单、核对预览并启用，首轮执行后核对逐角色审计、主角色替换/无角色会话撤销和历史记录保留。默认关闭期间不视为已完成真实清理。实现/发布状态见[项目状态](project-status.md)。
+角色清理真实验收（CLEANUP-01）：Goose 90 与每周规则已随 `v0.1.0-corporation-cleanup-20261017` 发布，默认关闭；生产需管理员选择军团名单、核对预览并启用，首轮执行后核对逐角色审计、主角色替换/无角色会话撤销和历史记录保留。默认关闭期间不视为已完成真实清理。实现/发布状态见[项目状态](project-status.md)。
 
 | 编号 / 优先级 | 事项 | 当前事实 | 完成条件 |
 | --- | --- | --- | --- |

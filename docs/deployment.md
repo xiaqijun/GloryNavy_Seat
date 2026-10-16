@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## v0.1.0-corporation-cleanup-20261017 — 2026-10-17
+
+前后端来自干净且已推送的 `main` 提交 `2e86a3d04dc3038e176f67719328867acc03457b`，生产分支守卫通过。Goose 90 增加按军团每周清理的策略、归属保留和审计；管理员在 `/members` 配置及预览，首次启用保存 7 天后执行，完成后每周一次。生产保持 disabled、空白名单、next_run_at 空、removed/skipped 0、归属保留记录 0；共享 River 的 `identity.corporation-cleanup.v1` 已完成 1 次空扫描。没有实际清理生产角色或创建测试业务记录。
+
+应用和公网边缘 current 均已切换；active/running、ready、NRestarts=0、Goose 90。首页、`/members`、`/account` 均 200；新策略 GET/PUT、预览 POST、成员和贷款上下文匿名均 401。SHA256 清单、OpenResty `nginx -t` 和公网入口 HTML 一致性通过，HTML SHA256 为 `b4db1e628ef062fdcc8dafab96e4fb81913660a54afa9b915ff570563197064e`。备份 `/var/backups/glorynavy/before-v0.1.0-corporation-cleanup-20261017-20261016T164908Z.dump`（453883405 bytes）及同前缀环境备份均为 0600，旧发布保留。首次真实启用按 CLEANUP-01 验收。
+
+独立 PostgreSQL 的 identity、宿主/server 回归通过；5 项清理专项覆盖按角色/主角色/最后角色、13 类不确定事实、账号及账本保留、失败回滚、25 账号批次续跑、归属恢复与合并、管理员/CSRF/版本检查、未知账号不修改及 Goose 90 Down 保护，相关 go vet 通过。前端类型/构建、7 项单元测试、9 项桌面/375px/320px 中英文浏览器检查、1 项原成员流程回归通过，截图已检查；lint 无错误，4 项既有警告保留。扩大 EVE 全量回归遇到 3 项基线失败及默认 10 分钟超时，失败均在未修改 `1081d98` 复现，记录 TEST-01，不声称全量通过。
+
+GitNexus staged 检查识别 33 文件、13 条调用链，因应用启动/SSO/账号合并涉及范围标记 high，已提示并复核实际差异及上述专项边界。日志、截图和备份校验在本地 `.local/corporation-cleanup/`；测试容器已清理，本地预览已停止。回退前关闭规则并取消该 kind 的未结束作业；已产生保留归属后禁止回退不识别该表的程序或删除该表，详见[清理指南](integrations/corporation-cleanup.zh-CN.md)。
+
 ## v0.1.0-workspace-income-20261016 — 2026-10-16
 
 前后端来自干净且已推送的 `main` 提交 `3a11d88bcb23ebe908c5e38345256b4a8afe8379`，生产分支守卫通过。工作台赚钱/花钱速度使用扣除直接转账后的精确月度汇总，先取每笔流水最新版本再按类型排除玩家捐助和三类军团直接转账。原始收支、余额、流水与贷款收支输入不变，无迁移，Goose 89；已有本月流水读取时重算。前后端一起发布，旧前端仍可读原字段；新前端遇到旧后端缺少统计字段时显示不可用。
