@@ -1,5 +1,13 @@
 # Linux 生产部署
 
+## v0.1.0-loan-submit-fix-20261016 — 2026-10-16
+
+已发布后端，来源为已推送且干净的 `main` 提交 `7a2e72a52313934d5790be674b5c65c5b75b7e38`。修复借款申请 SQL 的金额参数推断和申请/付款角色 ID 的驱动编码问题；5 个 Go 二进制从该提交构建，前端复用上一发布包，公网边缘继续保持 `v0.1.0-loan-asset-evidence-20261014-r5`。
+
+现有激活脚本在切换前完成数据库及配置备份，文件为 `/var/backups/glorynavy/before-v0.1.0-loan-submit-fix-20261016-20261016T073829Z.{dump,env}`。应用已切换至新目录；`active/ready`、`NRestarts=0`、二进制 `vcs.revision` 与 `vcs.modified=false`、Goose 86 均已核对，无新增迁移。公网首页和 `/loans/operations` 为 200，匿名 `GET /api/v1/loan/context` 与 `POST /api/v1/loan/applications` 为 401。
+
+独立 PostgreSQL 18.6 测试库复现旧申请 503，修复后申请提交、冻结条款、审计、未绑定角色拒绝、待核验出借及放款/还款记录创建通过；贷款模块、宿主应用测试与相关 `go vet` 通过。没有在生产库创建测试借款、出借或付款记录，真实成员提交与合同交付仍需业务验收。
+
 ## v0.1.0-loan-asset-evidence-20261014-r5 — 2026-10-14
 
 修复资产授信证据被 ESI 大响应体限制清零的问题：资产分页和全服市场均价表使用受控的 8 MiB 响应上限，未报价物品跳过并保留其他可报价资产，部分角色读取失败记录在快照证据中。规则版本递增后 River 自动重评估现有账号；最新 29 条快照均为 `capacity-v6`，其中 28 条有正资产估值、24 条产生资产支持额度，1 条仍需 EVE 授权续期。Goose 保持 86，应用服务 active、`/health/ready` ready，贷款队列评估任务完成；公网边缘 current 已切换同名版本，首页和贷款页面 200，OpenResty `nginx -t` 通过。贷款模块、宿主应用和 EVE 模块测试通过。
