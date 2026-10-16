@@ -175,6 +175,8 @@ type ApplicationInput struct {
 	// FirstDueAt is retained for old clients but ignored. The server derives
 	// the first due time from successful disbursement plus the selected interval.
 	FirstDueAt string `json:"first_due_at,omitempty"`
+	// RepaymentDate selects a fixed maturity for a single-payment application.
+	RepaymentDate string `json:"repayment_date,omitempty"`
 }
 
 const interestDayCountBasis = int64(365)
@@ -297,7 +299,11 @@ func (s *Service) CanManageSharedPool(ctx context.Context, actor string) (bool, 
 	return s.canManage(ctx, actor, p)
 }
 func (s *Service) CreateApplication(ctx context.Context, actor string, in ApplicationInput) (store.Case, error) {
-	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 || in.InstallmentCount < 1 || in.InstallmentCount > 120 || !validLoanIntervalDays(in.IntervalDays) {
+	intervalDays, requestedDue, err := applicationSchedule(in, time.Now().UTC())
+	if err != nil {
+		return store.Case{}, err
+	}
+	if in.PoolID <= 0 || in.BorrowerCharacterID <= 0 || in.PrincipalMinor <= 0 || in.InterestMinor < 0 {
 		return store.Case{}, ErrInvalid
 	}
 	if s.Characters == nil {
@@ -345,7 +351,7 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 	if e != nil || !validCreditPolicy(policy) {
 		return store.Case{}, ErrRule
 	}
-	interest, e := simpleAnnualInterest(in.PrincipalMinor, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays)
+	interest, e := simpleAnnualInterest(in.PrincipalMinor, policy.AnnualRateBPS, in.InstallmentCount, intervalDays)
 	if e != nil {
 		return store.Case{}, e
 	}
@@ -354,7 +360,7 @@ func (s *Service) CreateApplication(ctx context.Context, actor string, in Applic
 		return store.Case{}, e
 	}
 	defer tx.Rollback(ctx)
-	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, in.BorrowerCharacterID, in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, in.IntervalDays, nil)
+	c, e := store.CreateCase(ctx, tx, publicID("LND"), in.PoolID, actor, in.BorrowerCharacterID, in.PrincipalMinor, interest, policy.AnnualRateBPS, in.InstallmentCount, intervalDays, nil, requestedDue)
 	if e != nil {
 		return store.Case{}, e
 	}
@@ -664,14 +670,7 @@ func (s *Service) CreatePayment(ctx context.Context, actor string, id int64, in 
 		return store.Payment{}, e
 	}
 	if in.Kind == "disbursement" {
-		fundedAt := time.Now().UTC()
-		c, e = store.ActivateCase(ctx, tx, id, c.Version, actor, fundedAt.AddDate(0, 0, c.IntervalDays), fundedAt)
-		if e == nil && c.FirstDueAt == nil {
-			e = ErrRule
-		}
-		if e == nil {
-			e = store.CreateInstallments(ctx, tx, id, repaymentInstallments(c.PrincipalMinor, c.InterestMinor, c.InstallmentCount, c.IntervalDays, *c.FirstDueAt))
-		}
+		c, e = activateFundedCase(ctx, tx, c, actor, contract, time.Now().UTC())
 	} else {
 		inst, e2 := store.Installments(ctx, tx, id)
 		if e2 != nil {

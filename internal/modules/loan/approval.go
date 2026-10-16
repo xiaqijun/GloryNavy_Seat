@@ -39,8 +39,9 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 			Installments      int        `json:"installment_count"`
 			IntervalDays      int        `json:"interval_days"`
 			FirstDueAt        *time.Time `json:"first_due_at,omitempty"`
+			RequestedDueAt    *time.Time `json:"requested_due_at,omitempty"`
 			State             string     `json:"state"`
-		}{c.ID, c.PublicID, c.Version, c.PoolID, c.PoolName, c.CorporationID, c.BorrowerAccountID, c.BorrowerCharacterID, c.PrincipalMinor, c.InterestMinor, c.TotalDueMinor, c.InstallmentCount, c.IntervalDays, c.FirstDueAt, c.State})
+		}{c.ID, c.PublicID, c.Version, c.PoolID, c.PoolName, c.CorporationID, c.BorrowerAccountID, c.BorrowerCharacterID, c.PrincipalMinor, c.InterestMinor, c.TotalDueMinor, c.InstallmentCount, c.IntervalDays, c.FirstDueAt, c.RequestedDueAt, c.State})
 		out = append(out, reviewqueue.Item{Source: "loan", ID: c.ID, Version: c.Version, Account: c.BorrowerAccountID, ProcessedBy: c.ProcessedBy, History: c.History, Action: c.Action, Corporation: strconv.FormatInt(*c.CorporationID, 10), Kind: "loan", State: c.State, Status: c.State, Recipient: strconv.FormatInt(c.BorrowerCharacterID, 10), Title: c.PoolName, Reference: c.PublicID, Amount: c.PrincipalMinor, Unit: "isk", Time: c.OccurredAt, Payload: payload})
 	}
 	return out, nil
@@ -126,7 +127,7 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
      'pool_id',c.pool_id::text,'pool_name',p.name,'corporation_id',p.corporation_id::text,
      'borrower_account_id',c.borrower_account_id::text,'borrower_character_id',c.borrower_character_id::text,
      'principal_minor',c.principal_minor,'interest_minor',c.interest_minor,'total_due_minor',c.total_due_minor,
-     'installment_count',c.installment_count,'interval_days',c.interval_days,'first_due_at',c.first_due_at,
+     'installment_count',c.installment_count,'interval_days',c.interval_days,'first_due_at',c.first_due_at,'requested_due_at',c.requested_due_at,
      'state',c.state,'review_note',c.review_note,'created_at',c.created_at)) item
  FROM loan_cases c
  JOIN loan_pools p ON p.id=c.pool_id

@@ -12,9 +12,13 @@ import (
 	"glorynavy.local/seat/internal/modules/loan/internal/store"
 )
 
-// ISK entered in new custodial contracts is a whole number. Bound values also
+// Contributions and guarantees use whole ISK. Bound values also
 // stay inside the frontend's exact integer range.
 func validCash(amount int64) bool { return amount > 0 && amount%100 == 0 && amount <= 9007199254740900 }
+
+// Repayments include fixed interest rounded to 0.01 ISK. Contributions retain
+// their separate whole-ISK validation.
+func validLoanPaymentAmount(amount int64) bool { return amount > 0 && amount <= 9007199254740900 }
 
 type ContributionInput struct {
 	LenderKind        string `json:"lender_kind"`
@@ -43,7 +47,7 @@ func exactAmount(value string, amount int64) bool {
 // alone is not evidence of receipt. New pool entries require complete cash-only
 // snapshots and a completed acceptor, with exactly one nonzero cash direction.
 func cashMatches(c Contract, payer, receiver cashParty, amount int64) bool {
-	if !validCash(amount) || c.Type != "item_exchange" || c.Status != "finished" || c.Completed == "" || !c.ItemsReady {
+	if !validLoanPaymentAmount(amount) || c.Type != "item_exchange" || c.Status != "finished" || c.Completed == "" || !c.ItemsReady {
 		return false
 	}
 	var items []json.RawMessage
@@ -517,7 +521,7 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 		payer, receiver = receiver, payer
 		amount = in.ExpectedMinor
 	}
-	if !validCash(amount) || partyEqual(payer, receiver) {
+	if !validLoanPaymentAmount(amount) || partyEqual(payer, receiver) {
 		return store.Payment{}, ErrInvalid
 	}
 	ok, e := s.ownsCharacter(ctx, c.BorrowerAccountID, c.BorrowerCharacterID)
@@ -553,14 +557,7 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	delta := amount
 	if in.Kind == "disbursement" {
 		delta = -amount
-		fundedAt := time.Now().UTC()
-		c, e = store.ActivateCase(ctx, tx, id, c.Version, actor, fundedAt.AddDate(0, 0, c.IntervalDays), fundedAt)
-		if e == nil && c.FirstDueAt == nil {
-			e = ErrRule
-		}
-		if e == nil {
-			e = store.CreateInstallments(ctx, tx, id, repaymentInstallments(c.PrincipalMinor, c.InterestMinor, c.InstallmentCount, c.IntervalDays, *c.FirstDueAt))
-		}
+		c, e = activateFundedCase(ctx, tx, c, actor, contract, time.Now().UTC())
 	} else {
 		inst, err := store.Installments(ctx, tx, id)
 		if err != nil {

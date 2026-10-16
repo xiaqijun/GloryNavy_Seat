@@ -19,6 +19,7 @@ export type LoanApproval = {
   installment_count: number;
   interval_days: number;
 	first_due_at: string | null;
+  requested_due_at?: string | null;
   state: string;
   review_note: string;
   created_at: string;

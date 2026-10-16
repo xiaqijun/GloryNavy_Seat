@@ -8086,15 +8086,17 @@ components:
     LoanApplicationInput:
       type: object
       additionalProperties: false
-      required: [pool_id, borrower_character_id, principal_minor, interest_minor, installment_count, interval_days, first_due_at]
+      required: [pool_id, borrower_character_id, principal_minor, installment_count]
+      description: Single-payment loans choose either interval_days (1–365) or repayment_date; installments use 1, 3, 7, 14 or 30 day intervals. Dates are Beijing calendar dates from tomorrow through 365 days ahead. Pool installment limits still apply.
       properties:
-        pool_id: {type: string, pattern: '^[1-9][0-9]*$'}
-        borrower_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        pool_id: {type: integer, format: int64, minimum: 1}
+        borrower_character_id: {type: integer, format: int64, minimum: 1}
         principal_minor: {type: integer, format: int64, minimum: 100}
-        interest_minor: {type: integer, format: int64, minimum: 0}
-        installment_count: {type: integer, minimum: 1, maximum: 120}
-        interval_days: {type: integer, minimum: 1, maximum: 365}
-        first_due_at: {type: string, format: date-time}
+        interest_minor: {type: integer, format: int64, minimum: 0, deprecated: true, description: Ignored compatibility field; the server calculates interest}
+        installment_count: {type: integer, minimum: 1, maximum: 120, description: Use 1 for one payment at maturity}
+        interval_days: {type: integer, minimum: 0, maximum: 365, description: Required positive term unless repayment_date is supplied; must be omitted or zero with repayment_date}
+        repayment_date: {type: string, format: date, description: Optional single-payment deadline at 23:59:59 Asia/Shanghai. Annual rate is frozen on application; quoted interest is finalized using the verified disbursement contract date with a minimum of one day and cannot increase. Returned as requested_due_at; first_due_at stays empty until verified funding}
+        first_due_at: {type: string, format: date-time, deprecated: true, description: Ignored compatibility field; use repayment_date for a fixed maturity}
     LoanCustodianInput:
       type: object
       additionalProperties: false

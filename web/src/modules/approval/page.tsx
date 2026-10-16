@@ -1,3 +1,4 @@
+import { RepaymentSummary } from "@/modules/loan/repayment";
 import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -979,9 +980,8 @@ function LoanDetail({
         <div><span>{msg("编号")}</span><strong>{payload.public_id || item.reference}</strong></div>
         <div><span>{msg("贷款池")}</span><strong>{payload.pool_name || item.title}</strong></div>
         <div><span>{msg("本金")}</span><strong>{formatMinor(payload.principal_minor)}</strong></div>
-        <div><span>{msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
-        <div><span>{msg("期数")}</span><strong>{payload.installment_count}</strong></div>
-        <div><span>{msg("间隔天数")}</span><strong>{payload.interval_days}</strong></div>
+        <div><span>{payload.requested_due_at && !payload.first_due_at ? msg("预计总应还") : msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
+        <RepaymentSummary item={payload} />
       </div>
       {message && <p role="alert">{message}</p>}
       <div className="approval-modal-actions">
