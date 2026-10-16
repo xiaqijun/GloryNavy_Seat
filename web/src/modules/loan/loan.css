@@ -94,7 +94,7 @@
   background: var(--card);
   box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
 }
-.loan-dashboard-metrics span {
+.loan-dashboard-metrics > div > span {
   display: block;
   color: var(--muted);
   font-size: 13px;
@@ -132,82 +132,28 @@
   gap: 24px;
   align-items: stretch;
 }
-.loan-credit-metric {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--background);
-}
-.loan-credit-metric span {
-  color: var(--muted);
-  font-size: 13px;
-}
-.loan-credit-metric strong {
-  overflow-wrap: anywhere;
-  font-size: 18px;
-}
-.loan-credit-metric strong small {
-  margin-left: 3px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-.loan-dashboard-panel {
-  display: grid;
-  gap: 16px;
-}
-.loan-credit-summary {
-  display: grid;
-  gap: 16px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
-}
-.loan-credit-summary > .loan-section-head {
-  align-items: end;
-}
-.loan-credit-overview {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.loan-credit-metric {
-  align-content: center;
-  min-height: 112px;
-}
-.loan-credit-metric strong {
-  font-size: 28px;
-  line-height: 1.15;
-}
-.loan-credit-limit strong {
-  color: var(--primary);
-}
-.loan-credit-metric > small {
-  color: var(--muted);
-  font-size: 12px;
-}
-.loan-business-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
-  grid-template-areas:
-    "actions actions"
-    "loans guarantees"
-    "loans contributions";
-  gap: 24px;
-  align-items: start;
-}
-.loan-business-layout > .loan-action-card { grid-area: actions; }
-.loan-business-loans { grid-area: loans; min-width: 0; }
-.loan-business-guarantees { grid-area: guarantees; min-width: 0; }
-.loan-business-contributions { grid-area: contributions; min-width: 0; }
+.loan-dashboard-panel { display: grid; gap: 16px; }
+.loan-page[data-view="business"] { gap: 16px; }
+.loan-credit-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin: 0; min-width: 0; }
+.loan-credit-summary dt { color: var(--muted); font-size: 13px; }
+.loan-credit-summary dd { margin: 4px 0 0; font-size: 22px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.loan-credit-summary dd small { margin-left: 3px; font-size: 13px; font-weight: 400; color: var(--muted); }
+.loan-credit-limit dd { color: var(--primary); }
+.loan-business-layout { display: grid; gap: 16px; min-width: 0; container: loan-workspace / inline-size; }
+.loan-business-loans, .loan-business-guarantees, .loan-business-contributions { min-width: 0; }
+.loan-business-secondary { display: grid; gap: 16px; align-items: start; min-width: 0; }
+.loan-business-contributions { container: loan-deposits / inline-size; }
+.loan-business-layout > .loan-list, .loan-business-secondary > .loan-list { padding: 20px; }
+.loan-business-layout .loan-section-head h2 { margin: 0; font-size: 18px; }
+.loan-business-layout .loan-table-wrap { margin-top: 12px; }
+.loan-business-layout .loan-cases-table th, .loan-business-layout .loan-cases-table td { padding: 8px 12px; }
+.loan-business-layout .loan-cases-table td:first-child { white-space: normal; overflow-wrap: anywhere; }
+.loan-empty-inline { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+.loan-business-layout .loan-contributions { gap: 0; margin-top: 8px; }
+.loan-business-layout .loan-contribution { padding: 12px 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.loan-business-layout .loan-contribution:last-child { border-bottom: 0; padding-bottom: 0; }
+.loan-business-layout .loan-deposit-list { margin-top: 8px; }
+.loan-business-layout .loan-deposit-row { min-height: 60px; padding: 10px 0; gap: 12px; }
 .loan-pool-private {
   display: flex;
   align-items: center;
@@ -344,35 +290,9 @@
   margin: 0;
   font-size: 16px;
 }
-.loan-action-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
-}
-.loan-action-option {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: center;
-  min-width: 0;
-  padding: 4px;
-}
-.loan-action-option + .loan-action-option { border-left: 1px solid var(--border); padding-left: 20px; }
-.loan-action-option strong {
-  display: block;
-  font-size: 15px;
-}
-.loan-action-option > [data-slot="button"] {
-  flex-shrink: 0;
-}
-.loan-action-card > .loan-form-message {
-  grid-column: 1 / -1;
-  margin: 0;
-}
+.loan-business-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: 0 1px 2px rgb(15 23 42 / 5%); }
+.loan-business-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.loan-business-toolbar > .loan-form-message { flex-basis: 100%; margin: 0; }
 .loan-application-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 0;
@@ -465,7 +385,7 @@
 .loan-contribution strong {
   font-size: 18px;
 }
-.loan-contribution span {
+.loan-contribution > div > span {
   color: var(--muted);
   font-size: 13px;
 }
@@ -634,14 +554,6 @@
   }
 }
 @media (max-width: 800px) {
-  .loan-business-layout {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "actions"
-      "guarantees"
-      "contributions"
-      "loans";
-  }
   .loan-credit,
   .loan-form,
   .loan-application-form,
@@ -651,11 +563,6 @@
   }
   .loan-dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .loan-dashboard-overview { grid-template-columns: 1fr; }
-  .loan-action-card {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .loan-action-option + .loan-action-option { border-top: 1px solid var(--border); border-left: 0; padding: 20px 8px 8px; }
   .loan-contract-copy-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -669,7 +576,6 @@
   .loan-dashboard-metrics > div,
   .loan-dashboard-panel,
   .loan-dashboard-overview,
-  .loan-credit-summary,
   .loan-apply,
   .loan-list,
   .loan-admin {
@@ -682,30 +588,43 @@
   }
 }
 
-.loan-repayment-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-}
+.loan-application-form, .loan-contribution-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.loan-repayment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 12px; }
 .loan-terms-help { grid-column: 1 / -1; color: var(--muted); font-size: 14px; }
 .loan-terms-help summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--foreground); }
 .loan-terms-help summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .loan-terms-help p { margin: 4px 0 0; line-height: 1.6; }
 .loan-case-actions > button + button { margin-left: 8px; }
+@container loan-workspace (min-width: 900px) {
+  .loan-business-secondary:has(> .loan-business-contributions) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container loan-deposits (max-width: 480px) {
+  .loan-business-layout .loan-deposit-row { grid-template-columns: minmax(0, 1fr) 18px; gap: 8px 12px; }
+  .loan-deposit-row > svg { grid-column: 2; grid-row: 1 / 4; }
+  .loan-deposit-amount { text-align: left; }
+}
 @media (max-width: 800px) {
-  .loan-repayment-fields { grid-template-columns: minmax(0, 1fr); }
-  .loan-action-option + .loan-action-option { padding: 14px 4px 4px; }
+  .loan-business-layout > .loan-list, .loan-business-secondary > .loan-list { padding: 16px; }
+  .loan-business-toolbar { padding: 16px; }
+  .loan-credit-summary { gap: 12px 20px; }
+  .loan-credit-summary dd { font-size: 20px; }
+  .loan-business-actions { width: 100%; }
+  .loan-business-actions > button { flex: 1; }
+}
+@container loan-workspace (max-width: 760px) {
   .loan-cases-table { min-width: 0 !important; }
   .loan-cases-table thead { display: none; }
-  .loan-cases-table tbody { display: grid; gap: 16px; }
-  .loan-cases-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border); }
-  .loan-cases-table td { padding: 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
-  .loan-cases-table td::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 12px; color: var(--muted); }
-  .loan-cases-table td:first-child, .loan-cases-table td:nth-child(4), .loan-cases-table .loan-case-actions { grid-column: 1 / -1; }
-  .loan-cases-table .loan-case-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .loan-case-actions::before { display: none !important; }
+  .loan-cases-table tbody { display: grid; }
+  .loan-cases-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .loan-cases-table tr:last-child { border-bottom: 0; padding-bottom: 0; }
+  .loan-business-layout .loan-cases-table td { padding: 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .loan-cases-table td:nth-child(2) { max-width: 132px; }
+  .loan-cases-table td:nth-child(3), .loan-cases-table td:nth-child(4) { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; white-space: nowrap; }
+  .loan-cases-table td:nth-child(3)::before, .loan-cases-table td:nth-child(4)::before { content: attr(data-label); font-size: 13px; color: var(--muted); }
+  .loan-cases-table .loan-case-actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
   .loan-case-actions > button + button { margin-left: 0; }
+}
+@media (max-width: 520px) {
+  .loan-application-form, .loan-contribution-form, .loan-repayment-fields { grid-template-columns: minmax(0, 1fr); }
+  .loan-credit-summary dd { font-size: 18px; }
 }
