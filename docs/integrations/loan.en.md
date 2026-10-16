@@ -1,5 +1,7 @@
 # Loan module
 
+Guarantor details (2026-10-16): `GET /api/v1/loan/cases/{id}` adds optional `guarantor_character_name` to `guarantees[]`. After existing case-object authorization, the host-injected `CharacterNames` resolves positive stored character IDs in one deduplicated batch, independently of the invitation candidate directory. Ownership and decision audits remain unchanged. Empty names, a missing resolver or lookup errors omit the name while preserving all records and IDs; an empty list remains `[]`. The UI displays each guarantor, exact amount and state, falling back from name to character ID and then the legacy guarantor account. Only the detail response gains this display field; creation/decision responses are unchanged. No migration.
+
 Loan detail identities added on 2026-10-16: show the case's `pool_name` as the lender, falling back to the matching pool context name or pool ID, with a shared-pool marker where applicable. Show the pool's current `custodian_character_name` as the current loan officer, falling back to the character ID; distinguish an unconfigured officer from unavailable pool context. Shared-pool contributions are not allocated from an individual contributor to each case. The current officer is not evidence of the original contributor or historical disbursement character. This uses existing authorized context/detail responses, with no API or migration change.
 
 ## One personal limit (2026-10-16)

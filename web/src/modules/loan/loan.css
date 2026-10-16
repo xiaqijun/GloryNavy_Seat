@@ -534,6 +534,8 @@
 .loan-detail-terms { font-size: 14px; }
 .loan-detail-terms p { margin: 6px 0; line-height: 1.5; }
 .loan-detail-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.loan-guarantee-record + .loan-guarantee-record { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.loan-guarantee-amount { margin: 6px 0 0; font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .loan-installments { display: grid; gap: 0; margin-top: 12px; }
 .loan-installment { padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
 .loan-installment > div { display: flex; justify-content: space-between; gap: 12px; }

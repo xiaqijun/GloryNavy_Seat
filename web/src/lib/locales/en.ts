@@ -2761,4 +2761,5 @@ export const english: Record<string, string> = {
   "暂无处理人信息": "Officer information unavailable",
   "贷款池 #{0}": "Loan pool #{0}",
 
+  "担保账号 {0}": "Guarantor account {0}",
 };

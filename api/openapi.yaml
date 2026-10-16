@@ -7862,6 +7862,7 @@ paths:
       operationId: loanCaseDetail
       security: [{SessionCookie: []}]
       summary: Read a visible loan case and its security records
+      description: Each guarantees item includes optional guarantor_character_name, resolved in one batch from stored positive character IDs after case-object authorization. Missing names or lookup failure omit the name without failing the detail read. Existing IDs, amounts, states and ownership are unchanged; empty guarantees remain an array. The UI falls back to character ID, then guarantor account for legacy records without a character.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       responses:
         '200': {description: Loan case, installments, guarantees and collateral}

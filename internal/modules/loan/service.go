@@ -1108,7 +1108,7 @@ func (s *Service) Detail(ctx context.Context, actor string, id int64) (map[strin
 	if e != nil {
 		return nil, e
 	}
-	return map[string]any{"case": c, "installments": ins, "guarantees": gs, "collateral": cs, "collateral_requests": requests}, nil
+	return map[string]any{"case": c, "installments": ins, "guarantees": s.guaranteeDetails(ctx, gs), "collateral": cs, "collateral_requests": requests}, nil
 }
 func (s *Service) Guarantees(ctx context.Context, actor string) ([]store.Guarantee, error) {
 	return store.ListGuaranteesForAccount(ctx, s.db(), actor)
