@@ -414,7 +414,7 @@ func ReadWallet(ctx context.Context, db DBTX, f WalletFilter) ([]WalletRow, erro
  AND ($9::text='' OR strpos(lower(coalesce(w.payload->>'description','')||' '||coalesce(w.payload->>'reason','')),lower($9))>0 OR w.record_id::text=$9)
  AND ($10::text='' OR w.payload->>'ref_type'=$10)
  AND ($11::bigint=0 OR w.payload->>'first_party_id'=$11::text OR w.payload->>'second_party_id'=$11::text OR w.payload->>'client_id'=$11::text OR (w.owner_kind='character' AND w.kind='journal' AND w.payload->>'tax_receiver_id'=$11::text))
- AND ($12::text='' OR ($12='in' AND (w.payload->>'amount')::numeric>0)
+ AND ($12::text='' OR ($12='in' AND ((w.payload->>'amount')::numeric + CASE WHEN w.owner_kind='character' AND w.kind='journal' THEN greatest(coalesce((w.payload->>'tax')::numeric,0),0) ELSE 0 END)>0)
  OR ($12='out' AND ((w.payload->>'amount')::numeric<0 OR (w.owner_kind='character' AND w.kind='journal' AND (w.payload->>'tax')::numeric>0)))
  OR ($12='tax' AND w.owner_kind='character' AND w.kind='journal' AND (w.payload->>'tax')::numeric>0)
  OR ($12='buy' AND (w.payload->>'is_buy')::boolean) OR ($12='sell' AND NOT (w.payload->>'is_buy')::boolean))

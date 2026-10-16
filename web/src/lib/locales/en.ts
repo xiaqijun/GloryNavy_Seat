@@ -1,5 +1,11 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "军团税": "Corporation tax",
+  "税前收入": "Before tax",
+  "税前收入（ISK）": "Before tax (ISK)",
+  "实际到账（ISK）": "Net received (ISK)",
+  "查看交税记录 {0}": "View tax record {0}",
+  "税前收入减去军团税，等于实际到账。两行关联同一笔原始流水。": "Income before tax minus corporation tax equals the net received amount. Both rows refer to the same source journal entry.",
   "交税": "Tax",
   "到账 {0}": "Received {0}",
   "代扣税 −{0}": "Tax withheld −{0}",

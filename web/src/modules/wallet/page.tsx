@@ -21,7 +21,7 @@ import { IconAction } from "@/components/ui/icon-action";
 import { Modal } from "@/components/ui/dialog";
 import * as api from "./api";
 import { JournalAmount } from "./journal-amount";
-import { hasWithheldTax } from "./tax";
+import { grossAmount, journalRows, type JournalRow } from "./journal-rows";
 import "./wallet.css";
 
 const date = (v?: string) =>
@@ -232,7 +232,7 @@ function History({
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [advanced, setAdvanced] = useState(false);
   const [pages, setPages] = useState([""]);
-  const [selected, setSelected] = useState<api.Row | null>(null);
+  const [selected, setSelected] = useState<JournalRow | null>(null);
   const [error, setError] = useState("");
   const before = pages[pages.length - 1];
   const q = useQuery({
@@ -279,6 +279,13 @@ function History({
   const party = (id?: string) => (id && id !== "0" ? names[id] || id : "—");
   const field = (k: string, v: string) => setDraft((d) => ({ ...d, [k]: v }));
   const journal = part === "journal";
+  const rows = journal
+    ? journalRows(
+        q.data?.items || [],
+        owner.kind === "character" ? owner.id : undefined,
+        filters.direction,
+      )
+    : q.data?.items || [];
   return (
     <section
       className="wallet-history"
@@ -415,13 +422,6 @@ function History({
           </div>
         )}
       </form>
-      {journal &&
-        owner.kind === "character" &&
-        (filters.direction === "out" || filters.direction === "tax") && (
-          <p className="wallet-tax-help">
-            {msg("代扣税附在收入流水中，到账金额已扣税。")}
-          </p>
-        )}
       {error && <p role="alert">{error}</p>}
       {q.isError && (
         <p role="alert">
@@ -437,7 +437,7 @@ function History({
             {msg("正在读取")}{" "}
           </p>
         )
-      ) : q.data.items.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="wallet-empty">{msg("暂无符合条件的记录")}</p>
       ) : (
         <div
@@ -463,8 +463,13 @@ function History({
               </tr>
             </thead>
             <tbody>
-              {q.data.items.map((row) => (
-                <tr key={`${row.id}:${row.entry_key || ""}`}>
+              {rows.map((row: JournalRow) => (
+                <tr
+                  key={`${row.id}:${row.entry_key || ""}:${row.display_kind || "original"}`}
+                  className={
+                    row.display_kind === "tax" ? "wallet-tax-row" : undefined
+                  }
+                >
                   <td>
                     <time dateTime={row.date}>{date(row.date)}</time>
                   </td>
@@ -472,8 +477,13 @@ function History({
                     {journal ? (
                       <>
                         <strong className="wallet-journal-type">
-                          {api.refLabel(row.ref_type)}
+                          {row.display_kind === "tax"
+                            ? msg("军团税")
+                            : api.refLabel(row.ref_type)}
                         </strong>
+                        {row.display_kind === "gross" && (
+                          <span className="wallet-note">{msg("税前收入")}</span>
+                        )}
                         {row.reason && (
                           <span className="wallet-note">{row.reason}</span>
                         )}
@@ -493,15 +503,15 @@ function History({
                     {journal ? (
                       <>
                         <span>{party(row.first_party_id)}</span>
-                        <span className="wallet-note">
+                        <span
+                          className={
+                            row.display_kind === "tax"
+                              ? "wallet-tax-recipient"
+                              : "wallet-note"
+                          }
+                        >
                           {party(row.second_party_id)}
                         </span>
-                        {owner.kind === "character" &&
-                          hasWithheldTax(row.tax) && (
-                            <span className="wallet-tax-party">
-                              {msg("收税军团：{0}", party(row.tax_receiver_id))}
-                            </span>
-                          )}
                       </>
                     ) : (
                       party(row.client_id)
@@ -512,14 +522,7 @@ function History({
                   )}
                   <td className="wallet-number">
                     {journal ? (
-                      <JournalAmount
-                        row={row}
-                        personal={owner.kind === "character"}
-                        taxFirst={
-                          filters.direction === "out" ||
-                          filters.direction === "tax"
-                        }
-                      />
+                      <JournalAmount row={row} />
                     ) : (
                       api.money(row.unit_price)
                     )}
@@ -535,7 +538,11 @@ function History({
                   </td>
                   <td>
                     <IconAction
-                      label={msg("查看记录 {0}", row.id)}
+                      label={
+                        row.display_kind === "tax"
+                          ? msg("查看交税记录 {0}", row.id)
+                          : msg("查看记录 {0}", row.id)
+                      }
                       onClick={() => setSelected(row)}
                     >
                       <Eye size={18} />
@@ -548,13 +555,7 @@ function History({
         </div>
       )}
       <footer className="wallet-pagination">
-        <span>
-          {msg(
-            "第 {0} 页 · {1} 条",
-            pages.length,
-            q.data?.items.length ?? 0,
-          )}{" "}
-        </span>
+        <span>{msg("第 {0} 页 · {1} 条", pages.length, rows.length)} </span>
         <IconAction
           label={msg("上一页")}
           disabled={pages.length === 1 || q.isFetching}
@@ -583,16 +584,37 @@ function History({
                 [
                   msg("类型"),
                   journal
-                    ? api.refLabel(selected.ref_type)
+                    ? selected.display_kind === "tax"
+                      ? msg("军团税")
+                      : api.refLabel(selected.ref_type)
                     : selected.is_buy
                       ? msg("买入")
                       : msg("卖出"),
                 ],
                 [
-                  msg("金额（ISK）"),
+                  selected.display_kind === "gross"
+                    ? msg("税前收入（ISK）")
+                    : msg("金额（ISK）"),
                   journal
                     ? api.money(selected.amount)
                     : api.money(selected.unit_price),
+                ],
+                [
+                  msg("税前收入（ISK）"),
+                  selected.display_kind === "tax"
+                    ? api.money(
+                        grossAmount(
+                          selected.source?.amount,
+                          selected.source?.tax,
+                        ),
+                      )
+                    : undefined,
+                ],
+                [
+                  msg("实际到账（ISK）"),
+                  selected.source
+                    ? api.money(selected.source.amount)
+                    : undefined,
                 ],
                 [
                   msg("余额（ISK）"),
@@ -641,7 +663,7 @@ function History({
                 ],
                 [msg("原始类型"), selected.ref_type],
                 [msg("原始说明"), selected.description],
-                [msg("备注"), selected.reason],
+                [msg("备注"), selected.source?.reason || selected.reason],
                 [msg("采集时间"), date(selected.observed_at)],
               ] as [string, string | undefined][]
             )
@@ -653,13 +675,13 @@ function History({
                 </div>
               ))}
           </dl>
-          {journal &&
-            owner.kind === "character" &&
-            hasWithheldTax(selected.tax) && (
-              <p className="wallet-tax-help">
-                {msg("代扣税附在收入流水中，到账金额已扣税。")}
-              </p>
-            )}
+          {selected.source && (
+            <p className="wallet-tax-help">
+              {msg(
+                "税前收入减去军团税，等于实际到账。两行关联同一笔原始流水。",
+              )}
+            </p>
+          )}
         </Modal>
       )}
     </section>

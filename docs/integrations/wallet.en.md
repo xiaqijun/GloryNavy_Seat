@@ -1,12 +1,12 @@
 # EVE ISK wallets
 
-## Personal wallet withholding (2026-10-17)
+## Separate personal income and tax rows (2026-10-17)
 
-The journal `tax` field carries withholding attached to income; `amount` remains the actual received amount and must not have the tax subtracted again. Lists and details expose the exact tax and corporation name for `tax_receiver_id`, falling back to the ID. Absent, zero and negative taxes are not withheld expenses.
+The API `tax` field carries withholding and `amount` remains net received ISK. For positive withholding, the personal page displays two rows: income before tax (`amount+tax`) and corporation tax (`-tax`). Decimal integer arithmetic keeps their sum equal to the original net amount. Only the tax row shows the actual final balance; no intermediate balance is invented. Both rows share the original record ID/entry_key, with a display-kind suffix for UI keys. No synthetic records are stored. The API still pages 50 source observations, yielding up to 100 display rows while keeping each pair together.
 
-For personal journals, `records?direction=out` now matches `amount<0 OR tax>0`. New `direction=tax` is accepted only for personal journals and matches `tax>0`. Filtering precedes pagination; date/type filters and composite cursors remain effective. Original amounts are neither rewritten nor split into invented debit records: one income observation can carry both received ISK and withholding. Personal journal `party_id` also matches the tax recipient. Corporation and market trade directions are unchanged.
+Personal journal `direction=in` selects `amount+max(tax,0)>0`, including fully withheld rewards with zero net receipts. `out` still matches `amount<0 OR tax>0`; `tax` remains personal-journal-only and selects positive withholding. The UI keeps only positive gross rows for income, negative gross changes and tax rows for expenses, and tax rows for withholding. API amounts are never rewritten. Date/type filters, composite pagination and tax-recipient matching remain effective; corporation journals and market transactions are not split.
 
-Workbench and loan aggregates retain their independent queries over original received/debited amounts, without subtracting withholding twice. No migration, collection-window or scope change is needed; existing observations work immediately. Deploy frontend and backend together.
+Details retain gross income, net receipts, exact tax and recipient names, falling back to IDs. Absent, zero or negative taxes are not split; missing receipts never produce an inferred gross amount. Workbench/loan aggregates retain original net receipts and debits without subtracting tax twice. No migration, collection-window or scope change is required. Existing observations work immediately; deploy frontend and backend together.
 
 ## Workbench speeds exclude transfers (2026-10-16)
 
