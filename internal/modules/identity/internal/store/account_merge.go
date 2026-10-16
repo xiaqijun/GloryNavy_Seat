@@ -90,6 +90,7 @@ func SetMergePreview(ctx context.Context, tx pgx.Tx, id, hash string, preview []
 }
 func FinishMerge(ctx context.Context, tx pgx.Tx, p MergeRequest, session []byte) error {
 	statements := []string{
+		`UPDATE identity_cleanup_removed SET user_id=$2 WHERE user_id=$1 AND $3::bytea IS NOT NULL`,
 		`DELETE FROM identity_sessions WHERE user_id IN($1::uuid,$2::uuid) AND token_hash<>$3`,
 		`UPDATE identity_users SET main_character_id=NULL WHERE id=$1 AND $2::uuid IS NOT NULL AND $3::bytea IS NOT NULL`,
 		`INSERT INTO identity_character_events(user_id,character_id,action) SELECT $1,character_id,'unlinked' FROM identity_characters WHERE user_id=$1 AND $2::uuid IS NOT NULL AND $3::bytea IS NOT NULL`,

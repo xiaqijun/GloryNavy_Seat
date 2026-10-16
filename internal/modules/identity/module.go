@@ -20,12 +20,13 @@ type principalKey struct{}
 func Principal(ctx context.Context) *Session { s, _ := ctx.Value(principalKey{}).(*Session); return s }
 
 type Handler struct {
-	Service     *Service
-	Origin      string
-	Secure      bool
-	Check       func(context.Context, *Session, string, *http.Request) (bool, error)
-	Cleanup     CharacterCleanup
-	ProfileGate func(context.Context, string, string) (bool, error)
+	Service            *Service
+	Origin             string
+	Secure             bool
+	Check              func(context.Context, *Session, string, *http.Request) (bool, error)
+	Cleanup            CharacterCleanup
+	CorporationCleanup *CorporationCleanup
+	ProfileGate        func(context.Context, string, string) (bool, error)
 }
 
 // Authorize authenticates first, enforces CSRF and delegates business permissions
@@ -139,6 +140,9 @@ func (h Handler) Module() module.Definition {
 		Manifest:    module.Manifest{ID: "identity", Version: "0.1.0", APIVersion: 1},
 		Permissions: []string{"identity.session.read", "identity.session.logout", "identity.characters.read", "identity.characters.manage"},
 		Routes: []module.Route{
+			{Method: "GET", Path: "/corporation-cleanup", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.corporationCleanup)},
+			{Method: "PUT", Path: "/corporation-cleanup", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.corporationCleanup)},
+			{Method: "POST", Path: "/corporation-cleanup/preview", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.corporationCleanupPreview)},
 			{Method: "GET", Path: "/merges/{id}", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.merge)},
 			{Method: "POST", Path: "/merges/{id}", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.merge)},
 			{Method: "DELETE", Path: "/merges/{id}", Permission: "identity.characters.manage", Handler: http.HandlerFunc(h.merge)},

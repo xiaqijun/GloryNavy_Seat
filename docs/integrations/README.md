@@ -1,5 +1,7 @@
 # 接入与业务指南 / Integration and business guides
 
+角色定期清理：[中文](corporation-cleanup.zh-CN.md) / [English](corporation-cleanup.en.md)，由成员页管理员配置，默认关闭。
+
 文档导航整理：2026-09-23；各文档的上游资料核验日期保持原记录。当前部署见[项目状态](../project-status.md)，未完成项见[待办](../backlog.md)。
 
 Navigation updated 2026-09-23. This is not a new verification of upstream documentation. See the current project status and backlog; dated implementation notes do not establish today's release status.

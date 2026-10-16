@@ -143,5 +143,9 @@
   "静态技能依赖存在循环": "Static skill prerequisites contain a cycle.",
   "静态技能要求不完整": "Static skill requirements are incomplete.",
   "静态数据缺少物品 #": "Static data is missing item #",
-  "首行应为 [舰船名称, 方案名称]": "First line must be [Ship name, Fitting name]"
+  "首行应为 [舰船名称, 方案名称]": "First line must be [Ship name, Fitting name]",
+  "仅站点管理员可配置角色清理": "Only site administrators may configure character cleanup",
+  "请填写有效的保留军团 ID，启用时名单不能为空": "Enter valid corporation IDs to retain; an enabled rule requires at least one.",
+  "清理规则已更新，请重新读取": "Cleanup rules have changed. Reload the rules.",
+  "角色清理服务暂不可用": "Character cleanup is temporarily unavailable"
 }

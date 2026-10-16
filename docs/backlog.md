@@ -4,6 +4,10 @@
 
 ## 已确认需求与验收缺口
 
+回归基线修复（TEST-01 / 中，2026-10-17）：未修改 `1081d98` 基线复现 `TestSyncRunRetentionMigrationRoundTrip`、`TestSlidingMigrationPreservesOutstandingBudget` 在 Goose 73 Down 的 dollar-quoted SQL 解析错误，以及 `TestSyncTransactionalDispatchAndDuplicateScanners` 预期 2 个作业但实际 3 个。修复迁移解析/断言与当前派发规则的一致性，并在合理超时预算下完成 EVE 全量回归；本轮 EVE 全量触发默认 10 分钟上限，不能计为通过。证据在本地 `.local/corporation-cleanup/backend.log`、`extra.log`；不属于本轮角色清理产生的失败。
+
+角色清理真实验收（CLEANUP-01）：Goose 90 与每周规则本地实现；生产需管理员选择军团名单、核对预览并启用，首轮执行后核对逐角色审计、主角色替换/无角色会话撤销和历史记录保留。默认关闭期间不视为已完成真实清理。实现/发布状态见[项目状态](project-status.md)。
+
 | 编号 / 优先级 | 事项 | 当前事实 | 完成条件 |
 | --- | --- | --- | --- |
 | ROLE-01 / 中 / 已实现待验收 | 贷款专员与补损专员角色模型 | 已确认专员使用本站权限角色；合同接收人单独使用已绑定的个人 EVE 角色。贷款处理角色已发布；`corporation.welfare.compensation` 已发布，只能审批 `srp`/`solo` 补损并保留普通成员权限 | 用真实账号验证补损专员在审批中心只看到补损、可审批他人且不能自审；确认取消审核、自动交付核验、授权撤销和军团范围变化立即生效 |

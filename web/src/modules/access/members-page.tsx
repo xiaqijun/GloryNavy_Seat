@@ -32,6 +32,7 @@ import {
   contractDetailLabel,
 } from "@/modules/eve/sync-api";
 import "./members.css";
+import { CorporationCleanupButton } from "./corporation-cleanup";
 
 function Feedback({
   error,
@@ -98,6 +99,7 @@ function MembersWorkspace({ actor }: { actor: string }) {
           )}
           <h1>{member ? msg("成员资料") : msg("成员")}</h1>
         </div>
+        {!member && <CorporationCleanupButton actor={actor} />}
       </div>
       {member ? (
         <MemberDetails

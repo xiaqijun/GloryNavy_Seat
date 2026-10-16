@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+2026-10-17：identity 增加 Goose 90 军团清理策略、审计与被清理角色归属保留。宿主注入 EVE 的军团证据读取/凭据移除和当前管理员检查，复用共享 River。逐账号事务处理及游标恢复，保留业务账号，普通 SSO 恢复原归属；显式合并在 identity 私有事务中迁移保留归属。见[清理生命周期](integrations/corporation-cleanup.zh-CN.md)，不得跨模块导入 store 或用空名单执行删除。
+
 ## 2026-09-23 元数据收敛（已发布）
 
 匿名首页与兼容地址 `/login` 不请求模块目录；`/login` 立即重定向到首页，`GET /api/v1/eve/login-status` 仅返回 configured。`/api/v1/modules` 与完整 `/api/v1/eve/status` 要求有效会话，`/api/v1/system/status` 只允许当前站点管理员。`/health/ready` 只返回 ready/503，不输出版本、数据库及 schema；liveness 不变。会话校验在读取目录之前，资料未补齐仍可进入账号页。前后端需一起发布，部署探测已改为检查匿名 401 与最小登录投影。

@@ -244,6 +244,8 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	exchangeJobs := &exchange.DeliveryJobs{Service: exchangeService, Enabled: slices.Contains(enabled, "exchange")}
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
 	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
+	characterCleanup := corporationCleanupService(pool, accessService, reader)
+	identityHandler.CorporationCleanup = characterCleanup
 	var sentryRemote sentry.Remote
 	if auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != "" {
 		remote, remoteErr := sentry.NewHTTPRemote(auth.SentryIntegrationURL, auth.SentryIntegrationToken)
@@ -274,7 +276,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
-		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled))
+		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension())
 		if err != nil {
 			return nil, err
 		}

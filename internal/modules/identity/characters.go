@@ -60,11 +60,24 @@ func (s *Service) Complete(ctx context.Context, id int64, name, owner, previous 
 		return "", err
 	}
 	var user pgtype.UUID
+	// Scheduled cleanup preserves ownership so a returning pilot cannot evade
+	// account-level history by creating a new account or linking elsewhere.
+	var previousUser string
+	if !found {
+		var previousOwner []byte
+		previousUser, previousOwner, err = store.CleanupPreviousOwner(ctx, tx, id)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return "", err
+		}
+		if previousUser != "" && subtle.ConstantTimeCompare(previousOwner, httpapi.Hash(owner)) != 1 {
+			return "", ErrOwnership
+		}
+	}
 	if intent.Kind != "login" {
 		if user.Scan(intent.UserID) != nil || !user.Valid {
 			return "", ErrSession
 		}
-		if found && ch.UserID != user {
+		if (found && ch.UserID != user) || (previousUser != "" && previousUser != intent.UserID) {
 			return "", ErrConflict
 		}
 		if _, err = q.LockUser(ctx, user); err != nil {
@@ -81,6 +94,22 @@ func (s *Service) Complete(ctx context.Context, id int64, name, owner, previous 
 		user = ch.UserID
 		if _, err = q.LockUser(ctx, user); err != nil {
 			return "", err
+		}
+	} else if previousUser != "" {
+		if err = user.Scan(previousUser); err != nil {
+			return "", err
+		}
+		if _, err = q.LockUser(ctx, user); err != nil {
+			return "", err
+		}
+		// A concurrent explicit merge may have moved the preserved ownership
+		// while we waited for the account lock. Retry SSO against the new owner.
+		currentUser, _, readErr := store.CleanupPreviousOwner(ctx, tx, id)
+		if readErr != nil {
+			return "", readErr
+		}
+		if currentUser != previousUser {
+			return "", ErrConflict
 		}
 	} else {
 		user, err = q.CreateUser(ctx)
@@ -108,7 +137,15 @@ func (s *Service) Complete(ctx context.Context, id int64, name, owner, previous 
 		if err = q.CreateCharacter(ctx, store.CreateCharacterParams{CharacterID: id, UserID: user, Name: name, OwnerHash: ownerHash}); err != nil {
 			return "", err
 		}
-		if intent.Kind == "login" {
+		mainMissing := previousUser == ""
+		if previousUser != "" {
+			mainUser, readErr := q.LockUser(ctx, user)
+			if readErr != nil {
+				return "", readErr
+			}
+			mainMissing = !mainUser.MainCharacterID.Valid
+		}
+		if (intent.Kind == "login" || previousUser != "") && mainMissing {
 			if err = q.SetMain(ctx, store.SetMainParams{ID: user, MainCharacterID: pgtype.Int8{Int64: id, Valid: true}}); err != nil {
 				return "", err
 			}

@@ -5533,6 +5533,111 @@ paths:
         "400": { description: Invalid callback payload, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "401": { description: Invalid or expired callback signature, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "503": { description: Official QQ bot is not configured, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/identity/corporation-cleanup:
+    get:
+      operationId: getCorporationCleanup
+      summary: Read weekly character cleanup settings (current site administrator only)
+      security: [{ SessionCookie: [] }]
+      responses:
+        '200':
+          description: Disabled/empty by default; counts distinguish in-progress and last completed runs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: {type: string}
+                  data: {$ref: '#/components/schemas/CorporationCleanupSettings'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {description: cleanup_unavailable}
+    put:
+      operationId: saveCorporationCleanup
+      summary: Configure weekly character cleanup (current site administrator only)
+      description: Each enabled save schedules execution seven days later and resets any active cursor. Completion schedules another seven days later. Disabling clears the schedule. This does not immediately unlink characters. Site role grants cannot substitute for administrator status.
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - {$ref: '#/components/parameters/MutationOrigin'}
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [enabled, corporation_ids, version]
+              properties:
+                enabled: {type: boolean}
+                corporation_ids: {$ref: '#/components/schemas/CleanupCorporationIDs'}
+                version: {type: string, pattern: '^[1-9][0-9]*$'}
+      responses:
+        '200':
+          description: Saved settings with incremented configuration version.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: {type: string}
+                  data: {$ref: '#/components/schemas/CorporationCleanupSettings'}
+        '400': {description: invalid_cleanup; empty enabled list, invalid IDs/version or malformed body}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {description: cleanup_conflict; reload the current configuration}
+        '503': {description: cleanup_unavailable}
+  /api/v1/identity/corporation-cleanup/preview:
+    post:
+      operationId: previewCorporationCleanup
+      summary: Preview a proposed allowlist without unlinking any characters
+      description: Current administrator only. Returns at most 100 removal candidates plus full counts. Uses successful current-generation, unexpired owner-matching profile and role facts; uncertain data is skipped. Execution rechecks facts. Strict per-character removal includes alts, main and last characters. Accounts and business history are preserved.
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - {$ref: '#/components/parameters/MutationOrigin'}
+        - {$ref: '#/components/parameters/CSRFToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [corporation_ids]
+              properties:
+                corporation_ids:
+                  allOf: [{$ref: '#/components/schemas/CleanupCorporationIDs'}]
+                  minItems: 1
+      responses:
+        '200':
+          description: Preview only; no mutation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: {type: string}
+                  data:
+                    type: object
+                    required: [remove_count, keep_count, unknown_count, items]
+                    properties:
+                      remove_count: {type: integer, minimum: 0}
+                      keep_count: {type: integer, minimum: 0}
+                      unknown_count: {type: integer, minimum: 0}
+                      items:
+                        type: array
+                        maxItems: 100
+                        items:
+                          type: object
+                          required: [character_id, name, corporation_id, corporation_name]
+                          properties:
+                            character_id: {type: string}
+                            name: {type: string}
+                            corporation_id: {type: string}
+                            corporation_name: {type: string}
+        '400': {description: invalid_cleanup; nonempty valid corporation IDs required}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {description: cleanup_unavailable}
   /api/v1/identity/characters:
     get:
       operationId: listOwnCharacters
@@ -8214,6 +8319,25 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
   schemas:
+    CleanupCorporationIDs:
+      type: array
+      maxItems: 50
+      description: Positive canonical signed-64-bit decimal IDs; duplicates normalized on save.
+      items: {type: string, pattern: '^[1-9][0-9]*$'}
+    CorporationCleanupSettings:
+      type: object
+      required: [enabled, corporation_ids, version, next_run_at, run_started_at, last_run_at, removed_count, skipped_count, last_removed_count, last_skipped_count]
+      properties:
+        enabled: {type: boolean}
+        corporation_ids: {$ref: '#/components/schemas/CleanupCorporationIDs'}
+        version: {type: string}
+        next_run_at: {type: string, format: date-time, nullable: true}
+        run_started_at: {type: string, format: date-time, nullable: true}
+        last_run_at: {type: string, format: date-time, nullable: true}
+        removed_count: {type: integer, minimum: 0}
+        skipped_count: {type: integer, minimum: 0}
+        last_removed_count: {type: integer, minimum: 0}
+        last_skipped_count: {type: integer, minimum: 0}
     LoanContributionInput:
       type: object
       additionalProperties: false

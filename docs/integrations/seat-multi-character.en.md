@@ -1,5 +1,7 @@
 # SeAT multi-character reference and local design
 
+2026-10-17: Added administrator-configured [weekly corporation cleanup](corporation-cleanup.en.md), a separate exception to manual self-unlink protection. Main/last characters may be removed while account history and recoverable ownership remain. Disabled by default; see project status for deployment.
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 2026-09-15 update: duplicate accounts now have a separate SSO proof, preview and confirmation flow. PAP, coins and orders move with provenance; ordinary character linking still rejects ownership conflicts. Target site permissions and community profile remain unchanged. See [account merge](account-merge.en.md); earlier planned-merge wording below is historical.

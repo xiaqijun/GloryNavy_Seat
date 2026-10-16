@@ -1,5 +1,7 @@
 # Account merge
 
+2026-10-17: With Goose 90, explicit merge also moves ownership preserved by scheduled cleanup while retaining original_user_id. A removed character returns to the merge target on its next SSO proof. See [cleanup rules](corporation-cleanup.en.md).
+
 ## Release update 2026-09-23 (deployed)
 
 Alliance PAP snapshots participate in merge preview fingerprints and account migration, preserving the first `original_account_id` introduced by Goose 47. Snapshot changes invalidate old previews. Synchronization/manual conversion and merging share binding and active-account locks to prevent crediting retired accounts. Rebinding a character does not transfer historical entitlements.
