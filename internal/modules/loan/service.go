@@ -769,8 +769,26 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if in.AmountMinor > availableGuaranteeCapacity(credit, usedResponsibility) {
 		return store.Guarantee{}, ErrLimit
 	}
-	g, e := store.AddGuarantee(ctx, s.db(), id, guarantor, in.GuarantorCharacterID, in.AmountMinor, in.Note)
-	return g, e
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	defer tx.Rollback(ctx)
+	if e = s.guardAccounts(ctx, tx, actor, guarantor); e != nil {
+		return store.Guarantee{}, e
+	}
+	locked, e := store.LockCase(ctx, tx, id)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	if locked.BorrowerAccountID != actor || (locked.State != "submitted" && locked.State != "awaiting_acceptance") {
+		return store.Guarantee{}, ErrConflict
+	}
+	g, e := store.AddGuarantee(ctx, tx, id, guarantor, in.GuarantorCharacterID, in.AmountMinor, in.Note)
+	if e != nil {
+		return store.Guarantee{}, e
+	}
+	return g, tx.Commit(ctx)
 }
 
 func availableGuaranteeCapacity(credit store.Credit, usedResponsibility int64) int64 {
@@ -924,7 +942,26 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	if in.CoveredMinor > safeScaled(coveredByHaircut(in.ValuationMinor, in.HaircutBPS), int64(policy.CollateralCapBPS), 10000) {
 		return store.Collateral{}, ErrCoverage
 	}
-	return store.AddCollateral(ctx, s.db(), id, actor, in.ContractKind, in.ContractOwnerID, in.ContractID, contract.Items, in.ValuationMinor, int64(in.HaircutBPS), in.CoveredMinor)
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return store.Collateral{}, e
+	}
+	defer tx.Rollback(ctx)
+	if e = s.guardAccounts(ctx, tx, actor); e != nil {
+		return store.Collateral{}, e
+	}
+	locked, e := store.LockCase(ctx, tx, id)
+	if e != nil {
+		return store.Collateral{}, e
+	}
+	if locked.BorrowerAccountID != actor || locked.State == "settled" || locked.State == "rejected" || locked.State == "cancelled" || locked.State == "defaulted" {
+		return store.Collateral{}, ErrConflict
+	}
+	out, e := store.AddCollateral(ctx, tx, id, actor, in.ContractKind, in.ContractOwnerID, in.ContractID, contract.Items, in.ValuationMinor, int64(in.HaircutBPS), in.CoveredMinor)
+	if e != nil {
+		return store.Collateral{}, e
+	}
+	return out, tx.Commit(ctx)
 }
 
 func coveredByHaircut(valuation int64, haircut int) int64 {

@@ -356,12 +356,10 @@
 }
 .loan-action-option {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 16px;
   min-width: 0;
-  min-height: 72px;
-  padding: 12px 8px;
+  padding: 4px;
 }
 .loan-action-option + .loan-action-option { border-left: 1px solid var(--border); padding-left: 20px; }
 .loan-action-option strong {
@@ -682,4 +680,32 @@
   .loan-dashboard-metrics {
     grid-template-columns: 1fr;
   }
+}
+
+.loan-repayment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.loan-terms-help { grid-column: 1 / -1; color: var(--muted); font-size: 14px; }
+.loan-terms-help summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--foreground); }
+.loan-terms-help summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.loan-terms-help p { margin: 4px 0 0; line-height: 1.6; }
+.loan-case-actions > button + button { margin-left: 8px; }
+@media (max-width: 800px) {
+  .loan-repayment-fields { grid-template-columns: minmax(0, 1fr); }
+  .loan-action-option + .loan-action-option { padding: 14px 4px 4px; }
+  .loan-cases-table { min-width: 0 !important; }
+  .loan-cases-table thead { display: none; }
+  .loan-cases-table tbody { display: grid; gap: 16px; }
+  .loan-cases-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .loan-cases-table td { padding: 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .loan-cases-table td::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 12px; color: var(--muted); }
+  .loan-cases-table td:first-child, .loan-cases-table td:nth-child(4), .loan-cases-table .loan-case-actions { grid-column: 1 / -1; }
+  .loan-cases-table .loan-case-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .loan-case-actions::before { display: none !important; }
+  .loan-case-actions > button + button { margin-left: 0; }
 }

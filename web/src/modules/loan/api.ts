@@ -1,3 +1,4 @@
+import { msg } from "@/lib/i18n";
 import { apiFetch, getData } from "@/lib/http";
 
 export type Pool = { id: string; is_shared: boolean; lender_kind: "personal" | "corporation"; lender_user_id?: string; corporation_id?: string; custodian_character_id?: string; custodian_character_name?: string; name: string; state: string; config: Record<string, unknown>; version: number };
@@ -32,6 +33,7 @@ export const evaluations = (signal?: AbortSignal) => getData("/api/v1/loan/evalu
 export async function createApplication(csrf: string, body: Record<string, unknown>) { const r = await apiFetch("/api/v1/loan/applications", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) }); const p = await r.json().catch(() => null); if (!r.ok) throw new Error(p?.error?.message ?? "贷款申请失败"); return p.data as Case; }
 async function mutate<T>(csrf: string, path: string, method: "POST" | "PUT", body: Record<string, unknown>, fallback: string) { const r = await apiFetch(path, { method, credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify(body) }); const p = await r.json().catch(() => null); if (!r.ok) throw new Error(p?.error?.message ?? fallback); return p.data as T; }
 export const createContribution = (csrf: string, body: Record<string, unknown>) => mutate<Contribution>(csrf, "/api/v1/loan/contributions", "POST", body, "出借额度提交失败");
+export const cancelApplication = (csrf: string, id: string, version: number) => mutate<Case>(csrf, `/api/v1/loan/cases/${encodeURIComponent(id)}/cancel`, "POST", { version }, msg("撤销申请失败"));
 export const cancelContribution = (csrf: string, id: string, body: Record<string, unknown>) => mutate<Contribution>(csrf, `/api/v1/loan/contributions/${encodeURIComponent(id)}/cancel`, "POST", body, "出借额度取消失败");
 export const updateCustodian = (csrf: string, body: Record<string, unknown>) => mutate<Pool>(csrf, "/api/v1/loan/settings/custodian", "POST", body, "贷款专员设置失败");
 export const addAdminFunding = (csrf: string, body: Record<string, unknown>) => mutate<PoolSummary>(csrf, "/api/v1/loan/settings/funding", "POST", body, "管理员入池资金登记失败");

@@ -6,29 +6,30 @@ export function RepaymentFields({ value, onChange }: { value: RepaymentChoice; o
   const update = (patch: Partial<RepaymentChoice>) => onChange({ ...value, ...patch });
   return <>
     <label>{msg("还款方式")}<select aria-label={msg("还款方式")} value={value.mode} onChange={e => update({ mode: e.target.value as RepaymentChoice["mode"] })}>
-      <option value="term">{msg("到期一次还清 · 选择期限")}</option>
-      <option value="date">{msg("到期一次还清 · 指定日期")}</option>
+      <option value="term">{msg("按期限")}</option>
+      <option value="date">{msg("指定日期")}</option>
       <option value="installments">{msg("分期还款")}</option>
     </select></label>
     {value.mode === "term" && <>
       <label>{msg("借款期限")}<select aria-label={msg("借款期限")} value={value.term} onChange={e => update({ term: e.target.value })}>
-        <option value="30">{msg("一个月（30 天）")}</option>
-        <option value="90">{msg("三个月（90 天）")}</option>
-        <option value="180">{msg("半年（180 天）")}</option>
-        <option value="365">{msg("一年（365 天）")}</option>
-        <option value="custom">{msg("自定义天数")}</option>
+        <option value="30">{msg("1 个月")}</option>
+        <option value="90">{msg("3 个月")}</option>
+        <option value="180">{msg("半年")}</option>
+        <option value="365">{msg("1 年")}</option>
+        <option value="custom">{msg("自定义")}</option>
       </select></label>
       {value.term === "custom" && <label>{msg("借款天数（1–365）")}<input type="number" min="1" max="365" step="1" required value={value.customDays} onChange={e => update({ customDays: e.target.value })} /></label>}
-      <p className="loan-dialog-note">{msg("从放款核验时起计算期限，到期一次还清本金和利息。")}</p>
+      <p className="loan-dialog-note">{msg("{0} 天，放款后起算，到期一次还清。", value.term === "custom" ? value.customDays || "—" : value.term)}</p>
     </>}
     {value.mode === "date" && <>
       <label>{msg("还款日期")}<input type="date" min={repaymentDateBound(1)} max={repaymentDateBound(365)} required value={value.date} onChange={e => update({ date: e.target.value })} /></label>
-      <p className="loan-dialog-note">{msg("可选明天起 365 天内的日期，以北京时间当天 23:59:59 为截止时间。利率在申请时冻结，利息按实际放款合同完成日至还款日计算，至少计 1 天；放款前金额为预计值。")}</p>
+      <p className="loan-dialog-note">{msg("到期一次还清，截止当日 23:59:59（北京时间）。")}</p>
+      <details className="loan-terms-help"><summary>{msg("计息规则")}</summary><p>{msg("利率在申请时冻结，按实际放款日至还款日计息，至少 1 天；放款前为预计金额，最终金额不超过预计值。")}</p></details>
     </>}
     {value.mode === "installments" && <>
       <label>{msg("期数")}<input type="number" min="2" max="120" step="1" required value={value.count} onChange={e => update({ count: e.target.value })} /></label>
       <label>{msg("间隔天数")}<select aria-label={msg("间隔天数")} value={value.interval} onChange={e => update({ interval: e.target.value })}>{[1, 3, 7, 14, 30].map(days => <option key={days} value={days}>{msg("{0} 天", days)}</option>)}</select></label>
-      <p className="loan-dialog-note">{msg("首期还款时间将在实际放款后按所选间隔自动生成")}</p>
+      <p className="loan-dialog-note">{msg("放款后按所选间隔还款。")}</p>
     </>}
   </>;
 }

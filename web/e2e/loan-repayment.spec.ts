@@ -25,7 +25,7 @@ for (const language of ["zh-CN", "en"]) {
     });
     await page.goto("/loans/operations?view=business");
     const open = async () => {
-      await page.getByRole("button", { name: text("开始申请"), exact: true }).click();
+      await page.getByRole("button", { name: text("申请借款"), exact: true }).click();
       await page.getByLabel(text("本金（ISK）"), { exact: true }).fill("1000000");
     };
     const submit = async (expected: Record<string, unknown>) => {

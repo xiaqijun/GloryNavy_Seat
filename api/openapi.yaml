@@ -7864,6 +7864,32 @@ paths:
       responses:
         '200': {description: Loan case, installments, guarantees and collateral}
         '403': {description: Case is outside the caller's object scope}
+  /api/v1/loan/cases/{id}/cancel:
+    post:
+      operationId: loanApplicationCancel
+      security: [{SessionCookie: []}]
+      summary: Withdraw the caller's pending loan application
+      description: Requires CSRF and current borrower ownership. Only submitted cases are eligible. Atomically releases guarantee/collateral capacity and records an audit; does not refund cash, return game items or release historical contract claims.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+        - {name: X-CSRF-Token, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version]
+              properties:
+                version: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Cancelled loan case with incremented version}
+        '400': {description: Invalid ID, version or request body}
+        '401': {description: No active session}
+        '403': {description: Caller is not the borrower or CSRF validation failed}
+        '404': {description: Loan case not found}
+        '409': {description: Case is no longer submitted or version has changed}
   /api/v1/loan/applications:
     post:
       operationId: loanApplicationCreate

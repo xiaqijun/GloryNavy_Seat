@@ -26,7 +26,7 @@ func (h Handler) Module() module.Definition {
 		fn           http.HandlerFunc
 	}{
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate}, {"POST", "/settings/funding", h.adminFunding},
-		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review},
+		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review}, {"POST", "/cases/{id}/cancel", h.applicationCancel},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
 		{"GET", "/guarantees/candidates", h.guaranteeCandidates},
@@ -234,6 +234,21 @@ func (h Handler) applicationCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.Service.CreateApplication(r.Context(), h.User(r), in)
+	respond(w, r, v, e)
+}
+func (h Handler) applicationCancel(w http.ResponseWriter, r *http.Request) {
+	id, e := number(chi.URLParam(r, "id"))
+	if e != nil {
+		respond(w, r, nil, e)
+		return
+	}
+	var in struct {
+		Version int64 `json:"version"`
+	}
+	if !read(w, r, &in) {
+		return
+	}
+	v, e := h.Service.CancelApplication(r.Context(), h.User(r), id, in.Version)
 	respond(w, r, v, e)
 }
 func (h Handler) review(w http.ResponseWriter, r *http.Request) {
