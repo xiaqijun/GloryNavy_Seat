@@ -1,5 +1,10 @@
 # Linux 生产部署
 
+## 2026-10-18 物品名称复制标记
+
+后端 v0.1.0-market-name-marker-20261018 来自干净且已推送的 main 提交 c64443935ae66750af761bf451d859f1b2583048；前端沿用 contract-batch-flow 版本。Goose 95、active/running/ready、NRestarts=0，发布包哈希通过。完整备份 /var/backups/glorynavy/before-v0.1.0-market-name-marker-20261018-20261017T175423Z.dump（252354099 字节）及同前缀 .env/.meta.json。保留 Goose 95 的两条编号别名；回退只能使用同样理解别名的程序。10 项 market、4 项 EVE 测试及 go vet 已在隔离环境通过，真实 SDE 与公开报价诊断确认用户原文数量 3+2 完整识别。
+
+
 
 ## 2026-10-18 批次编号与合同进度
 
