@@ -80,3 +80,13 @@ sql:
         sql_package: pgx/v5
         emit_empty_slices: true
         omit_unused_structs: true
+  - engine: postgresql
+    queries: internal/modules/feedback/internal/store/queries
+    schema: migrations
+    gen:
+      go:
+        package: store
+        out: internal/modules/feedback/internal/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        omit_unused_structs: true

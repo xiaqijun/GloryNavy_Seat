@@ -1,5 +1,7 @@
 # Account merge
 
+Goose 96 registers feedback merging even when its UI is disabled. Current ownership moves to the target; first original_account_id, submission/message authors and timestamps remain unchanged. Revisions increment and the preview includes both accounts' ticket ID/revision fingerprints. Source privileges are not copied. See [feedback](feedback.en.md).
+
 2026-10-17: With Goose 90, explicit merge also moves ownership preserved by scheduled cleanup while retaining original_user_id. A removed character returns to the merge target on its next SSO proof. See [cleanup rules](corporation-cleanup.en.md).
 
 ## Release update 2026-09-23 (deployed)

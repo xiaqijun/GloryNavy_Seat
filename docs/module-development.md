@@ -1,5 +1,7 @@
 # 新增模块开发约定
 
+feedback 为账号级数据模块示例：SQL/sqlc 私有，宿主注入站点管理员检查与活跃账号锁；即使 UI 停用仍登记合并参与方，原作者/历史不改，归属变更保留首次 original_account_id。仅 feedback.self，不授予可委派管理能力。见[反馈指南](integrations/feedback.zh-CN.md)。
+
 ## 2026-09-23 元数据收敛（已发布）
 
 匿名首页与 `/login` 不再请求模块目录；`GET /api/v1/eve/login-status` 仅返回 configured。`/api/v1/modules` 与完整 `/api/v1/eve/status` 要求有效会话，`/api/v1/system/status` 只允许当前站点管理员。`/health/ready` 只返回 ready/503，不输出版本、数据库及 schema；liveness 不变。会话校验在读取目录之前，资料未补齐仍可进入账号页。前后端需一起发布，部署探测已改为检查匿名 401 与最小登录投影。
