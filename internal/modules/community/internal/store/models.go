@@ -23,8 +23,9 @@ type CommunityOnebotBinding struct {
 }
 
 type CommunityOnebotGroup struct {
-	GroupID string
-	Name    string
+	GroupID         string
+	Name            string
+	NotifyApprovals bool
 }
 
 type CommunityOnebotSetting struct {

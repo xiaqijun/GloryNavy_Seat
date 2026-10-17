@@ -42,3 +42,7 @@ python3 deploy/rotate-storage.py --role edge --apply
 Linux 文件轮换测试：`python3 -m unittest discover -s deploy -p test_rotate_storage.py -v`。覆盖保留桶、当前版本/固定版本/备份恢复版本、缺材料和符号链接保护、过期计划拒绝、校验失败不删除、精确候选及幂等。
 
 数据库使用独立 PostgreSQL，通过 `TEST_DATABASE_URL` 执行 `TEST_SYNC_RETENTION_PLAN=1 go test ./internal/modules/eve -run 'SyncRunRetention|CleanSyncHistory' -count=1`；184 万行查询计划测试只能在隔离测试库运行。生产清理前后记录磁盘、目录与记录数，确认服务就绪，并保留至少一份实际恢复验证过的备份。
+
+## 审批通知回执（Goose 92）
+
+community 的分钟扫描将五分钟前遗留 sending 标为 unknown，清理 90 天前的非活动提醒回执和发送批次；持续待办去重回执保留，避免重发。业务审批、币账和原审计不在此范围。停用 community/approval 模块会暂停扫描和这项保留策略。

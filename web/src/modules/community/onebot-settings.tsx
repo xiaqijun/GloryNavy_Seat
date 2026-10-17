@@ -67,6 +67,7 @@ function OneBotEditor({ initial, csrf, userID }: { initial: Settings; csrf: stri
         const selected = groups.some((g) => g.group_id === group.group_id);
         return <div className="onebot-group-row" key={group.group_id}>
           <label className="onebot-group-choice"><input type="checkbox" checked={selected} disabled={busy} onChange={(e) => setGroups(e.target.checked ? [...groups, group] : groups.filter((g) => g.group_id !== group.group_id))} /><span><strong>{group.name || group.group_id}</strong><span className="muted">{group.group_id}</span></span></label>
+          <label className="qq-group-enabled"><input type="checkbox" checked={groups.find((g) => g.group_id === group.group_id)?.notify_approvals === true} disabled={busy || !selected} onChange={(e) => setGroups(groups.map((g) => g.group_id === group.group_id ? { ...g, notify_approvals: e.target.checked } : g))} aria-label={msg("在 {0} 启用审批提醒", group.name || group.group_id)} />{msg("审批提醒")}</label>
           <Button type="button" variant="outline" disabled={busy || dirty || !selected || !initial.enabled} onClick={() => test.mutate(group.group_id)} aria-label={msg("在 {0} 测试 @我", group.name || group.group_id)}><Send aria-hidden="true" />{msg("测试 @我")}</Button>
         </div>;
       })}</div>

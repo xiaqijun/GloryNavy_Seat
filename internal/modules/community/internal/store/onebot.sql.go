@@ -95,21 +95,22 @@ func (q *Queries) GetOneBotSettings(ctx context.Context) (CommunityOnebotSetting
 }
 
 const insertOneBotGroup = `-- name: InsertOneBotGroup :exec
-INSERT INTO community_onebot_groups(group_id,name) VALUES($1,$2)
+INSERT INTO community_onebot_groups(group_id,name,notify_approvals) VALUES($1,$2,$3)
 `
 
 type InsertOneBotGroupParams struct {
-	GroupID string
-	Name    string
+	GroupID         string
+	Name            string
+	NotifyApprovals bool
 }
 
 func (q *Queries) InsertOneBotGroup(ctx context.Context, arg InsertOneBotGroupParams) error {
-	_, err := q.db.Exec(ctx, insertOneBotGroup, arg.GroupID, arg.Name)
+	_, err := q.db.Exec(ctx, insertOneBotGroup, arg.GroupID, arg.Name, arg.NotifyApprovals)
 	return err
 }
 
 const listOneBotGroups = `-- name: ListOneBotGroups :many
-SELECT group_id,name FROM community_onebot_groups ORDER BY name,group_id
+SELECT group_id,name,notify_approvals FROM community_onebot_groups ORDER BY name,group_id
 `
 
 func (q *Queries) ListOneBotGroups(ctx context.Context) ([]CommunityOnebotGroup, error) {
@@ -121,7 +122,7 @@ func (q *Queries) ListOneBotGroups(ctx context.Context) ([]CommunityOnebotGroup,
 	items := []CommunityOnebotGroup{}
 	for rows.Next() {
 		var i CommunityOnebotGroup
-		if err := rows.Scan(&i.GroupID, &i.Name); err != nil {
+		if err := rows.Scan(&i.GroupID, &i.Name, &i.NotifyApprovals); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

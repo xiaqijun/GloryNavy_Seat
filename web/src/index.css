@@ -719,7 +719,7 @@ main {
 }
 .onebot-group-list { display: grid; gap: 12px; }
 .onebot-group-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.onebot-group-choice { display: flex; align-items: center; gap: 10px; min-height: 44px; min-width: 0; flex: 1; cursor: pointer; }
+.onebot-group-choice { display: flex; align-items: center; gap: 10px; min-height: 44px; min-width: 0; flex: 1 1 100%; cursor: pointer; }
 .onebot-group-choice > span { display: grid; gap: 2px; overflow-wrap: anywhere; }
 @media (max-width: 520px) {
   .community-admin-page .qq-bot-settings-grid { grid-template-columns: minmax(0, 1fr); }

@@ -25,7 +25,7 @@ func New(pool *pgxpool.Pool, workers *river.Workers, periodic []*river.PeriodicJ
 		// River also checks each worker's timeout before rescue, preserving the
 		// SDE worker's 16-minute deadline while recovering interrupted scanners.
 		RescueStuckJobsAfter: 3 * time.Minute,
-		Queues:               map[string]river.QueueConfig{"eve_control": {MaxWorkers: 1}, "eve_characters": {MaxWorkers: 2}, "eve_contracts": {MaxWorkers: 1}, "eve_sde": {MaxWorkers: 1}, "attendance": {MaxWorkers: 2}, "welfare": {MaxWorkers: 1}, "exchange": {MaxWorkers: 1}, "loan": {MaxWorkers: 1}},
+		Queues:               map[string]river.QueueConfig{"eve_control": {MaxWorkers: 1}, "eve_characters": {MaxWorkers: 2}, "eve_contracts": {MaxWorkers: 1}, "eve_sde": {MaxWorkers: 1}, "attendance": {MaxWorkers: 2}, "welfare": {MaxWorkers: 1}, "exchange": {MaxWorkers: 1}, "loan": {MaxWorkers: 1}, "community": {MaxWorkers: 1}},
 	})
 }
 

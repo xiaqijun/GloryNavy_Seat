@@ -10088,6 +10088,7 @@ components:
       properties:
         group_id: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
         name: { type: string, maxLength: 128 }
+        notify_approvals: { type: boolean, default: false, description: Enable minute-based pending approval mentions for currently authorized, verified OneBot members of this group. Persistent deduplication; ambiguous send outcomes are not retried. }
     OneBotSettings:
       type: object
       required: [enabled, api_base, bot_qq, token_configured, secret_configured, revision, groups]

@@ -257,3 +257,7 @@ fittings 私有 store 维护军团方案库、审计与游戏保存记录（Goos
 ## 公开介绍与成员入口（2026-09-23，已发布）
 
 system 模块声明 `system.landing` 声明用于 `/`，App 对这一固定页面单独懒加载，避免介绍页挂载私有目录、管理权限或业务查询。其余路径仍使用现有模块目录和访问控制；工作台迁移至 `/workspace`。登录表单和 SSO 回调不变。eve 模块显式开放固定军团的公开资料投影 /api/v1/eve/public/corporation，宿主注入共享 ESIService；仅访问官方匿名路由，不读取成员令牌或私有数据。其他业务端点保持鉴权。见 [首页边界](ui/homepage.md)和[公开资料接入](integrations/public-corporation.zh-CN.md)。
+
+### 待审批 QQ 通知边界（2026-10-17）
+
+宿主注入 approval 的实时授权待办哈希读取给 community.ApprovalJobs；community 独占通知开关、回执、发送审计和 OneBot 网络访问，不导入来源 store。共享 River 新增 community 队列（单 worker），网络发送在通知领取事务提交后，原审批事务/付款/币账不受影响。账号合并通过既有 community 参与方取消来源提醒。详情见 [OneBot](integrations/qq-onebot.zh-CN.md)。

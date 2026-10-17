@@ -29,7 +29,7 @@ func oneBotFixture(t *testing.T) (*Service, *pgxpool.Pool, string, string) {
 	if err := s.SetQQBotConfigKey(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))); err != nil {
 		t.Fatal(err)
 	}
-	_, err := s.SaveOneBotSettings(context.Background(), OneBotSettingsInput{Enabled: true, APIBase: "http://127.0.0.1:3000", BotQQ: "999999", Token: strings.Repeat("t", 32), Secret: strings.Repeat("s", 32), Revision: "0", Groups: []OneBotGroup{{"888888", "Test group"}}})
+	_, err := s.SaveOneBotSettings(context.Background(), OneBotSettingsInput{Enabled: true, APIBase: "http://127.0.0.1:3000", BotQQ: "999999", Token: strings.Repeat("t", 32), Secret: strings.Repeat("s", 32), Revision: "0", Groups: []OneBotGroup{{ID: "888888", Name: "Test group"}}})
 	if err != nil {
 		t.Fatal(err)
 	}

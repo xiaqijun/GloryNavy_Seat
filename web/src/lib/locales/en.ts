@@ -22,6 +22,8 @@ export const english: Record<string, string> = {
   "连接后选择群": "Connect to select groups",
   "在 {0} 测试 @我": "Test a mention of me in {0}",
   "测试 @我": "Mention me",
+  "审批提醒": "Approval reminders",
+  "在 {0} 启用审批提醒": "Enable approval reminders in {0}",
   "测试消息已提交": "Test message submitted",
   "测试消息发送失败": "Failed to send test message",
   "仅管理员可访问": "Administrators only",

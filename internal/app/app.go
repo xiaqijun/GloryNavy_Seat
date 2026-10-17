@@ -245,6 +245,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	exchangeJobs := &exchange.DeliveryJobs{Service: exchangeService, Enabled: slices.Contains(enabled, "exchange")}
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
 	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
+	approvalNotifications := &community.ApprovalJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "approval"), Origin: auth.Origin}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
 	identityHandler.CorporationCleanup = characterCleanup
@@ -278,7 +279,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
-		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension())
+		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension(), approvalNotifications.Extension())
 		if err != nil {
 			return nil, err
 		}
@@ -863,6 +864,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	if err != nil {
 		return nil, fmt.Errorf("approval source registration: %w", err)
 	}
+	approvalNotifications.Pending = approvalModule.Service.PendingNotificationKeys
 	if pool != nil && len(approvalModule.Service.Sources) > 0 {
 		if err := approvalProjection.Reconcile(context.Background(), approvalModule.Service.Sources); err != nil {
 			logger.Warn("approval index initial reconcile failed; using source fallback", "error", err)

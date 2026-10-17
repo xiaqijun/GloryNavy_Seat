@@ -6,7 +6,7 @@
 
 选择 [NapCatQQ](https://github.com/NapNeko/NapCatQQ)，2026-10-17 GitHub API 查询为 11,007 Star；作为未修改的独立服务运行，本站通过 OneBot 11 HTTP 接口接入。正式 Docker 镜像 v4.18.37 固定摘要见[部署示例](../../deploy/compose.napcat.example.yaml)；调查时源码最新 v4.18.38 尚无对应正式镜像标签。保留项目自身许可，未复制 NapCat 源码到本站；其许可含非商业使用限制，详见[第三方声明](../third-party-notices.md)。
 
-使用普通 QQ 账号扫码登录，不使用旧官方 AppID、App Secret 或 OpenID。此次实现群内验证码绑定、真实群列表选择及管理员“测试 @我”。业务通知队列、定时通知、自动同意入群尚未实现。
+使用普通 QQ 账号扫码登录，不使用旧官方 AppID、App Secret 或 OpenID。此次实现群内验证码绑定、真实群列表选择及管理员“测试 @我”。待审批提醒已实现，发布与真实验收见项目状态；其他业务通知和自动同意入群尚未实现。
 
 ## 使用
 
@@ -39,3 +39,15 @@ NapCat 与应用分别部署，示例不含任何真实凭据。`qq/`、`config/
 容器端口仅映射宿主 127.0.0.1；WebUI 经 SSH 隧道访问，不发布到公网。无需 privileged、宿主网络或 Docker socket。Compose 限制日志为 3×10 MiB、关闭 core dump。检查 `get_login_info`、`get_status`、`get_group_list` 后才启用网站配置；不要把 QQ 登录缓存、二维码、WebUI token 或截图写入仓库。备份持久目录并沿用私人备份权限，停用旧官方配置不删除其历史审计。
 
 参考：[NapCat 开发接口](https://napcat.napneko.icu/develop/)、[消息段](https://napneko.github.io/develop/msg)、[Docker 项目](https://github.com/NapNeko/NapCat-Docker)。
+
+## 待审批 @ 提醒（Goose 92）
+
+在 `/community` 的每个接收群勾选“审批提醒”并保存；新群和升级时默认关闭。需要同时启用 community、approval 及其依赖模块。首次开启会提醒当前仍待处理的事项。福利申请/取消审核、奖励兑换取消审核、军团贷款审批沿用来源模块的实时权限；站点管理员和有对应军团审批权限的人员均可接收，但必须完成当前 QQ 版本的 OneBot 验证，且在该接收群内。自己的申请、无权处理、已处理、待发放及补资料项不提醒。个人出借不在审批中心范围。
+
+宿主注入 approval.PendingNotificationKeys，直接读取来源授权与待审批页，不使用索引或五秒权限缓存；失败/不完整结果不关闭回执。community 不读取其他模块私有 store，不保存申请金额、姓名、原因、审批状态或付款记录，只保存不透明引用及通知回执。消息按成员使用 OneBot `at` 和 `text` 段，显示“有 N 项待审批”与站点 `/approvals` 链接，不含具体申请内容。
+
+共享 River 的独立 community 队列每分钟扫描（启动时扫描一次），任务名为 `community.approval-scan.v1` 与 `community.approval-group.v1`。每群最多每分钟一条、每条最多 20 位审批人，其余未领取记录留待后续扫描；同一连续待审批阶段只提醒一次，新增事项或取消阶段会再提醒。只有完整扫描观察到离开并重新进入待审批时，才重新提醒同一阶段；一分钟内往返的状态不保证再次提醒。关闭再开启或保存群配置不重置去重回执。
+
+发送前复核机器人登录/在线、实际群成员、实时权限/状态、配置 revision、有效绑定及账号未合并；从群移除、撤权或改号后跳过。离线、权限来源暂时失败等发送前错误可由后续扫描重试。领取回执先于网络发送持久提交，群级锁串行处理并发；OneBot 无发送幂等键，超时、未返回消息编号或提交后进程退出均不自动重发。该策略可能漏掉一次提醒，但避免重复 @；审批中心始终是待办依据。发送状态为 sending/sent/unknown，遗留 sending 五分钟后转 unknown；sent 仅表示返回消息编号，不表示已读或客户端正确显示。
+
+Goose 92 的 community_approval_notices 与 community_approval_deliveries 为模块私有。已失效回执及发送批次保留 90 天，持续待办回执保留以防重复；不清理审批或业务审计。合并账号不转移提醒目标，取消源账号活动回执、保留发送批次，目标按自己的权限与 QQ 绑定重新判断。回退前关闭提醒并取消两种未结束 River 任务；已启用或已有发送记录时 Down 拒绝，保留回执，不能回退到不认识这些任务的程序直接接单。

@@ -22,6 +22,10 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if err != nil {
 		return nil, err
 	}
+	notices, err := store.CancelAccountApprovalNotices(ctx, tx, source, apply)
+	if err != nil {
+		return nil, err
+	}
 	var bindings, challenges, groupApplications, groupBindings int64
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM community_qq_bindings WHERE user_id=$1`, source).Scan(&bindings); err != nil {
 		return nil, err
@@ -52,5 +56,5 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 			return nil, err
 		}
 	}
-	return json.Marshal(map[string]any{"onebot_bindings_removed": onebot, "qq_bindings_removed": bindings, "pending_challenges_removed": challenges, "qq_group_applications_removed": groupApplications, "qq_group_bindings_removed": groupBindings})
+	return json.Marshal(map[string]any{"approval_notices_cancelled": notices, "onebot_bindings_removed": onebot, "qq_bindings_removed": bindings, "pending_challenges_removed": challenges, "qq_group_applications_removed": groupApplications, "qq_group_bindings_removed": groupBindings})
 }

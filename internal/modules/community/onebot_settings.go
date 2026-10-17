@@ -14,8 +14,9 @@ import (
 )
 
 type OneBotGroup struct {
-	ID   string `json:"group_id"`
-	Name string `json:"name"`
+	ID              string `json:"group_id"`
+	Name            string `json:"name"`
+	NotifyApprovals bool   `json:"notify_approvals"`
 }
 type OneBotSettings struct {
 	Enabled          bool          `json:"enabled"`
@@ -61,7 +62,7 @@ func (s *Service) ListOneBotSettings(ctx context.Context) (OneBotSettings, error
 	}
 	result := OneBotSettings{Enabled: row.Enabled, APIBase: row.ApiBase, BotQQ: row.BotQq, TokenConfigured: len(row.TokenCiphertext) > 0, SecretConfigured: len(row.SecretCiphertext) > 0, Revision: strconv.FormatInt(row.Revision, 10), Groups: []OneBotGroup{}}
 	for _, g := range groups {
-		result.Groups = append(result.Groups, OneBotGroup{g.GroupID, g.Name})
+		result.Groups = append(result.Groups, OneBotGroup{ID: g.GroupID, Name: g.Name, NotifyApprovals: g.NotifyApprovals})
 	}
 	return result, nil
 }
@@ -152,7 +153,7 @@ func (s *Service) SaveOneBotSettings(ctx context.Context, input OneBotSettingsIn
 		return OneBotSettings{}, err
 	}
 	for _, g := range input.Groups {
-		if err = q.InsertOneBotGroup(ctx, store.InsertOneBotGroupParams{GroupID: g.ID, Name: g.Name}); err != nil {
+		if err = q.InsertOneBotGroup(ctx, store.InsertOneBotGroupParams{GroupID: g.ID, Name: g.Name, NotifyApprovals: g.NotifyApprovals}); err != nil {
 			return OneBotSettings{}, err
 		}
 	}
@@ -191,7 +192,7 @@ func (s *Service) OneBotStatus(ctx context.Context) (map[string]any, error) {
 	result := []OneBotGroup{}
 	for _, g := range groups {
 		if qqPattern.MatchString(g.GroupID.String()) {
-			result = append(result, OneBotGroup{g.GroupID.String(), g.Name})
+			result = append(result, OneBotGroup{ID: g.GroupID.String(), Name: g.Name})
 		}
 	}
 	return map[string]any{"online": true, "bot_qq": login.UserID.String(), "nickname": login.Nickname, "groups": result}, nil

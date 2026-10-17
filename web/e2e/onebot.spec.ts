@@ -6,7 +6,7 @@ for (const locale of ["zh-CN", "en"]) {
     const en = locale === "en";
     await page.addInitScript((value) => localStorage.setItem("glorynavy.locale", value), locale);
     await page.route("https://images.evetech.net/**", r => r.abort());
-    let settings = { enabled: true, api_base: "http://127.0.0.1:3000", bot_qq: "999999", token_configured: true, secret_configured: true, revision: "1", groups: [] as {group_id:string;name:string}[] };
+    let settings = { enabled: true, api_base: "http://127.0.0.1:3000", bot_qq: "999999", token_configured: true, secret_configured: true, revision: "1", groups: [] as {group_id:string;name:string;notify_approvals?:boolean}[] };
     let fails = true, sends = 0;
     await page.route("**/api/v1/**", async r => {
       const path = new URL(r.request().url()).pathname;
@@ -44,18 +44,24 @@ for (const locale of ["zh-CN", "en"]) {
     await expect(page.getByRole("alert")).toHaveText("Connection unavailable");
     fails = false; await connect.click();
     await expect(page.getByRole("status")).toContainText("Test bot");
+    const reminders = page.getByRole("checkbox", { name: /启用审批提醒|Enable approval reminders/ });
+    await expect(reminders).toBeDisabled();
     await page.locator(".onebot-group-choice input").check();
+    await expect(reminders).not.toBeChecked();
+    await reminders.focus(); await page.keyboard.press("Space");
     const mention = page.getByRole("button", { name: /测试 @我|Test a mention of me/ });
     await expect(mention).toBeDisabled();
     await page.getByRole("button", { name: en ? "Save" : "保存", exact:true }).first().click();
     await expect(mention).toBeEnabled();
+    expect(settings.groups[0].notify_approvals).toBe(true);
+    await expect(reminders).toBeChecked();
     await mention.click(); await expect.poll(() => sends).toBe(1);
     await expect(page.getByRole("status")).toContainText(en ? "Test message submitted" : "测试消息已提交");
     await expect(page.locator('input[type="password"]').first()).toHaveValue("");
     for (const width of [1280,375,320]) {
       await page.setViewportSize({width,height:950});
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.locator(".community-admin-page").screenshot({path:`../.local/qq-napcat/admin-${locale}-${width}.png`});
+      await page.locator(".community-admin-page").screenshot({path:`../.local/approval-notify/admin-${locale}-${width}.png`});
     }
   });
 }

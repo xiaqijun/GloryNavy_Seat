@@ -12,11 +12,11 @@ VALUES(true,$1,$2,$3,$4,$5)
 ON CONFLICT(singleton) DO UPDATE SET enabled=excluded.enabled,api_base=excluded.api_base,bot_qq=excluded.bot_qq,
 token_ciphertext=excluded.token_ciphertext,secret_ciphertext=excluded.secret_ciphertext,revision=community_onebot_settings.revision+1,updated_at=now();
 -- name: ListOneBotGroups :many
-SELECT group_id,name FROM community_onebot_groups ORDER BY name,group_id;
+SELECT group_id,name,notify_approvals FROM community_onebot_groups ORDER BY name,group_id;
 -- name: ClearOneBotGroups :exec
 DELETE FROM community_onebot_groups;
 -- name: InsertOneBotGroup :exec
-INSERT INTO community_onebot_groups(group_id,name) VALUES($1,$2);
+INSERT INTO community_onebot_groups(group_id,name,notify_approvals) VALUES($1,$2,$3);
 -- name: OneBotGroupAllowed :one
 SELECT EXISTS(SELECT 1 FROM community_onebot_groups WHERE group_id=$1);
 -- name: LockOneBotEvent :exec

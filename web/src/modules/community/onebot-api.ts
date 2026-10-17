@@ -1,7 +1,7 @@
 import { apiFetch, APIError, getData } from "@/lib/http";
 import { msg } from "@/lib/i18n";
 
-export interface OneBotGroup { group_id: string; name: string }
+export interface OneBotGroup { group_id: string; name: string; notify_approvals?: boolean }
 export interface OneBotSettings {
   enabled: boolean;
   api_base: string;
@@ -12,7 +12,7 @@ export interface OneBotSettings {
   groups: OneBotGroup[];
 }
 export interface OneBotStatus { online: boolean; bot_qq: string; nickname: string; groups: OneBotGroup[] }
-const isGroups = (v: unknown): v is OneBotGroup[] => Array.isArray(v) && v.every((item) => item && typeof item.group_id === "string" && /^[1-9]\d{4,11}$/.test(item.group_id) && typeof item.name === "string");
+const isGroups = (v: unknown): v is OneBotGroup[] => Array.isArray(v) && v.every((item) => item && typeof item.group_id === "string" && /^[1-9]\d{4,11}$/.test(item.group_id) && typeof item.name === "string" && (item.notify_approvals === undefined || typeof item.notify_approvals === "boolean"));
 export const isOneBotSettings = (v: unknown): v is OneBotSettings => {
   if (!v || typeof v !== "object") return false;
   const s = v as Partial<OneBotSettings>;

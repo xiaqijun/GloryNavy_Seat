@@ -1,5 +1,9 @@
 # 项目状态
 
+## 本轮：待审批 QQ 提醒（2026-10-17，已实现，待发布）
+
+接收群增加“审批提醒”，分钟扫描福利/兑换取消/军团贷款待办，只 @ 当前有权限、完成 OneBot 绑定且在群内的审批人。Goose 92 保存通知回执和批次，跨重启去重、发送前复核，异常发送不自动重发；配置和账号合并边界见 [OneBot 指南](integrations/qq-onebot.zh-CN.md)。隔离 PostgreSQL 的 community/approval/app/jobs 测试、相关 go vet 与 server 编译通过，覆盖并发去重/重启、实时撤权/已处理/改号/移除群、来源失败、离线重试、不确定发送、账号合并与迁移保护。前端类型/lint/构建、5 项词表单测、2 项中英文浏览器流程通过；1280/375/320px 截图已检查，长群名布局修正后复验通过。community sqlc 输出一致，文档相对链接已检查。证据在忽略目录 `.local/approval-notify/`。发布与真实触发待下一步核验。
+
 ## 当前：NapCatQQ / OneBot 11（2026-10-17，已切换并完成真实绑定）
 
 按用户要求改用第三方机器人，选用 NapCatQQ（当日 GitHub API：11,007 Star）。前后端已由干净且已推送的 `main` 提交 `9fb785c` 发布 `v0.1.0-qq-onebot-20261017`，Goose 91；应用 active/running/ready、NRestarts=0，公网页面、新管理资源哈希与匿名鉴权检查通过。独立 NapCat 容器固定 v4.18.37 摘要，端口仅宿主 loopback。
