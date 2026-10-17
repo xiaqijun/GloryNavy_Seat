@@ -1,0 +1,9 @@
+import { describe, it, expect } from "vitest";
+import { quote, inputNumber, validAppraisal, validRoutes, type Route } from "./api";
+const route: Route = { id: 1, start: "Jita", end: "1DH-SX", cost_per_m3: 600, collateral_percentage: 1, transport_type: "JF full max", transport_volume: 375000, paused: 0, expiration: 14, completion: 7, minimum_cost: 10000000 };
+describe("HA Logistics quote", () => {
+  it("combines volume and collateral fees", () => { const q = quote(route, 20000, 1000000000)!; expect(q.reward).toBe(22000000); expect(q.volumeCost).toBe(12000000); expect(q.collateralCost).toBe(10000000); });
+  it("applies minimum, exact capacity and overflow", () => { expect(quote(route, 30, 3000)?.reward).toBe(10000000); expect(quote(route, 30, 3000)?.minimumApplied).toBe(true); expect(quote(route, 375000, 0)?.oversized).toBe(false); expect(quote(route, 375001, 0)?.oversized).toBe(true); });
+  it("rejects invalid inputs instead of making free quotes", () => { for (const x of [NaN, Infinity, -1, Number.MAX_VALUE]) expect(quote(route, x, 1)).toBeNull(); expect(quote(route, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)).toBeNull(); expect(inputNumber("-1")).toBeNaN(); expect(inputNumber("")).toBeNaN(); expect(inputNumber("12.3")).toBe(12.3); });
+  it("validates upstream data and appraisal links", () => { expect(validRoutes({routes:[route],location_categories:{},fetched_at:"2026-10-18T00:00:00Z"})).toBe(true); expect(validRoutes({routes:[{...route,cost_per_m3:null}],location_categories:{},fetched_at:"2026-10-18T00:00:00Z"})).toBe(false); const a = {from_cache:false,appraisal:{buy_price:10,sell_price:20,volume:2,failed_items:{},janice_url:null}}; expect(validAppraisal(a)).toBe(true); expect(validAppraisal({...a,appraisal:{...a.appraisal,janice_url:"javascript:alert(1)"}})).toBe(false); });
+});

@@ -2,6 +2,7 @@ import { skillsModule } from "@/modules/skills";
 import { approvalModule } from "@/modules/approval";
 import { walletModule } from "@/modules/wallet";
 import { marketModule } from "@/modules/market";
+import { courierModule } from "@/modules/courier";
 import { welfareModule } from "@/modules/welfare";
 import { exchangeModule } from "@/modules/exchange";
 import { fittingsModule } from "@/modules/fittings";
@@ -27,6 +28,7 @@ export const frontendModules = registerModules([
   welfareModule,
   walletModule,
   marketModule,
+  courierModule,
   eveModule,
   communityModule,
   reminderModule,

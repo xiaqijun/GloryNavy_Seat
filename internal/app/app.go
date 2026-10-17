@@ -15,6 +15,7 @@ import (
 	"glorynavy.local/seat/internal/modules/access"
 	"glorynavy.local/seat/internal/modules/attendance"
 	"glorynavy.local/seat/internal/modules/community"
+	"glorynavy.local/seat/internal/modules/courier"
 	"glorynavy.local/seat/internal/modules/eve"
 	"glorynavy.local/seat/internal/modules/exchange"
 	"glorynavy.local/seat/internal/modules/fittings"
@@ -314,7 +315,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "community.group.manage" || permission == "reminder.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
+		if permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
 		}
 		if permission == "sentry.manage" {
@@ -880,7 +881,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			approvalModule.Service.UseIndex = true
 		}
 	}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module()}, enabled, authorize)
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module(), (courier.Handler{Service: courier.NewService()}).Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}

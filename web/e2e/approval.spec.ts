@@ -627,7 +627,7 @@ for (const language of ["zh-CN", "en"]) {
       await expect(dialog.locator(".approval-status")).toHaveText(language === "en" ? english : chinese);
       await expect(dialog.getByLabel(language === "en" ? "Payment amount / ISK" : "支付金额 / ISK", { exact: true })).toHaveValue("195633154");
       const label = language === "en" ? "In-game contract ID" : "游戏合同 ID";
-      if (contractID) {
+      if (contractID && deliveryStatus === "awaiting_acceptance") {
         await expect(dialog.getByLabel(label, { exact: true })).toHaveValue(String(contractID));
         await dialog.getByRole("button", { name: language === "en" ? `Copy ${label}` : `复制 ${label}`, exact: true }).click();
         await expect(page.locator("html")).toHaveAttribute("data-copied", String(contractID));

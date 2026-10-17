@@ -1,0 +1,24 @@
+# 快递服务
+
+按用户指定的 glory-navy 仓库现有 HA Logistics 规则接入。入口 `/courier`，位于财务与工具。路线上下架、地点、运输类型、单价、押金费率、最低运费、容量、到期和完成天数均来自服务方，不使用样例路线做默认收费。
+
+## 使用
+
+选择起点和终点；暂停路线不可选。物品清单提交给 HA Logistics 估价，自动取体积和卖价作为押金，可补充额外体积和押金；也可手动填写全部体积与押金。编辑清单清除旧结果，未识别项目须修正后重新估价。未得到有效报价、数字无效、上游失败或超容量时禁止复制合同字段。
+
+运费 = max(总计体积 × 路线每 m³ 单价 + 总押金 × 押金百分比 / 100, 最低运费)。显示长金额使用 M/B/T，合同报酬与押金按参考规则四舍五入到整数 ISK，复制不带分隔符。期限沿用路线天数。合同发给 Heavy Assets Logistics。本站只提供报价和复制，需在游戏中创建快递合同，不产生本站订单、扣费、付款或审批。
+
+## API 与边界
+
+- GET `/api/v1/courier/routes`：有效会话及资料门禁，返回 routes、location_categories、fetched_at。固定 HTTPS 来源，服务端缓存 300 秒，过期拉取失败返回 503，不将旧价当新价。
+- POST `/api/v1/courier/appraisal`：同上且要求 Origin/CSRF，JSON appraisal_text，最多 100000 个字符、5000 行，HTTP 上限 1 MiB。仅向固定 HA Logistics `/api/appraisal` 转发清单；每次独立获取服务方 XSRF 会话，不转发本站 Cookie、EVE token 或用户身份。
+- 只返回经过验证的 buy_price/sell_price/volume、未识别项目和可选 Janice HTTPS 详情；错误不透出服务方正文。请求超时、响应大小与全局两路估价并发限制；繁忙返回 429，Retry-After 5 秒。JSON 无效/过长 400，匿名 401，资料或 CSRF 拒绝 403，上游不可用 503。
+- courier.self 仅为登录入口，不是可委派管理权限；没有成员/军团私有数据读取。不开列到 ManageableCatalog，没有 store、迁移、River 任务或账号合并参与方。
+
+## 启用、验证与来源
+
+在已有 MODULES 加入 courier，保留 identity/access 及其依赖；部署同版前后端。移除该项重启即可停用。无需新增 ESI scope、密钥或数据库表。路线与估价依赖第三方服务即时可用性；真实运输及游戏合同创建不属于本站自动执行。
+
+应用服务器无法直连时，可配置 `COURIER_HTTP_PROXY` 为受信任 HTTP(S) CONNECT 代理，例如本地开发 `http://127.0.0.1:7890`；为空时沿用标准出站环境。该覆盖只应用于 courier 客户端，不改变 ESI/SSO 或其他模块。无效代理地址失败关闭，不回退直连，也不将配置写入日志。估价总超时 28 秒，保持在现有反向代理 30 秒限制内。
+
+规则参考 glory-navy 955c2ded（2026-10-18），独立实现，来源权利见[第三方声明](../third-party-notices.md)。当前验证及发布以[项目状态](../project-status.md)为准。页面说明见[快递页面](../ui/courier.md)。

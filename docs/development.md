@@ -1,5 +1,9 @@
 # 本地开发与验证
 
+快递服务在原 MODULES 清单追加 courier（依赖 identity/access，保留其依赖），同步部署前后端后访问 /courier。无额外数据库迁移、密钥或 EVE scope；报价调用固定 https://hallogistics.space。停用移除 courier 并重启，不删数据。见[快递指南](integrations/courier.zh-CN.md)。
+
+`COURIER_HTTP_PROXY` 可选，用于快递服务独立的 HTTP(S) CONNECT 出站代理；为空沿用标准环境。仅服务端读取，不能从前端更改，不影响 ESI/SSO，错误配置失败关闭。
+
 ## 模块启用提示（历史引入版本）
 
 当前迁移统一运行 `npm run db:migrate` 到仓库最新版本（现为 Goose 46，同时维护 River），不要把下列功能首次引入版本当作升级终点。`MODULES` 按实际需要追加并保留依赖；示例未默认启用 welfare，使用福利时显式添加。

@@ -1,5 +1,7 @@
 # Third-party source notices
 
+快递功能的业务规则参考用户指定的 [dearosmanthus/glory-navy](https://github.com/dearosmanthus/glory-navy/tree/955c2dedb346312d14982f12b3201ff8f22c5828) 中 courier 功能（2026-10-18 查阅）。该仓库未选择开源许可证；本项目独立实现适配，未复制其源码或资源，不将其声明为 MIT 等许可。实时路线与估价来自 [Heavy Assets Logistics](https://hallogistics.space/)，估价详情仅接受 Janice 的 HTTPS 链接。CCP 游戏数据权利沿用本文现有说明。
+
 ## NapCatQQ runtime（2026-10-17）
 
 [NapCatQQ](https://github.com/NapNeko/NapCatQQ) / [NapCat-Docker](https://github.com/NapNeko/NapCat-Docker) 以未修改的独立服务部署，本仓库只实现 OneBot 11 公开协议客户端，不复制或再分发其源码/QQ 程序。NapCat 使用自定义 Limited Redistribution License（含非商业限制），不是 MIT/Apache；使用与再分发须遵守其 [LICENSE](https://github.com/NapNeko/NapCatQQ/blob/main/LICENSE)。部署版本与固定镜像摘要、凭据边界见 [接入指南](integrations/qq-onebot.zh-CN.md)。

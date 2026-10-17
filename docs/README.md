@@ -1,5 +1,7 @@
 # 项目文档
 
+- [快递服务](integrations/courier.zh-CN.md) / [English](integrations/courier.en.md) / [页面](ui/courier.md)：HA Logistics 路线、估价与合同复制。
+
 提醒模块：[中文](integrations/reminder.zh-CN.md) / [English](integrations/reminder.en.md) · [页面](ui/reminder.md)，首批待审批游戏邮件，默认关闭。
 
 角色定期清理：[中文](integrations/corporation-cleanup.zh-CN.md) / [English](integrations/corporation-cleanup.en.md)，由成员页管理员配置，默认关闭。
