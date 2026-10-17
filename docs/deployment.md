@@ -7,7 +7,7 @@
 - 应用 active/running/ready、NRestarts=0，前后端 current 和 SHA256 清单、OpenResty 配置、公网页面、匿名管理/审批 401 及新回调缺签名 401 均通过；前端代码未变，HTML/管理资源哈希与下方首版一致。
 - 备份 `/var/backups/glorynavy/before-v0.1.0-qq-approval-notify-r2-20261017-20261017T140304Z.{dump,env,meta.json}` 均 0600，dump 253226186 字节；未做本轮恢复演练，首版发布包保留。
 - 原群提醒临时关闭（revision=4）后，在 r2 上经正式服务恢复同一已配置群（revision=5）；未新增目标或更换机器人。独立 NapCat 重启后登录态失效、快速登录名单为空，已配置预期账号的自动登录，但未以再次重启验证。后续用户重新扫码并确认后，22:21:35 记录扫码，22:21:42 QQ 返回 serverErrorCode=168，提示账号安全风险及部分功能受限，要求在最新版手机 QQ 恢复账号使用；容器 running、restart=0、oom=false。当时 WebUI 仍显示 qrcode_scanned、isLogin/coreReady=false，不能把该阶段当作用户尚未确认；后续仅按用户要求重新发起正常扫码登录，未绕过安全验证。本站服务与 QQ 登录状态分开：网站 ready 不代表机器人在线或通知送达。
-- 登录恢复复验：用户再次扫码确认后 isLogin/coreReady/online/good 均为 true，实际群匹配既有配置，缓存成员 22 人；当前绑定管理员的单成员查询（no_cache=false/true）均返回身份匹配。北京时间 22:28:05 正常 River 群任务完成，发送批次 sent=1、接收人 1、待办与回执各 9；22:28:57 后续群扫描完成，批次仍为 1。配置 enabled=true、revision=5、提醒群 1 个保持不变。未创建测试审批或手动发送业务提醒；客户端收到及 @ 显示仍待用户确认，按 COM-02 验收。
+- 登录恢复复验：用户再次扫码确认后 isLogin/coreReady/online/good 均为 true，实际群匹配既有配置，缓存成员 22 人；当前绑定管理员的单成员查询（no_cache=false/true）均返回身份匹配。北京时间 22:28:05 正常 River 群任务完成，发送批次 sent=1、接收人 1、待办与回执各 9；22:28:57 后续群扫描完成，批次仍为 1。配置 enabled=true、revision=5、提醒群 1 个保持不变。未创建测试审批或手动发送业务提醒；用户随后明确确认“收到，@显示正常”，该真实审批提醒的发送、客户端接收和指定成员 @ 验收通过；其他业务通知仍按 COM-02 跟踪。
 
 ## 2026-10-17 待审批 QQ @ 提醒
 
