@@ -5,14 +5,16 @@
 前后端已发布 `v0.1.0-qq-onebot-20261017`，来自干净且已推送的 `main` 提交 `9fb785c737a6a8ea1c3374a89adb01d0df4b14cf`。Goose 91 新增 community 私有配置、群与数字 QQ 绑定；旧官方历史记录保留，首次保存 OneBot 配置才切换，存在配置或绑定后禁止直接 Down。详细配置与恢复边界见 [NapCat 指南](integrations/qq-onebot.zh-CN.md)。
 
 - 发布前备份 `/var/backups/glorynavy/before-v0.1.0-qq-onebot-20261017-20261017T074424Z.{dump,env,meta.json}` 均为 0600，dump 253716338 字节；本轮未恢复该新备份。旧版 `v0.1.0-qq-group-code-20261017` 保留。
-- 两端发布清单与 current 已核对；应用 active/running/ready、NRestarts=0，Goose 91，OpenResty 配置检查通过。`/`、`/account`、`/community` 均 200；新管理 settings GET/PUT、status GET、test POST 匿名均 401。尚未配置时 OneBot webhook 返回 503，不当作已联通。
+- 两端发布清单与 current 已核对；应用 active/running/ready、NRestarts=0，Goose 91，OpenResty 配置检查通过。`/`、`/account`、`/community` 均 200；新管理 settings GET/PUT、status GET、test POST 匿名均 401。初始未配置时 OneBot webhook 返回 503；实际启用后缺签名新回调返回 401、旧官方回调返回 503。
 - 公网账户 HTML SHA256 `0d9f2adfd01fc8a27d4653af136a464bfac3d47c43689b286b82bc66ee327173` 与包一致；`qq-admin-page-9YmnFfUe.js` SHA256 `5e65232e1c7bc65ef2a783f736a42af79dbd323d701119d8c2f51a6e05de739a` 与包一致。
-- 独立 NapCat 容器固定 v4.18.37 镜像摘要，见[部署示例](../deploy/compose.napcat.example.yaml)。WebUI 和 OneBot HTTP 仅绑定宿主 loopback，持久目录和凭据为私有权限，日志限制 3×10 MiB；不公开登录二维码或凭据。扫码后登录失败，OneBot 配置未首次保存，官方传输暂保留。
+- 独立 NapCat 容器固定 v4.18.37 镜像摘要，见[部署示例](../deploy/compose.napcat.example.yaml)。WebUI 和 OneBot HTTP 仅绑定宿主 loopback，持久目录和凭据为私有权限，日志限制 3×10 MiB；不公开登录二维码或凭据。现已完成登录，isLogin/coreReady/online/good 均为 true；经正式 community 服务保存加密配置并启用，revision=2，实际加入并允许的群为 1 个，官方传输已停用。
 - 隔离 PostgreSQL 的 24 项 community 测试、community/app go vet 与 server 编译通过。宿主全量回归初次仅旧清理回退断言受新增迁移影响，明确 DownTo(89) 后，清理、社区门禁和新当前管理员/撤权/CSRF 共 3 项复验通过。Windows 本地 Go 依赖下载超时不作为通过证据；隔离测试容器已移除。
 - 前端类型/lint/生产构建、5 项词表单测、2 项中英文新管理流程及 4 项原绑定流程通过，1280/375/320px 截图已检查；社区 sqlc 生成一致，OpenAPI YAML 及受影响文档链接检查通过。日志、截图、发布和验证脚本位于 `.local/qq-napcat/`。
 - GitNexus 旧索引对共享初始化传播报 CRITICAL，提交扫描 44 文件、39 个已索引符号、22 条流程；已提前提示并按准确文件和调用点复核，宿主初始化仅增加账号锁注入一行。新增符号未被旧索引覆盖，不把索引结果当完整范围证明。
-- 登录诊断：北京时间 15:47:19 记录扫码，15:47:20 记录 ErrType=1 / ErrCode=5；WebUI 仍为 qrcode_scanned 且 loginError 为空，不能继续解释为用户未确认。已解码原展示 PNG 和容器当前 PNG，二者均与当前 WebUI QR URL 一致；容器 running、restart=0、OOM=false。脱敏日志在 `.local/qq-napcat/login-diagnostics.log`，手机异常原文仍待补充。上游[同码报告 #2063](https://github.com/NapNeko/NapCatQQ/issues/2063)未确认根因，不能据此断言过期或风控；未盲目降级或更改 QQ 账号配置。
-- 真实联调仍需解决登录失败、入群、保存群范围、成员自行发码及客户端 @ 显示；业务通知与自动入群尚未实现，按 COM-01/02 验收。
+- 登录诊断历史：北京时间 15:47:19 记录扫码，15:47:20 记录 ErrType=1 / ErrCode=5；WebUI 仍为 qrcode_scanned 且 loginError 为空，不能解释为用户未确认。原 PNG 与当时 WebUI QR URL 一致，容器无重启/OOM；用户随后明确手机提示过期。刷新当前 WebUI 链接，直接生成并反向解码核对二维码后，20:30:52 收到新扫码并完成登录，未降级 NapCat/QQ。脱敏日志在 `.local/qq-napcat/login-diagnostics.log`；上游[同码报告 #2063](https://github.com/NapNeko/NapCatQQ/issues/2063)仅作为诊断线索，不作为此次根因证明。
+- 真实绑定：用户加入群后，运维以正式 SaveOneBotSettings 服务校验和保存该实际群；用户自行在网站生成验证码并免 @ 发群，20:35:16 成功写入数字 QQ 绑定与当前 onebot 确认，绑定/事件计数各 1，未人工写绑定或代用户生成验证码。
+- 主动 @：当前管理员与当前 QQ 确认复核后，调用正式 TestOneBotMention 向唯一已配置测试群发送一次固定“本站测试提醒”，20:42:26 返回成功；没有自动重试发送，客户端显示待用户确认，记录 `.local/qq-napcat/mention-test.log`。临时工具首次编译因文件传输未完成而失败，未执行发送；传输完成后编译并发送成功。
+- 真实账号改号失效、异常/重放恢复及进程重启后的登录保持仍待验收；业务通知与自动入群尚未实现，按 COM-01/02 验收。
 
 ## QQ 群消息直接发码绑定（2026-10-17）
 
