@@ -21,7 +21,7 @@ export function LoanCaseDetail({ detail, pool, status, collateralAction, request
     <div className="loan-detail-identity"><strong>{item.public_id}</strong><span className="loan-state">{status}</span></div>
     <dl className="loan-detail-facts loan-detail-parties">
       <div><dt>{msg("出借方")}</dt><dd>{lender}{source?.is_shared && lender !== msg("统一贷款池") && <small>{msg("统一贷款池")}</small>}</dd></div>
-      <div><dt>{msg("当前贷款专员")}</dt><dd>{officer}</dd></div>
+      <div><dt>{msg("合同处理角色")}</dt><dd>{officer}</dd></div>
     </dl>
     <dl className="loan-detail-metrics"><div><dt>{msg("本金")}</dt><dd>{exactMoney(item.principal_minor)}</dd></div><div><dt>{msg("利息")}</dt><dd>{exactMoney(item.interest_minor)}</dd></div><div><dt>{msg("总应还")}{item.requested_due_at && !item.first_due_at && msg("（预计）")}</dt><dd>{exactMoney(item.total_due_minor)}</dd></div></dl>
     {detail.security && <SecuritySummaryView value={detail.security} />}

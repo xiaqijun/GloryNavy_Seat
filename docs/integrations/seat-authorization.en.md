@@ -1,5 +1,14 @@
 # SeAT-style corporation authorization
 
+## 2026-10-17: Business officer configuration
+
+Role configuration at `/access` offers three presets: reimbursement officer (`corporation.welfare.compensation`), welfare officer (`corporation.welfare`), and loan officer (`corporation.loan`). Reimbursement officers handle srp/solo cases; welfare officers review and deliver benefits while rules, discretionary coin grants and reversals retain their existing administrator checks. Loan officers receive existing corporation loan operations; direct administrator funding remains separately restricted. The user cancelled the PAP settlement officer; no attendance/PAP ability is added.
+
+Save the role, then assign it to a site account through member assignments. All characters of that account share the assignment. Presets start without additional role-level filters, but configured-corporation and current membership boundaries still apply; the existing editor can narrow them further. Existing versioned role and audited assignment APIs are reused. Configuration requires `access.manage`; existing grants are not modified and selecting a contract character never promotes its owner.
+
+The previous loan-officer character selector is now labelled “Set contract character”. Business permissions and game contract custody are configured separately. Approval QQ reminders continue to use current permissions, verified numeric QQ bindings and group membership.
+
+
 ## 2026-10-17: Configured corporations and business scope
 
 Cleanup rules now search and select synced corporations by name. Candidates come from local EVE role snapshots, including expired name labels; labels are not authorization evidence. HTTP and storage continue to use stable corporation IDs. Existing selections are preserved; missing names are marked pending sync and can be removed.

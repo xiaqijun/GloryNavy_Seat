@@ -261,7 +261,10 @@ test("ordinary member cannot discover menu or load management data", async ({
   await expect(
     page.getByText("没有权限管理权限", { exact: true }),
   ).toBeVisible();
-  await openNavigation(page, "系统管理");
+  const nav = await openNavigation(page);
+  await expect(
+    nav.getByRole("button", { name: "系统管理", exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("navigation").getByRole("link", { name: "权限管理" }),
   ).toHaveCount(0);

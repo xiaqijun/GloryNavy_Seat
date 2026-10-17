@@ -1,9 +1,9 @@
-import { msg, getLocale } from "@/lib/i18n";
+import { msg, getLocale, translate } from "@/lib/i18n";
 import { ConfirmDialog as Confirm } from "@/components/ui/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Tabs } from "radix-ui";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -36,6 +36,7 @@ import {
   type Member,
 } from "./manage-api";
 import { RoleEditor } from "./role-editor";
+import { OfficerPresets } from "./officer-presets";
 import "./management.css";
 
 export default function ManagementPage() {
@@ -98,6 +99,8 @@ function Feedback({
 }
 function Management({ user, csrf }: { user: string; csrf: string }) {
   const client = useQueryClient();
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState(params.get("tab") === "members" ? "members" : "roles");
   const roles = useQuery({
     queryKey: ["access", "roles", user],
     queryFn: ({ signal }) => getRoles(signal),
@@ -147,7 +150,7 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
           <RefreshCw aria-hidden="true" />
         </IconAction>
       </div>
-      <Tabs.Root defaultValue="roles" onValueChange={() => setNotice("")}>
+      <Tabs.Root value={tab} onValueChange={(value) => { setTab(value); setNotice(""); }}>
         <Tabs.List className="access-tabs" aria-label={msg("权限管理分区")}>
           <Tabs.Trigger value="roles">
             <ShieldCheck size={18} aria-hidden="true" />
@@ -178,6 +181,19 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
         ) : (
           <>
             <Tabs.Content value="roles">
+              <OfficerPresets permissions={permissions.data} busy={busy} onSelect={(preset) => {
+                const existing = roles.data.find((role) =>
+                  [preset.name, translate("en", preset.name)].includes(role.name) &&
+                  role.grants.length === 1 && role.grants[0].permission === preset.permission,
+                );
+                setSelected(existing ?? {
+                  id: crypto.randomUUID(), name: msg(preset.name), version: "0",
+                  grants: [{ permission: preset.permission, corporations: [], alliances: [] }],
+                });
+                setEditorKey((key) => key + 1);
+                save.reset();
+                setNotice("");
+              }} />
               <div className="access-role-layout">
                 <div className="access-role-sidebar">
                   <div className="access-section-heading">
@@ -255,6 +271,13 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
                 </div>
                 <Card className="access-editor-card">
                   <CardContent>
+                    {selected && selected.version !== "0" && (
+                      <div className="access-officer-assign">
+                        <Button variant="outline" disabled={busy} onClick={() => { setTab("members"); setNotice(""); }}>
+                          <UsersRound aria-hidden="true" />{msg("配置成员")}
+                        </Button>
+                      </div>
+                    )}
                     {selected ? (
                       <RoleEditor
                         key={`${selected.id}-${editorKey}`}

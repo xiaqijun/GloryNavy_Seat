@@ -1,5 +1,12 @@
 # Loan module
 
+## 2026-10-17: Loan officer operating permissions
+
+A loan officer is a site account with `corporation.loan`. Permission management offers a named role preset that must be saved and assigned/revoked for members; administrators can open configuration from loan settings. Configured corporations, current account membership and object checks still apply. This role grants neither site administration nor permission management. Choosing a contract character does not automatically grant loan permissions to its owner.
+
+Game character configuration is separately labelled “Set contract character”, and loan details/contribution instructions use “Contract character” instead of the former “Current loan officer” label. Existing custodian_character_id/name, the `/settings/custodian` endpoint and active-binding checks are retained. No backend, migration or contract workflow change.
+
+
 ## Automatic excess security and 80% collateral (2026-10-16, Goose 89)
 
 Required security = max(0, principal − max(0, personal limit − existing responsibility)). The automatic amount is max(0, required security − this case's effective coverage − pending allocations). Effective coverage includes accepted/active guarantees and approved/held collateral. Pending allocations include invited guarantees, proposed collateral and frozen awaiting-delivery targets; they prevent duplicate allocation but never approve a loan or reserve guarantor credit. New invitations/selections require fresh active borrower credit. Transactions lock account credit before the case, then recalculate the amount. A zero gap rejects creation; security is not shared between cases.

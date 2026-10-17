@@ -1,5 +1,17 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "专员配置": "Officer roles",
+  "补损专员": "Reimbursement officer",
+  "福利发放专员": "Welfare officer",
+  "贷款专员": "Loan officer",
+  "补损审核与交付": "Reimbursement review and delivery",
+  "贷款管理": "Loan management",
+  "配置成员": "Assign members",
+  "配置贷款专员": "Manage loan officers",
+  "合同处理角色": "Contract character",
+  "设置合同处理角色": "Set contract character",
+  "合同处理角色已更新": "Contract character updated",
+  "合同处理角色设置失败": "Could not update contract character",
   "机器人 QQ 号": "Bot QQ number",
   "留空不更改": "Keep current",
   "NapCat 未连接或配置已变更": "NapCat is disconnected or its configuration has changed",
