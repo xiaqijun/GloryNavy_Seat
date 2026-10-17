@@ -130,6 +130,9 @@ func (s *Service) Estimate(ctx context.Context, text string, ratio int) (Apprais
 	for _, l := range lines {
 		if l.Status == "pending" {
 			names = append(names, l.Name)
+			if fallback := copiedItemName(l.Name); fallback != "" {
+				names = append(names, fallback)
+			}
 		}
 	}
 	types, err := s.Resolve(ctx, names)
@@ -143,12 +146,31 @@ func (s *Service) Estimate(ctx context.Context, text string, ratio int) (Apprais
 		}
 		typ, ok := types[strings.ToLower(v.Name)]
 		if !ok {
+			if fallback := copiedItemName(v.Name); fallback != "" {
+				typ, ok = types[strings.ToLower(fallback)]
+			}
+		}
+		if !ok {
 			v.Status = "unknown_type"
 			continue
 		}
 		v.TypeID, v.Name = typ.ID, typ.Name
 	}
 	return s.estimateLines(ctx, lines, ratio)
+}
+
+// copiedItemName recognizes a single trailing marker in copied inventory names.
+// The original exact name always wins; the fallback still requires an exact,
+// unambiguous SDE match. Internal punctuation and the original input are kept.
+func copiedItemName(name string) string {
+	if !strings.HasSuffix(name, "*") {
+		return ""
+	}
+	name = strings.TrimSpace(strings.TrimSuffix(name, "*"))
+	if strings.HasSuffix(name, "*") {
+		return ""
+	}
+	return name
 }
 
 func (s *Service) estimateLines(ctx context.Context, lines []Line, ratio int) (Appraisal, error) {

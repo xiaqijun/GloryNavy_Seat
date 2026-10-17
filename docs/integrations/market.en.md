@@ -1,5 +1,7 @@
 # Item appraisal
 
+2026-10-18: Pasted lists accept a single trailing `*` marker, such as `23rd Tier Overseer's Personal Effects*\t3`. Exact full-name matches take priority. Only an unresolved name retries against active SDE after removing one trailing asterisk and adjacent whitespace. Internal/repeated asterisks and unknown or ambiguous names are not guessed. Original input, quantities and row order remain intact; repeated types share one quote request. No migration, pricing-policy change or change to type-ID-based contract/collateral estimates.
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 2026-09-20 local addition: **Appraise a contract** selects an accessible personal or corporation source, searches/paginates outstanding, unexpired item-exchange/auction contracts, and prices either offered or requested items separately. Courier, accepted and expired contracts are excluded. This reads synchronized local contracts, not a public universe-wide search, and never accepts or delivers a contract.
