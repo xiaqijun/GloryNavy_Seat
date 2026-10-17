@@ -1,5 +1,14 @@
 # Linux 生产部署
 
+## 2026-10-17 待审批提醒成员查询修正 r2
+
+前后端 `v0.1.0-qq-approval-notify-r2-20261017` 来自干净且已推送的 `main` 提交 `6d6faf90f285de678b857061efacd23c2c217f9a`，Goose 92 不变。修正仅为通知成员查询：全表缓存用于候选，空结果报不可用，发送前逐个强制查询并核对群/成员身份。独立 PostgreSQL 通知专项含扫描后离群共 4 个顶层测试及 9 个边界子场景通过；相关 vet、app/server 编译通过。
+
+- 应用 active/running/ready、NRestarts=0，前后端 current 和 SHA256 清单、OpenResty 配置、公网页面、匿名管理/审批 401 及新回调缺签名 401 均通过；前端代码未变，HTML/管理资源哈希与下方首版一致。
+- 备份 `/var/backups/glorynavy/before-v0.1.0-qq-approval-notify-r2-20261017-20261017T140304Z.{dump,env,meta.json}` 均 0600，dump 253226186 字节；未做本轮恢复演练，首版发布包保留。
+- 原群提醒临时关闭（revision=4）后，在 r2 上经正式服务恢复同一已配置群（revision=5）；未新增目标或更换机器人。独立 NapCat 重启后登录态失效、快速登录名单为空，已展示二维码，待用户确认。已配置预期账号的自动登录，但未以再次重启验证。本站服务与 QQ 登录状态分开：网站 ready 不代表机器人在线或通知送达。
+- 本轮没有生产审批测试单或真实业务消息发送；离线时发送前重试，当前回执/批次均为空。真实待办触发、客户端显示、登录后群成员恢复仍按 COM-02 验收。
+
 ## 2026-10-17 待审批 QQ @ 提醒
 
 前后端已发布 `v0.1.0-qq-approval-notify-20261017`，来源为干净且已推送的 `main` 提交 `f9a05ee9d609d9465ecb0daaf31435e193f2199b`。Goose 92 新增 community 通知回执/发送批次及接收群提醒开关；原审批来源继续保有业务状态和权限。配置及回退见 [OneBot 指南](integrations/qq-onebot.zh-CN.md)。
