@@ -1,5 +1,11 @@
 # Linux 生产部署
 
+## 2026-10-17 暂停 QQ 机器人
+
+用户要求暂时禁用。通过当前部署源码的正式 `community.SaveOneBotSettings` 服务，以原 revision、API 地址、群配置及保留的加密凭据保存 `enabled=false`，新 revision=6；未直接写业务 SQL。停止独立 `glorynavy-napcat` 容器，确认 exited/running=false，保留 `unless-stopped` 策略及持久目录。
+
+复核数据库全局开关关闭、接收群仍 1 个、未结束 `community.approval-group.v1` 任务为 0、发送批次仍 1 条 sent；新 OneBot 和旧官方 webhook 均返回 503。网站 active/running/ready、NRestarts=0，前后端版本和 Goose 不变。配置、绑定及去重历史保留；没有发送测试消息。恢复须用户明确要求后重新启动 NapCat、确认 QQ 在线再启用网站配置，不能仅开启群提醒复选框。运维脚本在忽略目录 `.local/qq-disable/`。
+
 ## 2026-10-17 业务专员配置（仅前端）
 
 前端 `v0.1.0-officer-roles-20261017` 来自干净且已推送的 `main` 提交 `6bdafbf3b29e45e121f426e85d2735df4456cf25`。补损、福利发放、贷款专员通过既有权限角色和成员授权配置；游戏合同处理角色单独配置。用户取消 PAP 结算专员，不增加其权限。没有代用户创建角色或授予生产成员权限。
