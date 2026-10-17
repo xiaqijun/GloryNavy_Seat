@@ -21,7 +21,7 @@ import { IconAction } from "@/components/ui/icon-action";
 import { Modal } from "@/components/ui/dialog";
 import * as api from "./api";
 import { JournalAmount } from "./journal-amount";
-import { grossAmount, journalRows, type JournalRow } from "./journal-rows";
+import { journalRowLabel, journalRows, type JournalRow } from "./journal-rows";
 import "./wallet.css";
 
 const date = (v?: string) =>
@@ -335,7 +335,7 @@ function History({
                   { value: "in", label: msg("收入") },
                   { value: "out", label: msg("支出") },
                   ...(owner.kind === "character"
-                    ? [{ value: "tax", label: msg("交税") }]
+                    ? [{ value: "tax", label: msg("军团税金") }]
                     : []),
                 ]
               : [
@@ -477,13 +477,8 @@ function History({
                     {journal ? (
                       <>
                         <strong className="wallet-journal-type">
-                          {row.display_kind === "tax"
-                            ? msg("军团税")
-                            : api.refLabel(row.ref_type)}
+                          {journalRowLabel(row)}
                         </strong>
-                        {row.display_kind === "gross" && (
-                          <span className="wallet-note">{msg("税前收入")}</span>
-                        )}
                         {row.reason && (
                           <span className="wallet-note">{row.reason}</span>
                         )}
@@ -540,7 +535,7 @@ function History({
                     <IconAction
                       label={
                         row.display_kind === "tax"
-                          ? msg("查看交税记录 {0}", row.id)
+                          ? msg("查看税金记录 {0}", row.id)
                           : msg("查看记录 {0}", row.id)
                       }
                       onClick={() => setSelected(row)}
@@ -584,37 +579,16 @@ function History({
                 [
                   msg("类型"),
                   journal
-                    ? selected.display_kind === "tax"
-                      ? msg("军团税")
-                      : api.refLabel(selected.ref_type)
+                    ? journalRowLabel(selected)
                     : selected.is_buy
                       ? msg("买入")
                       : msg("卖出"),
                 ],
                 [
-                  selected.display_kind === "gross"
-                    ? msg("税前收入（ISK）")
-                    : msg("金额（ISK）"),
+                  msg("金额（ISK）"),
                   journal
                     ? api.money(selected.amount)
                     : api.money(selected.unit_price),
-                ],
-                [
-                  msg("税前收入（ISK）"),
-                  selected.display_kind === "tax"
-                    ? api.money(
-                        grossAmount(
-                          selected.source?.amount,
-                          selected.source?.tax,
-                        ),
-                      )
-                    : undefined,
-                ],
-                [
-                  msg("实际到账（ISK）"),
-                  selected.source
-                    ? api.money(selected.source.amount)
-                    : undefined,
                 ],
                 [
                   msg("余额（ISK）"),
@@ -675,13 +649,6 @@ function History({
                 </div>
               ))}
           </dl>
-          {selected.source && (
-            <p className="wallet-tax-help">
-              {msg(
-                "税前收入减去军团税，等于实际到账。两行关联同一笔原始流水。",
-              )}
-            </p>
-          )}
         </Modal>
       )}
     </section>

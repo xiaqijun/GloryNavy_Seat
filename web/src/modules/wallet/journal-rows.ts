@@ -1,10 +1,28 @@
-import type { Row } from "./api";
+import { msg } from "@/lib/i18n";
+import { refLabel, type Row } from "./api";
 import { hasWithheldTax } from "./tax";
 
 export type JournalRow = Row & {
   display_kind?: "gross" | "tax";
   source?: Row;
 };
+
+const corporationTaxTypes: Record<string, string> = {
+  bounty_prize: "bounty_prize_corporation_tax",
+  bounty_prizes: "bounty_prize_corporation_tax",
+  agent_mission_reward: "agent_mission_reward_corporation_tax",
+  agent_mission_time_bonus_reward:
+    "agent_mission_time_bonus_reward_corporation_tax",
+  freelance_jobs_reward: "freelance_jobs_reward_corporation_tax",
+};
+
+export function journalRowLabel(row: JournalRow): string {
+  if (row.display_kind !== "tax") return refLabel(row.ref_type);
+  const taxType = row.ref_type && Object.hasOwn(corporationTaxTypes, row.ref_type)
+    ? corporationTaxTypes[row.ref_type]
+    : undefined;
+  return taxType ? refLabel(taxType) : msg("军团税金");
+}
 
 function decimal(value?: string | null) {
   const m = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(value || "");

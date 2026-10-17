@@ -32,7 +32,7 @@ for (const locale of ["zh-CN", "en"]) {
     await expect(table.locator("tbody tr")).toHaveCount(4);
     await expect(table.locator("tbody tr").nth(0)).toContainText("+3,457,555.18875");
     await expect(table.locator("tbody tr").nth(0)).not.toContainText("10,000,000.01");
-    await expect(table.locator("tbody tr").nth(1)).toContainText(en ? "Corporation tax" : "军团税");
+    await expect(table.locator("tbody tr").nth(1)).toContainText(en ? "Bounty Prize Corporation Tax" : "追击赏金 军团税金");
     await expect(table.locator("tbody tr").nth(1)).toContainText("-432,194.39875");
     await expect(table.locator("tbody tr").nth(1)).toContainText("10,000,000.01");
     await assertLayout(page);
@@ -55,7 +55,7 @@ for (const locale of ["zh-CN", "en"]) {
     await expect(table).toContainText("+3,457,555.18875");
     await expect(table.locator(".wallet-tax-row")).toHaveCount(0);
     await select.click();
-    await page.getByRole("option", { name: en ? "Tax" : "交税", exact: true }).click();
+    await page.getByRole("option", { name: en ? "Corporation tax" : "军团税金", exact: true }).click();
     const taxRequest = page.waitForRequest((r) => new URL(r.url()).searchParams.get("direction") === "tax");
     await page.getByRole("button", { name: en ? "Search records" : "查询记录", exact: true }).click();
     await taxRequest;
@@ -64,11 +64,11 @@ for (const locale of ["zh-CN", "en"]) {
     await assertLayout(page);
     await table.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
     await page.screenshot({ path: info.outputPath(`tax-${locale}.png`), fullPage: true });
-    await page.getByRole("button", { name: en ? "View tax record 53" : "查看交税记录 53" }).click();
+    await page.getByRole("button", { name: en ? "View tax record 53" : "查看税金记录 53" }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("432,194.39875", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("3,025,360.79", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("3,457,555.18875", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(en ? "Bounty Prize Corporation Tax" : "追击赏金 军团税金", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("-432,194.39875", { exact: true })).toBeVisible();
     await expect(dialog.getByText("TaxRecipientWithAnExtremelyLongCorporationNameForWrapping", { exact: true }).first()).toBeVisible();
     await assertLayout(page);
     await page.screenshot({ path: info.outputPath(`detail-${locale}.png`), fullPage: true });
@@ -77,6 +77,6 @@ for (const locale of ["zh-CN", "en"]) {
     await page.getByRole("option", { name: "Corporation", exact: true }).click();
     await expect(page.locator(".wallet-tax-row")).toHaveCount(0);
     await select.click();
-    await expect(page.getByRole("option", { name: en ? "Tax" : "交税", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: en ? "Corporation tax" : "军团税金", exact: true })).toHaveCount(0);
   });
 }

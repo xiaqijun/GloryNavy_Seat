@@ -256,19 +256,13 @@
 .wallet-out {
   color: var(--color-destructive);
 }
-.wallet-tax-recipient,
-.wallet-tax-help {
-  font-size: 12px;
-}
 .wallet-tax-recipient {
+  font-size: 12px;
   display: block;
   max-width: 260px;
   margin-top: 4px;
   color: var(--muted);
   overflow-wrap: anywhere;
-}
-.wallet-tax-help {
-  color: var(--muted);
 }
 .wallet-tag {
   font-size: 12px;
