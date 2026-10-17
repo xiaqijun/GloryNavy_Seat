@@ -1,5 +1,16 @@
 # Linux 生产部署
 
+## 2026-10-17 业务专员配置（仅前端）
+
+前端 `v0.1.0-officer-roles-20261017` 来自干净且已推送的 `main` 提交 `6bdafbf3b29e45e121f426e85d2735df4456cf25`。补损、福利发放、贷款专员通过既有权限角色和成员授权配置；游戏合同处理角色单独配置。用户取消 PAP 结算专员，不增加其权限。没有代用户创建角色或授予生产成员权限。
+
+- 生产分支守卫、发布清单 SHA256、边缘 current 与 OpenResty 配置均通过。后端保持 `v0.1.0-qq-approval-notify-r2-20261017`，active/running/ready、NRestarts=0，Goose 92；本次没有后端部署、数据库迁移或 QQ 服务重启。
+- `/`、`/access`、`/loans/operations` 均 200；匿名 roles/catalog/members、loan context/policy 均 401。HTML SHA256 `d1747bd9fa8cb01bff21fc1f0b3980658e3fd1b839ec3377bf4f1e38d4cc952d` 与包一致。
+- 公网管理资源 `management-page-BOiWrP85.js` SHA256 `70b3d1a897958e8e388f273f9d5cb86fcaa67717b37ffc2be3083b46f51022f6`；贷款资源 `page-Bow6YhC7.js` SHA256 `943d92b38d773ad509920dc5dec6ed2d9700f097ce32c046878c0f1afca4af71`，逐字节核对一致。
+- 前端类型/构建、受影响文件 lint、5 项词表单测、27 项浏览器流程及最终翻译后的 2 项窄屏复验通过；覆盖权限拒绝、角色保存、授权/撤销、跨语言复用和过滤保留，1280/375/320px 截图已检查。全量 lint 的 5 项既有警告不在本次修改范围。后端配置军团范围和补损权限两个已有单测复验通过。
+- GitNexus 索引落后，刷新停滞后停止；既有页面 impact 为 LOW，部分新组件/回调和词表为 UNKNOWN，人工复核。提交扫描为 17 文件、21 个旧索引符号、2 条贷款详情翻译流程，MEDIUM。证据与发布工具位于忽略目录 `.local/officer-config/`。
+- 恢复可重新激活保留的前端 `v0.1.0-qq-approval-notify-r2-20261017`；角色/成员数据接口未变，撤回前端不会撤销已保存的权限角色。后端和数据库不随前端回退。
+
 ## 2026-10-17 待审批提醒成员查询修正 r2
 
 前后端 `v0.1.0-qq-approval-notify-r2-20261017` 来自干净且已推送的 `main` 提交 `6d6faf90f285de678b857061efacd23c2c217f9a`，Goose 92 不变。修正仅为通知成员查询：全表缓存用于候选，空结果报不可用，发送前逐个强制查询并核对群/成员身份。独立 PostgreSQL 通知专项含扫描后离群共 4 个顶层测试及 9 个边界子场景通过；相关 vet、app/server 编译通过。
