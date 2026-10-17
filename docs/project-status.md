@@ -1,16 +1,20 @@
 # 项目状态
 
-## 进行中：发信授权回调排查（2026-10-18）
+## 当前：发信授权诊断（2026-10-18，已发布）
 
-管理员已多次完成 EVE 授权操作，回调收到，但发件角色仍为 58 项 scopes、未保存发信权限；生产配置已选择发件角色、revision=2，发送仍关闭。已补充发信回调的有限失败原因及角色 ID 日志，并区分页面错误提示；待本轮验证、发布与真实回调复核，不能将收到回调视为授权成功。
+前后端由干净且已推送的 `main` 提交 `1b58b57` 发布 `v0.1.0-reminder-auth-20261018`；Goose 93、active/running/ready、NRestarts=0，公网 HTML/资源哈希及匿名鉴权通过。授权失败区分角色不符、会话失效、缺少权限与管理权限撤销，角色不符显示所需角色；错误使用错误色。回调只记录固定原因、请求 ID 和预期/返回角色 ID，不含授权码、令牌或会话。
 
-## 当前：游戏邮件待审批提醒（2026-10-17，已发布，待发件角色授权）
+发布后真实回调已定位为 `wrong_character`：EVE 签名身份与所选发件角色 ID 不同，且官方公开角色接口确认两个 ID 名称不同；拦截符合指定角色授权约束，不能将用户已操作授权等同于目标角色已获权限。随后用户重新选择同一发件角色，于北京时间 00:23:10 成功保存真实授权：scopes 58→59、含 `esi-mail.send_mail.v1`、generation 9→10、authorized 事件已记录。配置 revision=2、发送仍关闭、记录 0；启用与实际客户端收信仍待验收。QQ 继续 disabled、NapCat exited，绑定和有效确认均 0。
 
-前后端已由干净且已推送的 `main` 提交 `1664eb4` 发布 `v0.1.0-reminder-mail-20261017`，Goose 93、active/running/ready、NRestarts=0。公网 `/reminders` 200，配置/历史/重试及额外授权入口匿名均 401，HTML 与新页面/主包哈希一致，OpenResty 检查通过。生产 reminder 仍为 enabled=false、sender_id=0、revision=1、发送记录 0；正常扫描已完成 2 次，没有自动发送。QQ 配置仍 disabled/revision=6，NapCat exited，OneBot/旧官方绑定和 QQ 有效确认均 0，两类 webhook 均 503。备份和恢复见[部署记录](deployment.md)。
+隔离 PostgreSQL 登录/角色/发信授权 3 项回归、相关 go vet、前端类型/构建/lint、5 项词表单测和 1280/375/320px 中英文 18 项浏览器流程通过。测试覆盖具体错误提示、关闭、越权、恢复及日志不泄漏凭据。GitNexus impact 因旧索引为 UNKNOWN，人工核对授权路由；提交前 detect_changes 为 11 文件、3 个旧索引符号、LOW。材料位于 `.local/reminder-auth/`，备份及恢复见[部署记录](deployment.md)。
+
+## 游戏邮件待审批提醒首版（2026-10-17，已发布；最新授权状态见上文）
+
+前后端已由干净且已推送的 `main` 提交 `1664eb4` 发布 `v0.1.0-reminder-mail-20261017`，Goose 93、active/running/ready、NRestarts=0。公网 `/reminders` 200，配置/历史/重试及额外授权入口匿名均 401，HTML 与新页面/主包哈希一致，OpenResty 检查通过。首版上线时 reminder 为 enabled=false、sender_id=0、revision=1、发送记录 0；正常扫描已完成 2 次，没有自动发送。QQ 配置仍 disabled/revision=6，NapCat exited，OneBot/旧官方绑定和 QQ 有效确认均 0，两类 webhook 均 503。备份和恢复见[部署记录](deployment.md)。
 
 独立 reminder 模块、Goose 93，管理员在 `/reminders` 选择本人发件角色并单独授权 `esi-mail.send_mail.v1`，普通登录 scopes 不变。首次仅待审批事项，按当前来源权限发送给当前主角色；配置默认关闭。去重持久化、明确失败可重试、未知结果不自动重发，后台独立 River 队列，历史 90 天保留，合并保留原账号。QQ 保持停用、登出和解除绑定。指南见[中文](integrations/reminder.zh-CN.md) / [English](integrations/reminder.en.md)。
 
-隔离 PostgreSQL 的 reminder/approval、邮件与原登录/角色/配装授权测试、宿主全套回归、jobs/server 编译及相关 go vet 已通过。前端类型/构建/lint、5 项词表单测及 1280/375/320px 中英文 12 项浏览器流程通过；首次检查发现窄屏溢出、词表缺项与重复键，已修复，截图检查后进一步收紧卡片留白并保证表格正常横向滚动。新增发件授权缺失时跳过扫描，避免制造重复失败作业；该分支隔离数据库测试与 go vet 复验通过。最终 12 项浏览器流程复验、类型/构建/lint/5 项词表单测通过，截图已检查。真实发件角色授权、启用和客户端收信尚未进行，见 REMINDER-01。
+隔离 PostgreSQL 的 reminder/approval、邮件与原登录/角色/配装授权测试、宿主全套回归、jobs/server 编译及相关 go vet 已通过。前端类型/构建/lint、5 项词表单测及 1280/375/320px 中英文 12 项浏览器流程通过；首次检查发现窄屏溢出、词表缺项与重复键，已修复，截图检查后进一步收紧卡片留白并保证表格正常横向滚动。新增发件授权缺失时跳过扫描，避免制造重复失败作业；该分支隔离数据库测试与 go vet 复验通过。最终 12 项浏览器流程复验、类型/构建/lint/5 项词表单测通过，截图已检查。首版发布时尚未执行真实授权；当前已完成发件角色授权，启用和客户端收信仍见 REMINDER-01。
 
 GitNexus impact：共享 jobs.New 为 HIGH，直接 NewSync，上游 app.New/server；授权入口为 LOW/UNKNOWN，陈旧索引落后 21 次提交。提交前 detect_changes 为 43 文件、30 个旧索引符号、CRITICAL，已提前说明并按真实差异复核启动/授权调用，不能将索引当作完整新模块范围证明。材料在 `.local/reminder-mail/`。
 

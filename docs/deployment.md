@@ -874,3 +874,11 @@ curl --fail http://10.233.53.209:18080/health/ready
 
 线上 active/running/ready、NRestarts=0，reminder 扫描 completed 2 条，发送记录 0；页面 200，所有新管理接口及额外授权入口匿名 401，HTML、新提醒包及主包逐字节哈希一致；OpenResty 配置与资源校验通过。QQ 保持 disabled/revision=6、容器 stopped，绑定和确认均 0，新旧 webhook 503。未恢复 QQ，也未代用户选择发件角色或开启邮件发送。发布脚本、检查与截图在忽略的 `.local/reminder-mail/`。
 
+
+
+### 发信授权诊断发布（2026-10-18）
+
+- `v0.1.0-reminder-auth-20261018` 来源干净且已推送的 `main` 提交 `1b58b57`，前后端同版；仅错误提示和有限回调日志，无新增迁移，Goose 93。
+- 通过正式 activate-release / activate-edge-release 流程发布；数据库、环境和原版本元数据备份保存在 `/var/backups/glorynavy/before-v0.1.0-reminder-auth-20261018-<UTC 时间>.*`。服务 active/running/ready、NRestarts=0，OpenResty 语法检查、公网 200、HTML/资源哈希和管理接口匿名 401 通过。
+- 发布后真实回调确认 `wrong_character`，EVE 返回身份不同于配置的发件角色；未绕过身份校验或手工增加 scope。随后同一角色真实授权成功，发信 scope 已保存、授权代次已推进；发送配置仍关闭、记录 0，客户端收信待验收。QQ 保持禁用/登出/无绑定，两类回调 503。
+- 可回退前一版 `v0.1.0-reminder-mail-20261017` 的前后端以撤销诊断变更，保留 Goose 93；无需 Down。回退会失去更明确的授权错误提示和原因日志，不能解决角色不符。
