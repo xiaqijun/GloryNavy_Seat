@@ -51,3 +51,5 @@ NapCat 与应用分别部署，示例不含任何真实凭据。`qq/`、`config/
 发送前复核机器人登录/在线、实际群成员、实时权限/状态、配置 revision、有效绑定及账号未合并；从群移除、撤权或改号后跳过。离线、权限来源暂时失败等发送前错误可由后续扫描重试。领取回执先于网络发送持久提交，群级锁串行处理并发；OneBot 无发送幂等键，超时、未返回消息编号或提交后进程退出均不自动重发。该策略可能漏掉一次提醒，但避免重复 @；审批中心始终是待办依据。发送状态为 sending/sent/unknown，遗留 sending 五分钟后转 unknown；sent 仅表示返回消息编号，不表示已读或客户端正确显示。
 
 Goose 92 的 community_approval_notices 与 community_approval_deliveries 为模块私有。已失效回执及发送批次保留 90 天，持续待办回执保留以防重复；不清理审批或业务审计。合并账号不转移提醒目标，取消源账号活动回执、保留发送批次，目标按自己的权限与 QQ 绑定重新判断。回退前关闭提醒并取消两种未结束 River 任务；已启用或已有发送记录时 Down 拒绝，保留回执，不能回退到不认识这些任务的程序直接接单。
+
+成员查询兼容：v4.18.37 的[列表实现](https://github.com/NapNeko/NapCatQQ/blob/v4.18.37/packages/napcat-onebot/action/group/GetGroupMemberList.ts)会异步刷新缓存；实查曾出现仍在群内但列表返回空。候选查询使用缓存，空列表作为不可用；发送前对目标调用 get_group_member_info（no_cache=true），核对 group_id/user_id，失败不领取发送回执。机器人重启后可能需要重新扫码；确认登录后在受保护 WebUI 设置该账号自动登录，仍以真实在线状态为准。

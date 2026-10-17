@@ -45,9 +45,29 @@ func newApprovalFixture(t *testing.T) (*ApprovalJobs, *pgxpool.Pool, string, *ap
 		case "/get_status":
 			data = map[string]any{"online": !bot.offline, "good": true}
 		case "/get_group_member_list":
+			var input struct {
+				NoCache bool `json:"no_cache"`
+			}
+			_ = json.NewDecoder(req.Body).Decode(&input)
+			if input.NoCache {
+				t.Error("forced list refresh can invalidate NapCat cache")
+			}
 			data = []map[string]any{}
 			if !bot.absent {
 				data = []map[string]any{{"user_id": 123456789}}
+			}
+		case "/get_group_member_info":
+			var input struct {
+				NoCache bool   `json:"no_cache"`
+				UserID  string `json:"user_id"`
+			}
+			_ = json.NewDecoder(req.Body).Decode(&input)
+			if !input.NoCache || input.UserID != "123456789" {
+				t.Error("member lookup is not fresh or targets another user")
+			}
+			data = map[string]any{"user_id": 123456789, "group_id": 888888}
+			if bot.absent {
+				data = map[string]any{}
 			}
 		case "/send_group_msg":
 			var input struct {
@@ -147,7 +167,7 @@ func TestApprovalNotificationsDeduplicateConcurrentAndReopened(t *testing.T) {
 	}
 }
 func TestApprovalNotificationsRecheckBeforeSend(t *testing.T) {
-	for _, scenario := range []string{"resolved", "revoked", "profile_changed", "disabled", "removed", "not_member", "unbound", "module_disabled"} {
+	for _, scenario := range []string{"resolved", "revoked", "profile_changed", "disabled", "removed", "not_member", "unbound", "module_disabled", "left_group"} {
 		t.Run(scenario, func(t *testing.T) {
 			r, pool, user, bot := newApprovalFixture(t)
 			ctx := context.Background()
@@ -166,6 +186,11 @@ func TestApprovalNotificationsRecheckBeforeSend(t *testing.T) {
 			}
 			r.Pending = func(context.Context, string) ([]string, error) {
 				calls++
+				if scenario == "left_group" && calls == 1 {
+					bot.mu.Lock()
+					bot.absent = true
+					bot.mu.Unlock()
+				}
 				if calls == 2 {
 					switch scenario {
 					case "resolved", "revoked":

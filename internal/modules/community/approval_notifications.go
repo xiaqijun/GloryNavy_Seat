@@ -79,8 +79,14 @@ func (r *ApprovalJobs) deliver(ctx context.Context, group string) error {
 	var members []struct {
 		UserID json.Number `json:"user_id"`
 	}
-	if err = client.call(ctx, "get_group_member_list", map[string]any{"group_id": groupID, "no_cache": true}, &members); err != nil {
+	// NapCat 4.18.37 refreshes the full list asynchronously and can replace a
+	// populated cache with an empty result. Use it only for candidate discovery;
+	// a forced individual lookup below is the final membership check.
+	if err = client.call(ctx, "get_group_member_list", map[string]any{"group_id": groupID, "no_cache": false}, &members); err != nil {
 		return err
+	}
+	if len(members) == 0 {
+		return errors.New("approval notification group members unavailable")
 	}
 	memberSet := map[string]bool{}
 	for _, m := range members {
@@ -122,6 +128,14 @@ func (r *ApprovalJobs) deliver(ctx context.Context, group string) error {
 	// recipient scan. Never send counts from the materialized approval index.
 	ready := selected[:0]
 	for _, recipient := range selected {
+		var member struct {
+			UserID  json.Number `json:"user_id"`
+			GroupID json.Number `json:"group_id"`
+		}
+		if e := client.call(ctx, "get_group_member_info", map[string]any{"group_id": groupID, "user_id": recipient.QQ, "no_cache": true}, &member); e != nil || member.UserID.String() != recipient.QQ || member.GroupID.String() != group {
+			sourceErr = errors.New("approval notification member verification unavailable")
+			continue
+		}
 		keys, e := r.Pending(ctx, recipient.UserID)
 		if e != nil {
 			sourceErr = errors.New("approval notification source unavailable")

@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## 2026-10-17 待审批 QQ @ 提醒
+
+前后端已发布 `v0.1.0-qq-approval-notify-20261017`，来源为干净且已推送的 `main` 提交 `f9a05ee9d609d9465ecb0daaf31435e193f2199b`。Goose 92 新增 community 通知回执/发送批次及接收群提醒开关；原审批来源继续保有业务状态和权限。配置及回退见 [OneBot 指南](integrations/qq-onebot.zh-CN.md)。
+
+- 备份 `/var/backups/glorynavy/before-v0.1.0-qq-approval-notify-20261017-20261017T134709Z.{dump,env,meta.json}` 均为 0600，dump 253181293 字节；本轮未恢复该新备份。旧版 `v0.1.0-qq-onebot-20261017` 保留。回退前须停用提醒并取消新任务，保留去重回执，不能盲目 Down。
+- 两机 current、SHA256 清单、OpenResty 配置及公网页面通过；后端 active/running/ready、NRestarts=0、Goose 92。匿名管理 GET/PUT/状态/测试与审批列表 401，新回调无签名 401。
+- 公网 HTML SHA256 `0ff3288df9a400e0b86140684ac0adf12e480dec31a1d46703cf0ad1f16247cf`；管理资源 `qq-admin-page-6Zzw-UT1.js` SHA256 `58978291b3ef987e837fea7bc40e1b00da27948496064bbf9bb2a0f300baa272`。
+- 使用正式 community 配置服务开启现有一个真实群的审批提醒，revision=3；先核对当前管理员和真实加入群。机器人在线，群内当前有效 OneBot 绑定 1 个。未造生产审批，真实触发和客户端效果见项目状态与 COM-02。
+- 隔离 PostgreSQL 的 community/approval/app/jobs 回归、相关 go vet/server 编译、sqlc 一致性、前端类型/lint/构建、5 项词表与 2 项中英文页面流程通过，1280/375/320px 截图已检查。日志及复验材料在忽略目录 `.local/approval-notify/`。
+
 ## NapCatQQ / OneBot 11（2026-10-17）
 
 前后端已发布 `v0.1.0-qq-onebot-20261017`，来自干净且已推送的 `main` 提交 `9fb785c737a6a8ea1c3374a89adb01d0df4b14cf`。Goose 91 新增 community 私有配置、群与数字 QQ 绑定；旧官方历史记录保留，首次保存 OneBot 配置才切换，存在配置或绑定后禁止直接 Down。详细配置与恢复边界见 [NapCat 指南](integrations/qq-onebot.zh-CN.md)。
