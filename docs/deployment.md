@@ -1,5 +1,16 @@
 # Linux 生产部署
 
+## QQ 群消息直接发码绑定（2026-10-17）
+
+前后端已发布 `v0.1.0-qq-group-code-20261017`，来源为干净且已推送的 `main` 提交 `85dcfed1d8ed44d5b20384c2316af2525574fae9`，应用/边缘分支守卫及 SHA256 清单校验通过。个人账户只显示、复制 8 位验证码，群 `GROUP_MESSAGE_CREATE` 通过发送人的 `author.member_openid` 确认；普通聊天、机器人和缺少身份标识的消息静默处理。旧私聊/@ 事件兼容，无新迁移，Goose 90。
+
+- 发布前备份 `/var/backups/glorynavy/before-v0.1.0-qq-group-code-20261017-20261017T055716Z.{dump,env,meta.json}` 均为 0600，dump 253593064 字节；本轮未恢复该新备份。旧版 `v0.1.0-qq-binding-20261017` 保留。
+- 两端 current 已切换；应用 active/running/ready、NRestarts=0，OpenResty 配置检查通过。`/`、`/account`、`/community` 均 200；匿名 POST challenge 和缺签名回调均 401。
+- 公网账户 HTML SHA256 `3da9e753a241680ea29fc518f98608372b7f90e548cca78da1c535b25c1c0861` 与包一致；`account-page-Bdk87z2x.js`、`index-9yEFDtvL.js` 公网字节哈希一致。
+- 隔离 PostgreSQL 的 17 项 community 测试（52.102s）、community go vet、server 编译通过，测试容器已移除；前端类型/lint/构建、7 项 API/词表单测和 4 项中英文浏览器流程（37.8s）通过。1280/375/320px 截图已检查，生成仍待确认、剪贴板仅含验证码，过期和成功收起正常。日志、截图与发布脚本在 `.local/qq-group-code/`。
+- GitNexus 索引刷新两次停滞后停止，旧索引对 QQBinding 未识别、回调/消息结构 impact 为 UNKNOWN；已补查 ProfileCard 与注册路由的实际引用。提交前 detect_changes 返回 14 文件、5 条 QQ 回调流程、MEDIUM，陈旧索引不作为完整范围证明。
+- 实际联调边界：此前真实群 @ 收发已确认；本轮只做隔离签名回调与模拟前端流程，未代用户发送验证码。用户开通并订阅 `GROUP_MESSAGE_CREATE` 后仍需验证真实免 @ 绑定；群入群审批和后续通知未纳入本次发布。
+
 ## QQ 绑定码入口与一次性消费（2026-10-17）
 
 前后端已发布 `v0.1.0-qq-binding-20261017`，来源为干净且已推送的 `main` 提交 `5bb3dede551883b3d7913b9c3165228fb0d62122`，生产分支守卫通过。个人账户 QQ 资料下新增生成/复制绑定指令、到期与确认反馈；后端绑定事务补上一次性码消费，无新增迁移，Goose 90。
