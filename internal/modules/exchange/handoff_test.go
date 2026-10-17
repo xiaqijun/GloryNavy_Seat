@@ -19,7 +19,7 @@ func TestHandoffRecipientReferenceAndCurrentAdministrator(t *testing.T) {
 		t.Fatal(e)
 	}
 	out, e := s.Handoff(ctx, manager, id)
-	if e != nil || !regexp.MustCompile(`^EX-[0-9]{8}-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$`).MatchString(out.Reference) || out.RecipientID != 4 || out.State != "pending" {
+	if e != nil || !regexp.MustCompile(`^EX-[0-9]{8}-[0-9]{6,19}$`).MatchString(out.Reference) || out.RecipientID != 4 || out.State != "pending" {
 		t.Fatal(out, e)
 	}
 	if again, e := s.ClaimReward(ctx, member, claim); e != nil || again != id {

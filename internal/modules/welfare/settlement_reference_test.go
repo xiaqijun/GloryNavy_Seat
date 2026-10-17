@@ -23,11 +23,11 @@ func TestSettlementReferenceUpgradeAndStability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = provider.DownTo(ctx, 40); err != nil {
+	if _, err = provider.DownTo(ctx, 93); err != nil {
 		t.Fatal(err)
 	}
 	var oldID int64
-	if err = s.Pool.QueryRow(ctx, `INSERT INTO welfare_cases(account_id,corporation_id,kind,state,detail,award_minor,claim_keys) VALUES($1,10,'solo','approved','{}',100,'{}') RETURNING id`, userID).Scan(&oldID); err != nil {
+	if err = s.Pool.QueryRow(ctx, `INSERT INTO welfare_cases(account_id,corporation_id,kind,state,detail,award_minor,claim_keys,settlement_reference) VALUES($1,10,'solo','approved','{}',100,'{}','GNV-WF-1') RETURNING id`, userID).Scan(&oldID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = provider.Up(ctx); err != nil {
@@ -48,7 +48,7 @@ func TestSettlementReferenceUpgradeAndStability(t *testing.T) {
 			t.Fatal(err)
 		}
 		prefix := map[string]string{"srp": "SRP", "solo": "PVP", "supercarrier": "WF"}[kind]
-		pattern := `^` + prefix + `-` + v.CreatedAt.UTC().Format("20060102") + `-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$`
+		pattern := `^` + prefix + `-` + v.CreatedAt.UTC().Format("20060102") + `-[0-9]{6,19}$`
 		if !regexp.MustCompile(pattern).MatchString(v.Reference) || seen[v.Reference] {
 			t.Fatal("invalid/duplicate reference", v.Reference)
 		}
@@ -91,7 +91,7 @@ func TestSettlementReferenceUpgradeAndStability(t *testing.T) {
 	if err = s.Pool.QueryRow(ctx, `SELECT gn_settlement_reference('EX','2026-09-21T00:30:00+08:00'::timestamptz)`).Scan(&atBoundary); err != nil || !strings.HasPrefix(atBoundary, "EX-20260920-") {
 		t.Fatal("UTC date boundary", atBoundary, err)
 	}
-	if _, err = provider.DownTo(ctx, 40); err == nil {
+	if _, err = provider.DownTo(ctx, 93); err == nil {
 		t.Fatal("unsafe rollback accepted after new references")
 	}
 }

@@ -1,5 +1,8 @@
 # 模块架构与扩展边界
 
+2026-10-18：Goose 94 将数据库工具 `gn_settlement_reference` 的新编号改为类型＋UTC 日期＋共享非循环 bigint 流水号，至少六位、自然增长；序列不承载账号业务数据，各模块仍持有自己的编号和唯一约束。旧编号不迁移，生成短编号后禁止 Down 或重置序列。
+
+
 2026-10-17：identity 私有清理策略的军团名单通过 `CorporationCleanup.ConfiguredCorporations` 由宿主注入 access，作为军团业务范围外层边界，不受清理开关影响。access 同时限制非管理员为本人有效角色所属军团，再判断原业务能力。EVE 的 `KnownCorporationNames` 只向管理员配置投影名称，不提供授权事实；模块不跨读私有 store。
 
 

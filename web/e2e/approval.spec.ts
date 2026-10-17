@@ -606,3 +606,26 @@ test("原兑换页面只有个人记录与中心链接", async ({ page }) => {
       .every((p) => !p.includes("all=true")),
   ).toBe(true);
 });
+
+for (const language of ["zh-CN", "en"]) {
+  for (const [format, reference, copied] of [
+    ["short", "BATCH-20261018-000001", "BATCH-20261018-000001"],
+    ["legacy", "BATCH-20260930-21DE0416-40ED-4E85-9424-5CB1E8687F39", "BATCH-20260930-21DE0416-40ED-4E85-9424-5CB1E8687F3"],
+  ]) {
+    test(`contract title copy ${format} ${language}`, async ({ page }, info) => {
+      await setup(page, { language });
+      await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { document.documentElement.dataset.copied = text; } } }));
+      const batch = { id: "1", request_key: admin, actor_id: admin, note: "", state: "pending", total_count: 1, completed_count: 0, failed_count: 0, created_at: "2026-10-18T00:00:00Z", next_run_at: "2026-10-18T00:00:00Z", version: "1", settlement_reference: reference, account_id: member, isk_minor: 10000, items: [], recipient_ids: ["123"], recipient_names: ["Main Pilot"] };
+      await page.route("**/api/v1/welfare/settlements**", route => route.fulfill({ json: { data: new URL(route.request().url()).pathname.endsWith("/1") ? { batch, items: [] } : { items: [batch] } } }));
+      await page.goto("/approvals?view=fulfillment&batch=1");
+      const dialog = page.getByRole("dialog");
+      const label = language === "en" ? "Contract settlement ID" : "合同结算 ID";
+      await expect(dialog.getByLabel(label, { exact: true })).toHaveValue(copied);
+      await dialog.getByRole("button", { name: language === "en" ? `Copy ${label}` : `复制 ${label}`, exact: true }).click();
+      await expect(page.locator("html")).toHaveAttribute("data-copied", copied);
+      await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
+      await page.screenshot({ path: info.outputPath(`${format}-${language}.png`), fullPage: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+}

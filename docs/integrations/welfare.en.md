@@ -1,5 +1,12 @@
 # Corporation welfare
 
+## Short contract settlement references (2026-10-18, Goose 94)
+
+New records use `TYPE-YYYYMMDD-sequence`, for example `BATCH-20261018-000001`. EX, SRP, PVP, WF and BATCH share one non-cycling database bigint sequence; dates use UTC creation time. The sequence has at least six decimal digits and grows without truncation, giving a maximum reference length of 34 within EVE's 50-character title limit. References remain identifiers, not authorization: recipient, issuer, amounts, items and global contract claims retain their existing checks.
+
+The migration changes only new generation, preserving existing records, numeric game contract IDs and UUID/GNV references. Retries, state changes and account merges never renumber records. For historical 51-character BATCH references, the Contract settlement ID field copies the exact first 50 characters accepted by the existing matcher; the complete stored reference remains unchanged. Other formats are not truncated. Goose 94 Down refuses once a short reference is saved; recovery must preserve the migration and sequence. Never reset the sequence or renumber records. The Goose 41/57 UUID formats below describe historical behavior.
+
+
 ## Batch settlement item names
 
 Batch creation freezes item type IDs, quantities and display names. Details for batches that already have names are returned directly from the frozen snapshot, without another SDE read. Legacy batches that lack names use an on-demand compatibility lookup through the existing SDE name service; an unavailable name falls back to the type ID. Names are presentation and copy-confirmation decoration only. In-game contract matching continues to use the frozen type IDs and quantities, and a name lookup failure does not block reading the batch.

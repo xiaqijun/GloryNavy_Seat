@@ -25,6 +25,7 @@ import type { Order } from "@/modules/exchange/rewards-api";
 import type { PhysicalContent } from "@/modules/exchange/catalog-api";
 import * as loan from "@/modules/loan/api";
 import { getContext, getQueue, getItem, lossQueueAmount, type QueueItem } from "./api";
+import { settlementContractTitle } from "@/modules/welfare/contract-title";
 import * as settlement from "@/modules/welfare/settlement-api";
 import { useToast } from "@/components/ui/toast-context";
 import "./approval.css";
@@ -1183,7 +1184,7 @@ function SettlementDetail({
         <div className="approval-settlement-copy-grid">
           <BatchCopyField label={msg("合同接收角色")} value={recipients} />
           <BatchCopyField label={msg("支付金额 / ISK")} value={amount} />
-          <BatchCopyField label={msg("合同结算 ID")} value={batch.settlement_reference || ""} />
+          <BatchCopyField label={msg("合同结算 ID")} value={settlementContractTitle(batch.settlement_reference || "")} />
           {batch.contract_id && <BatchCopyField label={msg("游戏合同 ID")} value={batch.contract_id} />}
         </div>
         <div className="approval-settlement-summary">

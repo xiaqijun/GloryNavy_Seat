@@ -1,5 +1,12 @@
 # Nutshell Coins and unified redemption
 
+## Short contract settlement references (2026-10-18, Goose 94)
+
+New records use `TYPE-YYYYMMDD-sequence`, for example `BATCH-20261018-000001`. EX, SRP, PVP, WF and BATCH share one non-cycling database bigint sequence; dates use UTC creation time. The sequence has at least six decimal digits and grows without truncation, giving a maximum reference length of 34 within EVE's 50-character title limit. References remain identifiers, not authorization: recipient, issuer, amounts, items and global contract claims retain their existing checks.
+
+The migration changes only new generation, preserving existing records, numeric game contract IDs and UUID/GNV references. Retries, state changes and account merges never renumber records. For historical 51-character BATCH references, the Contract settlement ID field copies the exact first 50 characters accepted by the existing matcher; the complete stored reference remains unchanged. Other formats are not truncated. Goose 94 Down refuses once a short reference is saved; recovery must preserve the migration and sequence. Never reset the sequence or renumber records. The Goose 41/57 UUID formats below describe historical behavior.
+
+
 Goose 58 adds an exchange-owned foundation for time-based alert consumption, with the frozen price version added in Goose 60, Seat-side administrator price configuration in Goose 62, and the persisted administrator switch in Goose 64. Seat reads server-confirmed authenticated client heartbeat intervals from Sentry and settles seconds against the configured hourly price. Event counts, deliveries, ACKs, grants, releases, and refunds are not billing inputs; the former compatibility endpoints and tables were removed. Monitoring rewards use server-confirmed primary-node contribution intervals and are metered independently per system before being merged into the account coin ledger. The persisted `sentry_alert_pricing.charging_enabled` switch remains the administrator gate.
 
 Deployed in `v0.1.0-contract-whole-isk-20260923` on 2026-09-23: copied payment amounts and matching use whole ISK rounded down; historical contracts paying the exact decimal amount remain compatible. Goose 47 is unchanged. Live-game contract validation remains pending.
