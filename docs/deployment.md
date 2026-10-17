@@ -1,5 +1,17 @@
 # Linux 生产部署
 
+## 2026-10-18 短合同结算编号
+
+前后端发布 `v0.1.0-short-contract-reference-20261018`，来源干净且已推送的 `main` 提交 `e0d8f78d584d77f326c9cda470c1c9d74d1069e4`。应用与边缘 current 均已切换，Goose 94、active/running/ready、NRestarts=0，发布清单 SHA256 和 OpenResty 配置检查通过。前端短编号复制与历史 50 字符兼容、窄屏换行同批发布，未包含在开发中的其他提醒类型。
+
+- 发布前备份：`/var/backups/glorynavy/before-v0.1.0-short-contract-reference-20261018-20261017T165705Z.dump`（252283571 字节）及同名前缀 `.env`、`.meta.json`。备份中包含 Goose 93；恢复数据库会回退备份之后的业务数据，不能只为界面回退而恢复旧库。
+- 123 条福利与 9 个合并批次编号摘要在迁移前后一致（既有兑换 0 条）；新函数引用非循环 sequence，当前 last_value=1/is_called=false。没有为验证创建生产业务记录或消耗编号。
+- 公网 `/approvals` 200，匿名结算 GET/POST、审批列表均 401，QQ 两种 webhook 均 503。HTML 与包一致；主包 `index-DH9FAL5N.js` SHA256 `de81e0f6aeee2cca15870448cafdbf7f1a5b4f21d0f31a386186ef829d66cc92`，审批资源 `page-n8D6KT2J.js` SHA256 `c4e563a158cecbfa48f34e5e4fe258b64789be13fcac8de11400277ead8c70a1`，逐字节核验。
+- QQ 仍 disabled/revision=6、NapCat exited，绑定/确认 0；邮件提醒仍 disabled/revision=2、发送记录 0，未修改通知开关或发送消息。
+- 恢复须保留 Goose 94 和编号序列；保存短编号后 Down 明确拒绝，不重置序列、不改写旧单。原交付校验可读取历史与新编号，游戏合同 ID 保持 ESI 数值。真实新合同完成验收仍见 CONTRACT-02。
+
+本轮 23 项隔离 PostgreSQL 回归与相关 go vet、前端类型/构建/lint、2 项标题单测及中英文 1280/375/320px 的 12 项浏览器流程通过；截图检查通过。脚本和浏览器证据在忽略目录 `.local/short-contract/`。
+
 ## 2026-10-17 暂停 QQ 机器人
 
 用户要求暂时禁用。通过当前部署源码的正式 `community.SaveOneBotSettings` 服务，以原 revision、API 地址、群配置及保留的加密凭据保存 `enabled=false`，新 revision=6；未直接写业务 SQL。停止独立 `glorynavy-napcat` 容器，确认 exited/running=false，保留 `unless-stopped` 策略及持久目录。
