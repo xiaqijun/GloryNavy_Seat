@@ -9,6 +9,7 @@ import { attendanceModule } from "@/modules/attendance";
 import { systemModule } from "@/modules/system";
 import { eveModule } from "@/modules/eve";
 import { communityModule } from "@/modules/community";
+import { reminderModule } from "@/modules/reminder";
 import { accessModule } from "@/modules/access";
 import { sentryModule } from "@/modules/sentry";
 import { structuresModule } from "@/modules/structures";
@@ -28,6 +29,7 @@ export const frontendModules = registerModules([
   marketModule,
   eveModule,
   communityModule,
+  reminderModule,
   accessModule,
   sentryModule,
   structuresModule,

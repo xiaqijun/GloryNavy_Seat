@@ -38,3 +38,5 @@ Acquire ordered character advisory locks, ordered account locks and the original
 Stop local API/workers, back up the database/configuration, run `npm run db:migrate` to current Goose and River versions (account merge was introduced in Goose 30) and start matching frontend/backend. No new module or OAuth scope and no automatic historical merges. This feature is deployed; later releases still require backups and both migration checks. Never run Down after real merges: it removes provenance and retired-account safeguards; disable the UI or retain compatible schema for rollback.
 
 Tests cover proof/session isolation, expiry/cancellation, SSO preview-only callback, CSRF, changed previews, concurrency, transaction rollback, retired-source writes, provenance, balances, refunds and corrections. Browser fixtures do not replace real CCP and member acceptance. [中文](account-merge.zh-CN.md).
+
+Goose 93 always registers the reminder merge participant: delivery history retains the first original_account_id, receipts merge conservatively, and a source sender is disabled without privilege or consent transfer. See [Reminders](reminder.en.md).

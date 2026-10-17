@@ -87,3 +87,5 @@ Sources may provide `ContextAccess` so the initial shell reads only source/corpo
 ## QQ pending-review notifications (2026-10-17)
 
 The host injects read-only `PendingNotificationKeys` into community's River notifier. It traverses all pending source pages with current authorization, excludes the actor's own applications and items without review actions, and returns hashes of source, record and phase only. Neither the projection nor the scope cache is used; a source failure never becomes a false empty queue. Community owns group settings, receipts and sends; original modules retain decisions. See [NapCat integration](qq-onebot.en.md) for deduplication and failure semantics.
+
+The reminder module receives live `PendingNotificationKeys` through the host, never using stale index counts to send mail. Delivery state stays outside approval. See [Reminders](reminder.en.md).

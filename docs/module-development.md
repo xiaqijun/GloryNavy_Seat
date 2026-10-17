@@ -122,3 +122,7 @@ PAP 是 attendance 内部业务，复用 corporation.attendance 范围；余额�
 业务 API 统一经 `apiFetch` 发送界面语言；服务端使用 `internal/platform/locale` 请求上下文，后台任务默认中文。语言只改变展示，不传给 ESI 抓取或共享缓存键。新增名称消费者经注入 StaticDataService 批量读取并保留 context。固定消息加入前端词表后运行 `node scripts/backend-messages.mjs`，用 `--check` 校验 Go 消息子集；仅对服务端固定文案使用 Message，不翻译用户输入。技能/舰船的 group_english 来自同一官方 SDE 构建，由参考目录生成脚本维护。
 
 福利列表/详情只投影已授权快照中的类型、星系名称及固定核价提示；数据库证据和审计不改写，未知字段与精确数值保留，名称查询失败则保留原名。业务规则仍使用稳定 ID/代码，不使用翻译后的名称判断资格。
+
+## reminder 接入示例
+
+`reminder` 的配置与回执私有存储使用手写参数化 SQL（无生成 store）；宿主注入 approval.PendingNotificationKeys 和 eve.SendMail。`reminder.manage` 不授予委派角色，宿主检查当前管理员；`/reminders` 使用统一模块声明。Jobs.Extension 总是注册 handler，模块停用不添加周期任务；账号合并参与方不随 UI 开关省略。详见[提醒指南](integrations/reminder.zh-CN.md)。

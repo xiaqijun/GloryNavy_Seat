@@ -21,6 +21,7 @@ import (
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/modules/loan"
 	"glorynavy.local/seat/internal/modules/market"
+	"glorynavy.local/seat/internal/modules/reminder"
 	"glorynavy.local/seat/internal/modules/sentry"
 	"glorynavy.local/seat/internal/modules/system"
 	"glorynavy.local/seat/internal/modules/welfare"
@@ -246,6 +247,8 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
 	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
 	approvalNotifications := &community.ApprovalJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "approval"), Origin: auth.Origin}
+	reminderModule := reminderHandler(pool, identityService, accessService, syncService, slices.Contains(enabled, "reminder"), auth.Origin)
+	reminderJobs := &reminder.Jobs{Service: reminderModule.Service}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
 	identityHandler.CorporationCleanup = characterCleanup
@@ -279,7 +282,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
-		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension(), approvalNotifications.Extension())
+		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension(), approvalNotifications.Extension(), reminderJobs.Extension())
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +311,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "system.status.read" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "community.group.manage" {
+		if permission == "community.group.manage" || permission == "reminder.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
 		if permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
@@ -435,6 +438,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	communityHandler := community.Handler{Service: communityService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 	eveHandler := eve.NewHandler(pool, client, nil, auth.Origin, identityHandler.Secure, logger)
+	if slices.Contains(enabled, "reminder") {
+		eveHandler.MailAuthorizationAllowed = accessService.IsAdministrator
+	}
 	if syncService != nil {
 		eveHandler.PublicCorporation = eve.NewPublicCorporation(syncService.ESI())
 	}
@@ -859,12 +865,14 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	creditJobs.Service = loanService
 	creditJobs.Users = identityService.AllUserIDs
 	identityService.MergeParticipants["loan"] = loanService.MergeAccountTx
+	identityService.MergeParticipants["reminder"] = reminderModule.Service.MergeAccountTx
 	loanHandler := loan.Handler{Service: loanService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 	approvalModule, approvalProjection, err := approvalHandler(pool, auth.ApprovalDualRead, auth.ApprovalIndexAccounts, enabled, communityService.Nicknames, welfareModule.Service, exchangeService, loanService)
 	if err != nil {
 		return nil, fmt.Errorf("approval source registration: %w", err)
 	}
 	approvalNotifications.Pending = approvalModule.Service.PendingNotificationKeys
+	reminderModule.Service.Pending = approvalModule.Service.PendingNotificationKeys
 	if pool != nil && len(approvalModule.Service.Sources) > 0 {
 		if err := approvalProjection.Reconcile(context.Background(), approvalModule.Service.Sources); err != nil {
 			logger.Warn("approval index initial reconcile failed; using source fallback", "error", err)
@@ -872,7 +880,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			approvalModule.Service.UseIndex = true
 		}
 	}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module()}, enabled, authorize)
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}

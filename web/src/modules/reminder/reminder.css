@@ -1,0 +1,21 @@
+.reminder-page{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;min-width:0}
+.reminder-page>[data-slot="card"]{min-width:0;padding-block:0}
+.reminder-config,.reminder-records{padding:1rem;min-width:0}
+.reminder-title{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.reminder-title h2{display:flex;align-items:center;gap:.5rem;font-size:1rem;font-weight:600;margin:0}
+.reminder-controls{display:flex;align-items:end;flex-wrap:wrap;gap:.75rem}
+.reminder-sender{flex:1 1 16rem;min-width:0;display:grid;gap:.4rem}
+.reminder-sender select{width:100%;min-width:0;height:2.5rem;border:1px solid var(--border);border-radius:.375rem;background:var(--background);color:inherit;padding:0 .75rem}
+.reminder-toggle{display:flex;gap:.5rem;align-items:center;min-height:2.5rem}
+.reminder-table-scroll{overflow-x:auto}
+.reminder-table{width:100%;min-width:640px;border-collapse:collapse;text-align:left;font-size:.875rem}
+.reminder-table th,.reminder-table td{padding:.7rem .5rem;border-bottom:1px solid var(--border);vertical-align:middle;overflow-wrap:anywhere}
+.reminder-table td:first-child{min-width:10rem}
+.reminder-table td:nth-child(2){min-width:8rem}
+.reminder-reason{display:block;margin-top:.2rem}
+.reminder-pagination{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem}
+@media(max-width:480px){.reminder-config,.reminder-records{padding:.75rem}.reminder-sender{flex-basis:100%}.reminder-toggle{flex:1}.reminder-title{gap:.5rem}}
+
+.reminder-table th{white-space:nowrap}
+.reminder-table td:nth-child(4){min-width:8rem}
+.reminder-toggle{flex-shrink:0}

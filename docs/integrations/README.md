@@ -49,3 +49,5 @@ Alliance PAP supports scheduled snapshot synchronization and administrator-trigg
 - 早期同步实施方案：[中文](esi-sync-plan.zh-CN.md) / [English](esi-sync-plan.en.md)，历史方案，不替代当前升级步骤。
 
 中英文指南同步维护行为、权限、配置与兼容要求；历史部署证据集中到[交付历史](../history/project-status-through-2026-09-23.md)。
+
+- 提醒与游戏邮件：[中文](reminder.zh-CN.md) / [English](reminder.en.md)。

@@ -261,3 +261,7 @@ system 模块声明 `system.landing` 声明用于 `/`，App 对这一固定页�
 ### 待审批 QQ 通知边界（2026-10-17）
 
 宿主注入 approval 的实时授权待办哈希读取给 community.ApprovalJobs；community 独占通知开关、回执、发送审计和 OneBot 网络访问，不导入来源 store。共享 River 新增 community 队列（单 worker），网络发送在通知领取事务提交后，原审批事务/付款/币账不受影响。账号合并通过既有 community 参与方取消来源提醒。详情见 [OneBot](integrations/qq-onebot.zh-CN.md)。
+
+## 提醒模块（2026-10-17）
+
+`reminder` 依赖 identity/access/eve/approval，Goose 93。私有 store 仅配置、审计、去重和发送历史；宿主注入审批实时权限键、主角色与 EVE 无令牌邮件网关。独立 River 队列、持久占用后发信、未知结果不重发。`reminder.manage` 为模块登记的管理员专用能力，由宿主即时核对管理员标志，不开放为可分配角色；ManageableCatalog 的委派能力范围不变。账号合并参与方始终注册。详见[提醒指南](integrations/reminder.zh-CN.md)。

@@ -1,5 +1,13 @@
 # 项目状态
 
+## 当前开发：游戏邮件待审批提醒（2026-10-17，尚未发布）
+
+独立 reminder 模块、Goose 93，管理员在 `/reminders` 选择本人发件角色并单独授权 `esi-mail.send_mail.v1`，普通登录 scopes 不变。首次仅待审批事项，按当前来源权限发送给当前主角色；配置默认关闭。去重持久化、明确失败可重试、未知结果不自动重发，后台独立 River 队列，历史 90 天保留，合并保留原账号。QQ 保持停用、登出和解除绑定。指南见[中文](integrations/reminder.zh-CN.md) / [English](integrations/reminder.en.md)。
+
+隔离 PostgreSQL 的 reminder/approval、邮件与原登录/角色/配装授权测试、宿主全套回归、jobs/server 编译及相关 go vet 已通过。前端类型/构建/lint、5 项词表单测及 1280/375/320px 中英文 12 项浏览器流程通过；首次检查发现窄屏溢出、词表缺项与重复键，已修复，截图检查后进一步收紧卡片留白并保证表格正常横向滚动。新增发件授权缺失时跳过扫描，避免制造重复失败作业；该分支隔离数据库测试与 go vet 复验通过。最终 12 项浏览器流程复验、类型/构建/lint/5 项词表单测通过，截图已检查。真实发件角色授权、启用和客户端收信尚未进行，见 REMINDER-01。
+
+GitNexus impact：共享 jobs.New 为 HIGH，直接 NewSync，上游 app.New/server；授权入口为 LOW/UNKNOWN，陈旧索引落后 21 次提交。提交前 detect_changes 为 43 文件、30 个旧索引符号、CRITICAL，已提前说明并按真实差异复核启动/授权调用，不能将索引当作完整新模块范围证明。材料在 `.local/reminder-mail/`。
+
 ## 当前运行配置：QQ 机器人暂停（2026-10-17）
 
 按用户要求暂时停用 QQ 机器人。正式 OneBot 配置服务已保存 `enabled=false`、revision=6；独立 NapCat 容器已手动停止（exited/running=false，原 `unless-stopped` 策略保留）。QQ 验证码绑定、测试消息和审批 @ 提醒暂停，旧官方机器人不会自动恢复。接收群、网站 API 凭据和发送历史保留；用户随后要求移除绑定，已解除 1 个账号的 OneBot 及旧官方绑定，QQ 有效确认清零、9 条活跃提醒回执停用，个人资料中手填的 QQ 号保留为未验证联系方式。用户随后要求 QQ 账号也退出登录：已关闭自动登录并清除服务器的 QQ 登录凭据，短暂启动核验 isLogin/coreReady=false、waiting_qrcode、保存账号数 0、自动登录为空，随后再次停止容器。恢复需用户明确要求后重新启动、本人扫码确认，再启用网站配置；本站 QQ 绑定需重新生成验证码核验。

@@ -68,7 +68,7 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 	}
 	cred, _ := ctx.Value(CredentialKey{}).(Credential)
 	mutation, _ := ctx.Value(MutationKey{}).(bool)
-	if mutation && (method != "POST" || routeKey(method, path) != "POST /characters/{id}/fittings/" || token == "") {
+	if mutation && (method != "POST" || (routeKey(method, path) != "POST /characters/{id}/fittings/" && routeKey(method, path) != "POST /characters/{id}/mail/") || token == "") {
 		return now, Fault{Reason: "invalid_request"}
 	}
 	event := RequestEvent{}

@@ -46,3 +46,7 @@ Linux 文件轮换测试：`python3 -m unittest discover -s deploy -p test_rotat
 ## 审批通知回执（Goose 92）
 
 community 的分钟扫描将五分钟前遗留 sending 标为 unknown，清理 90 天前的非活动提醒回执和发送批次；持续待办去重回执保留，避免重发。业务审批、币账和原审计不在此范围。停用 community/approval 模块会暂停扫描和这项保留策略。
+
+## 提醒模块
+
+Goose 93 reminder 每分钟维护：非活动去重回执和非发送中历史保留 90 天，活动回执与配置/重试审计保留；超过 5 分钟的 sending 标记 unknown，绝不因过期而重发。只有 reminder 启用时运行维护，即使发送开关关闭也整理历史。QQ 暂停不影响本模块。

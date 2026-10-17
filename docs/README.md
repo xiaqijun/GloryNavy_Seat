@@ -1,5 +1,7 @@
 # 项目文档
 
+提醒模块：[中文](integrations/reminder.zh-CN.md) / [English](integrations/reminder.en.md) · [页面](ui/reminder.md)，首批待审批游戏邮件，默认关闭。
+
 角色定期清理：[中文](integrations/corporation-cleanup.zh-CN.md) / [English](integrations/corporation-cleanup.en.md)，由成员页管理员配置，默认关闭。
 
 接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥、监控奖励和收费配置已生产，真实证据与实账验收待完成）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，2026-10-06 已进入本地首期实现，尚未生产发布）。

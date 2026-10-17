@@ -29,20 +29,21 @@ type SSO interface {
 	Exchange(context.Context, string, string) (Character, error)
 }
 type Handler struct {
-	pool              *pgxpool.Pool
-	sso               SSO
-	signIn            SignIn
-	origin            string
-	secure            bool
-	logger            *slog.Logger
-	mu                sync.Mutex
-	starts            map[string]startWindow
-	Complete          func(context.Context, Character, string, identity.LoginIntent) (string, error)
-	Accounts          *identity.Service
-	Sync              *SyncHTTP
-	Contracts         *ContractHTTP
-	PublicCorporation *PublicCorporationService
-	PublicActivity    *PublicActivityService
+	pool                     *pgxpool.Pool
+	sso                      SSO
+	signIn                   SignIn
+	origin                   string
+	secure                   bool
+	logger                   *slog.Logger
+	mu                       sync.Mutex
+	starts                   map[string]startWindow
+	Complete                 func(context.Context, Character, string, identity.LoginIntent) (string, error)
+	Accounts                 *identity.Service
+	Sync                     *SyncHTTP
+	Contracts                *ContractHTTP
+	PublicCorporation        *PublicCorporationService
+	PublicActivity           *PublicActivityService
+	MailAuthorizationAllowed func(context.Context, string) (bool, error)
 }
 type startWindow struct {
 	Count int
@@ -124,6 +125,18 @@ func (h *Handler) accountStart(w http.ResponseWriter, r *http.Request) {
 		intent.Kind = "reauthorize"
 		intent.ExpectedID = id
 	}
+	if r.URL.Query().Get("purpose") == "reminder-mail" {
+		if intent.Kind != "reauthorize" || h.MailAuthorizationAllowed == nil {
+			httpapi.Failure(w, r, 403, "forbidden", "无权授权发信")
+			return
+		}
+		allowed, err := h.MailAuthorizationAllowed(r.Context(), session.UserID)
+		if err != nil || !allowed {
+			httpapi.Failure(w, r, 403, "forbidden", "无权授权发信")
+			return
+		}
+		r = r.WithContext(context.WithValue(r.Context(), mailAuthorizationKey{}, true))
+	}
 	h.start(w, r, intent)
 }
 func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.LoginIntent) {
@@ -156,6 +169,10 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.
 	state, browser := rand.Text(), rand.Text()
 	verifier := base64.RawURLEncoding.EncodeToString(randBytes())
 	target, err := h.sso.AuthorizationURL(ctx, state, verifier)
+	mail, _ := ctx.Value(mailAuthorizationKey{}).(bool)
+	if mail && err == nil {
+		target, err = mailAuthorizationURL(target)
+	}
 	if err != nil {
 		unavailable()
 		return
@@ -174,6 +191,9 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.
 	required := []string{}
 	if provider, ok := h.sso.(interface{ RequestedScopes() []string }); ok {
 		required = provider.RequestedScopes()
+	}
+	if mail {
+		required = append(required, MailSendScope)
 	}
 	err = q.CreateFlow(ctx, store.CreateFlowParams{StateHash: httpapi.Hash(state), BrowserHash: httpapi.Hash(browser), SessionHash: httpapi.Hash(httpapi.CookieValue(r, httpapi.SessionCookie)), Verifier: verifier, RequestedScopes: required})
 	if err != nil {
@@ -230,8 +250,11 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpapi.SetCookie(w, httpapi.FlowCookie, "", -1, h.secure)
+	mail := hasScopes(flow.RequestedScopes, []string{MailSendScope})
 	result := func(code string) {
-		if flow.Intent == "login" {
+		if mail {
+			http.Redirect(w, r, "/reminders?error="+code, http.StatusSeeOther)
+		} else if flow.Intent == "login" {
 			h.result(w, r, code)
 		} else {
 			http.Redirect(w, r, "/account?error="+code, http.StatusSeeOther)
@@ -246,6 +269,17 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		if e != nil || session == nil || session.UserID != flow.TargetUserID.String() {
 			result("session_expired")
 			return
+		}
+		if mail {
+			if h.MailAuthorizationAllowed == nil {
+				result("forbidden")
+				return
+			}
+			ok, err := h.MailAuthorizationAllowed(ctx, session.UserID)
+			if err != nil || !ok {
+				result("forbidden")
+				return
+			}
 		}
 	}
 	if query.Get("error") != "" {
@@ -300,6 +334,10 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	if flow.Intent == "merge" {
 		http.Redirect(w, r, "/account?merge="+token, http.StatusSeeOther)
+		return
+	}
+	if mail {
+		http.Redirect(w, r, "/reminders", http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/account", http.StatusSeeOther)

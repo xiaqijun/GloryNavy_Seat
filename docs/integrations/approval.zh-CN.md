@@ -102,3 +102,5 @@ context 返回 allowed、sources、capabilities、corporations、people、unavai
 ## QQ 待审批通知（2026-10-17）
 
 宿主将只读 `PendingNotificationKeys` 注入 community 的 River 提醒服务。完整遍历来源待审批视图，每次重查当前权限，过滤本人的申请和无审批动作的项目；仅返回按来源、单据和审核阶段计算的哈希引用，不输出申请内容。绕过投影和权限缓存，来源失败不返回伪空队列。提醒持久化、发送及群开关由 community 私有维护，中心及原来源仍不代替业务决定。配置、去重与故障边界见 [NapCat 指南](qq-onebot.zh-CN.md)。
+
+提醒模块通过宿主复用 `PendingNotificationKeys` 实时过滤审批权限，不使用聚合索引计数发送邮件；中心仍不持有发送状态。见[提醒指南](reminder.zh-CN.md)。

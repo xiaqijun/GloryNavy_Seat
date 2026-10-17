@@ -39,3 +39,5 @@ SeAT 原清单有 59 项；去除 `publicData`，再排除当前 [ESI OpenAPI](h
 - `00006_eve_scope_profile.sql` 引入范围记录；多角色迁移为 `00007`，社区资料迁移 `00008` 使当前 Goose 为 8，foundation marker 仍为 1。旧记录的新增 scopes 元数据初始为空，下一次同步或重新授权更新。
 
 本地集成测试覆盖完整/缺项 JWT、一次性 flow 范围快照和旧授权刷新；浏览器测试覆盖独立布局、角色页保护、成功/取消/退出跳转及移动端。真实 CCP 的应用 scopes 配置、玩家授权和回调仍待实际联调；本机能构造正确的授权地址不代表 CCP 已接受整套授权。
+
+管理员在提醒模块中单独申请 `esi-mail.send_mail.v1`，不改变普通 57/58 项登录 scopes。仅本人指定角色的 `reauthorize?purpose=reminder-mail` 追加该 scope，回调校验固定快照；详见[提醒指南](reminder.zh-CN.md)。
