@@ -1,5 +1,18 @@
 # Linux 生产部署
 
+## 2026-10-18 快递服务与合同复制区
+
+后端 v0.1.0-courier-20261018 源码为干净且推送的 main 提交 6464e8dc1802a8fb2d0f21280ac11bffbaa157da；最终前端 v0.1.0-courier-copy-20261018 来自干净且推送的 main 提交 fdda7705a7e28f527a63307fbd13a45debf334ea。前端在独立干净 main 克隆构建，未包含开发中的提醒扩展；后端仍为 Goose 95、active/running/ready、NRestarts=0。
+
+- 配置变更前原始环境备份：/var/backups/glorynavy/before-courier-config-20261017T181932Z.env。只追加 MODULES 的 courier 与专用 COURIER_HTTP_PROXY；使用已存在的受信任出站代理，未改变 ESI/SSO 的网络配置。
+- 完整业务备份：/var/backups/glorynavy/before-v0.1.0-courier-20261018-20261017T181936Z.dump（252379394 字节）及同前缀 .env/.meta.json。该常规激活备份的环境已含 courier；如回退到不认识 courier 的旧后端，需要恢复上述配置变更前环境或移除 courier 模块项，不能直接搭配新环境启动旧程序。数据库没有新迁移；必须保留 Goose 95 的两条编号别名与认识别名的程序。
+- 公网 /courier、/approvals 为 200；匿名快递读写、结算详情、模块目录均 401；QQ OneBot 回调继续 503，绑定 0、提醒关闭。最终 HTML、主包、快递/审批 JS 与 CSS 和发布目录逐字节一致；主包 index-Dc638JKK.js SHA256 为 ad82c549887fce8440dc9a8d6c75baa211a2b03681c5cad064146528cb5b13e0。
+- 发布源码编译的只读诊断在实际 EnvironmentFile 下读取 254 条有效路线，Tritanium 3 返回体积 0.03 m³、出售价 11.7 ISK（2026-10-18 02:20 北京时间报价，非固定价）。没有创建游戏合同或发送通知。#14 在部署时由后台正常同步到新游戏合同 237159344，仍 pending；最终 UI 将游戏合同 ID 改为摘要文本，复制区固定三项。
+- 5 项服务测试（race）、4 项隔离库宿主/估价/元数据测试、go vet、前端类型/构建/lint、4 项计算单测以及中英文三种宽度的 24 项快递和最终 24 项批次浏览器测试通过。参考仓库未选择开源许可证，本项目独立实现并记录来源；不复制其代码或资源。材料保留于忽略目录 .local/courier/。
+
+前端可独立回退，但会恢复旧复制框；无需降级数据库。停止快递功能可从 MODULES 移除 courier 并重启，模块没有持久账号数据或待处理任务。游戏内创建、接取与实际运输由玩家办理，不将报价联调当作运输完成证明。
+
+
 ## 2026-10-18 物品名称复制标记
 
 后端 v0.1.0-market-name-marker-20261018 来自干净且已推送的 main 提交 c64443935ae66750af761bf451d859f1b2583048；前端沿用 contract-batch-flow 版本。Goose 95、active/running/ready、NRestarts=0，发布包哈希通过。完整备份 /var/backups/glorynavy/before-v0.1.0-market-name-marker-20261018-20261017T175423Z.dump（252354099 字节）及同前缀 .env/.meta.json。保留 Goose 95 的两条编号别名；回退只能使用同样理解别名的程序。10 项 market、4 项 EVE 测试及 go vet 已在隔离环境通过，真实 SDE 与公开报价诊断确认用户原文数量 3+2 完整识别。
