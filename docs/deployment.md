@@ -1,5 +1,17 @@
 # Linux 生产部署
 
+## 2026-10-18 意见反馈
+
+前后端 v0.1.0-feedback-20261018 来自干净且推送的 main 提交 3520792f0aa903e60bf02b607887dfc88f94a254。独立 main 克隆构建的前端 139 个文件与浏览器验证产物逐字节相同。新增 feedback 模块与 Goose 96；未包含主工作区开发中的提醒扩展，其迁移文件已顺延至未发布的 97。
+
+- 配置前备份：/var/backups/glorynavy/before-feedback-config-20261017T185127Z.env。仅向既有 MODULES 追加 feedback，其余配置保留。
+- 激活前完整备份：/var/backups/glorynavy/before-v0.1.0-feedback-20261018-20261017T185131Z.dump（252419372 字节），同前缀 .env/.meta.json 保留来源后端版本；激活备份的环境已包含 feedback。
+- 上线验证：Goose 96、active/running/ready、NRestarts=0，feedback_tickets/messages 初始均 0、活跃账号触发器 2。公网 /feedback、/courier、/approvals 为 200；匿名反馈列表/全量范围/详情/提交/回复、模块目录均 401。QQ 回调仍 503，OneBot 关闭/绑定 0，提醒关闭。没有创建生产测试单据或发送通知。
+- 公网 HTML、主包与反馈/快递/审批资产和发布目录逐字节一致。主包 index-irX5B20i.js SHA256 为 0dae003bf747aaa7a957a04759499049a25594141a7222ccdb65fd9e52078df1。
+- 验证：隔离 PostgreSQL 4 项反馈业务测试（race）、2 项宿主反馈/停用合并测试、2 项底座/元数据回归、go vet；前端类型/构建/lint、9 项注册/语言单测、中英文 1280/375/320px 共 18 项浏览器流程及截图检查通过。sqlc 全量重生成一致，既有 structures 生成文件 SQL 条件/参数不变。材料在忽略目录 .local/feedback/。
+
+恢复优先保留当前 schema 与 feedback 合并参与方。已有反馈时禁止 Down，也不能恢复遗漏该参与方的旧二进制。仅当确认新表无任何记录且需要恢复到原版本时，才可停服恢复配套备份/原配置与旧前后端；恢复配置时不能把带 feedback 的新 MODULES 直接交给不认识该模块的旧程序。保留 Goose 95 合同别名兼容边界。功能关闭只移除 MODULES 的 feedback，已有数据和合并参与方仍保留。
+
 ## 2026-10-18 快递服务与合同复制区
 
 后端 v0.1.0-courier-20261018 源码为干净且推送的 main 提交 6464e8dc1802a8fb2d0f21280ac11bffbaa157da；最终前端 v0.1.0-courier-copy-20261018 来自干净且推送的 main 提交 fdda7705a7e28f527a63307fbd13a45debf334ea。前端在独立干净 main 克隆构建，未包含开发中的提醒扩展；后端仍为 Goose 95、active/running/ready、NRestarts=0。
