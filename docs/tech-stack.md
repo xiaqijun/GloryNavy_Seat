@@ -46,7 +46,7 @@ Go slog、请求 ID、River 状态、ESI 观测和应用慢查询日志已具备
 - 已有页面聚合/图表与合同 CSV 导出。通用报表平台、异步导出中心、XLSX 尚未交付，按具体指标与权限需求设计。
 - TanStack Table、React Hook Form、Zod、Excelize 仍是按需候选，当前依赖未引入；不要把它们写成现有实现。
 - 舰船模拟页面已按用户要求撤下。历史 `@eveshipfit/dogma-engine` / `@eveshipfit/sde` 依赖与兼容代码仍在仓库，当前页面不加载模拟；删除前单独分析兼容范围。
-- QQ/KOOK 手填与完整度门禁已实现，后续机器人只经业务适配器确认身份；平台 OAuth 不是现有需求。
+- QQ/KOOK 手填与完整度门禁已实现；按用户 2026-10-17 要求，QQ 机器人选用独立 NapCatQQ + OneBot 11，只经 community 业务服务确认数字 QQ 身份，旧官方 OpenID 不自动迁移。平台 OAuth 不是现有需求，发布和真实验收见项目状态。
 - 联盟 PAP 当前只支持管理员手动兑换，军团 PAP 支持手动/自动。联盟自动兑换是明确待做需求，不能混称已完成。
 
 架构边界见[模块架构](architecture.md)和[开发约定](module-development.md)。初始选型依据保留在[数据库调研](history/database-access-research-2026-09-13.md)和[SeAT 调研](history/seat-research-2026-09-13.md)，不以历史建议覆盖当前实现。

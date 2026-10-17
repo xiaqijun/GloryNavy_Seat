@@ -1,0 +1,21 @@
+# Separate, unmodified NapCat runtime. Copy to a private deployment directory.
+# Initialize config/webui.json and config/onebot11.json as documented before start.
+services:
+  napcat:
+    image: mlikiowa/napcat-docker@sha256:f611790ecffa23c3c182017d5cf68179dc24612403608cd835ad13d79642f1bd # v4.18.37
+    restart: unless-stopped
+    environment:
+      NAPCAT_UID: "1000"
+      NAPCAT_GID: "1000"
+    ports:
+      - "127.0.0.1:6099:6099"
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./qq:/app/.config/QQ
+      - ./config:/app/napcat/config
+      - ./plugins:/app/napcat/plugins
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    ulimits:
+      core: 0

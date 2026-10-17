@@ -28,6 +28,7 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 | 默认登录 scopes | [中文](integrations/seat-login-scopes.zh-CN.md) / [English](integrations/seat-login-scopes.en.md) |
 | 多角色参考与规则 | [中文](integrations/seat-multi-character.zh-CN.md) / [English](integrations/seat-multi-character.en.md) · [页面](ui/account.md) |
 | 账号合并 | [中文](integrations/account-merge.zh-CN.md) / [English](integrations/account-merge.en.md) |
+| NapCatQQ / OneBot | [中文](integrations/qq-onebot.zh-CN.md) / [English](integrations/qq-onebot.en.md) |
 | QQ / KOOK 资料 | [中文](integrations/community-profile.zh-CN.md) / [English](integrations/community-profile.en.md) |
 | 本站权限与成员范围 | [中文](integrations/seat-authorization.zh-CN.md) / [English](integrations/seat-authorization.en.md) · [页面](ui/access.md) |
 | ESI 后台同步 | [中文](integrations/esi-sync.zh-CN.md) / [English](integrations/esi-sync.en.md) · [页面](ui/sync.md) |

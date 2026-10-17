@@ -163,7 +163,7 @@ func TestCorporationCleanupStrictMainLastAndRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = provider.Down(ctx); err == nil || !strings.Contains(err.Error(), "preserved character ownership") {
+	if _, err = provider.DownTo(ctx, 89); err == nil || !strings.Contains(err.Error(), "preserved character ownership") {
 		t.Fatal("unsafe rollback allowed", err)
 	}
 }

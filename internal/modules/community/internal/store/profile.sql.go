@@ -22,7 +22,8 @@ func (q *Queries) EnsureProfile(ctx context.Context, userID pgtype.UUID) error {
 
 const getProfile = `-- name: GetProfile :one
 SELECT p.user_id, p.qq_number, p.kook_name, p.version, p.qq_version, p.kook_version, p.updated_at,
- EXISTS(SELECT 1 FROM community_confirmations c WHERE c.user_id=p.user_id AND c.platform='qq' AND c.field_version=p.qq_version AND c.invalidated_at IS NULL) AS qq_confirmed,
+ EXISTS(SELECT 1 FROM community_confirmations c WHERE c.user_id=p.user_id AND c.platform='qq' AND c.field_version=p.qq_version AND c.invalidated_at IS NULL
+ AND (NOT EXISTS(SELECT 1 FROM community_onebot_settings) OR (c.source='onebot' AND EXISTS(SELECT 1 FROM community_onebot_bindings b WHERE b.user_id=p.user_id AND b.qq_number=p.qq_number AND b.qq_version=p.qq_version)))) AS qq_confirmed,
  EXISTS(SELECT 1 FROM community_confirmations c WHERE c.user_id=p.user_id AND c.platform='kook' AND c.field_version=p.kook_version AND c.invalidated_at IS NULL) AS kook_confirmed
 FROM community_profiles p WHERE p.user_id=$1
 `

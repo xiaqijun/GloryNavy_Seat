@@ -5453,6 +5453,133 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
+  /api/v1/community/qq/onebot/settings:
+    get:
+      operationId: getOneBotSettings
+      summary: Read NapCat connection and enabled groups (current site administrator only)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Write-only credentials are represented by booleans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  data: { $ref: "#/components/schemas/OneBotSettings" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/CommunityUnavailable" }
+    put:
+      operationId: saveOneBotSettings
+      summary: Replace NapCat connection and enabled groups
+      description: Current site administrator only. The first save selects OneBot and disables official callbacks, even when enabled is false. Empty credentials retain encrypted values. Revision is required; a stale revision returns 409. HTTPS or loopback HTTP origins only. The bot QQ number must match get_login_info before sending.
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/MutationOrigin" }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [enabled, api_base, bot_qq, token, secret, revision, groups]
+              properties:
+                enabled: { type: boolean }
+                api_base: { type: string, format: uri }
+                bot_qq: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
+                token: { type: string, maxLength: 512, writeOnly: true, description: Empty retains; otherwise at least 32 non-whitespace characters }
+                secret: { type: string, maxLength: 512, writeOnly: true, description: Empty retains; otherwise at least 32 non-whitespace characters }
+                revision: { type: string, pattern: '^[0-9]+$' }
+                groups: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/OneBotGroup" } }
+      responses:
+        "200":
+          description: Settings saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  data: { $ref: "#/components/schemas/OneBotSettings" }
+        "400": { description: Invalid configuration or unavailable encryption key }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Settings revision changed }
+  /api/v1/community/qq/onebot/status:
+    get:
+      operationId: getOneBotStatus
+      summary: Check login identity, online status and available groups (current site administrator only)
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Verified online bot and its groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  data:
+                    type: object
+                    required: [online, bot_qq, nickname, groups]
+                    properties:
+                      online: { type: boolean }
+                      bot_qq: { type: string }
+                      nickname: { type: string }
+                      groups: { type: array, items: { $ref: "#/components/schemas/OneBotGroup" } }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Disabled, offline, wrong bot identity or unavailable OneBot service }
+  /api/v1/community/qq/onebot/test:
+    post:
+      operationId: testOneBotMention
+      summary: Send one group mention to the current administrator's verified QQ
+      description: Uses the configured group whitelist and the current profile-version OneBot binding. Does not accept another member or arbitrary message text. No automatic retries after ambiguous send outcomes.
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/MutationOrigin" }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [group_id]
+              properties:
+                group_id: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
+      responses:
+        "200": { description: OneBot returned a nonzero message ID; client rendering still needs confirmation }
+        "400": { description: Invalid group ID or unknown fields }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Missing current QQ binding, disallowed group, changed configuration or send failure }
+  /api/v1/community/qq/onebot/webhook:
+    post:
+      operationId: receiveOneBotWebhook
+      summary: Receive signed NapCat OneBot 11 events
+      description: Requires HMAC-SHA1 of the exact body using the HTTP client token (X-Signature sha1=hex), expected self_id and a five-minute past/one-minute future timestamp window. Only normal group messages containing a standalone eight-character code in text segments are processed. Sender QQ must match the saved profile. Configured group, active account and current QQ version are checked in the binding transaction. Duplicate events return an empty object without sending another reply. Raw chat bodies are not retained. A reply is a OneBot quick operation with at and text segments, not the site's usual data envelope.
+      security: []
+      parameters:
+        - in: header
+          name: X-Signature
+          required: true
+          schema: { type: string, pattern: '^sha1=[a-fA-F0-9]{40}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: OneBot 11 event; maximum 64 KiB }
+      responses:
+        "200": { description: Empty object or standard OneBot quick operation reply }
+        "400": { description: Invalid or oversized event }
+        "401": { description: Invalid signature, identity or timestamp }
+        "503": { description: Disabled, changed configuration, replay conflict or transaction failure }
   /api/v1/community/qq/bot/settings:
     get:
       operationId: getQQBotSettings
@@ -9954,6 +10081,25 @@ components:
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/QQGroupSetting" } }
         initialized: { type: boolean, description: Whether an administrator has saved the database-backed configuration }
+    OneBotGroup:
+      type: object
+      required: [group_id, name]
+      additionalProperties: false
+      properties:
+        group_id: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
+        name: { type: string, maxLength: 128 }
+    OneBotSettings:
+      type: object
+      required: [enabled, api_base, bot_qq, token_configured, secret_configured, revision, groups]
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean }
+        api_base: { type: string, format: uri }
+        bot_qq: { type: string }
+        token_configured: { type: boolean }
+        secret_configured: { type: boolean }
+        revision: { type: string, pattern: '^[0-9]+$' }
+        groups: { type: array, items: { $ref: "#/components/schemas/OneBotGroup" } }
     QQBotSettings:
       type: object
       required: [app_id, api_base, secret_configured, initialized]

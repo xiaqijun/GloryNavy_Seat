@@ -16,6 +16,10 @@ import (
 // validation handshake is handled synchronously; event work is kept small and
 // the reply is sent through the official OpenAPI using the user's openid.
 func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
+	if selected, err := h.Service.oneBotSelected(r.Context()); err != nil || selected {
+		httpapi.Failure(w, r, 503, "qq_bot_replaced", "已切换至 NapCat")
+		return
+	}
 	if h.Service.qqOfficial == nil || !h.Service.qqOfficial.Configured() {
 		httpapi.Failure(w, r, 503, "qq_bot_unavailable", "官方 QQ 机器人未配置")
 		return

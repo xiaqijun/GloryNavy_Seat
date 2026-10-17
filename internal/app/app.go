@@ -89,6 +89,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	status := system.StatusHandler(system.New(pool, version), logger)
 	identityService := identity.New(pool)
 	communityService := community.New(pool)
+	communityService.LockAccounts = identityService.LockActiveAccounts
 	if err := communityService.SetQQBotConfigKey(auth.TokenKey); err != nil {
 		return nil, err
 	}

@@ -1,5 +1,9 @@
 # Third-party source notices
 
+## NapCatQQ runtime（2026-10-17）
+
+[NapCatQQ](https://github.com/NapNeko/NapCatQQ) / [NapCat-Docker](https://github.com/NapNeko/NapCat-Docker) 以未修改的独立服务部署，本仓库只实现 OneBot 11 公开协议客户端，不复制或再分发其源码/QQ 程序。NapCat 使用自定义 Limited Redistribution License（含非商业限制），不是 MIT/Apache；使用与再分发须遵守其 [LICENSE](https://github.com/NapNeko/NapCatQQ/blob/main/LICENSE)。部署版本与固定镜像摘要、凭据边界见 [接入指南](integrations/qq-onebot.zh-CN.md)。
+
 ## EVE 界面术语（2026-09-20）
 
 `web/src/lib/eve-terminology.json` 的钱包与军团职务名称来自 CCP 官方 Tranquility SDE build 3503375 的 accountingEntryTypes / corporationRoles，旧项目船型来自 types；合同/槽位等短标签来自合法安装的同版本 Tranquility 客户端本地化资源。名称版权归 CCP，沿用 EVE 开发者许可及相关知识产权要求，不声明为项目原创。只提交所用短标签及来源/hash，不分发完整客户端、pickle、源码或游戏执行文件；提取器不执行游戏代码。来源键、复现命令及应用文案边界见[术语指南](integrations/eve-terminology.zh-CN.md)。

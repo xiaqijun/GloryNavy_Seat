@@ -24,6 +24,7 @@ approval 为已发布的只读聚合模块，开发前读取 docs/integrations/a
 - 新增业务前读取 `docs/architecture.md` 与 `docs/module-development.md`。Go 模块使用 `internal/modules/<id>`，通过宿主注册；前端页面与导航使用统一模块声明。
 - SQL 和生成代码归模块私有 `internal/store`；跨模块经注入的业务服务接口协作，不直接导入其他模块 store。
 - 接口默认受保护，由宿主强制鉴权；access 实施 SeAT 风格军团策略和本站 RBAC，未知能力拒绝。业务端点还必须检查目标对象，参考 access 的军团概览接口；不能只依赖 access.self。前端可见性不代替权限。
+- 2026-10-17 用户明确要求切换第三方 QQ 机器人：使用独立 NapCatQQ 服务与 OneBot 11，覆盖下方旧“仅官方 Bot”限制。数字 QQ 绑定与旧 OpenID 分开；首次保存 OneBot 配置后禁用官方回调，旧确认需重新验证码核验。管理员配置、签名回调、账号合并与迁移边界见 `docs/integrations/qq-onebot.zh-CN.md`，发布/真实联调以 project-status 为准。
 - 已确认认证需求：EVE SSO / ESI 授权，手动填写 QQ 号与 KOOK 昵称用于后续社区确认；不等同于 QQ/KOOK OAuth 或已验证身份。QQ 机器人仅按官方 Bot API v2 接入；AppID、API 地址、群 OpenID、显示名称和启用状态由管理员在 `/account` 配置，App Secret 使用只写字段并由服务端加密保存。
 - 成员模型考虑一人多个 EVE 游戏账号：一个本站账号可绑定多个游戏角色，QQ/KOOK 资料按本站账号管理，令牌/职务/同步按角色独立保存。多角色绑定、主角色与解绑已实现，说明见 `docs/architecture.md`；普通登录不得隐式绑号，同名或相同社区资料不得触发自动合并。
 - 多角色参照 SeAT 的一个用户、一个主角色、多个小号模型，实施前读取 `docs/integrations/seat-multi-character.zh-CN.md`。主角色、登录角色、查看角色分离；本项目的显式绑定、归属冲突和独立 token 生命周期规则优先于 SeAT 的具体迁移行为。

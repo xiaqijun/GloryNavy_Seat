@@ -15,6 +15,29 @@ type CommunityBotEvent struct {
 	ReceivedAt  pgtype.Timestamptz
 }
 
+type CommunityOnebotBinding struct {
+	UserID    pgtype.UUID
+	QqNumber  string
+	QqVersion int64
+	BoundAt   pgtype.Timestamptz
+}
+
+type CommunityOnebotGroup struct {
+	GroupID string
+	Name    string
+}
+
+type CommunityOnebotSetting struct {
+	Singleton        bool
+	Enabled          bool
+	ApiBase          string
+	BotQq            string
+	TokenCiphertext  []byte
+	SecretCiphertext []byte
+	Revision         int64
+	UpdatedAt        pgtype.Timestamptz
+}
+
 type CommunityProfile struct {
 	UserID      pgtype.UUID
 	QqNumber    string

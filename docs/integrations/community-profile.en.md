@@ -1,5 +1,7 @@
 # QQ and account nickname details
 
+> 2026-10-17 transport change: the user requested NapCatQQ. The [OneBot guide](qq-onebot.en.md) defines current usage, deployment and identity rules. After saving the new configuration, send the whole code in an enabled group from the numeric QQ saved on the site. Official OpenID proof is not inherited. The official Bot permissions, OpenID and admission descriptions below are legacy compatibility records; automatic admission is not implemented for NapCat.
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 Updated: 2026-10-17. [中文](community-profile.zh-CN.md). Manual details, editing, the profile-completeness gate, official QQ group admission callbacks, administrator fallback sync and the administrator group-settings card are implemented locally. Production credentials, public callbacks and a real group-mention reply were verified on 2026-10-17. Live account binding, group admission and availability of member events remain pending; platform OAuth is not a confirmed requirement.

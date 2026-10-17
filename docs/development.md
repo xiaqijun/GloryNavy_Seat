@@ -152,7 +152,7 @@ npm --prefix web run preview:local
 | `SENTRY_ALERT_PRICE_VERSION` | 启用预警收费时必填的冻结费率版本；无默认值 |
 | `SENTRY_ALERT_UNIT_SECONDS` / `SENTRY_ALERT_UNIT_PRICE_MINOR` | 启用预警收费时必填的时间单位秒数与每单位果壳币最小单位价格；无默认值 |
 | `SENTRY_ALERT_MAX_GRANT_SECONDS` / `SENTRY_ALERT_GRANT_TTL` | 启用预警收费时必填的单次授权上限与授权有效期；无默认值 |
-| `QQ_BOT_APP_ID` / `QQ_BOT_APP_SECRET` / `QQ_BOT_API_BASE` | 官方 QQ Bot 的迁移兜底配置；管理员首次在 `/account` 保存后由数据库设置接管，Secret 只写入并加密保存 |
+| `QQ_BOT_APP_ID` / `QQ_BOT_APP_SECRET` / `QQ_BOT_API_BASE` | 官方 QQ Bot 的迁移兜底配置；管理员首次保存官方配置后由数据库设置接管，Secret 只写入并加密保存 |
 | `QQ_BOT_GROUP_OPENIDS` | 官方 QQ Bot 自动审批的群 OpenID，逗号分隔；必须是 bot-scoped Group OpenID，不能填数字群号；管理员首次保存前的兜底列表 |
 
 客户端密钥、加密密钥和 EVE 令牌不得放入 `VITE_*` 配置。命令、截图和文档中不要打印真实 `.env`。
@@ -166,7 +166,9 @@ npm --prefix web run preview:local
 
 ## 迁移与构建边界
 
-社区资料模块默认启用；旧的显式 `MODULES` 配置需追加 `community`。迁移 `00008` 建立资料与确认历史表，`00050`/`00051` 增加机器人事件与官方 QQ 一次性绑定码，`00052` 增加入群申请与群范围绑定，`00053`/`00054` 增加管理员群与 Bot 配置；旧用户首次访问角色页补填两项资料。需要官方 QQ 机器人时，可暂时在服务端环境配置 `QQ_BOT_APP_ID`、`QQ_BOT_APP_SECRET`、`QQ_BOT_API_BASE` 和可选的 `QQ_BOT_GROUP_OPENIDS` 作为首次迁移兜底，并把 `PUBLIC_ORIGIN/api/v1/community/qq/official/webhook` 配置到 QQ 开放平台；管理员随后在 `/account` 维护 AppID、API 地址、密钥和群配置，保存后数据库设置优先。App Secret 只在写入时从前端提交，后端使用由 `EVE_TOKEN_KEY` 派生的密钥加密，页面和接口不会回显。不要把 Bot Secret 放到日志或聊天中。
+当前 QQ 机器人按用户要求接入 NapCatQQ / OneBot 11：Goose 91、独立运行服务、数字 QQ 验证和 `/community` 管理，详见[中文指南](integrations/qq-onebot.zh-CN.md)。旧官方环境变量仅用于尚未保存 OneBot 配置的兼容模式，不用于 NapCat。以下官方启动步骤保留为历史兼容说明。
+
+社区资料模块默认启用；旧的显式 `MODULES` 配置需追加 `community`。迁移 `00008` 建立资料与确认历史表，`00050`/`00051` 增加机器人事件与官方 QQ 一次性绑定码，`00052` 增加入群申请与群范围绑定，`00053`/`00054` 增加管理员群与 Bot 配置；旧用户首次访问角色页补填两项资料。需要官方 QQ 机器人时，可暂时在服务端环境配置 `QQ_BOT_APP_ID`、`QQ_BOT_APP_SECRET`、`QQ_BOT_API_BASE` 和可选的 `QQ_BOT_GROUP_OPENIDS` 作为首次迁移兜底，并把 `PUBLIC_ORIGIN/api/v1/community/qq/official/webhook` 配置到 QQ 开放平台；旧版管理员页面曾在 `/account` 维护 AppID、API 地址、密钥和群配置，保存后数据库设置优先。App Secret 只在写入时从前端提交，后端使用由 `EVE_TOKEN_KEY` 派生的密钥加密，页面和接口不会回显。不要把 Bot Secret 放到日志或聊天中。
 
 `dev` 和 `dev:external` 在 API 启动前执行迁移。`npm run start:api` 只编译和运行 API，不执行迁移，也不启动 Vite；单独启动前先运行 `npm run db:migrate`。`npm run build` 只生成构建产物，不执行部署或数据库迁移。
 
