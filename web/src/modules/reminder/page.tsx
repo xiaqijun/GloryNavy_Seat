@@ -39,7 +39,7 @@ function Editor({ initial, user, csrf }: { initial: api.Settings; user: string; 
     </div>
     {sender && (own ? !own.ready : initial.status !== "ready") && <p role="status">{msg("需要授权发信")}</p>}
     {(save.error || authorize.error) && <div role="alert"><p>{(save.error || authorize.error)?.message}</p>{save.error && <Button variant="outline" onClick={() => void client.invalidateQueries({ queryKey: ["reminder", "settings", user] })}>{msg("刷新配置")}</Button>}</div>}
-    {callbackError && <div role="alert"><p>{callbackError === "wrong_character" ? msg("请选择同一个角色重新授权") : callbackError === "cancelled" ? msg("授权已取消") : msg("发信授权未完成，请重试")}</p><Button variant="outline" onClick={() => setParams({})}>{msg("关闭")}</Button></div>}
+    {callbackError && <div role="alert"><p>{callbackError === "wrong_character" ? msg("授权角色不符，请在 EVE 页面选择 {0}", own?.name || initial.sender_name || sender) : callbackError === "session_expired" ? msg("登录已失效，请重新登录后授权发信") : callbackError === "authorization_required" ? msg("缺少发信权限，请确认 EVE 应用权限后重新授权") : callbackError === "forbidden" ? msg("当前账号无权授权发信") : callbackError === "cancelled" ? msg("授权已取消") : msg("发信授权未完成，请重试")}</p><Button variant="outline" onClick={() => setParams({})}>{msg("关闭")}</Button></div>}
   </CardContent></Card>;
 }
 const states: Record<string, string> = { sending: "发送中", sent: "已发送", failed: "发送失败", unknown: "结果待确认", retry_requested: "等待重试" };

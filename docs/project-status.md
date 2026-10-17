@@ -1,5 +1,9 @@
 # 项目状态
 
+## 进行中：发信授权回调排查（2026-10-18）
+
+管理员已多次完成 EVE 授权操作，回调收到，但发件角色仍为 58 项 scopes、未保存发信权限；生产配置已选择发件角色、revision=2，发送仍关闭。已补充发信回调的有限失败原因及角色 ID 日志，并区分页面错误提示；待本轮验证、发布与真实回调复核，不能将收到回调视为授权成功。
+
 ## 当前：游戏邮件待审批提醒（2026-10-17，已发布，待发件角色授权）
 
 前后端已由干净且已推送的 `main` 提交 `1664eb4` 发布 `v0.1.0-reminder-mail-20261017`，Goose 93、active/running/ready、NRestarts=0。公网 `/reminders` 200，配置/历史/重试及额外授权入口匿名均 401，HTML 与新页面/主包哈希一致，OpenResty 检查通过。生产 reminder 仍为 enabled=false、sender_id=0、revision=1、发送记录 0；正常扫描已完成 2 次，没有自动发送。QQ 配置仍 disabled/revision=6，NapCat exited，OneBot/旧官方绑定和 QQ 有效确认均 0，两类 webhook 均 503。备份和恢复见[部署记录](deployment.md)。

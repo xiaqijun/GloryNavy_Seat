@@ -2909,4 +2909,8 @@ export const english: Record<string, string> = {
   "请填写有效的保留军团 ID，启用时名单不能为空": "Enter valid corporation IDs to retain; an enabled rule requires at least one.",
   "清理规则已更新，请重新读取": "Cleanup rules have changed. Reload the rules.",
   "角色清理服务暂不可用": "Character cleanup is temporarily unavailable",
+  "授权角色不符，请在 EVE 页面选择 {0}": "Character mismatch. Select {0} on the EVE authorization page.",
+  "登录已失效，请重新登录后授权发信": "Your session has expired. Sign in again to authorize mail.",
+  "缺少发信权限，请确认 EVE 应用权限后重新授权": "Mail permission is missing. Check the EVE application's permissions and authorize again.",
+  "当前账号无权授权发信": "This account cannot authorize mail.",
 };

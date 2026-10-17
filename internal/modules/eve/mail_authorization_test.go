@@ -7,7 +7,6 @@ import (
 	"glorynavy.local/seat/internal/module"
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/testutil"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +19,8 @@ func TestMailAuthorizationIsExplicitOwnedSessionBoundAndRechecksAdmin(t *testing
 	ctx := context.Background()
 	pool := testutil.Database(t)
 	accounts := identity.New(pool)
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	var logs strings.Builder
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
 	token, e := accounts.SignIn(ctx, 101, "Main", "owner", "")
 	if e != nil {
 		t.Fatal(e)
@@ -108,5 +108,18 @@ func TestMailAuthorizationIsExplicitOwnedSessionBoundAndRechecksAdmin(t *testing
 	}
 	if w := call("GET", path, cookie); !strings.Contains(w.Header().Get("Location"), "invalid_state") || completed != 1 {
 		t.Fatal("replay")
+	}
+	for _, reason := range []string{"forbidden", "authorization_required", "wrong_character"} {
+		if !strings.Contains(logs.String(), "reason="+reason) {
+			t.Fatal("missing rejection reason", reason)
+		}
+	}
+	if !strings.Contains(logs.String(), "expected_character_id=101 authorized_character_id=202") {
+		t.Fatal("missing character mismatch diagnostic")
+	}
+	for _, secret := range []string{token, session.CSRFToken, sso.verifier, "mock-access", "mock-refresh", "code=test"} {
+		if secret != "" && strings.Contains(logs.String(), secret) {
+			t.Fatal("authorization secret logged")
+		}
 	}
 }

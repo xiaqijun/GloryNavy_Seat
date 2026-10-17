@@ -29,6 +29,19 @@ async function fixture(page: Page, admin = true, ready = true) {
   return state;
 }
 for (const lang of ["zh-CN", "en"]) {
+  test(`reminder callback recovery messages ${lang}`, async ({ page }) => {
+    const tr = (s: string) => lang === "en" ? english[s] ?? s : s;
+    await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), lang);
+    await fixture(page, true, false);
+    for (const [code, text] of [["session_expired", "登录已失效，请重新登录后授权发信"], ["authorization_required", "缺少发信权限，请确认 EVE 应用权限后重新授权"], ["forbidden", "当前账号无权授权发信"]]) {
+      await page.goto(`/reminders?error=${code}`);
+      await expect(page.getByRole("alert")).toContainText(tr(text));
+      await expect(page.getByRole("checkbox")).toBeDisabled();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.getByRole("button", { name: tr("关闭"), exact: true }).click();
+      await expect(page.getByRole("alert")).toHaveCount(0);
+    }
+  });
   test(`reminder settings, safe retry and compact layout ${lang}`, async ({ page }, info) => {
     const tr = (s: string) => lang === "en" ? english[s] ?? s : s;
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), lang);
@@ -53,7 +66,7 @@ for (const lang of ["zh-CN", "en"]) {
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), lang);
     const state = await fixture(page, true, false); await page.goto("/reminders?error=wrong_character");
     await expect(page.getByRole("checkbox", { name: tr("待审批提醒") })).toBeDisabled();
-    await expect(page.getByRole("alert")).toContainText(tr("请选择同一个角色重新授权"));
+    await expect(page.getByRole("alert")).toContainText(tr("授权角色不符，请在 EVE 页面选择 {0}").replace("{0}", state.config.sender_name));
     await page.getByRole("button", { name: tr("授权发信"), exact: true }).click();
     await expect.poll(() => state.auth).toBe(1); await expect(page.getByText("SSO unavailable")).toBeVisible();
     await page.unrouteAll(); await fixture(page, false); await page.reload();

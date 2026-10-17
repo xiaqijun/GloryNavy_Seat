@@ -251,8 +251,10 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	httpapi.SetCookie(w, httpapi.FlowCookie, "", -1, h.secure)
 	mail := hasScopes(flow.RequestedScopes, []string{MailSendScope})
+	var authorizedID int64
 	result := func(code string) {
 		if mail {
+			h.logger.Warn("EVE mail authorization rejected", "request_id", httpapi.RequestID(r), "reason", code, "expected_character_id", flow.ExpectedCharacterID.Int64, "authorized_character_id", authorizedID)
 			http.Redirect(w, r, "/reminders?error="+code, http.StatusSeeOther)
 		} else if flow.Intent == "login" {
 			h.result(w, r, code)
@@ -291,6 +293,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	character, err := h.sso.Exchange(ctx, code, flow.Verifier)
+	authorizedID = character.ID
 	if err != nil {
 		if errors.Is(err, ErrReauthorize) {
 			result("authorization_required")

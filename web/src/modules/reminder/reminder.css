@@ -19,3 +19,4 @@
 .reminder-table th{white-space:nowrap}
 .reminder-table td:nth-child(4){min-width:8rem}
 .reminder-toggle{flex-shrink:0}
+.reminder-page [role="alert"]{color:var(--destructive);overflow-wrap:anywhere}
