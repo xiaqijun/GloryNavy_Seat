@@ -5253,7 +5253,7 @@ paths:
     post:
       operationId: createQQOfficialBindingChallenge
       summary: Create a short-lived code for binding the official QQ bot account
-      description: The authenticated member enters the returned one-time code in a private message to the official QQ bot. The code is valid for ten minutes and is never stored in plaintext.
+      description: The authenticated member generates the code from the account community card, then sends it in a private message or a group mention to the official QQ bot. The code is valid for ten minutes and is never stored in plaintext. Generating a replacement invalidates previous codes. Successful binding consumes the code in the same transaction as the identity binding and audit; an identical callback retry remains idempotent.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }

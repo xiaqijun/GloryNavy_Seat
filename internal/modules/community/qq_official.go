@@ -543,5 +543,8 @@ func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code s
 	if err = q.InsertConfirmation(ctx, store.InsertConfirmationParams{UserID: challenge.UserID, FieldVersion: challenge.QqVersion, Source: "qqofficial", Actor: openid, EventID: eventID}); err != nil {
 		return err
 	}
+	if err = q.MarkQQChallengeUsed(ctx, challenge.ID); err != nil {
+		return err
+	}
 	return tx.Commit(ctx)
 }

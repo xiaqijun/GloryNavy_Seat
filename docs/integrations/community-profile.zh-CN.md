@@ -2,7 +2,7 @@
 
 > 状态索引（2026-09-23）：本指南对应的业务已上线；未交付的扩展与真实验收缺口见[待办](../backlog.md)，当前版本见[项目状态](../project-status.md)。下文带日期/Goose 的发布前记录保留当时语境，不能据此认定当前未发布；升级执行仓库最新迁移，不停在模块初始版本。
 
-更新：2026-10-12。[English](community-profile.en.md)。手填资料、编辑、资料完整度门禁、官方 QQ 群入群审批回调、管理员补偿同步和管理员前端群配置已在本地实现；真实 QQ 开放平台联调仍未完成；平台 OAuth 不属于已确认需求。
+更新：2026-10-17。[English](community-profile.en.md)。手填资料、编辑、资料完整度门禁、官方 QQ 群入群审批回调、管理员补偿同步和管理员前端群配置已在本地实现；2026-10-17 已验证生产凭据、公网回调与真实群 @ 回复；真实账号绑定、自动入群审批和群成员事件支持仍待验证；平台 OAuth 不属于已确认需求。
 
 ## 1. 使用与状态
 
@@ -12,6 +12,8 @@
 - 昵称：去除首尾空白后 1–64 个 Unicode 字符，不含控制字符，保留内部空格及表情。
 - 两项都合法才保存并标记资料完整；规则是本站校验，不表示 QQ 已核验账号存在。新保存的昵称按去除首尾空白并忽略大小写后检查重复，已被其他本站账号使用时返回 `nickname_taken`；历史重复昵称保留，不自动改名。
 - QQ 保存后可显示入群确认状态；昵称只显示已填写/未填写。同 QQ 或同昵称不触发账号合并，账号识别以本站账号和主角色关系为准。
+
+QQ 号已保存且未确认时，在 `/account` 的“社区资料 → QQ”点击“生成 QQ 绑定码”。复制完整的 `绑定 ABCDEFGH` 指令（示例码），私聊机器人或在群中 @机器人发送。码有效期 10 分钟，重新生成使旧码失效；确认成功后在同一事务消费绑定码、写身份与审计，已用码不能由其他新事件复用，相同回调可幂等重试。页面在有效期内每 3 秒刷新确认状态，确认后收起指令；码不持久化到浏览器，过期可重新生成。该确认不等于已加入管理员配置的 QQ 群。
 
 `complete` 只表示资料齐全；QQ 保留 `unfilled`、`pending`、`confirmed` 状态，昵称只按是否填写展示。成员不能提交确认状态。修改 QQ 会撤销 QQ 旧确认；保存相同内容不增加版本。
 
@@ -45,13 +47,13 @@ PUT 请求字段：`qq_number`、`kook_name`（兼容字段名，语义为账号
 
 实现依据：[QQ 机器人 API v2 启动接入](https://bot.q.qq.com/wiki/develop/api-v2/)、[获取 access_token](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/access-token.html)、[API 调用指南](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/api-call-guide.html)、[事件订阅与通知](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html)、[安全和授权](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/sign.html)、[用户申请加群事件](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_join_request.html)、[单聊消息事件](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/c2c_message_create.html)、[群 @ 机器人消息](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_at_message_create.html)。
 
-KOOK 适配器和真实 QQ 平台联调仍待实现。官方平台不向本站发送 EVE 凭据或本站用户 ID。
+KOOK 适配器仍待实现；真实 QQ 群 @ 消息收发已由用户确认，身份绑定与群审批仍待完成真实闭环。官方平台不向本站发送 EVE 凭据或本站用户 ID。
 
 启用模块以当前配置为准。已有显式 MODULES 配置须添加 community，执行 `npm run db:migrate` 后重启 API；`dev:external` 自动迁移。首次引入为 Goose 8，官方 QQ 事件为 Goose 50/51，群审批为 Goose 52，群与 Bot 前端配置为 Goose 53/54；当前统一迁移见项目状态，foundation marker 仍为 1。迁移期间可保留环境变量作为兜底，完成管理员首次保存后由 `/community` 维护；旧用户首次进入 `/account` 补填个人资料。
 
 ## 4. 验证范围
 
-已覆盖输入校验、账号级共享、只撤销对应平台确认、无变化保存、迟到旧版本确认、并发覆盖防护、越权字段/CSRF/匿名拒绝、管理员资料门禁，以及官方 Ed25519 验签、验证握手、绑定码过期、openid 冲突、官方业务错误码、入群申请码匹配、重复事件、资料版本变更和群成员绑定。前端覆盖字段错误、保存与修改、确认提示、入群申请码生成、失败重试和版本冲突恢复；真实 QQ 平台联调仍待完成。
+已覆盖输入校验、账号级共享、只撤销对应平台确认、无变化保存、迟到旧版本确认、并发覆盖防护、越权字段/CSRF/匿名拒绝、管理员资料门禁，以及官方 Ed25519 验签、验证握手、绑定码过期、openid 冲突、官方业务错误码、入群申请码匹配、重复事件、资料版本变更和群成员绑定。前端覆盖字段错误、保存与修改、确认提示、入群申请码生成、失败重试和版本冲突恢复；QQ 真实群消息回复已确认；账号绑定和群审批仍待真实闭环，不能仅凭后台存在事件处理分支认为平台已开放相应订阅。
 
 ## 管理员读取
 

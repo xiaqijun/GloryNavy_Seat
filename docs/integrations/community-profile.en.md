@@ -2,9 +2,11 @@
 
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
-Updated: 2026-10-12. [中文](community-profile.zh-CN.md). Manual details, editing, the profile-completeness gate, official QQ group admission callbacks, administrator fallback sync and the administrator group-settings card are implemented locally. Live QQ open-platform verification remains pending; platform OAuth is not a confirmed requirement.
+Updated: 2026-10-17. [中文](community-profile.zh-CN.md). Manual details, editing, the profile-completeness gate, official QQ group admission callbacks, administrator fallback sync and the administrator group-settings card are implemented locally. Production credentials, public callbacks and a real group-mention reply were verified on 2026-10-17. Live account binding, group admission and availability of member events remain pending; platform OAuth is not a confirmed requirement.
 
 ## 1. Usage and states
+
+After saving a QQ number, an unconfirmed member can generate a QQ binding code under `/account` → Community details → QQ. Copy the complete `绑定 ABCDEFGH` command (example code) and send it privately to the bot or @mention it in a group. The code lasts ten minutes; generating another invalidates prior codes. Successful confirmation consumes it in the same transaction as the identity binding and audit. A new event cannot reuse the code; an identical callback retry remains idempotent. The visible page refreshes confirmation every three seconds while the code is valid, then removes the command after confirmation. Codes are not persisted in browser storage. This identity confirmation does not prove membership in a configured group.
 
 Enter the QQ number and nickname in Community details on `/account`; use the edit icon to change them. Details belong to the site user, are shared across viewed characters, main-character changes and alternate-character logins, and the nickname is the unified in-game form of address.
 
@@ -45,13 +47,13 @@ The official callback is `PUBLIC_ORIGIN/api/v1/community/qq/official/webhook`. T
 
 Implementation references: [QQ Bot API v2](https://bot.q.qq.com/wiki/develop/api-v2/), [access token](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/access-token.html), [API call guide](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/api-call-guide.html), [event subscriptions](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html), [security and authorization](https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/sign.html), [group join request event](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_join_request.html), [C2C message event](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/c2c_message_create.html), and [group-at message event](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/group_at_message_create.html).
 
-A KOOK adapter and live QQ platform integration test remain pending. The platform does not receive EVE credentials or site user IDs.
+A KOOK adapter remains pending. The user confirmed real QQ group-mention replies; account binding and group admission still need live end-to-end verification. The platform does not receive EVE credentials or site user IDs.
 
 Enabled modules follow the current configuration. Add community to existing explicit MODULES settings, run `npm run db:migrate`, then restart the API; `dev:external` migrates automatically. Goose 8 introduced the module, Goose 50/51 added official events, Goose 52 adds group admission, and Goose 53/54 add group and Bot settings; see project status for the current migration. The foundation marker remains 1. Keep the environment values during migration, then maintain them from `/community`; existing users fill in personal details on their next account visit.
 
 ## 4. Verification scope
 
-Coverage includes validation, user-level sharing, platform-specific invalidation, unchanged saves, late stale confirmations, concurrent edits, unknown-field/CSRF/anonymous rejection, administrator profile gating, plus official Ed25519 verification, validation handshake, challenge expiry, openid conflicts, official business error codes, admission-code matching, duplicate events, profile-revision changes and group-member binding. Frontend coverage includes field errors, saves/edits, confirmation messaging, admission-code generation, service failures and revision-conflict recovery. Live QQ platform testing remains pending.
+Coverage includes validation, user-level sharing, platform-specific invalidation, unchanged saves, late stale confirmations, concurrent edits, unknown-field/CSRF/anonymous rejection, administrator profile gating, plus official Ed25519 verification, validation handshake, challenge expiry, openid conflicts, official business error codes, admission-code matching, duplicate events, profile-revision changes and group-member binding. Frontend coverage includes field errors, saves/edits, confirmation messaging, admission-code generation, service failures and revision-conflict recovery. Real group-message replies were confirmed; account binding and group admission remain pending. A server-side event handler does not establish that the platform exposes the corresponding subscription.
 
 ## Administrator reads
 

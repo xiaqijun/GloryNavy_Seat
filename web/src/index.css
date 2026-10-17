@@ -877,7 +877,7 @@ main {
   gap: 14px;
   min-width: 0;
 }
-.community-binding + .community-binding {
+.community-bindings > * + * {
   padding-top: 20px;
   border-top: 1px solid var(--border);
 }
@@ -929,6 +929,32 @@ main {
   border-top: 1px solid var(--border-subtle, #e5e7eb);
   color: var(--text-secondary, #64748b);
   font-size: 12px;
+}
+.community-qq-binding {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  min-width: 0;
+  font-size: 14px;
+}
+.community-qq-binding > button { justify-self: start; }
+.community-qq-binding p { margin: 0; overflow-wrap: anywhere; }
+.community-qq-command {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.community-qq-command code {
+  padding: 6px 8px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  user-select: all;
 }
 .community-bot-bind p { margin: 0; }
 .community-bot-bind code {

@@ -16,6 +16,7 @@ import { IconAction } from "@/components/ui/icon-action";
 import { APIError } from "@/lib/http";
 import { useToast } from "@/components/ui/toast-context";
 import { Select } from "@/components/ui/select";
+import { QQBinding } from "./qq-binding";
 import {
   getProfile,
   saveProfile,
@@ -132,10 +133,15 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
           p && (
             <>
               <div className="community-bindings">
-                <BindingSummary label="QQ" binding={p.qq} icon="qq" />
+                <div>
+                  <BindingSummary label="QQ" binding={p.qq} icon="qq" />
+                  {p.qq.value && p.qq.confirmation !== "confirmed" && (
+                    <QQBinding key={p.qq.version} userID={userID} csrf={csrf} />
+                  )}
+                </div>
                 <BindingSummary label={msg("昵称")} binding={p.kook} icon="nickname" />
               </div>
-              {p.qq.value && (
+              {p.qq.value && ((groupOptions.data?.items.length ?? 0) > 0 || groupApplication.data) && (
                 <QQGroupAdmission
                   application={groupApplication.data}
                   challenge={groupApply.data}
@@ -235,7 +241,7 @@ function BindingSummary({
         <p>{binding.value || msg("未填写")}</p>
         <span
           className={`community-confirmation ${confirmed ? "is-confirmed" : ""}`}
-          title={`${label} ${isNickname ? (binding.value ? msg("已填写") : msg("资料未填写")) : `${msg("入群")}${confirmed ? msg("已确认") : binding.confirmation === "unfilled" ? msg("资料未填写") : msg("待确认")}`}`}
+          title={`${label} ${isNickname ? (binding.value ? msg("已填写") : msg("资料未填写")) : confirmed ? msg("已确认") : binding.confirmation === "unfilled" ? msg("资料未填写") : msg("待确认")}`}
         >
           {isNickname
             ? binding.value
