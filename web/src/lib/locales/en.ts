@@ -1,5 +1,11 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "等待合同": "Waiting for contract",
+  "合同已删除": "Contract deleted",
+  "合同已取消": "Contract cancelled",
+  "合同已拒绝": "Contract rejected",
+  "合同内容不匹配": "Contract content mismatch",
+  "合同重复": "Duplicate contracts",
   "发送中": "Sending",
   "已发送": "Sent",
   "发送失败": "Failed",

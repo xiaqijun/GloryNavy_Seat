@@ -87,10 +87,18 @@ const settlementStates: Record<string, string> = {
   partial: msg("批次部分完成"),
   failed: msg("批次失败"),
 };
+const settlementProgress: Record<string, string> = {
+  awaiting_acceptance: progress.awaiting_acceptance,
+  waiting_contract: msg("等待合同"),
+  contract_deleted: msg("合同已删除"),
+  contract_cancelled: msg("合同已取消"),
+  contract_rejected: msg("合同已拒绝"),
+  contract_failed: msg("合同已失效"),
+  contract_mismatch: msg("合同内容不匹配"),
+  multiple_contracts: msg("合同重复"),
+};
 const settlementStatusLabel = (batch: settlement.SettlementBatch) =>
-  batch.delivery_status === "awaiting_acceptance"
-    ? progress.awaiting_acceptance
-    : settlementStates[batch.state] || batch.state;
+  (batch.state === "completed" ? settlementStates.completed : settlementProgress[batch.delivery_status || ""]) || settlementStates[batch.state] || batch.state;
 const settlementIsProcessed = (batch: settlement.SettlementBatch) =>
   batch.state === "completed" || batch.delivery_status === "awaiting_acceptance";
 const actionLabels: Record<string, string> = {
@@ -1172,7 +1180,7 @@ function SettlementDetail({
     );
   }
   const batch = q.data.batch;
-  const amount = batch.isk_minor > 0 ? formatMinor(batch.isk_minor) : "";
+  const amount = batch.isk_minor > 0 ? String(Math.floor(batch.isk_minor / 100)) : "";
   const recipients = batch.recipient_names?.join(", ") || "—";
   return (
     <Modal title={msg("批量结算")} close={close} size="compact">
@@ -1185,7 +1193,7 @@ function SettlementDetail({
           <BatchCopyField label={msg("合同接收角色")} value={recipients} />
           <BatchCopyField label={msg("支付金额 / ISK")} value={amount} />
           <BatchCopyField label={msg("合同结算 ID")} value={settlementContractTitle(batch.settlement_reference || "")} />
-          {batch.contract_id && <BatchCopyField label={msg("游戏合同 ID")} value={batch.contract_id} />}
+          {batch.contract_id && <BatchCopyField label={msg("游戏合同 ID")} value={String(batch.contract_id)} />}
         </div>
         <div className="approval-settlement-summary">
           <span>{msg("审批记录")} <strong>{batch.completed_count}/{batch.total_count}</strong></span>

@@ -608,6 +608,36 @@ test("原兑换页面只有个人记录与中心链接", async ({ page }) => {
 });
 
 for (const language of ["zh-CN", "en"]) {
+  for (const [deliveryStatus, chinese, english, contractID, view] of [
+    ["waiting_contract", "等待合同", "Waiting for contract", undefined, "fulfillment"],
+    ["contract_deleted", "合同已删除", "Contract deleted", 237156587, "fulfillment"],
+    ["awaiting_acceptance", "等待领取合同", "Awaiting contract acceptance", 236787534, "history"],
+    ["multiple_contracts", "合同重复", "Duplicate contracts", undefined, "fulfillment"],
+  ] as const) {
+    test(`batch progress ${deliveryStatus} ${language}`, async ({ page }, info) => {
+      await setup(page, { language });
+      await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { document.documentElement.dataset.copied = text; } } }));
+      const batch = { id: "14", request_key: admin, actor_id: admin, note: "", state: "pending", total_count: 3, completed_count: 0, failed_count: 0, created_at: "2026-10-13T00:00:00Z", next_run_at: "2026-10-18T00:00:00Z", version: "1", settlement_reference: "BATCH-20261013-000002", account_id: member, isk_minor: 19563315493, items: [], recipient_ids: [2117334386], recipient_names: ["zhuyuan"], delivery_status: deliveryStatus, contract_id: contractID };
+      await page.route("**/api/v1/welfare/settlements**", route => route.fulfill({ json: { data: new URL(route.request().url()).pathname.endsWith("/14") ? { batch, items: [] } : { items: [batch] } } }));
+      await page.goto(`/approvals?view=${view}`);
+      const open = page.getByRole("button", { name: language === "en" ? "View batch settlement" : "查看批量结算", exact: true });
+      await expect(open).toHaveCount(1);
+      await open.click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.locator(".approval-status")).toHaveText(language === "en" ? english : chinese);
+      await expect(dialog.getByLabel(language === "en" ? "Payment amount / ISK" : "支付金额 / ISK", { exact: true })).toHaveValue("195633154");
+      const label = language === "en" ? "In-game contract ID" : "游戏合同 ID";
+      if (contractID) {
+        await expect(dialog.getByLabel(label, { exact: true })).toHaveValue(String(contractID));
+        await dialog.getByRole("button", { name: language === "en" ? `Copy ${label}` : `复制 ${label}`, exact: true }).click();
+        await expect(page.locator("html")).toHaveAttribute("data-copied", String(contractID));
+      } else {
+        await expect(dialog.getByLabel(label, { exact: true })).toHaveCount(0);
+      }
+      await page.screenshot({ path: info.outputPath(`${deliveryStatus}-${language}.png`), fullPage: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
   for (const [format, reference, copied] of [
     ["short", "BATCH-20261018-000001", "BATCH-20261018-000001"],
     ["legacy", "BATCH-20260930-21DE0416-40ED-4E85-9424-5CB1E8687F39", "BATCH-20260930-21DE0416-40ED-4E85-9424-5CB1E8687F3"],

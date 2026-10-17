@@ -468,6 +468,7 @@ paths:
     get:
       operationId: listWelfareContractSettlementBatches
       summary: List administrator contract settlement batches
+      description: Batch delivery_status may be awaiting_acceptance, waiting_contract, contract_deleted, contract_cancelled, contract_rejected, contract_failed, contract_mismatch or multiple_contracts; omitted for mixed or unclassified evidence. Optional numeric contract_id/contract_recipient_id report the observed game contract, including unaccepted or deleted evidence, and never prove payment. Only completed state and completed_count record settlement. Explicit audited legacy repairs preserve old references as aliases; no renumbering API is exposed.
       security: [{SessionCookie: []}]
       responses:
         '200': {description: Batch summaries in newest-first order}
@@ -510,6 +511,7 @@ paths:
     get:
       operationId: getWelfareContractSettlementBatch
       summary: Read one contract settlement batch and its item states
+      description: Uses the same delivery_status and observed numeric contract ID semantics as the list. settlement_reference is the current canonical reference; historical repair aliases are retained server-side. isk_minor remains frozen hundredths; the game payment copy value is floor(isk_minor / 100).
       security: [{SessionCookie: []}]
       parameters:
         - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}

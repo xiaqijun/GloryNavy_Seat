@@ -10,7 +10,7 @@
 
 approval 通过宿主注入 reviewqueue.Source，来源提供 Access、Snapshot、Capabilities 和旧聚合 Query；SQL 必须留在来源私有 store。`Snapshot` 只返回列表摘要，`Capabilities.DetailKind` 驱动中心详情注册表；只接入索引的新来源可声明 `IndexOnly`，没有旧 Query 时回退路径必须安全标记不可用。Query 在分页/计数前过滤授权对象，时间、来源、ID 必须稳定排序；不可把前端隐藏当权限或在列表读取中访问 ESI。源写 API 继续检查版本、幂等、当前权限和对象归属，原单及审计为唯一事实源。新来源不得自行复制币账。当前例子见 internal/app/approval.go 与[指南](integrations/approval.zh-CN.md)。
 
-自动合同结算编号使用 Goose 94 的类型-UTC日期-至少六位十进制流水号规则（共用非循环 bigint 序列）；Goose 41 UUID 编号作为历史兼容保留，创建时由数据库生成并持久化。不要在前端、读取接口、重试或自动核对时重新生成；不要替换已有编号或把 ESI 数字合同 ID 改成业务编号。详见福利/兑换中英文指南。
+自动合同结算编号使用 Goose 94 的类型-UTC日期-至少六位十进制流水号规则（共用非循环 bigint 序列）；Goose 41 UUID 编号作为历史兼容保留，创建时由数据库生成并持久化。不要在前端、读取接口、重试或自动核对时重新生成，也不能把 ESI 数字合同 ID 改成业务编号。仅明确授权的旧批次修复可通过 Goose 95 审计保留旧号后更换未发放批次编号；不得变更已有有效合同的编号。详见福利/兑换中英文指南。
 
 成长福利跨模块校验：宿主通过 fittings.RequiredSkills 和 skills.CheckRequirements 合并当前配装先修/技能方案要求，welfare.GrowthCheck 只读本人观测。申请事务使用宿主注入 GuardGrowth → 各模块 GuardLibraryVersion/GuardPlanVersion 的共享行锁复核版本，SQL 保持私有，不在发布事务内请求 ESI。福利账号合并同步核对同船型跨项目占用。见[成长福利](integrations/welfare.zh-CN.md)。
 

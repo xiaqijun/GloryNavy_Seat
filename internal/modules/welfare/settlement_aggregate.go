@@ -114,37 +114,49 @@ func (s *Service) processAggregateSettlement(ctx context.Context, b store.Settle
 	if s.PaymentContracts == nil || s.ClaimDelivery == nil || s.PaymentBindings == nil || s.SettlementCompleteTx == nil || s.ExchangeSettlementCompleteTx == nil {
 		return true, ErrSettlement
 	}
+	aliases, err := store.SettlementReferenceAliases(ctx, s.Pool, b.ID, b.SettlementReference)
+	if err != nil {
+		return true, err
+	}
+	references := append([]string{b.SettlementReference}, aliases...)
 	contracts := map[int64]eve.DeliveryContract{}
+	var retired *eve.DeliveryContract
 	for _, recipient := range recipientIDs {
-		rows, err := s.PaymentContracts(ctx, nil, b.AccountID, recipient, b.SettlementReference, b.CreatedAt)
-		if err != nil {
-			return true, err
-		}
-		for _, c := range rows {
-			if settlementContractTitleMatches(c.Title, b.SettlementReference) && !settlementContractDead(c.Status) {
+		for _, reference := range references {
+			rows, err := s.PaymentContracts(ctx, nil, b.AccountID, recipient, reference, b.CreatedAt)
+			if err != nil {
+				return true, err
+			}
+			for _, c := range rows {
+				if !settlementContractTitleMatches(c.Title, reference) {
+					continue
+				}
+				if settlementContractDead(c.Status) {
+					if c.AssigneeID == recipient && (retired == nil || c.Issued.After(retired.Issued) || c.Issued.Equal(retired.Issued) && c.ID > retired.ID) {
+						copy := c
+						retired = &copy
+					}
+					continue
+				}
 				contracts[c.ID] = c
 			}
 		}
 	}
 	if len(contracts) == 0 {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "等待合并合同同步")
+		if retired != nil {
+			return true, s.recordSettlementProgress(ctx, b, retired, settlementDeadMessage(retired.Status))
+		}
+		return true, s.recordSettlementProgress(ctx, b, nil, store.SettlementWaitingContractError)
 	}
 	if len(contracts) != 1 {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "存在多个同编号合同，请保留一份")
+		return true, s.recordSettlementProgress(ctx, b, nil, store.SettlementMultipleError)
 	}
 	var contract eve.DeliveryContract
 	for _, c := range contracts {
 		contract = c
 	}
-	if !settlementContractMatches(b, contract, recipientIDs) {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "合同金额或物品尚未匹配")
-	}
-	if contract.Status != "finished" {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, store.SettlementAwaitingAcceptanceError)
-	}
-	completedAt, err := time.Parse(time.RFC3339, contract.Completed)
-	if err != nil || completedAt.Before(contract.Issued) || completedAt.After(time.Now().Add(time.Minute)) {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "合同完成时间尚未同步")
+	if !settlementMatchesAnyReference(b, contract, recipientIDs, references) {
+		return true, s.recordSettlementProgress(ctx, b, &contract, store.SettlementMismatchError)
 	}
 	bindings, err := s.PaymentBindings(ctx, nil, []int64{contract.IssuerID})
 	if err != nil {
@@ -152,10 +164,17 @@ func (s *Service) processAggregateSettlement(ctx context.Context, b store.Settle
 	}
 	issuer := bindings[contract.IssuerID]
 	if issuer == "" {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "发放方身份尚未同步")
+		return true, s.recordSettlementProgress(ctx, b, &contract, "发放方身份尚未同步")
 	}
 	if err := s.admin(ctx, issuer); err != nil {
-		return true, store.RescheduleSettlementBatch(ctx, s.Pool, b.ID, "发放方不是本站管理员")
+		return true, s.recordSettlementProgress(ctx, b, &contract, "发放方不是本站管理员")
+	}
+	if contract.Status != "finished" {
+		return true, s.recordSettlementProgress(ctx, b, &contract, store.SettlementAwaitingAcceptanceError)
+	}
+	completedAt, err := time.Parse(time.RFC3339, contract.Completed)
+	if err != nil || completedAt.Before(contract.Issued) || completedAt.After(time.Now().Add(time.Minute)) {
+		return true, s.recordSettlementProgress(ctx, b, &contract, "合同完成时间尚未同步")
 	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {

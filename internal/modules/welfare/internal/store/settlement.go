@@ -57,18 +57,19 @@ const SettlementAwaitingAcceptance = "awaiting_acceptance"
 const SettlementAwaitingAcceptanceError = "等待接收角色完成合同"
 
 // SettlementDeliveryStatus derives the list-level status from item progress.
-// Aggregate batches are processed as one transaction, so every item must be
-// waiting for acceptance before the batch moves to history.
+// Aggregate batches are processed together; only unanimous item evidence is
+// projected as a batch status. Completion remains a separate persisted state.
 func SettlementDeliveryStatus(total int, entries []SettlementItem) string {
 	if total <= 0 || len(entries) != total {
 		return ""
 	}
+	message := entries[0].LastError
 	for _, entry := range entries {
-		if entry.LastError != SettlementAwaitingAcceptanceError {
+		if entry.LastError != message {
 			return ""
 		}
 	}
-	return SettlementAwaitingAcceptance
+	return settlementProgressCodes[message]
 }
 
 type SettlementSelection struct {
