@@ -6,6 +6,9 @@
 
 复核数据库全局开关关闭、接收群仍 1 个、未结束 `community.approval-group.v1` 任务为 0、发送批次仍 1 条 sent；新 OneBot 和旧官方 webhook 均返回 503。网站 active/running/ready、NRestarts=0，前后端版本和 Goose 不变。配置、绑定及去重历史保留；没有发送测试消息。恢复须用户明确要求后重新启动 NapCat、确认 QQ 在线再启用网站配置，不能仅开启群提醒复选框。运维脚本在忽略目录 `.local/qq-disable/`。
 
+用户进一步要求退出 QQ 账号登录：在容器已停止时清空 `webui.json` 的 `autoLoginAccount`，核对没有环境变量自动登录账号或密码回退；只清除该账号登录凭据文件及 `nt_qq/global/nt_db/login.db`、WAL、SHM，共 4 个文件。个人聊天数据库、设备信息、网站绑定和 OneBot 配置保留。关闭自动登录后短暂启动核验，WebUI 返回 isLogin=false、coreReady=false、loginPhase=waiting_qrcode，快速登录账号列表为空、自动登录账号为空；随后容器再次停止并确认 exited/running=false。未扫码、未启用网站机器人、未发送消息；以后恢复需本人重新扫码确认。此次为清除服务器登录状态，不代表删除手机 QQ 的历史设备列表。脚本为同目录 `logout.py`。
+
+
 ## 2026-10-17 业务专员配置（仅前端）
 
 前端 `v0.1.0-officer-roles-20261017` 来自干净且已推送的 `main` 提交 `6bdafbf3b29e45e121f426e85d2735df4456cf25`。补损、福利发放、贷款专员通过既有权限角色和成员授权配置；游戏合同处理角色单独配置。用户取消 PAP 结算专员，不增加其权限。没有代用户创建角色或授予生产成员权限。

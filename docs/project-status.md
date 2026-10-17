@@ -2,7 +2,7 @@
 
 ## 当前运行配置：QQ 机器人暂停（2026-10-17）
 
-按用户要求暂时停用 QQ 机器人。正式 OneBot 配置服务已保存 `enabled=false`、revision=6；独立 NapCat 容器已手动停止（exited/running=false，原 `unless-stopped` 策略保留）。QQ 验证码绑定、测试消息和审批 @ 提醒暂停，旧官方机器人不会自动恢复。接收群、已有绑定、凭据和发送去重记录保留；恢复需用户明确要求后重新启动、核验在线状态并启用配置。
+按用户要求暂时停用 QQ 机器人。正式 OneBot 配置服务已保存 `enabled=false`、revision=6；独立 NapCat 容器已手动停止（exited/running=false，原 `unless-stopped` 策略保留）。QQ 验证码绑定、测试消息和审批 @ 提醒暂停，旧官方机器人不会自动恢复。接收群、已有绑定、网站 API 凭据和发送去重记录保留。用户随后要求 QQ 账号也退出登录：已关闭自动登录并清除服务器的 QQ 登录凭据，短暂启动核验 isLogin/coreReady=false、waiting_qrcode、保存账号数 0、自动登录为空，随后再次停止容器。恢复需用户明确要求后重新启动、本人扫码确认，再启用网站配置。
 
 复核：新/旧 QQ webhook 均 503，未结束群提醒任务为 0，发送批次仍为 1 条 sent；网站 active/running/ready、NRestarts=0。没有修改业务程序或迁移；下文 QQ 收发/绑定验收为暂停前的历史证据，不代表当前启用。详情见[部署记录](deployment.md)。
 
