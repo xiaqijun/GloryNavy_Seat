@@ -7,11 +7,12 @@
 - 发布前备份 `/var/backups/glorynavy/before-v0.1.0-qq-onebot-20261017-20261017T074424Z.{dump,env,meta.json}` 均为 0600，dump 253716338 字节；本轮未恢复该新备份。旧版 `v0.1.0-qq-group-code-20261017` 保留。
 - 两端发布清单与 current 已核对；应用 active/running/ready、NRestarts=0，Goose 91，OpenResty 配置检查通过。`/`、`/account`、`/community` 均 200；新管理 settings GET/PUT、status GET、test POST 匿名均 401。尚未配置时 OneBot webhook 返回 503，不当作已联通。
 - 公网账户 HTML SHA256 `0d9f2adfd01fc8a27d4653af136a464bfac3d47c43689b286b82bc66ee327173` 与包一致；`qq-admin-page-9YmnFfUe.js` SHA256 `5e65232e1c7bc65ef2a783f736a42af79dbd323d701119d8c2f51a6e05de739a` 与包一致。
-- 独立 NapCat 容器固定 v4.18.37 镜像摘要，见[部署示例](../deploy/compose.napcat.example.yaml)。WebUI 和 OneBot HTTP 仅绑定宿主 loopback，持久目录和凭据为私有权限，日志限制 3×10 MiB；不公开登录二维码或凭据。已收到扫码但尚未确认登录，OneBot 配置未首次保存，官方传输暂保留。
+- 独立 NapCat 容器固定 v4.18.37 镜像摘要，见[部署示例](../deploy/compose.napcat.example.yaml)。WebUI 和 OneBot HTTP 仅绑定宿主 loopback，持久目录和凭据为私有权限，日志限制 3×10 MiB；不公开登录二维码或凭据。扫码后登录失败，OneBot 配置未首次保存，官方传输暂保留。
 - 隔离 PostgreSQL 的 24 项 community 测试、community/app go vet 与 server 编译通过。宿主全量回归初次仅旧清理回退断言受新增迁移影响，明确 DownTo(89) 后，清理、社区门禁和新当前管理员/撤权/CSRF 共 3 项复验通过。Windows 本地 Go 依赖下载超时不作为通过证据；隔离测试容器已移除。
 - 前端类型/lint/生产构建、5 项词表单测、2 项中英文新管理流程及 4 项原绑定流程通过，1280/375/320px 截图已检查；社区 sqlc 生成一致，OpenAPI YAML 及受影响文档链接检查通过。日志、截图、发布和验证脚本位于 `.local/qq-napcat/`。
 - GitNexus 旧索引对共享初始化传播报 CRITICAL，提交扫描 44 文件、39 个已索引符号、22 条流程；已提前提示并按准确文件和调用点复核，宿主初始化仅增加账号锁注入一行。新增符号未被旧索引覆盖，不把索引结果当完整范围证明。
-- 真实联调仍需手机确认、入群、保存群范围、成员自行发码及客户端 @ 显示；业务通知与自动入群尚未实现，按 COM-01/02 验收。
+- 登录诊断：北京时间 15:47:19 记录扫码，15:47:20 记录 ErrType=1 / ErrCode=5；WebUI 仍为 qrcode_scanned 且 loginError 为空，不能继续解释为用户未确认。已解码原展示 PNG 和容器当前 PNG，二者均与当前 WebUI QR URL 一致；容器 running、restart=0、OOM=false。脱敏日志在 `.local/qq-napcat/login-diagnostics.log`，手机异常原文仍待补充。上游[同码报告 #2063](https://github.com/NapNeko/NapCatQQ/issues/2063)未确认根因，不能据此断言过期或风控；未盲目降级或更改 QQ 账号配置。
+- 真实联调仍需解决登录失败、入群、保存群范围、成员自行发码及客户端 @ 显示；业务通知与自动入群尚未实现，按 COM-01/02 验收。
 
 ## QQ 群消息直接发码绑定（2026-10-17）
 
