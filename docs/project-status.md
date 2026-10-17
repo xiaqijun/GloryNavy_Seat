@@ -2,6 +2,8 @@
 
 ## 当前：QQ 群内直接发送验证码（2026-10-17，已发布）
 
+2026-10-17 QQ 指定成员提醒实测：从通过验签、匹配有效绑定的真实 `GROUP_AT_MESSAGE_CREATE` 回调取得测试群 OpenID。普通文本的 `<qqbot-at-user>` 发送返回 HTTP 200、code=0 和消息 ID，但用户确认标签原样显示；Markdown 主动发送返回 HTTP 400、code=40034105（主动消息失败，无权限）。新回调下 Markdown 被动回复及旧版文本 @ 格式均获平台接收，客户端显示仍待确认。普通群消息测试期间未见 `GROUP_MESSAGE_CREATE` 到达，免 @ 绑定不能标为通过。本轮仅运行限时诊断，未修改生产程序、群配置或数据库结构，监听已停止；证据在本地 `.local/qq-mention/`。后续通知边界见 COM-02。
+
 前后端已发布 `v0.1.0-qq-group-code-20261017`，来源为干净且已推送的 `main` 提交 `85dcfed`，Goose 90。应用 active/running/ready、NRestarts=0，OpenResty 配置、公网页面和验证码资源哈希、匿名绑定码接口与缺签名回调拒绝均通过。绑定回调新增 `GROUP_MESSAGE_CREATE`，按 `author.member_openid` 识别发码成员，以完整 8 位验证码触发；普通聊天、机器人消息和身份不完整消息只确认接收，不回复或写绑定记录。`/account` 生成结果仅显示验证码和复制图标，不再附加“绑定”前缀、@ 提示或到期时间小字；10 分钟失效、重新生成和确认状态刷新保留。无需新增迁移。用户将开通该事件权限，免 @ 的真实回调与绑定闭环仍待验证。
 
 17 项 community 测试在隔离 PostgreSQL 通过，覆盖普通聊天/机器人/缺少身份静默、签名拒绝、三类消息发送人识别、重复回调及已用码拒绝；community go vet、server 编译、前端类型/lint/构建、7 项单测及 4 项中英文浏览器流程通过。1280/375/320px 截图已检查，复制仅含验证码，生成本身仍显示待确认；证据在 `.local/qq-group-code/`。GitNexus 更新索引两次停滞后停止，基于旧索引的 impact 返回未识别或 UNKNOWN；实际引用复核限定为 ProfileCard → QQBinding 以及 community 公共回调入口。提交前 detect_changes 为 14 文件、5 条 QQ 回调流程、MEDIUM，不将陈旧索引当作完整范围证明。
