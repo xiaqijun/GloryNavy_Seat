@@ -1,5 +1,18 @@
 # Linux 生产部署
 
+## NapCatQQ / OneBot 11（2026-10-17）
+
+前后端已发布 `v0.1.0-qq-onebot-20261017`，来自干净且已推送的 `main` 提交 `9fb785c737a6a8ea1c3374a89adb01d0df4b14cf`。Goose 91 新增 community 私有配置、群与数字 QQ 绑定；旧官方历史记录保留，首次保存 OneBot 配置才切换，存在配置或绑定后禁止直接 Down。详细配置与恢复边界见 [NapCat 指南](integrations/qq-onebot.zh-CN.md)。
+
+- 发布前备份 `/var/backups/glorynavy/before-v0.1.0-qq-onebot-20261017-20261017T074424Z.{dump,env,meta.json}` 均为 0600，dump 253716338 字节；本轮未恢复该新备份。旧版 `v0.1.0-qq-group-code-20261017` 保留。
+- 两端发布清单与 current 已核对；应用 active/running/ready、NRestarts=0，Goose 91，OpenResty 配置检查通过。`/`、`/account`、`/community` 均 200；新管理 settings GET/PUT、status GET、test POST 匿名均 401。尚未配置时 OneBot webhook 返回 503，不当作已联通。
+- 公网账户 HTML SHA256 `0d9f2adfd01fc8a27d4653af136a464bfac3d47c43689b286b82bc66ee327173` 与包一致；`qq-admin-page-9YmnFfUe.js` SHA256 `5e65232e1c7bc65ef2a783f736a42af79dbd323d701119d8c2f51a6e05de739a` 与包一致。
+- 独立 NapCat 容器固定 v4.18.37 镜像摘要，见[部署示例](../deploy/compose.napcat.example.yaml)。WebUI 和 OneBot HTTP 仅绑定宿主 loopback，持久目录和凭据为私有权限，日志限制 3×10 MiB；不公开登录二维码或凭据。已收到扫码但尚未确认登录，OneBot 配置未首次保存，官方传输暂保留。
+- 隔离 PostgreSQL 的 24 项 community 测试、community/app go vet 与 server 编译通过。宿主全量回归初次仅旧清理回退断言受新增迁移影响，明确 DownTo(89) 后，清理、社区门禁和新当前管理员/撤权/CSRF 共 3 项复验通过。Windows 本地 Go 依赖下载超时不作为通过证据；隔离测试容器已移除。
+- 前端类型/lint/生产构建、5 项词表单测、2 项中英文新管理流程及 4 项原绑定流程通过，1280/375/320px 截图已检查；社区 sqlc 生成一致，OpenAPI YAML 及受影响文档链接检查通过。日志、截图、发布和验证脚本位于 `.local/qq-napcat/`。
+- GitNexus 旧索引对共享初始化传播报 CRITICAL，提交扫描 44 文件、39 个已索引符号、22 条流程；已提前提示并按准确文件和调用点复核，宿主初始化仅增加账号锁注入一行。新增符号未被旧索引覆盖，不把索引结果当完整范围证明。
+- 真实联调仍需手机确认、入群、保存群范围、成员自行发码及客户端 @ 显示；业务通知与自动入群尚未实现，按 COM-01/02 验收。
+
 ## QQ 群消息直接发码绑定（2026-10-17）
 
 前后端已发布 `v0.1.0-qq-group-code-20261017`，来源为干净且已推送的 `main` 提交 `85dcfed1d8ed44d5b20384c2316af2525574fae9`，应用/边缘分支守卫及 SHA256 清单校验通过。个人账户只显示、复制 8 位验证码，群 `GROUP_MESSAGE_CREATE` 通过发送人的 `author.member_openid` 确认；普通聊天、机器人和缺少身份标识的消息静默处理。旧私聊/@ 事件兼容，无新迁移，Goose 90。
