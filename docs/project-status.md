@@ -1,6 +1,8 @@
 # 项目状态
 
-## 当前开发：游戏邮件待审批提醒（2026-10-17，尚未发布）
+## 当前：游戏邮件待审批提醒（2026-10-17，已发布，待发件角色授权）
+
+前后端已由干净且已推送的 `main` 提交 `1664eb4` 发布 `v0.1.0-reminder-mail-20261017`，Goose 93、active/running/ready、NRestarts=0。公网 `/reminders` 200，配置/历史/重试及额外授权入口匿名均 401，HTML 与新页面/主包哈希一致，OpenResty 检查通过。生产 reminder 仍为 enabled=false、sender_id=0、revision=1、发送记录 0；正常扫描已完成 2 次，没有自动发送。QQ 配置仍 disabled/revision=6，NapCat exited，OneBot/旧官方绑定和 QQ 有效确认均 0，两类 webhook 均 503。备份和恢复见[部署记录](deployment.md)。
 
 独立 reminder 模块、Goose 93，管理员在 `/reminders` 选择本人发件角色并单独授权 `esi-mail.send_mail.v1`，普通登录 scopes 不变。首次仅待审批事项，按当前来源权限发送给当前主角色；配置默认关闭。去重持久化、明确失败可重试、未知结果不自动重发，后台独立 River 队列，历史 90 天保留，合并保留原账号。QQ 保持停用、登出和解除绑定。指南见[中文](integrations/reminder.zh-CN.md) / [English](integrations/reminder.en.md)。
 

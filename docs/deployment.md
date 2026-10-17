@@ -863,3 +863,14 @@ curl --fail http://10.233.53.209:18080/health/ready
 ## 贷款合同处理人角色配置发布（2026-10-08）
 
 已发布 `v0.1.0-loan-officer-character-20261008`。贷款管理者可在贷款设置中从已绑定 EVE 角色选择个人合同处理人；合同复制字段改为处理人角色 ID，入金、放款、还款和抵押核验按该角色执行，读取出借记录时自动推进已同步合同核验。无新增 Goose/River 迁移。
+
+## 2026-10-17 游戏邮件待审批提醒发布
+
+前后端 `v0.1.0-reminder-mail-20261017`，干净且已推送 main 来源 `1664eb4eb37a16f444f79899306c5a74d295903e`。发布包构建完成于 15:54 UTC，按现有 activate-release/activate-edge-release 流程启用。MODULES 增加 reminder，迁移 Goose 93；初始 sender_id=0、enabled=false、revision=1，尚无收件人或发送记录。额外邮件授权必须由管理员选择本人角色完成，当前未验证真实 ESI 发信和客户端送达。
+
+备份目录 `/var/backups/glorynavy/`：原配置 `before-reminder-module-20261017T155434Z.env`；正式发布备份前缀 `before-v0.1.0-reminder-mail-20261017-20261017T155437Z`，包含 252205292 字节 dump、env 和 meta.json，权限均 0600。正式 env 已含新模块，若程序回退须恢复原配置或明确移除 reminder；恢复前按[提醒指南](integrations/reminder.zh-CN.md)停用发送、取消新类型未结束作业并保留回执。不得绕过迁移 Down 保护；发生提醒数据账号合并后不得回退缺少参与方的程序。
+
+验证：reminder/approval 隔离 PostgreSQL 测试、EVE 邮件和旧登录/角色/配装写入回归、app/jobs/server 回归、相关 go vet/server 编译通过；补充扫描器缺少授权分支复验通过。前端类型/构建/lint、5 项词表单测、1280/375/320px 中英文 12 项浏览器流程通过并复验，截图已检查。首次测试发现窄屏溢出、缺失翻译和重复词条，修复后通过；窄屏仅表格横向滚动。记录状态未知不能重试、明确失败重试、版本冲突保留、授权不足与普通成员隐藏均已覆盖。
+
+线上 active/running/ready、NRestarts=0，reminder 扫描 completed 2 条，发送记录 0；页面 200，所有新管理接口及额外授权入口匿名 401，HTML、新提醒包及主包逐字节哈希一致；OpenResty 配置与资源校验通过。QQ 保持 disabled/revision=6、容器 stopped，绑定和确认均 0，新旧 webhook 503。未恢复 QQ，也未代用户选择发件角色或开启邮件发送。发布脚本、检查与截图在忽略的 `.local/reminder-mail/`。
+
