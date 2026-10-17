@@ -1193,9 +1193,9 @@ function SettlementDetail({
           <BatchCopyField label={msg("合同接收角色")} value={recipients} />
           <BatchCopyField label={msg("支付金额 / ISK")} value={amount} />
           <BatchCopyField label={msg("合同结算 ID")} value={settlementContractTitle(batch.settlement_reference || "")} />
-          {batch.contract_id && (batch.state === "completed" || batch.delivery_status === "awaiting_acceptance") && <BatchCopyField label={msg("游戏合同 ID")} value={String(batch.contract_id)} />}
         </div>
         <div className="approval-settlement-summary">
+          {batch.contract_id && (batch.state === "completed" || batch.delivery_status === "awaiting_acceptance") && <span>{msg("游戏合同 ID")} <strong>{String(batch.contract_id)}</strong></span>}
           <span>{msg("审批记录")} <strong>{batch.completed_count}/{batch.total_count}</strong></span>
           {batch.items.length > 0 && <span>{msg("物品 {0} 类", String(batch.items.length))}</span>}
         </div>
