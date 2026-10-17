@@ -5253,7 +5253,7 @@ paths:
     post:
       operationId: createQQOfficialBindingChallenge
       summary: Create a short-lived code for binding the official QQ bot account
-      description: The authenticated member generates the code from the account community card, then sends it in a private message or a group mention to the official QQ bot. The code is valid for ten minutes and is never stored in plaintext. Generating a replacement invalidates previous codes. Successful binding consumes the code in the same transaction as the identity binding and audit; an identical callback retry remains idempotent.
+      description: The authenticated member generates the code from the account community card, then copies only the eight-character code and sends it directly in a QQ group with the bot. This requires GROUP_MESSAGE_CREATE permission and subscription; legacy private messages and group mentions remain compatible. The code is valid for ten minutes and is never stored in plaintext. Generating a replacement invalidates previous codes. Successful binding consumes the code in the same transaction as the identity binding and audit; an identical callback retry remains idempotent.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5512,7 +5512,7 @@ paths:
     post:
       operationId: receiveOfficialQQBotWebhook
       summary: Receive the official QQ open platform callback
-      description: Public endpoint for the official QQ Bot API v2. It handles the unsigned op=13 validation handshake, verifies X-Signature-Ed25519 on normal callbacks, accepts legacy C2C_MESSAGE_CREATE or GROUP_AT_MESSAGE_CREATE binding commands, and processes GROUP_JOIN_REQUEST plus GROUP_MEMBER_ADD for configured groups. Official events supply bot-scoped OpenID values; they do not expose the numeric QQ number.
+      description: Public endpoint for the official QQ Bot API v2. It handles the unsigned op=13 validation handshake, verifies X-Signature-Ed25519 on normal callbacks, accepts standalone eight-character codes in GROUP_MESSAGE_CREATE and legacy C2C_MESSAGE_CREATE or GROUP_AT_MESSAGE_CREATE binding commands, and processes GROUP_JOIN_REQUEST plus GROUP_MEMBER_ADD for configured groups. GROUP_MESSAGE_CREATE uses author.member_openid as the sender and group_openid as the reply target; unrelated text, bot messages, or missing sender/group/message/event identifiers are silently acknowledged without binding writes or replies. Official events supply bot-scoped OpenID values; they do not expose the numeric QQ number.
       security: []
       parameters:
         - name: X-Signature-Timestamp

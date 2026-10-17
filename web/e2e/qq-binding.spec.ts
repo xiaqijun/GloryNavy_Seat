@@ -42,14 +42,16 @@ for (const locale of ["zh-CN", "en"]) {
     await expect(page.getByRole("alert").filter({ hasText: "Fixture unavailable" })).toBeVisible();
     fail = false;
     await button.click();
-    await expect(page.locator(".community-qq-command code")).toHaveText("绑定 ABCDEFGH");
-    await page.getByRole("button", { name: en ? "Copy binding command" : "复制绑定指令", exact: true }).click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("绑定 ABCDEFGH");
+    await expect(page.locator(".community-qq-command code")).toHaveText("ABCDEFGH");
+    await page.getByRole("button", { name: en ? "Copy verification code" : "复制验证码", exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("ABCDEFGH");
+    await expect(page.locator(".community-qq-binding p")).toHaveCount(0);
+    await expect(page.locator(".community-binding").first().getByText(en ? "Pending confirmation" : "待确认", { exact: true })).toBeVisible();
     for (const width of info.project.name === "desktop" ? [1280, 375, 320] : [393]) {
       await page.setViewportSize({ width, height: 850 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await expect(page.locator(".community-qq-command code")).toBeVisible();
-      await page.locator(".community-card").screenshot({ path: `../.local/qq-diagnostics/binding-${locale}-${width}.png` });
+      await page.locator(".community-card").screenshot({ path: `../.local/qq-group-code/binding-${locale}-${width}.png` });
     }
     expire = true;
     await page.getByRole("button", { name: en ? "Generate again" : "重新生成", exact: true }).click();
@@ -57,7 +59,7 @@ for (const locale of ["zh-CN", "en"]) {
     await expect(page.locator(".community-qq-command code")).toHaveCount(0);
     expire = false;
     await page.getByRole("button", { name: en ? "Generate again" : "重新生成", exact: true }).click();
-    await expect(page.locator(".community-qq-command code")).toHaveText("绑定 JKLMNPQR");
+    await expect(page.locator(".community-qq-command code")).toHaveText("JKLMNPQR");
     confirmed = true;
     await expect(page.locator(".community-qq-binding")).toHaveCount(0, { timeout: 10000 });
     await expect(page.locator(".community-binding").first().getByText(en ? "Confirmed" : "已确认", { exact: true })).toBeVisible();

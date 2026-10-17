@@ -417,6 +417,7 @@ type officialQQMessage struct {
 	Author      struct {
 		UserOpenID   string `json:"user_openid"`
 		MemberOpenID string `json:"member_openid"`
+		Bot          bool   `json:"bot"`
 	} `json:"author"`
 }
 

@@ -62,17 +62,25 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	if envelope.Op == 0 {
 		switch envelope.Type {
-		case "C2C_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE":
+		case "C2C_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE", "GROUP_MESSAGE_CREATE":
 			var message officialQQMessage
 			if json.Unmarshal(envelope.Data, &message) != nil {
 				httpapi.Failure(w, r, 400, "invalid_qq_bot_event", "机器人消息格式无效")
 				return
 			}
 			scope, openid, replyTarget := "c2c", message.Author.UserOpenID, message.Author.UserOpenID
-			if envelope.Type == "GROUP_AT_MESSAGE_CREATE" {
+			if envelope.Type != "C2C_MESSAGE_CREATE" {
 				scope, openid, replyTarget = "group", message.Author.MemberOpenID, message.GroupOpenID
 			}
 			code := normalizeQQCommand(message.Content)
+			if envelope.Type == "GROUP_MESSAGE_CREATE" {
+				// All group chat reaches this event. Only a standalone code is a
+				// binding attempt; never extract codes from ordinary conversation.
+				code = standaloneQQChallenge(message.Content)
+				if code == "" || message.Author.Bot || openid == "" || replyTarget == "" || message.ID == "" || envelope.ID == "" {
+					break
+				}
+			}
 			result := "绑定码无效或已过期，请先在本站生成新的 QQ 绑定码。"
 			if openid != "" && code != "" {
 				if confirmErr := h.Service.ConfirmQQOfficial(r.Context(), envelope.ID, openid, code, body); confirmErr == nil {

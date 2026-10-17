@@ -4,7 +4,7 @@ import { Copy, LoaderCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
 import { useToast } from "@/components/ui/toast-context";
-import { getLocale, msg } from "@/lib/i18n";
+import { msg } from "@/lib/i18n";
 import { createQQChallenge, getProfile, type QQChallenge } from "./api";
 
 export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
@@ -30,8 +30,6 @@ export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
     enabled: active,
     refetchInterval: active ? 3000 : false,
   });
-  // This is the bot's command syntax, independent of the interface language.
-  const command = challenge ? `绑定 ${challenge.code}` : "";
   return (
     <div className="community-qq-binding">
       <Button type="button" variant="outline" disabled={generate.isPending} aria-busy={generate.isPending}
@@ -40,21 +38,17 @@ export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
         {challenge ? msg("重新生成") : msg("生成 QQ 绑定码")}
       </Button>
       {active && (
-        <>
-          <p>{msg("私聊机器人或在群内 @机器人发送：")}</p>
           <div className="community-qq-command">
-            <code>{command}</code>
-            <IconAction label={msg("复制绑定指令")} onClick={async () => {
+            <code>{challenge.code}</code>
+            <IconAction label={msg("复制验证码")} onClick={async () => {
               try {
-                await navigator.clipboard.writeText(command);
+                await navigator.clipboard.writeText(challenge.code);
                 toast.success(msg("已复制"));
               } catch {
                 toast.error(msg("复制失败，请手动复制"));
               }
             }}><Copy aria-hidden="true" /></IconAction>
           </div>
-          <p className="muted">{msg("有效至 {0}", new Date(expires).toLocaleTimeString(getLocale(), { hour: "2-digit", minute: "2-digit" }))}</p>
-        </>
       )}
       {expired && <p role="status">{msg("绑定码已过期，请重新生成")}</p>}
       {generate.error && <p role="alert" className="login-error">{generate.error.message}</p>}
