@@ -84,21 +84,26 @@ ON CONFLICT(limit_key) DO UPDATE SET blocked_until=greatest(eve_esi_limits.block
 DELETE FROM eve_esi_cache WHERE cache_key IN (SELECT cache_key FROM eve_esi_cache WHERE expires_at<now()-interval '1 day' ORDER BY expires_at LIMIT 500);
 -- name: CacheUsage :one
 SELECT count(*)::bigint AS entries,coalesce(sum(octet_length(body)),0)::bigint AS bytes FROM eve_esi_cache;
--- name: CleanupSyncRuns :exec
+-- name: CleanupSyncRuns :execrows
 WITH expired AS (
  (SELECT id,finished_at FROM eve_sync_runs
-  WHERE outcome='success' AND finished_at<now()-interval '14 days'
+  WHERE outcome='success' AND finished_at<now()-interval '7 days'
   ORDER BY finished_at,id LIMIT 500)
  UNION ALL
  (SELECT id,finished_at FROM eve_sync_runs
-  WHERE outcome<>'success' AND finished_at<now()-interval '30 days'
+  WHERE outcome IN ('deferred','progress') AND finished_at<now()-interval '3 days'
+  ORDER BY finished_at,id LIMIT 500)
+ UNION ALL
+ (SELECT id,finished_at FROM eve_sync_runs
+  WHERE outcome NOT IN ('success','deferred','progress') AND finished_at<now()-interval '30 days'
   ORDER BY finished_at,id LIMIT 500)
 ), batch AS (
  SELECT id FROM expired ORDER BY finished_at,id LIMIT 500
 )
 DELETE FROM eve_sync_runs WHERE id IN (SELECT id FROM batch)
- AND ((outcome='success' AND finished_at<now()-interval '14 days')
-   OR (outcome<>'success' AND finished_at<now()-interval '30 days'));
+ AND ((outcome='success' AND finished_at<now()-interval '7 days')
+   OR (outcome IN ('deferred','progress') AND finished_at<now()-interval '3 days')
+   OR (outcome NOT IN ('success','deferred','progress') AND finished_at<now()-interval '30 days'));
 -- name: GetESIRoute :one
 SELECT group_name FROM eve_esi_routes WHERE route_key=$1;
 -- name: SetESIRoute :exec

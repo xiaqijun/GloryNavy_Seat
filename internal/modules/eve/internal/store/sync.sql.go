@@ -137,26 +137,34 @@ func (q *Queries) CleanupSyncCache(ctx context.Context) error {
 	return err
 }
 
-const cleanupSyncRuns = `-- name: CleanupSyncRuns :exec
+const cleanupSyncRuns = `-- name: CleanupSyncRuns :execrows
 WITH expired AS (
  (SELECT id,finished_at FROM eve_sync_runs
-  WHERE outcome='success' AND finished_at<now()-interval '14 days'
+  WHERE outcome='success' AND finished_at<now()-interval '7 days'
   ORDER BY finished_at,id LIMIT 500)
  UNION ALL
  (SELECT id,finished_at FROM eve_sync_runs
-  WHERE outcome<>'success' AND finished_at<now()-interval '30 days'
+  WHERE outcome IN ('deferred','progress') AND finished_at<now()-interval '3 days'
+  ORDER BY finished_at,id LIMIT 500)
+ UNION ALL
+ (SELECT id,finished_at FROM eve_sync_runs
+  WHERE outcome NOT IN ('success','deferred','progress') AND finished_at<now()-interval '30 days'
   ORDER BY finished_at,id LIMIT 500)
 ), batch AS (
  SELECT id FROM expired ORDER BY finished_at,id LIMIT 500
 )
 DELETE FROM eve_sync_runs WHERE id IN (SELECT id FROM batch)
- AND ((outcome='success' AND finished_at<now()-interval '14 days')
-   OR (outcome<>'success' AND finished_at<now()-interval '30 days'))
+ AND ((outcome='success' AND finished_at<now()-interval '7 days')
+   OR (outcome IN ('deferred','progress') AND finished_at<now()-interval '3 days')
+   OR (outcome NOT IN ('success','deferred','progress') AND finished_at<now()-interval '30 days'))
 `
 
-func (q *Queries) CleanupSyncRuns(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, cleanupSyncRuns)
-	return err
+func (q *Queries) CleanupSyncRuns(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, cleanupSyncRuns)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deferSyncTarget = `-- name: DeferSyncTarget :execrows

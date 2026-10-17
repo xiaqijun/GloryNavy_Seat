@@ -1,0 +1,11 @@
+[Unit]
+Description=GloryNavy %i storage retention
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/libexec/glorynavy/rotate-storage.py --role %i --apply
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h

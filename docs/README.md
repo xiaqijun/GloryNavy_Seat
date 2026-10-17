@@ -13,7 +13,7 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 | 当前生产版本、已上线功能和验证边界 | [项目状态](project-status.md) |
 | 尚未完成、需联调、需核实与暂停的事项 | [待办清单](backlog.md) |
 | 本地启动、配置、迁移与调试 | [开发指南](development.md) |
-| 发布、备份、反代、证书与恢复 | [生产部署](deployment.md) |
+| 发布、备份、反代、证书与恢复 | [生产部署](deployment.md)、[存储保留与清理](storage-retention.md) |
 | 已采用技术及可选组件 | [技术栈](tech-stack.md) |
 | 模块边界与新增模块 | [架构](architecture.md)、[模块开发](module-development.md) |
 | 行为与 API | [OpenAPI](../api/openapi.yaml)、[中英文接入目录](integrations/README.md) |

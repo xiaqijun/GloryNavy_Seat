@@ -46,7 +46,7 @@ Shutdown stops intake, waits for workers, cancels on timeout, then closes the po
 - Network/5xx failures use exponential backoff and jitter. Five consecutive failures mark the target failed, followed by an hourly probe. Rate-limit and corporation-change waits do not consume the failure count. Manual refresh cannot bypass cache or rate-limit waits.
 - Corporation changes invalidate previous role facts before publication. A persisted barrier waits out old cache validity; reauthorization cannot bypass it.
 
-Responses are limited to 1 MiB. Cache writes serialize quota checks at 10,000 entries/64 MiB. Each dispatch cleans at most 500 items: cache one day after expiry, successful runs after 14 days, other finished runs after 30 days. River maintains its own job retention. Manual-action audit currently has no automatic deletion policy.
+Responses are limited to 1 MiB. Cache writes serialize quota checks at 10,000 entries/64 MiB. Each dispatch cleans at most 500 items: cache one day after expiry, successful runs after 7 days, deferred/progress runs after 3 days, other finished runs after 30 days. River maintains its own job retention. Manual-action audit currently has no automatic deletion policy.
 
 ## 4. Configuration and migration
 
@@ -108,7 +108,7 @@ New runs waiting in deferred state for rate_limited, shared_source, authorizatio
 
 ## Sync history retention performance (Goose 46, released 2026-09-23)
 
-Maintenance remains on the 30-second control dispatch with one combined batch limit of 500 rows. Successful finished runs retain 14 days; other finished runs retain 30 days; unfinished runs remain. Goose 46 adds separate partial (finished_at,id) indexes for the two outcome branches. Each indexed branch selects at most 500 candidates, then a combined batch selects the oldest finish times with ID tie-breaking. The DELETE rechecks eligibility. Fences, cache retention and business audits are unchanged.
+Maintenance remains on the 30-second control dispatch with one combined batch limit of 500 rows. From 2026-10-17, successful finished runs retain 7 days, deferred/progress runs 3 days, and other finished runs 30 days; unfinished runs remain. Three branches reuse the existing two indexes. The bounded cleanup CLI uses the same module-owned query; see [storage retention](../storage-retention.md). Goose 46 adds separate partial (finished_at,id) indexes for the two outcome branches. Each indexed branch selects at most 500 candidates, then a combined batch selects the oldest finish times with ID tie-breaking. The DELETE rechecks eligibility. Fences, cache retention and business audits are unchanged.
 
 The migration uses nontransactional CREATE INDEX CONCURRENTLY. Retry drops/rebuilds these migration-owned names rather than skipping a potentially invalid index. Apply Goose 46 before releasing the query. Up deletes no history; Down only removes the indexes. Older applications remain compatible; keeping indexes on application rollback is recommended. The migration CLI currently times out after two minutes: inspect index validity and retry after failure.
 

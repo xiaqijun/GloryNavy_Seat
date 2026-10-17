@@ -1,6 +1,8 @@
 #!/bin/bash
 # Run as root on the production edge host after uploading a release tarball.
 set -euo pipefail
+exec 9>/run/lock/glorynavy-storage.lock
+flock 9
 version=${1:?Usage: activate-edge-release.sh v0.1.0[-suffix]}
 [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || exit 2
 site=${SITE_ROOT:-/opt/1panel/www/sites/seat.kisectool.com}

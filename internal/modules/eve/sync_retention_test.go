@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -27,15 +28,21 @@ func TestSyncRunRetentionBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tx.Rollback(ctx)
-	// A single transaction fixes now() for exact 14/30-day boundaries.
+	// A single transaction fixes now() for exact 3/7/30-day boundaries.
 	_, err = tx.Exec(ctx, `INSERT INTO eve_sync_runs(target_id,job_id,fence,outcome,reason,started_at,finished_at)
  SELECT $1,1,row_number() OVER (),outcome,label,now()-interval '50 days',
  CASE WHEN age IS NULL THEN NULL ELSE now()-age END
  FROM (VALUES
  ('success','success_old',interval '31 days'),
- ('success','success_expired',interval '14 days 1 second'),
- ('success','success_boundary',interval '14 days'),
- ('success','success_recent',interval '13 days'),
+ ('success','success_expired',interval '7 days 1 second'),
+ ('success','success_boundary',interval '7 days'),
+ ('success','success_recent',interval '6 days'),
+ ('deferred','deferred_expired',interval '3 days 1 second'),
+ ('deferred','deferred_boundary',interval '3 days'),
+ ('deferred','deferred_recent',interval '2 days'),
+ ('progress','progress_expired',interval '3 days 1 second'),
+ ('progress','progress_boundary',interval '3 days'),
+ ('progress','unfinished_progress',NULL::interval),
  ('failed','failure_between_cutoffs',interval '20 days'),
  ('failed','failure_expired',interval '30 days 1 second'),
  ('failed','failure_boundary',interval '30 days'),
@@ -48,7 +55,7 @@ func TestSyncRunRetentionBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = store.New(tx).CleanupSyncRuns(ctx); err != nil {
+	if _, err = store.New(tx).CleanupSyncRuns(ctx); err != nil {
 		t.Fatal(err)
 	}
 	rows, err := tx.Query(ctx, "SELECT reason FROM eve_sync_runs ORDER BY reason")
@@ -57,6 +64,7 @@ func TestSyncRunRetentionBoundaries(t *testing.T) {
 	}
 	defer rows.Close()
 	want := map[string]bool{"success_boundary": true, "success_recent": true,
+		"deferred_boundary": true, "deferred_recent": true, "progress_boundary": true, "unfinished_progress": true,
 		"failure_between_cutoffs": true, "failure_boundary": true, "unfinished": true,
 		"unfinished_success": true, "recent_finish_old_start": true}
 	for rows.Next() {
@@ -83,9 +91,9 @@ func TestSyncRunRetentionMigrationRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// This test targets migration 46. The schema starts at the current head,
-	// so rolling back only the latest migration leaves these indexes in place.
-	if _, err := provider.DownTo(ctx, 45); err != nil {
+	// Exercise only the owned index migration, leaving unrelated business
+	// migrations and their rollback restrictions intact in this isolated schema.
+	if _, err := provider.ApplyVersion(ctx, 46, false); err != nil {
 		t.Fatal(err)
 	}
 	var count int
@@ -99,7 +107,7 @@ func TestSyncRunRetentionMigrationRoundTrip(t *testing.T) {
 	if _, err := pool.Exec(ctx, `CREATE INDEX eve_sync_runs_success_expiry ON eve_sync_runs(id)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := provider.UpTo(ctx, 46); err != nil {
+	if _, err := provider.ApplyVersion(ctx, 46, true); err != nil {
 		t.Fatal(err)
 	}
 	if err := pool.QueryRow(ctx, indexes).Scan(&count); err != nil || count != 2 {
@@ -133,8 +141,8 @@ func TestSyncRunRetentionLargeHistoryPlan(t *testing.T) {
 	}
 	target := authorizationTarget(t, s)
 	_, err := s.pool.Exec(ctx, `INSERT INTO eve_sync_runs(target_id,job_id,fence,outcome,finished_at)
- SELECT $1,1,n,CASE WHEN n%30=0 THEN 'failed' ELSE 'success' END,
- now()-interval '1 day'*(1+n%7) FROM generate_series(1,1840000) n`, target.ID)
+ SELECT $1,1,n,CASE WHEN n%30=0 THEN 'failed' WHEN n%20=0 THEN 'deferred' ELSE 'success' END,
+ now()-interval '1 day'*(1+n%2) FROM generate_series(1,1840000) n`, target.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +150,7 @@ func TestSyncRunRetentionLargeHistoryPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 	capture := &retentionQueryCapture{}
-	if err := store.New(capture).CleanupSyncRuns(ctx); err != nil {
+	if _, err := store.New(capture).CleanupSyncRuns(ctx); err != nil {
 		t.Fatal(err)
 	}
 	queries := []string{
@@ -173,25 +181,55 @@ func TestSyncRunRetentionBatchLimitAndOldestFirst(t *testing.T) {
 	}
 	target := authorizationTarget(t, s)
 	// Put the older failures after the success rows in ID order: cleanup should
-	// select by finish time across both indexed branches, with one combined limit.
+	// select by finish time across all three branches, with one combined limit.
 	_, err := s.pool.Exec(ctx, `INSERT INTO eve_sync_runs(target_id,job_id,fence,outcome,finished_at)
- SELECT $1,1,n,CASE WHEN n<=600 THEN 'success' ELSE 'failed' END,
- now()-CASE WHEN n<=600 THEN interval '20 days' ELSE interval '40 days' END
- FROM generate_series(1,1200) n`, target.ID)
+ SELECT $1,1,n,CASE WHEN n<=600 THEN 'success' WHEN n<=1200 THEN 'deferred' ELSE 'failed' END,
+ now()-CASE WHEN n<=600 THEN interval '20 days' WHEN n<=1200 THEN interval '4 days' ELSE interval '40 days' END
+ FROM generate_series(1,1800) n`, target.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	q := store.New(s.pool)
-	for _, remaining := range []int{700, 200, 0, 0} {
-		if err := q.CleanupSyncRuns(ctx); err != nil {
+	for _, remaining := range []int{1300, 800, 300, 0, 0} {
+		if _, err := q.CleanupSyncRuns(ctx); err != nil {
 			t.Fatal(err)
 		}
 		var total, successes int
 		if err := s.pool.QueryRow(ctx, `SELECT count(*),count(*) FILTER (WHERE outcome='success') FROM eve_sync_runs`).Scan(&total, &successes); err != nil {
 			t.Fatal(err)
 		}
-		if total != remaining || (remaining == 700 && successes != 600) {
+		if total != remaining || (remaining == 1300 && successes != 600) {
 			t.Fatalf("unexpected batch: total=%d success=%d expected total=%d", total, successes, remaining)
 		}
+	}
+}
+
+func TestCleanSyncHistoryBoundedResume(t *testing.T) {
+	s, ch := syncFixture(t)
+	ctx := context.Background()
+	if err := s.auth.Save(ctx, ch); err != nil {
+		t.Fatal(err)
+	}
+	target := authorizationTarget(t, s)
+	_, err := s.pool.Exec(ctx, `INSERT INTO eve_sync_runs(target_id,job_id,fence,outcome,finished_at)
+ SELECT $1,1,n,'deferred',CASE WHEN n<=600 THEN now()-interval '4 days' WHEN n=601 THEN NULL ELSE now() END
+ FROM generate_series(1,602) n`, target.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := CleanSyncHistory(ctx, s.pool, 1, 10*time.Millisecond, nil)
+	if rows != 500 || err == nil {
+		t.Fatalf("batch limit: rows=%d err=%v", rows, err)
+	}
+	rows, err = CleanSyncHistory(ctx, s.pool, 10, 10*time.Millisecond, nil)
+	if rows != 100 || err != nil {
+		t.Fatalf("resume: rows=%d err=%v", rows, err)
+	}
+	var remaining int
+	if err := s.pool.QueryRow(ctx, "SELECT count(*) FROM eve_sync_runs").Scan(&remaining); err != nil || remaining != 2 {
+		t.Fatalf("retained rows=%d err=%v", remaining, err)
+	}
+	if _, err := CleanSyncHistory(ctx, s.pool, 1, 0, nil); err == nil {
+		t.Fatal("unbounded pace accepted")
 	}
 }

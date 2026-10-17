@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly GloryNavy %i storage retention
+
+[Timer]
+OnCalendar=Sun *-*-* 20:20:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+Unit=glorynavy-storage-retention@%i.service
+
+[Install]
+WantedBy=timers.target

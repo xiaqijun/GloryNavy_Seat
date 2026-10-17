@@ -1,6 +1,8 @@
 #!/bin/bash
 # Run as root after uploading and verifying a release, and provisioning secrets.
 set -euo pipefail
+exec 9>/run/lock/glorynavy-storage.lock
+flock 9
 version=${1:?Usage: activate-release.sh v0.1.0[-suffix]}
 [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || exit 2
 release=/opt/glorynavy/releases/$version
@@ -36,6 +38,13 @@ umask 077
 docker compose -f /etc/glorynavy/compose.database.yaml exec -T db \
   pg_dump -U postgres -d glorynavy -Fc > "/var/backups/glorynavy/before-$version-$stamp.dump"
 cp /etc/glorynavy/seat.env "/var/backups/glorynavy/before-$version-$stamp.env"
+python3 - "/var/backups/glorynavy/before-$version-$stamp.meta.json" <<'PY'
+import json, pathlib, sys
+current = pathlib.Path('/opt/glorynavy/current')
+if current.exists():
+    with open(sys.argv[1], 'x') as f:
+        json.dump({'backend_release': current.resolve(strict=True).name}, f)
+PY
 ln -s "$release" /opt/glorynavy/current.next
 mv -Tf /opt/glorynavy/current.next /opt/glorynavy/current
 systemctl enable --now glorynavy.service

@@ -282,7 +282,8 @@ func qCleanup(ctx context.Context, pool *pgxpool.Pool) error {
 	if err := q.CleanupSyncCache(ctx); err != nil {
 		return err
 	}
-	return q.CleanupSyncRuns(ctx)
+	_, err := q.CleanupSyncRuns(ctx)
+	return err
 }
 
 type dispatchWorker struct {
