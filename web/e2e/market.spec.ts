@@ -106,8 +106,8 @@ test("物品估价、比例和多级导航", async ({ page }, info) => {
   await expect(page.getByText("4,016.00", { exact: true })).toBeVisible();
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "菜单", exact: true }).click();
-  const nav = await openNavigation(page, "财务与工具");
-  await expect(nav.getByRole("button", { name: "财务与工具" })).toHaveAttribute(
+  const nav = await openNavigation(page, "资产服务");
+  await expect(nav.getByRole("button", { name: "资产服务" })).toHaveAttribute(
     "aria-expanded",
     "true",
   );
@@ -115,12 +115,12 @@ test("物品估价、比例和多级导航", async ({ page }, info) => {
     "aria-current",
     "page",
   );
-  await nav.getByRole("button", { name: "作战与训练" }).click();
+  await nav.getByRole("button", { name: "作战训练" }).click();
   await expect(nav.getByRole("link", { name: "舰船损失" })).toBeVisible();
   await expect(
     nav.getByRole("link", { name: "合同", exact: true }),
   ).toBeHidden();
-  await nav.getByRole("button", { name: "财务与工具" }).focus();
+  await nav.getByRole("button", { name: "资产服务" }).focus();
   await page.keyboard.press("Enter");
   await expect(
     nav.getByRole("link", { name: "合同", exact: true }),

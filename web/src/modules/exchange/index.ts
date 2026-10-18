@@ -7,6 +7,7 @@ export const exchangeModule: FrontendModule = {
   pages: [
     {
       id: "exchange.catalog",
+      navigationOrder: 30,
       administratorOnly: true,
       navigationGroup: "benefits",
       path: "/rewards",
@@ -16,6 +17,7 @@ export const exchangeModule: FrontendModule = {
     },
     {
       id: "exchange.overview",
+      navigationOrder: 20,
       navigationGroup: "benefits",
       path: "/exchange",
       label: msg("兑换中心"),

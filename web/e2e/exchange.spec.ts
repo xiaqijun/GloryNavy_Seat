@@ -250,9 +250,9 @@ test("舰船配置与兑换中心按现场速度连续切换", async ({ page }) 
   page.on("pageerror", (e) => errors.push(e.message));
   await navigationSetup(page);
   for (let i = 0; i < 30; i++) {
-    await navigate(page, "舰船配置", "作战与训练");
+    await navigate(page, "舰船配置", "作战训练");
     await page.waitForTimeout(170);
-    await navigate(page, "兑换中心", "福利与兑换");
+    await navigate(page, "兑换中心", "福利兑换");
     await page.waitForTimeout(170);
   }
   await expect(
@@ -303,8 +303,8 @@ test("连续鼠标切换不逐次等待 DOM 稳定", async ({ page, isMobile }) 
   // then send mouse input without waiting for destination content to settle.
   for (let i = 0; i < 30; i++) {
     for (const [group, name] of [
-      ["作战与训练", "舰船配置"],
-      ["福利与兑换", "兑换中心"],
+      ["作战训练", "舰船配置"],
+      ["福利兑换", "兑换中心"],
     ]) {
       const nav = await openNavigation(page, group);
       const bounds = await nav

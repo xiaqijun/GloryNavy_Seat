@@ -7,6 +7,7 @@ export const eveModule: FrontendModule = {
   pages: [
     {
       id: "eve.contracts",
+      navigationOrder: 20,
       navigationGroup: "finance",
       path: "/contracts",
       label: msg("合同"),
@@ -15,6 +16,7 @@ export const eveModule: FrontendModule = {
     },
     {
       id: "eve.sync",
+      navigationOrder: 40,
       navigationGroup: "administration",
       path: "/sync",
       label: msg("ESI 同步"),

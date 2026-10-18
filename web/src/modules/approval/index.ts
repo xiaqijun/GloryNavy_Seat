@@ -7,6 +7,7 @@ export const approvalModule: FrontendModule = {
   pages: [
     {
       id: "approval.queue",
+      navigationOrder: 20,
       path: "/approvals",
       label: msg("审批中心"),
       icon: ClipboardCheck,

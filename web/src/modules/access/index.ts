@@ -9,7 +9,8 @@ export const accessModule: FrontendModule = {
   pages: [
     {
       id: "access.members",
-      navigationGroup: "administration",
+      navigationOrder: 40,
+      navigationGroup: "corporation",
       path: "/members",
       label: msg("成员"),
       icon: UsersRound,
@@ -18,6 +19,7 @@ export const accessModule: FrontendModule = {
     },
     {
       id: "access.management",
+      navigationOrder: 10,
       navigationGroup: "administration",
       path: "/access",
       label: msg("权限管理"),

@@ -7,6 +7,7 @@ export const fittingsModule: FrontendModule = {
   pages: [
     {
       id: "fittings.overview",
+      navigationOrder: 10,
       navigationGroup: "operations",
       path: "/fittings",
       label: msg("舰船配置"),

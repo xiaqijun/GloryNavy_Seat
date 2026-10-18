@@ -8,6 +8,7 @@ export const sentryModule: FrontendModule = {
   pages: [
     {
       id: "sentry.keys",
+      navigationOrder: 40,
       path: "/sentry",
       label: msg("预警平台"),
       icon: RadioTower,

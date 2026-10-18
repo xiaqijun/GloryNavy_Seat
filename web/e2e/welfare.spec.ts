@@ -979,7 +979,7 @@ test("同步损失可查看星系物品并带入补损，手机不溢出", async
   await expect(
     page.getByRole("button", { name: "舰船损失", exact: true }),
   ).toHaveCount(0);
-  await navigate(page, "舰船损失", "作战与训练");
+  await navigate(page, "舰船损失", "作战训练");
   await expect(page).toHaveURL(/\/losses$/);
   await expect(
     page.getByRole("heading", { name: "舰船损失", exact: true }),
@@ -1074,7 +1074,7 @@ test("旧击毁报告缺参与者时明确提示待同步", async ({ page }) => 
   await page.route("**/api/v1/welfare/losses?**", (route) =>
     route.fulfill({ json: { data: { items: [legacyLoss], next_cursor: "" } } }),
   );
-  await navigate(page, "舰船损失", "作战与训练");
+  await navigate(page, "舰船损失", "作战训练");
   const browser = page.getByRole("region", { name: "损失记录", exact: true });
   await browser.getByRole("button", { name: /毒蜥级/ }).click();
   await expect(browser.getByRole("region", { name: "参与者" })).toContainText("参与者资料尚未同步");
@@ -1086,7 +1086,7 @@ test("反复切换福利与损失页面并关闭下拉后仍可操作", async ({
   page.on("pageerror", (e) => errors.push(e.message));
   await setup(page);
   for (let round = 0; round < 30; round++) {
-    await navigate(page, "舰船损失", "作战与训练");
+    await navigate(page, "舰船损失", "作战训练");
     if (round % 5 === 0) {
       await page
         .getByRole("combobox", { name: "损失角色", exact: true })
@@ -1094,7 +1094,7 @@ test("反复切换福利与损失页面并关闭下拉后仍可操作", async ({
       await page.keyboard.press("Escape");
       await expect(page.getByRole("listbox")).toHaveCount(0);
     }
-    await navigate(page, "军团福利", "福利与兑换");
+    await navigate(page, "军团福利", "福利兑换");
   }
   await expect(
     page.getByRole("heading", { name: "军团福利", exact: true }),
@@ -1164,7 +1164,7 @@ test("损失同步错误可见，重试不会隐藏已有记录", async ({ page 
       json: { error: { message: "请重新授权击毁报告" } },
     }),
   );
-  await navigate(page, "舰船损失", "作战与训练");
+  await navigate(page, "舰船损失", "作战训练");
   const modal = page.getByRole("region", { name: "损失记录", exact: true });
   await modal.getByRole("button", { name: "同步击毁记录" }).click();
   await expect(modal.getByRole("alert")).toHaveText("请重新授权击毁报告");

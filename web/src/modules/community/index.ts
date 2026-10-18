@@ -7,6 +7,7 @@ export const communityModule: FrontendModule = {
   pages: [
     {
       id: "community.qq-admin",
+      navigationOrder: 30,
       administratorOnly: true,
       navigationGroup: "administration",
       path: "/community",

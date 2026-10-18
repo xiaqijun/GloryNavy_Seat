@@ -7,6 +7,7 @@ export const skillsModule: FrontendModule = {
   pages: [
     {
       id: "skills.overview",
+      navigationOrder: 20,
       navigationGroup: "operations",
       path: "/skills",
       label: msg("技能管理"),

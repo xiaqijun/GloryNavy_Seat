@@ -14,7 +14,10 @@ export interface PageDefinition {
   icon: LucideIcon;
   navigation?: boolean;
   administratorOnly?: boolean;
-  navigationGroup?: "operations" | "finance" | "benefits" | "administration";
+  navigationGroup?:
+    "corporation" | "operations" | "finance" | "benefits" | "administration";
+  navigationOrder?: number;
+  navigationFooter?: boolean;
   permission?:
     | "access.manage"
     | "eve.sync.manage"

@@ -7,6 +7,7 @@ export const welfareModule: FrontendModule = {
   pages: [
     {
       id: "welfare.losses",
+      navigationOrder: 30,
       navigationGroup: "operations",
       path: "/losses",
       label: msg("舰船损失"),
@@ -15,6 +16,7 @@ export const welfareModule: FrontendModule = {
     },
     {
       id: "welfare.home",
+      navigationOrder: 10,
       navigationGroup: "benefits",
       path: "/welfare",
       label: msg("军团福利"),

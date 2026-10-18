@@ -7,6 +7,7 @@ export const marketModule: FrontendModule = {
   pages: [
     {
       id: "market.appraisal",
+      navigationOrder: 30,
       path: "/appraisal",
       label: msg("物品估价"),
       icon: Calculator,

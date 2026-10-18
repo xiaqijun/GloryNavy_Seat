@@ -7,7 +7,8 @@ export const attendanceModule: FrontendModule = {
   pages: [
     {
       id: "attendance.overview",
-      navigationGroup: "operations",
+      navigationOrder: 20,
+      navigationGroup: "corporation",
       path: "/attendance",
       label: msg("军团考勤"),
       icon: CalendarCheck2,

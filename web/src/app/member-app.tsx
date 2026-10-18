@@ -125,6 +125,7 @@ export default function MemberApp() {
             </span>
           </Link>
           <SidebarNavigation
+            key={location.pathname}
             pathname={location.pathname}
             pages={visiblePages.filter((page) => page.navigation !== false)}
           />

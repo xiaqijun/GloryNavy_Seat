@@ -7,6 +7,8 @@ export const feedbackModule: FrontendModule = {
   pages: [
     {
       id: "feedback.requests",
+      navigationOrder: 10,
+      navigationFooter: true,
       path: "/feedback",
       label: msg("意见反馈"),
       icon: MessageSquarePlus,

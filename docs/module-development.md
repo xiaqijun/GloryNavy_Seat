@@ -26,7 +26,7 @@ approval 通过宿主注入 reviewqueue.Source，来源提供 Access、Snapshot�
 
 固定前端文案使用 `lib/i18n.ts` 的 `msg` 与统一英文词表；协议值、权限键和用户输入不翻译。日期/数字格式使用 `getLocale()`，业务时区保持独立。见[界面语言约定](ui/language.md)。
 
-前端 PageDefinition 可声明 navigationGroup（operations/finance/benefits/administration），由宿主先按模块/权限过滤再分组。空组隐藏，当前路由组展开；分组只改变展示，不替代路由和对象鉴权。未声明分组的导航页为直达入口。见[多级导航记录](ui/market.md)。
+前端 PageDefinition 可声明 navigationGroup（corporation/operations/finance/benefits/administration），由宿主先按模块/权限过滤再分组。navigationOrder 为组内或直达入口的升序位置，未填写按 100 排列，同值保留注册顺序；navigationFooter=true 为底部直达，不参与分组。空组隐藏，切换路径后当前路由组展开；分组只改变展示，不替代路由和对象鉴权。未声明分组的普通导航页为顶部直达入口。见[主导航](ui/navigation.md)。
 
 ## 补损交付合同边界（含历史兼容）
 

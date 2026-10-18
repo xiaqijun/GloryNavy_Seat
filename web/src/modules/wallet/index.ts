@@ -7,6 +7,7 @@ export const walletModule: FrontendModule = {
   pages: [
     {
       id: "wallet.home",
+      navigationOrder: 10,
       navigationGroup: "finance",
       path: "/wallet",
       label: msg("钱包"),

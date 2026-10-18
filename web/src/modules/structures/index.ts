@@ -8,10 +8,11 @@ export const structuresModule: FrontendModule = {
   pages: [
     {
       id: "structures.overview",
+      navigationOrder: 30,
       path: "/structures",
       label: msg("建筑管理"),
       icon: Building2,
-      navigationGroup: "operations",
+      navigationGroup: "corporation",
       load: () => import("./page"),
     },
   ],

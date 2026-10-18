@@ -18,6 +18,7 @@ export const systemModule: FrontendModule = {
     },
     {
       id: "system.home",
+      navigationOrder: 10,
       path: "/workspace",
       label: msg("工作台"),
       icon: LayoutDashboard,
@@ -25,7 +26,8 @@ export const systemModule: FrontendModule = {
     },
     {
       id: "system.operations",
-      navigationGroup: "operations",
+      navigationOrder: 10,
+      navigationGroup: "corporation",
       path: "/operations",
       label: msg("军团运营"),
       icon: ChartNoAxesCombined,
@@ -34,6 +36,7 @@ export const systemModule: FrontendModule = {
     },
     {
       id: "system.status",
+      navigationOrder: 50,
       administratorOnly: true,
       navigationGroup: "administration",
       path: "/system",
