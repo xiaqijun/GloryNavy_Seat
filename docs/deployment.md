@@ -1,5 +1,17 @@
 # Linux 生产部署
 
+## 2026-10-18 军团技能要求待确认修正
+
+后端 v0.1.0-skills-queue-confirmation-20261018，干净且推送 main 来源 9d2741de872667c22c01476ac5261592b3a98826；前端沿用 feedback，无新迁移，Goose 97。按官方 OpenAPI 的离线训练语义补齐已完成队列，不用两个接口抓取时间先后判定冲突。
+
+- 激活前完整备份：/var/backups/glorynavy/before-v0.1.0-skills-queue-confirmation-20261018-20261018T055804Z.dump（251892293 字节）及同前缀 .env/.meta.json，未执行该新备份的恢复演练。环境配置未修改。
+- 9 项技能测试、EVE 保留/撤权/解绑/归属与代次的 6 个子场景（race）、2 项宿主回归及 go vet 通过。覆盖队列先抓/后抓/同时抓、历史观测、未来完成时间、SP 合并、不提升生效等级、不降低已训练等级和成长资格同源检查。
+- 独立发布源码编译的只读诊断使用正式技能检查及 EVE 观测服务，以 default_transaction_read_only 强制只读；4 个实际受影响角色 × 8 个方案共 32 结果，16 met/16 missing、unknown_requirements=0。未改原始快照、方案或福利记录，没有发放操作。
+- active/running/ready、NRestarts=0、Goose 97、发布包 SHA256 通过；保留前轮 12 条单据编号别名。QQ/提醒关闭、QQ 绑定 0。公网 /skills 为 200；匿名 skills/context、plans/1/check、characters 以及结算接口均 401；QQ 回调 503。既有 HTML 和主包/技能资源与前端发布目录逐字节一致：主包 index-irX5B20i.js SHA256 0dae003bf747aaa7a957a04759499049a25594141a7222ccdb65fd9e52078df1，技能 page-DKTHLBk8.js SHA256 a49d793e2b37415a90992de314323a2958c756b6ddcc59e11993da1cfb91685f。
+
+恢复可使用上一后端 remaining-settlement-ids 版本，保留 Goose 97 及福利旧号映射，不恢复旧数据库；回退会重新出现按抓取顺序误判的旧行为。前端不需回退。操作材料在忽略目录 .local/skills-pending/。
+
+
 ## 2026-10-18 其余福利结算编号
 
 后端 v0.1.0-remaining-settlement-ids-20261018，来源干净且已推送 main 提交 37f3f0587bcca92954a171b5461c2d83445150b4；前端沿用 feedback，Goose 97。开发中的提醒扩展未包含在发布中，其未发布迁移顺延为 98。

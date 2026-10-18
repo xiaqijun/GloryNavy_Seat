@@ -11112,7 +11112,7 @@ components:
     SkillMeta:
       {
         "type": "object",
-        "description": "Freshness of the last authorized observation. Normal same-owner reauthorization may retain skills/queue data as stale with its original observed_at and null valid_until until a new sync succeeds. The UI keeps that observation without an update-pending label. Corporation checks accept ready or stale skills and queue observations with payloads and timestamps; pending, blocked, missing or conflicting observations remain unknown.",
+        "description": "Freshness of the last authorized observation. Normal same-owner reauthorization may retain skills/queue data as stale with its original observed_at and null valid_until until a new sync succeeds. The UI keeps that observation without an update-pending label. Corporation checks accept ready or stale skills and queue observations with payloads and timestamps; pending, blocked or missing observations remain unknown. Offline completed queue entries are overlaid through the queue observation time regardless of which endpoint was fetched first; future wall-clock progress never confirms training, and active levels remain unchanged.",
         "properties":
           {
             "status":
