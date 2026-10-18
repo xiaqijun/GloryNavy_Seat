@@ -1,5 +1,19 @@
 # Linux 生产部署
 
+## 2026-10-18 多类型游戏邮件提醒
+
+前后端 v0.1.0-reminder-events-20261018，来源为干净且推送的 main ab4fbce475a59f71bba005d97504761b09b4b02e。Goose 97→98，River 和环境配置不变。保留发件人、授权、revision=2 和 enabled=false，所选类型仍为原 approval_pending；迁移不发信或改变业务账务。
+
+- 备份：/var/backups/glorynavy/before-v0.1.0-reminder-events-20261018-20261018T144641Z.dump（256725980 字节），同前缀 .env/.meta.json；停服后备份、激活时迁移。未做该新备份的恢复演练。
+- 最终 10 项 reminder 测试含 race；新来源归属/状态与权限、EVE 代次/合同新鲜度、PAP 月末/未知证据、建筑燃料抖动、审批旧回执升级及新类型 Down 防护通过。宿主组合/元数据/CSRF 与相关 go vet 通过。测试数据库为同机独立 PostgreSQL 18.6 tmpfs 容器，未在生产库执行测试。
+- 前端类型/构建/lint、9 项单测和中英文三种宽度 18 项浏览器流程通过；检查桌面与窄屏截图。干净 main 重建的 139 个文件与已测构建逐字节一致。后端 6 个程序与边缘发布清单哈希检查通过。
+- 线上 active/running/ready、NRestarts=0，Goose 98；公网提醒页 200，配置 GET/PUT、历史 GET、重试 POST 和 purpose=reminder-mail 授权 POST 匿名均 401。QQ 两种 webhook 503、开关 false、绑定 0；邮件发送/回执 0，发件 grant ready 且 mail scope 保留，原福利旧号审计 12 条保留。
+- 主包 index-BqE1P6o0.js SHA-256 d5f50d6a2ca9ff0bb1593e72f92d13cff7574e0f3c823ed201af39ede7263141；提醒包 page-x5uU3dpd.js SHA-256 d9ae5b167d9d10aeefe2e9386a4aa6afe550946e9cb2dfd8da4bd60c13a6dfed。公网 HTML/资源与发布文件相同，OpenResty 配置通过。
+- 恢复：保留 Goose 98 与分类型回执；使用新类型后 Down 拒绝。回退旧发送程序前必须关闭发送、取消 reminder.scan.v1/reminder.send.v1 未结束任务；旧程序不能在新回执上执行跨类型清理。前一后端为 skills-queue-confirmation、前端为 feedback，必要时成对恢复程序并保持提醒关闭，不为程序回退直接覆盖业务数据库。
+
+材料在本地 .local/reminder-events/；服务构建源码在 /root/glorynavy-reminder-events-release-20261018。当前尚未启用真实邮件，不把 API/隔离测试当作游戏客户端收信验收。
+
+
 ## 2026-10-18 军团技能要求待确认修正
 
 后端 v0.1.0-skills-queue-confirmation-20261018，干净且推送 main 来源 9d2741de872667c22c01476ac5261592b3a98826；前端沿用 feedback，无新迁移，Goose 97。按官方 OpenAPI 的离线训练语义补齐已完成队列，不用两个接口抓取时间先后判定冲突。
