@@ -9,6 +9,11 @@ import { IconAction } from "@/components/ui/icon-action";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/dialog";
 import * as api from "./api";
+import {
+  ScreenshotGallery,
+  ScreenshotPicker,
+  useScreenshots,
+} from "./screenshots";
 import "./feedback.css";
 
 const kinds = { bug: msg("BUG 反馈"), feature: msg("功能需求") };
@@ -202,24 +207,37 @@ function Compose({
     [body, setBody] = useState("");
   const [key, setKey] = useState(() => crypto.randomUUID());
   const mutation = useMutation({
-    mutationFn: () => api.create(csrf, { request_key: key, kind, title, body }),
+    mutationFn: () =>
+      api.create(csrf, {
+        request_key: key,
+        kind,
+        title,
+        body,
+        images: screenshots.images,
+      }),
     onSuccess: done,
   });
   const edit = () => {
     setKey(crypto.randomUUID());
     mutation.reset();
   };
+  const screenshots = useScreenshots(edit, mutation.isPending);
   return (
     <Modal
       title={msg("提交反馈")}
       close={close}
-      busy={mutation.isPending}
+      busy={mutation.isPending || screenshots.busy}
       className="feedback-modal"
       footer={
         <Button
           form="feedback-create"
           type="submit"
-          disabled={mutation.isPending || !title.trim() || !body.trim()}
+          disabled={
+            mutation.isPending ||
+            screenshots.busy ||
+            !title.trim() ||
+            !body.trim()
+          }
         >
           {mutation.isPending ? msg("正在提交") : msg("提交")}
         </Button>
@@ -228,9 +246,10 @@ function Compose({
       <form
         id="feedback-create"
         className="feedback-form"
+        onPaste={screenshots.paste}
         onSubmit={(e) => {
           e.preventDefault();
-          if (!mutation.isPending) mutation.mutate();
+          if (!mutation.isPending && !screenshots.busy) mutation.mutate();
         }}
       >
         <label>
@@ -279,6 +298,7 @@ function Compose({
             }
           />
         </label>
+        <ScreenshotPicker value={screenshots} disabled={mutation.isPending} />
         {mutation.isError && <p role="alert">{mutation.error.message}</p>}
       </form>
     </Modal>
@@ -342,10 +362,12 @@ function Thread({
         revision: t.revision,
         body,
         status,
+        images: screenshots.images,
       }),
     onSuccess: async () => {
       setBody("");
       setStatus("");
+      screenshots.clear();
       setKey(crypto.randomUUID());
       await updated();
     },
@@ -354,6 +376,7 @@ function Thread({
     setKey(crypto.randomUUID());
     mutation.reset();
   };
+  const screenshots = useScreenshots(edit, mutation.isPending);
   return (
     <div className="feedback-thread">
       <div className="feedback-detail-heading">
@@ -367,6 +390,7 @@ function Thread({
         {t.author_name} · {time(t.created_at)}
       </p>
       <p className="feedback-content">{t.body}</p>
+      <ScreenshotGallery ticket={t.id} images={t.images} />
       {data.messages.length > 0 && (
         <ol className="feedback-messages">
           {data.messages.map((m) => (
@@ -376,12 +400,9 @@ function Thread({
                 {m.staff && <span>{msg("管理员")}</span>}
                 <time>{time(m.created_at)}</time>
               </div>
-              {m.status && (
-                <p>
-                  {msg("状态变更为 {0}", statuses[m.status])}
-                </p>
-              )}
+              {m.status && <p>{msg("状态变更为 {0}", statuses[m.status])}</p>}
               {m.body && <p className="feedback-content">{m.body}</p>}
+              <ScreenshotGallery ticket={t.id} images={m.images} />
             </li>
           ))}
         </ol>
@@ -391,9 +412,10 @@ function Thread({
       ) : (
         <form
           className="feedback-form feedback-reply"
+          onPaste={screenshots.paste}
           onSubmit={(e) => {
             e.preventDefault();
-            if (!mutation.isPending) mutation.mutate();
+            if (!mutation.isPending && !screenshots.busy) mutation.mutate();
           }}
         >
           {data.administrator && (
@@ -427,6 +449,7 @@ function Thread({
               disabled={mutation.isPending}
             />
           </label>
+          <ScreenshotPicker value={screenshots} disabled={mutation.isPending} />
           {mutation.isError && (
             <div className="feedback-error" role="alert">
               {mutation.error.message}
@@ -445,7 +468,11 @@ function Thread({
           )}
           <Button
             type="submit"
-            disabled={mutation.isPending || (!body.trim() && !status)}
+            disabled={
+              mutation.isPending ||
+              screenshots.busy ||
+              (!body.trim() && !status)
+            }
           >
             {mutation.isPending
               ? msg("正在提交")

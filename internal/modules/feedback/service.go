@@ -23,6 +23,7 @@ type Service struct {
 }
 type Actor struct{ ID, Name string }
 type Ticket struct {
+	Images     []Image   `json:"images,omitempty"`
 	ID         string    `json:"id"`
 	AccountID  string    `json:"account_id"`
 	AuthorName string    `json:"author_name"`
@@ -35,6 +36,7 @@ type Ticket struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 type Message struct {
+	Images     []Image   `json:"images,omitempty"`
 	ID         string    `json:"id"`
 	AuthorName string    `json:"author_name"`
 	Staff      bool      `json:"staff"`
@@ -53,16 +55,18 @@ type List struct {
 	Administrator bool     `json:"administrator"`
 }
 type Submission struct {
-	RequestKey string `json:"request_key"`
-	Kind       string `json:"kind"`
-	Title      string `json:"title"`
-	Body       string `json:"body"`
+	Images     []ImageUpload `json:"images,omitempty"`
+	RequestKey string        `json:"request_key"`
+	Kind       string        `json:"kind"`
+	Title      string        `json:"title"`
+	Body       string        `json:"body"`
 }
 type Reply struct {
-	RequestKey string `json:"request_key"`
-	Revision   int32  `json:"revision"`
-	Body       string `json:"body"`
-	Status     string `json:"status"`
+	Images     []ImageUpload `json:"images,omitempty"`
+	RequestKey string        `json:"request_key"`
+	Revision   int32         `json:"revision"`
+	Body       string        `json:"body"`
+	Status     string        `json:"status"`
 }
 type Fault struct {
 	Status        int
@@ -163,9 +167,13 @@ func (s *Service) Detail(ctx context.Context, actor string, id int64) (Detail, e
 	}
 	out.Ticket = t
 	out.Administrator = admin
-	return out, nil
+	err = loadImages(ctx, q, id, &out)
+	return out, err
 }
 func (s *Service) Create(ctx context.Context, actor Actor, in Submission) (Ticket, error) {
+	if err := validateImages(in.Images); err != nil {
+		return Ticket{}, err
+	}
 	in.Title = strings.TrimSpace(in.Title)
 	in.Body = strings.TrimSpace(in.Body)
 	if !validKey(in.RequestKey) || !kindOK(in.Kind) || in.Title == "" || in.Body == "" || !clean(in.Title, 120) || !clean(in.Body, 6000) {
@@ -192,6 +200,9 @@ func (s *Service) Create(ctx context.Context, actor Actor, in Submission) (Ticke
 		if t.AccountID != actor.ID || t.Kind != in.Kind || t.Title != in.Title || t.Body != in.Body {
 			return Ticket{}, changed
 		}
+		if err := sameImages(ctx, q, id, pgtype.Int8{}, in.Images); err != nil {
+			return Ticket{}, err
+		}
 		return t, tx.Commit(ctx)
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -208,6 +219,9 @@ func (s *Service) Create(ctx context.Context, actor Actor, in Submission) (Ticke
 	if err != nil {
 		return Ticket{}, err
 	}
+	if err = saveImages(ctx, q, id, pgtype.Int8{}, in.Images); err != nil {
+		return Ticket{}, err
+	}
 	t, err := get(ctx, q, id)
 	if err != nil {
 		return Ticket{}, err
@@ -215,6 +229,9 @@ func (s *Service) Create(ctx context.Context, actor Actor, in Submission) (Ticke
 	return t, tx.Commit(ctx)
 }
 func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (Ticket, error) {
+	if err := validateImages(in.Images); err != nil {
+		return Ticket{}, err
+	}
 	in.Body = strings.TrimSpace(in.Body)
 	if !validKey(in.RequestKey) || in.Revision < 1 || !clean(in.Body, 2000) || (in.Body == "" && in.Status == "") || (in.Status != "" && !statusOK(in.Status)) {
 		return Ticket{}, invalid
@@ -263,6 +280,9 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 		if old.TicketID != id || old.Body != in.Body || old.Status != in.Status {
 			return Ticket{}, changed
 		}
+		if err := sameImages(ctx, q, id, pgtype.Int8{Int64: old.ID, Valid: true}, in.Images); err != nil {
+			return Ticket{}, err
+		}
 		return t, tx.Commit(ctx)
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -285,7 +305,11 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 	if n >= 100 {
 		return Ticket{}, full
 	}
-	if err = q.InsertMessage(ctx, store.InsertMessageParams{TicketID: id, Actor: uuid(actor.ID), AuthorName: actor.Name, Staff: admin, RequestKey: uuid(in.RequestKey), Body: in.Body, Status: in.Status}); err != nil {
+	messageID, err := q.InsertMessage(ctx, store.InsertMessageParams{TicketID: id, Actor: uuid(actor.ID), AuthorName: actor.Name, Staff: admin, RequestKey: uuid(in.RequestKey), Body: in.Body, Status: in.Status})
+	if err != nil {
+		return Ticket{}, err
+	}
+	if err = saveImages(ctx, q, id, pgtype.Int8{Int64: messageID, Valid: true}, in.Images); err != nil {
 		return Ticket{}, err
 	}
 	n, err = q.UpdateTicket(ctx, store.UpdateTicketParams{ID: id, Revision: in.Revision, Status: in.Status})

@@ -25,11 +25,11 @@ SELECT to_jsonb(m)-'request_key'-'actor' ||jsonb_build_object('id',m.id::text,'t
 FROM feedback_messages m WHERE ticket_id=$1 ORDER BY id LIMIT 100;
 
 -- name: FindMessage :one
-SELECT ticket_id,body,status FROM feedback_messages WHERE actor=sqlc.arg(actor)::uuid AND request_key=sqlc.arg(request_key)::uuid;
+SELECT id,ticket_id,body,status FROM feedback_messages WHERE actor=sqlc.arg(actor)::uuid AND request_key=sqlc.arg(request_key)::uuid;
 
--- name: InsertMessage :exec
+-- name: InsertMessage :one
 INSERT INTO feedback_messages(ticket_id,actor,author_name,staff,request_key,body,status)
-VALUES(sqlc.arg(ticket_id),sqlc.arg(actor)::uuid,sqlc.arg(author_name),sqlc.arg(staff),sqlc.arg(request_key)::uuid,sqlc.arg(body),sqlc.arg(status));
+VALUES(sqlc.arg(ticket_id),sqlc.arg(actor)::uuid,sqlc.arg(author_name),sqlc.arg(staff),sqlc.arg(request_key)::uuid,sqlc.arg(body),sqlc.arg(status)) RETURNING id;
 
 -- name: UpdateTicket :execrows
 UPDATE feedback_tickets SET status=CASE WHEN sqlc.arg(status)::text='' THEN status ELSE sqlc.arg(status) END,revision=revision+1,updated_at=now()

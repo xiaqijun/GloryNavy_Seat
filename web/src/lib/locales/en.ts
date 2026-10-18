@@ -1,5 +1,11 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB": "Up to 3 PNG/JPG screenshots, 2 MB each",
+  "截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB，且不超过 1600 万像素": "Use up to 3 PNG/JPG screenshots, each within 2 MB and 16 megapixels",
+  "截图读取失败，请重新选择": "Could not read the screenshot. Select it again.",
+  "添加截图": "Add screenshots",
+  "截图 {0}": "Screenshot {0}",
+  "查看截图 {0}": "View screenshot {0}",
 	"暂无可用贷款专员": "No loan officer available",
 	"{0}（主角色）": "{0} (main)",
 	"贷款专员不可用，请刷新或联系管理员": "The loan officer is unavailable. Refresh or contact an administrator.",

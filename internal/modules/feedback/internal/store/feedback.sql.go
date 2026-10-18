@@ -12,7 +12,7 @@ import (
 )
 
 const findMessage = `-- name: FindMessage :one
-SELECT ticket_id,body,status FROM feedback_messages WHERE actor=$1::uuid AND request_key=$2::uuid
+SELECT id,ticket_id,body,status FROM feedback_messages WHERE actor=$1::uuid AND request_key=$2::uuid
 `
 
 type FindMessageParams struct {
@@ -21,6 +21,7 @@ type FindMessageParams struct {
 }
 
 type FindMessageRow struct {
+	ID       int64
 	TicketID int64
 	Body     string
 	Status   string
@@ -29,7 +30,12 @@ type FindMessageRow struct {
 func (q *Queries) FindMessage(ctx context.Context, arg FindMessageParams) (FindMessageRow, error) {
 	row := q.db.QueryRow(ctx, findMessage, arg.Actor, arg.RequestKey)
 	var i FindMessageRow
-	err := row.Scan(&i.TicketID, &i.Body, &i.Status)
+	err := row.Scan(
+		&i.ID,
+		&i.TicketID,
+		&i.Body,
+		&i.Status,
+	)
 	return i, err
 }
 
@@ -60,9 +66,9 @@ func (q *Queries) GetTicket(ctx context.Context, id int64) (interface{}, error) 
 	return data, err
 }
 
-const insertMessage = `-- name: InsertMessage :exec
+const insertMessage = `-- name: InsertMessage :one
 INSERT INTO feedback_messages(ticket_id,actor,author_name,staff,request_key,body,status)
-VALUES($1,$2::uuid,$3,$4,$5::uuid,$6,$7)
+VALUES($1,$2::uuid,$3,$4,$5::uuid,$6,$7) RETURNING id
 `
 
 type InsertMessageParams struct {
@@ -75,8 +81,8 @@ type InsertMessageParams struct {
 	Status     string
 }
 
-func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) error {
-	_, err := q.db.Exec(ctx, insertMessage,
+func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertMessage,
 		arg.TicketID,
 		arg.Actor,
 		arg.AuthorName,
@@ -85,7 +91,9 @@ func (q *Queries) InsertMessage(ctx context.Context, arg InsertMessageParams) er
 		arg.Body,
 		arg.Status,
 	)
-	return err
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertTicket = `-- name: InsertTicket :one

@@ -8,6 +8,7 @@ import (
 	"glorynavy.local/seat/internal/module"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -20,6 +21,7 @@ func (h Handler) Module() module.Definition {
 		{Method: "GET", Path: "/tickets", Permission: "feedback.self", Handler: http.HandlerFunc(h.list)},
 		{Method: "POST", Path: "/tickets", Permission: "feedback.self", Handler: http.HandlerFunc(h.create)},
 		{Method: "GET", Path: "/tickets/{id}", Permission: "feedback.self", Handler: http.HandlerFunc(h.detail)},
+		{Method: "GET", Path: "/tickets/{id}/images/{image}", Permission: "feedback.self", Handler: http.HandlerFunc(h.image)},
 		{Method: "POST", Path: "/tickets/{id}/messages", Permission: "feedback.self", Handler: http.HandlerFunc(h.reply)},
 	}}
 }
@@ -36,13 +38,38 @@ func respond(w http.ResponseWriter, r *http.Request, v any, err error) {
 	httpapi.Failure(w, r, 503, "feedback_unavailable", "反馈暂不可用，请稍后重试")
 }
 func read(w http.ResponseWriter, r *http.Request, v any) bool {
-	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32768))
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20))
 	d.DisallowUnknownFields()
 	if d.Decode(v) != nil || d.Decode(&struct{}{}) != io.EOF {
 		respond(w, r, nil, invalid)
 		return false
 	}
 	return true
+}
+
+func (h Handler) image(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	id, err := parseID(chi.URLParam(r, "id"))
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	imageID, err := parseID(chi.URLParam(r, "image"))
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	mime, content, err := h.Service.Image(r.Context(), h.Actor(r).ID, id, imageID)
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	w.Header().Set("Content-Type", mime)
+	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
+	w.Header().Set("Content-Disposition", "inline")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(content)
 }
 func (h Handler) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()

@@ -2,7 +2,10 @@ import { apiFetch, APIError, getData } from "@/lib/http";
 import { msg } from "@/lib/i18n";
 export type Kind = "bug" | "feature";
 export type Status = "submitted" | "in_progress" | "resolved" | "closed";
+export type Screenshot = { id: string; mime: "image/png" | "image/jpeg" };
+export type ImageUpload = { mime: string; content: string };
 export type Ticket = {
+  images?: Screenshot[];
   id: string;
   account_id: string;
   author_name: string;
@@ -15,6 +18,7 @@ export type Ticket = {
   updated_at: string;
 };
 export type Message = {
+  images?: Screenshot[];
   id: string;
   author_name: string;
   staff: boolean;
@@ -33,12 +37,14 @@ export type Listing = {
   administrator: boolean;
 };
 export type Submission = {
+  images?: ImageUpload[];
   request_key: string;
   kind: Kind;
   title: string;
   body: string;
 };
 export type Reply = {
+  images?: ImageUpload[];
   request_key: string;
   revision: number;
   body: string;
@@ -51,8 +57,19 @@ const date = (v: unknown) =>
 const id = (v: unknown) => typeof v === "string" && /^[1-9]\d*$/.test(v);
 const status = (v: unknown) =>
   ["submitted", "in_progress", "resolved", "closed"].includes(String(v));
+const images = (v: unknown) =>
+  v === undefined ||
+  (Array.isArray(v) &&
+    v.length <= 3 &&
+    v.every(
+      (i) =>
+        object(i) &&
+        id(i.id) &&
+        ["image/png", "image/jpeg"].includes(String(i.mime)),
+    ));
 export const isTicket = (v: unknown): v is Ticket =>
   object(v) &&
+  images(v.images) &&
   id(v.id) &&
   typeof v.account_id === "string" &&
   typeof v.author_name === "string" &&
@@ -66,6 +83,7 @@ export const isTicket = (v: unknown): v is Ticket =>
   date(v.updated_at);
 const isMessage = (v: unknown): v is Message =>
   object(v) &&
+  images(v.images) &&
   id(v.id) &&
   typeof v.author_name === "string" &&
   typeof v.staff === "boolean" &&

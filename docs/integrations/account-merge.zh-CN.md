@@ -1,5 +1,7 @@
 # 账号合并
 
+Goose 99 反馈截图以父反馈当前归属鉴权，无独立账号/权限副本；原图与回复一起保留，合并后源账号失去访问权，目标账号取得访问权。
+
 Goose 96 feedback 参与方始终注册：反馈归属迁往目标账号，保留首次 original_account_id、原提交者与消息作者/时间；revision 增加，预览包含双方 ID/revision 指纹。模块停用也迁移，来源权限不复制。见[反馈指南](feedback.zh-CN.md)。
 
 2026-10-17：Goose 90 后，合并同时迁移自动清理保留的角色归属并保留 original_user_id；已解除绑定的角色下次 SSO 恢复到合并目标账号。详情见[清理规则](corporation-cleanup.zh-CN.md)。
