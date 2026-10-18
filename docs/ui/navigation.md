@@ -1,6 +1,6 @@
 # 主导航
 
-2026-10-19：按业务用途重新分组，沿用 Corporate Clean。发布及验证状态见[项目状态](../project-status.md)。
+2026-10-19 已随 `v0.1.0-navigation-20261019` 发布：按业务用途重新分组，沿用 Corporate Clean。发布及验证状态见[项目状态](../project-status.md)。
 
 | 位置 / 分组 | 入口顺序 |
 | --- | --- |
