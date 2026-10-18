@@ -61,13 +61,32 @@ func TestPendingNotificationKeysLivePermissionsPaginationAndActions(t *testing.T
 			t.Fatal("reference leaks business fields", key)
 		}
 	}
+	items, e := s.PendingNotificationDetails(context.Background(), "reviewer", time.Now())
+	if e != nil || len(items) != len(keys) {
+		t.Fatal("details", items, e)
+	}
+	seen := map[string]bool{}
+	for _, key := range keys {
+		seen[key] = true
+	}
+	for _, item := range items {
+		if !seen[item.Key] || item.Title == "" || len(item.Fields) == 0 {
+			t.Fatal("detail mismatches authorized keys", item)
+		}
+	}
 	allowed = false
 	if keys, err = s.PendingNotificationKeys(context.Background(), "reviewer"); err != nil || len(keys) != 0 {
 		t.Fatal("cached permission", keys, err)
+	}
+	if items, e = s.PendingNotificationDetails(context.Background(), "reviewer", time.Now()); e != nil || len(items) != 0 {
+		t.Fatal("cached detail permission", items, e)
 	}
 	allowed = true
 	failing = true
 	if keys, err = s.PendingNotificationKeys(context.Background(), "reviewer"); err == nil || keys != nil {
 		t.Fatal("partial source read treated as complete", fmt.Sprint(keys), err)
+	}
+	if items, e = s.PendingNotificationDetails(context.Background(), "reviewer", time.Now()); e == nil || items != nil {
+		t.Fatal("partial detail read", items, e)
 	}
 }

@@ -8,12 +8,14 @@ import (
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/modules/reminder"
 	"glorynavy.local/seat/internal/modules/structures"
+	"glorynavy.local/seat/internal/platform/remindermessage"
 	"slices"
 	"time"
 )
 
 type reminderSourceService interface {
 	ReminderKeys(context.Context, string, string, time.Time) ([]string, error)
+	ReminderDetails(context.Context, string, string, time.Time) ([]remindermessage.Item, error)
 }
 
 func registerReminderSources(s *reminder.Service, enabled []string, module string, source reminderSourceService, kinds ...string) {
@@ -23,13 +25,20 @@ func registerReminderSources(s *reminder.Service, enabled []string, module strin
 	if s.Sources == nil {
 		s.Sources = map[string]reminder.Source{}
 	}
+	if s.Details == nil {
+		s.Details = map[string]reminder.DetailSource{}
+	}
 	for _, kind := range kinds {
 		s.Sources[kind] = func(ctx context.Context, u string, since time.Time) ([]string, error) {
 			return source.ReminderKeys(ctx, u, kind, since)
 		}
+		s.Details[kind] = func(ctx context.Context, u string, since time.Time) ([]remindermessage.Item, error) {
+			return source.ReminderDetails(ctx, u, kind, since)
+		}
 	}
 }
 func wireEveReminders(s *reminder.Service, accounts *identity.Service, policy *access.Service, auth *eve.AuthorizationService, contracts *eve.ContractHTTP, buildings structures.Handler, enabled []string) {
+	wireEveReminderDetails(s, accounts, policy, auth, contracts, buildings, enabled)
 	if s.Sources == nil {
 		s.Sources = map[string]reminder.Source{}
 	}

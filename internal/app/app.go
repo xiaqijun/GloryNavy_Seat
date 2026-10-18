@@ -875,6 +875,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	approvalNotifications.Pending = approvalModule.Service.PendingNotificationKeys
 	reminderModule.Service.Pending = approvalModule.Service.PendingNotificationKeys
+	reminderModule.Service.Names = identityService.MainCharacterNames
+	reminderModule.Service.CharacterNames = syncService.CachedLossNames
+	reminderModule.Service.Details = map[string]reminder.DetailSource{"approval_pending": approvalModule.Service.PendingNotificationDetails}
 	if pool != nil && len(approvalModule.Service.Sources) > 0 {
 		if err := approvalProjection.Reconcile(context.Background(), approvalModule.Service.Sources); err != nil {
 			logger.Warn("approval index initial reconcile failed; using source fallback", "error", err)
@@ -897,9 +900,11 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	wireEveReminders(reminderModule.Service, identityService, accessService, syncService, eveHandler.Contracts, structureHandler, enabled)
 	if slices.Contains(enabled, "loan") {
 		reminderModule.Service.Sources["loan_funding"] = loanService.FundingReminderKeys
+		reminderModule.Service.Details["loan_funding"] = loanService.FundingReminderDetails
 	}
 	if slices.Contains(enabled, "attendance") {
 		reminderModule.Service.Sources["pap_requirement"] = attendanceModule.Service.RequirementReminderKeys
+		reminderModule.Service.Details["pap_requirement"] = attendanceModule.Service.RequirementReminderDetails
 	}
 	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module(), feedbackHandler.Module(), (courier.Handler{Service: courier.NewService()}).Module()}, enabled, authorize)
 	if err != nil {

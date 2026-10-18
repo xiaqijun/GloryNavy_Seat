@@ -4,7 +4,7 @@ The first event is pending approvals: actionable welfare requests/cancellations,
 
 ## Selectable events (Goose 98)
 
-There are 20 categories, offered only when their source module is enabled. Upgrades do not select or send new categories. Existing sender consent and the master switch remain unchanged. Mail contains only category, count and the corresponding page link, addressed to the recipient account's current main character.
+There are 20 categories, offered only when their source module is enabled. Upgrades do not select or send new categories. Existing sender consent and the master switch remain unchanged. Mail contains authorized business details, next actions and a page link, addressed to the recipient account's current main character.
 
 | Category | Recipient and trigger |
 | --- | --- |
@@ -29,6 +29,29 @@ Except reopened approval phases, the same event reference does not resend after 
 Migration 98 adds event selection, activation timestamps and receipt category while preserving approval receipts. Deploy frontend and backend together. Down refuses new-category use. Before rolling back to an old sender, disable delivery and cancel unfinished reminder jobs; retain Goose 98 and all multi-category receipts. Old cross-category receipt reconciliation must not run.
 
 
+## Business mail content
+
+All 20 categories use ephemeral details read under the source module's current authorization. The subject is the category name. The Chinese body lists the item/reference, business fields, next action and page link. Existing sender and current-main-character routing are preserved; there is no manual per-category recipient picker.
+
+| Business | Fields |
+| --- | --- |
+| Approvals | Request/cancellation type, reference, applicant, item, receiving character, request time and amount when its unit is known |
+| Welfare and redemptions | Reference, project/reward, recipient, outcome, decision note and time; recorded ISK, Guoke coins and physical reward summary. Cancellations identify refunded coins |
+| Loan progress | Reference, pool, principal, principal plus interest, decision note, update time and confirmed first due date |
+| Upcoming/overdue payments | Loan, pool, installment, remaining principal/interest/total after partial repayments, and deadline |
+| Guarantees/collateral | Borrower, guarantee amount and invitation/call/dispute; collateral delivery reference, source/recipient characters, item-kind count and contract instructions |
+| Funding/contributions | Borrower, receiving character, pool, loan principal and review note; verified contribution amount, source character, contract and funding time. Funding links go to Loans, including personal pools |
+| Personal contracts | ID, title, type, receiving character, price, reward, applicable collateral and expiration |
+| PAP/coins | Event/character, signed change, reason and time; PAP target notices include month, current/required/missing points, UTC deadline and observation time |
+| Authorization/structures/sync/Sentry | Character, structure/corporation/system or key name; authorization state, fuel/unanchor deadline, sync resource/failures/last success, controlled reason and action. No tokens, secrets or raw upstream errors |
+| Feedback | Number, BUG/feature type, title, current state, author/content or responder/reply excerpt, recorded status change and time |
+
+Money is formatted from integer minor units with two decimal places and thousands separators, preserving signs without floats or M/B/T abbreviations. Dates explicitly use UTC. Character names use local cached names, falling back to IDs when unavailable. Missing facts are not invented. User text is escaped; long remarks/replies end with an ellipsis and link to full details.
+
+Each mail contains at most five items from one category, retaining five-minute account throttling and category rotation. Only listed items are claimed/notified; remaining items stay eligible for later batches. Escaped body length is bounded at 9,500 characters without cutting tags or the final link. Missing details, duplicate keys or detail-read errors fail closed before ESI, with a definite-failure record eligible for administrator retry.
+
+The host injects `ReminderDetails`; source modules read private stores using their own authorized event references. Approval uses live sources; structures reuse their authorized snapshot reader. Content exists only in memory, never in reminder tables, job arguments or logs. After reading details, the sender, current recipient main, configuration revision and live source permissions/keys are rechecked before sending. Deduplication references, database schema, scopes and enablement are unchanged. Actual game-client rendering and receipt remain live acceptance items.
+
 ## Setup and consent
 
 Enable `reminder` with `identity,access,eve,approval` in `MODULES`, apply Goose 93. Delivery defaults to disabled with no sender. Add `esi-mail.send_mail.v1` to the EVE developer application's allowed scopes. On Reminders, select your own bound character, choose Authorize mail, complete SSO using that same character, select categories, enable notifications and save.
@@ -37,7 +60,7 @@ Normal login keeps the existing 57 scopes (58 with fittings). Only the explicit 
 
 ## Delivery boundary
 
-The minute scanner queues one account ID per River job. Each mail goes to that account's current main character and contains only the event category, personal count and relevant page link. No business details, corporation/alliance recipients or mailing lists are included. The host injects live approval keys, identity projections and the token-free EVE mail gateway. Reminder storage never copies approval state or imports source stores.
+The minute scanner queues one account ID per River job. Each mail goes to that account's current main character and contains authorized details for one category and the relevant page link. Corporation/alliance recipients and mailing lists are not used. The host injects live approval keys, identity projections and the token-free EVE mail gateway. Reminder storage never copies approval state or imports source stores.
 
 The configured sender must remain bound to its original administrator account with matching owner and authorization generation. Immediately before sending, settings revision, recipient main character and live pending permissions are rechecked. A failed source read never clears receipts. ESI token rotation, generation checks and shared rate limits apply; mutation responses are not cached. `approved_cost=0` never authorizes a CSPA charge.
 

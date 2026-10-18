@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/modules/reminder/internal/store"
-	"html"
 	"net/url"
 	"slices"
 	"time"
@@ -32,17 +31,20 @@ type Result struct {
 	State, Reason string
 }
 type Service struct {
-	Pool          *pgxpool.Pool
-	Enabled       bool
-	Origin        string
-	Administrator func(context.Context, string) (bool, error)
-	Own           func(context.Context, string) ([]Character, error)
-	Main          func(context.Context, string) (Character, error)
-	Users         func(context.Context) ([]string, error)
-	Pending       func(context.Context, string) ([]string, error)
-	Sources       map[string]Source
-	Send          func(context.Context, Character, int64, string, string) Result
-	LockAccounts  func(context.Context, pgx.Tx, []string) error
+	Pool           *pgxpool.Pool
+	Enabled        bool
+	Origin         string
+	Administrator  func(context.Context, string) (bool, error)
+	Own            func(context.Context, string) ([]Character, error)
+	Main           func(context.Context, string) (Character, error)
+	Users          func(context.Context) ([]string, error)
+	Pending        func(context.Context, string) ([]string, error)
+	Sources        map[string]Source
+	Details        map[string]DetailSource
+	Names          func(context.Context, []string) (map[string]string, error)
+	CharacterNames func(context.Context, []int64) map[int64]string
+	Send           func(context.Context, Character, int64, string, string) Result
+	LockAccounts   func(context.Context, pgx.Tx, []string) error
 }
 type Configuration struct {
 	store.Settings
@@ -333,6 +335,11 @@ func (s *Service) deliver(ctx context.Context, account string) error {
 		}
 		return sourceError
 	}
+	// Only claim receipts actually represented in this mail. Remaining items
+	// retain their eligibility for subsequent rate-limited batches.
+	if len(due) > mailBatchSize {
+		due = due[:mailBatchSize]
+	}
 	id, err := store.Claim(ctx, tx, account, sender.ID, main.ID, main.Name, len(due), due, event.ID)
 	if err != nil {
 		return err
@@ -342,13 +349,15 @@ func (s *Service) deliver(ctx context.Context, account string) error {
 	}
 	// No network within the claim transaction. Recheck identity, permission, phase and revision at the send boundary.
 	result := Result{State: "failed", Reason: "context_changed"}
+	body, detailErr := s.message(ctx, account, event, c.Started[event.ID], due)
+	// Details are read first; current recipient, sender and source permissions
+	// are then checked again immediately before crossing the ESI boundary.
 	current, err = store.ReadSettings(ctx, conn, false)
-	if err == nil && current.Enabled && current.Revision == c.Revision {
+	if detailErr == nil && err == nil && current.Enabled && current.Revision == c.Revision {
 		senderNow, e := s.sender(ctx, current)
 		mainNow, me := s.Main(ctx, account)
 		fresh, pe := readSource(ctx, s.source(event.ID), account, event.ID, c.Started[event.ID])
 		if e == nil && me == nil && pe == nil && mainNow.ID == main.ID && bytes.Equal(mainNow.Owner, main.Owner) && senderNow.Generation == sender.Generation && slices.Equal(keys, fresh) {
-			body := fmt.Sprintf("%s：%d 项。<br><a href=\"%s\">查看详情</a>", html.EscapeString(event.Name), len(due), html.EscapeString(s.Origin+event.Path))
 			result = s.Send(ctx, sender, main.ID, event.Name, body)
 			if result.State != "sent" && result.State != "failed" {
 				result.State = "unknown"

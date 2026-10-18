@@ -6,10 +6,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/modules/reminder/internal/store"
+	"glorynavy.local/seat/internal/platform/remindermessage"
 	"glorynavy.local/seat/internal/testutil"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func fixture(t *testing.T) (*Service, string, string) {
@@ -42,6 +44,24 @@ func fixture(t *testing.T) (*Service, string, string) {
 		return Character{ID: 202, Name: "Recipient", Owner: []byte("recipient")}, nil
 	}
 	s.Pending = func(context.Context, string) ([]string, error) { return []string{"pending-a", "cancel-b"}, nil }
+	s.Details = map[string]DetailSource{}
+	for _, event := range events {
+		s.Details[event.ID] = func(ctx context.Context, user string, since time.Time) ([]remindermessage.Item, error) {
+			keys, err := s.source(event.ID)(ctx, user, since)
+			if err != nil {
+				return nil, err
+			}
+			out := []remindermessage.Item{}
+			seen := map[string]bool{}
+			for _, key := range keys {
+				if !seen[key] {
+					out = append(out, remindermessage.Item{Key: key, Title: "测试事项"})
+					seen[key] = true
+				}
+			}
+			return out, nil
+		}
+	}
 	s.Send = func(context.Context, Character, int64, string, string) Result { return Result{State: "sent", ID: 999} }
 	if _, err = s.Save(ctx, admin.UserID, SaveInput{Enabled: true, SenderID: 101, Revision: 1}); err != nil {
 		t.Fatal(err)

@@ -1,6 +1,6 @@
 # 模块架构与扩展边界
 
-提醒多来源（Goose 98）通过宿主注册只读 `ReminderKeys`/授权适配器；SQL 归 welfare/exchange/loan/attendance/eve/sentry/feedback 自身私有 store，建筑复用既有已授权快照服务。提醒只保存类型、哈希引用、起点与发送回执，不复制业务状态；来源随模块启用注册，发送前重新核对。新增提醒须具备账号/对象权限、稳定事件键和历史窗口，详见[提醒指南](integrations/reminder.zh-CN.md)。
+提醒多来源（Goose 98）通过宿主注册只读 `ReminderKeys`／`ReminderDetails` 和授权适配器；SQL 归 welfare/exchange/loan/attendance/eve/sentry/feedback 自身私有 store，建筑复用既有已授权快照服务。提醒只保存类型、哈希引用、起点与发送回执，不复制业务状态或正文；`platform/remindermessage` 仅定义临时展示投影，明细在来源模块授权后读取，发送前复查当前范围；来源随模块启用注册，发送前重新核对。新增提醒须具备账号/对象权限、稳定事件键和历史窗口，详见[提醒指南](integrations/reminder.zh-CN.md)。
 
 feedback（Goose 96）拥有私有反馈与回复/状态历史，宿主注入身份作者、当前站点管理员和活跃账号锁。对象仅归属账号/站点管理员可读；合并参与方始终注册，原作者与事件历史不变。无跨模块 store、ESI 或后台发送。见[反馈指南](integrations/feedback.zh-CN.md)。
 

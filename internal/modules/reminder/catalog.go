@@ -25,7 +25,7 @@ var events = []Event{
 	{"loan_result", "贷款进度", "/loans"},
 	{"contract_pending", "待领取合同", "/contracts"},
 	{"guarantee_pending", "待处理担保", "/loans"},
-	{"loan_funding", "待放款提醒", "/approvals"},
+	{"loan_funding", "待放款提醒", "/loans"},
 	{"loan_due", "贷款即将到期", "/loans"},
 	{"loan_overdue", "贷款逾期", "/loans"},
 	{"pap_requirement", "PAP 未达标", "/attendance"},
