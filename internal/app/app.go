@@ -690,36 +690,6 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			out = append(out, loan.Character{ID: row.ID, Name: row.Name, AccountID: user, Nickname: nicknames[user]})
 		}
 		return out, err
-	}, ManageCharacters: func(ctx context.Context) ([]loan.Character, error) {
-		rows, err := identityService.AllActiveCharacters(ctx)
-		out := make([]loan.Character, 0, len(rows))
-		if err != nil {
-			return out, err
-		}
-		ids := make([]int64, 0, len(rows))
-		for _, row := range rows {
-			ids = append(ids, row.ID)
-		}
-		bindings, err := identityService.Bindings(ctx, nil, ids)
-		if err != nil {
-			return out, err
-		}
-		users := make([]string, 0, len(bindings))
-		for _, binding := range bindings {
-			users = append(users, binding.UserID)
-		}
-		nicknames, _ := communityService.Nicknames(ctx, users)
-		for _, row := range rows {
-			accountID := ""
-			for _, binding := range bindings {
-				if binding.ID == row.ID {
-					accountID = binding.UserID
-					break
-				}
-			}
-			out = append(out, loan.Character{ID: row.ID, Name: row.Name, AccountID: accountID, Nickname: nicknames[accountID]})
-		}
-		return out, nil
 	}, GuaranteeCharacters: func(ctx context.Context) ([]loan.Character, error) {
 		rows, err := identityService.AllActiveCharacters(ctx)
 		out := make([]loan.Character, 0, len(rows))
@@ -830,6 +800,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		return accessService.Can(ctx, user, "corporation.loan", access.Corporation{ID: c.CorporationID, Name: c.CorporationName, AllianceID: c.AllianceID, CEOID: c.CEOID})
 	}
 	if eveHandler.Contracts != nil {
+		wireLoanOfficers(loanService, identityService, accessService, reader)
 		loanService.Contracts = loan.ContractAdapter{
 			ReadFunc: func(ctx context.Context, actor, kind string, owner, id int64) (loan.Contract, error) {
 				c, err := eveHandler.Contracts.ReadContract(ctx, actor, kind, owner, id)

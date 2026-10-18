@@ -241,10 +241,3 @@ func TestCashMatchesCustodyDirections(t *testing.T) {
 		})
 	}
 }
-
-func TestCustodyUsesConfiguredCustodianCharacter(t *testing.T) {
-	character := int64(101)
-	if got := custody(store.Pool{CustodianCharacterID: &character}); got != (cashParty{kind: "character", id: character}) {
-		t.Fatalf("custody=%+v, want character %d", got, character)
-	}
-}

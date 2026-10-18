@@ -31,6 +31,7 @@ func TestCancelApplication(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := &Service{Pool: db, LockAccounts: func(context.Context, pgx.Tx, []string) error { return nil }, IsAdministrator: func(_ context.Context, user string) (bool, error) { return user == manager, nil }}
+	setTestOfficers(s, Character{ID: 444, AccountID: manager, IsMain: true})
 	newCase := func() store.Case {
 		t.Helper()
 		c, err := store.CreateCase(ctx, db, publicID("LN"), poolID, borrower, 111, 100000, 1000, 1200, 1, 30, nil, nil)

@@ -278,3 +278,7 @@ system 模块声明 `system.landing` 声明用于 `/`，App 对这一固定页�
 ## 提醒模块（2026-10-17）
 
 `reminder` 依赖 identity/access/eve/approval，Goose 93。私有 store 仅配置、审计、去重和发送历史；宿主注入审批实时权限键、主角色与 EVE 无令牌邮件网关。独立 River 队列、持久占用后发信、未知结果不重发。`reminder.manage` 为模块登记的管理员专用能力，由宿主即时核对管理员标志，不开放为可分配角色；ManageableCatalog 的委派能力范围不变。账号合并参与方始终注册。详见[提醒指南](integrations/reminder.zh-CN.md)。
+
+### 贷款专员合同角色（2026-10-19）
+
+宿主将 access.AssignedPermissionMembers / AssignedPermission 与 identity 的有效绑定、主角色、归属锁和活动账号锁注入 loan。仅显式 corporation.loan 授权成员进入合同角色目录，主角色默认、小号可选；管理员或游戏职务不会自动加入。loan 保存抵押接收方快照并在入金、付款和抵押提交前复核，旧 custodian 列不参与新路由。详见[贷款指南](integrations/loan.zh-CN.md)。

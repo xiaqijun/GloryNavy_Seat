@@ -134,3 +134,5 @@ PAP 是 attendance 内部业务，复用 corporation.attendance 范围；余额�
 业务正文通过 `platform/remindermessage.Item` 与宿主注入的 `ReminderDetails` 读取，源服务先取得当前收件人的授权事件键，再用私有 store 投影明确字段；不能导出整个单据/ESI payload 或密钥。正文按实际待发键筛选，只有本封列出的最多 5 项进入占用，剩余保持待发。明细读取之后再核对接收主角色、配置、发件授权和来源键；不新增持久业务副本。
 
 `reminder` 的配置与回执私有存储使用手写参数化 SQL（无生成 store）；宿主注入 approval.PendingNotificationKeys 和 eve.SendMail。`reminder.manage` 不授予委派角色，宿主检查当前管理员；`/reminders` 使用统一模块声明。Jobs.Extension 总是注册 handler，模块停用不添加周期任务；账号合并参与方不随 UI 开关省略。详见[提醒指南](integrations/reminder.zh-CN.md)。
+
+贷款合同角色通过宿主注入当前显式权限成员目录、主角色标记与有效绑定锁；新业务不得以可见角色列表或管理员身份代替实际办理者的明确权限。合同发布事务先锁角色归属，再按现有顺序锁活动账号与业务行，提交前复核当前授权；目录仅公开角色 ID、名称和主角色标记，详见[贷款指南](integrations/loan.zh-CN.md)。

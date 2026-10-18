@@ -36,9 +36,10 @@ type AssetSelection struct {
 	Quantity int64 `json:"quantity,string"`
 }
 type CollateralRequestInput struct {
-	CoverageMinor int64            `json:"coverage_minor,omitempty"`
-	CharacterID   int64            `json:"character_id,string"`
-	Items         []AssetSelection `json:"items"`
+	RecipientCharacterID int64            `json:"recipient_character_id,string"`
+	CoverageMinor        int64            `json:"coverage_minor,omitempty"`
+	CharacterID          int64            `json:"character_id,string"`
+	Items                []AssetSelection `json:"items"`
 }
 
 func (s *Service) collateralRequestCase(ctx context.Context, actor string, id int64) (store.Case, error) {
@@ -95,7 +96,7 @@ func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, cas
 		return store.CollateralRequest{}, err
 	}
 	defer tx.Rollback(ctx)
-	if err = s.guardAccounts(ctx, tx, actor); err != nil {
+	if err = s.lockOfficerAccounts(ctx, tx, pool, actor); err != nil {
 		return store.CollateralRequest{}, err
 	}
 	if err = store.LockCreditAccounts(ctx, tx, actor); err != nil {
@@ -131,9 +132,12 @@ func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, cas
 			return store.CollateralRequest{}, ErrConflict
 		}
 	}
+	if err = s.guardOfficer(ctx, tx, pool, prepared.officer.ID); err != nil {
+		return store.CollateralRequest{}, err
+	}
 	selections, _ := json.Marshal(in.Items)
 	snapshot, _ := json.Marshal(items)
-	out, err := store.InsertCollateralRequest(ctx, tx, store.CollateralRequest{PublicID: publicID("LNC"), CaseID: caseID, SourceCharacterID: in.CharacterID, RecipientCharacterID: *pool.CustodianCharacterID, Selections: selections, Items: snapshot, ObservedAt: catalog.ObservedAt, CoverageMinor: target, ValuationMinor: value})
+	out, err := store.InsertCollateralRequest(ctx, tx, store.CollateralRequest{PublicID: publicID("LNC"), CaseID: caseID, SourceCharacterID: in.CharacterID, RecipientCharacterID: prepared.officer.ID, Selections: selections, Items: snapshot, ObservedAt: catalog.ObservedAt, CoverageMinor: target, ValuationMinor: value})
 	if err != nil {
 		return out, err
 	}

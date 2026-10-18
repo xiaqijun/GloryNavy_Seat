@@ -689,3 +689,5 @@
 .loan-security-quote { display: grid; gap: 12px; padding-block: 12px; border-block: 1px solid var(--border); min-width: 0; }
 .loan-security-quote p { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
 .loan-security-quote input[readonly], .loan-form input[readonly] { background: var(--muted-background, #f8fafc); font-variant-numeric: tabular-nums; }
+
+.loan-officer-select{display:grid;gap:6px;min-width:0}.loan-officer-select .ui-select-trigger{width:100%;min-width:0}.loan-detail-parties .loan-officer-select>span{display:none}

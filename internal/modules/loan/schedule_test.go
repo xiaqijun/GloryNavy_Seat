@@ -70,6 +70,7 @@ func TestSinglePaymentContractSettlesExactInterest(t *testing.T) {
 		_, err := tx.Exec(ctx, `INSERT INTO test_loan_claims VALUES($1)`, id)
 		return err
 	}}}
+	setTestOfficers(s, Character{ID: 222, AccountID: manager, IsMain: true})
 	date := time.Now().In(loanCalendarZone).AddDate(0, 0, 30).Format(time.DateOnly)
 	c, err := s.CreateApplication(ctx, borrower, ApplicationInput{PoolID: poolID, BorrowerCharacterID: 111, PrincipalMinor: 100_000_000, InstallmentCount: 1, RepaymentDate: date})
 	if err != nil {

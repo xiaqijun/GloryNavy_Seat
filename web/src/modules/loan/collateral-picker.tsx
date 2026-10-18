@@ -4,11 +4,15 @@ import { AccountCharacterSelect, type AccountCharacterOption } from "@/component
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { getLocale, msg } from "@/lib/i18n";
+import { LoanOfficerSelect, selectedOfficer } from "./officer-select";
 import { securityMoney } from "./security-format";
 import * as api from "./api";
 
-export function CollateralPicker({ csrf, item, security, characters, close, saved }: { csrf: string; item: api.Case; security: api.SecuritySummary; characters: AccountCharacterOption[]; close: () => void; saved: () => void }) {
+export function CollateralPicker({ csrf, item, security, characters, officers, close, saved }: { csrf: string; item: api.Case; security: api.SecuritySummary; characters: AccountCharacterOption[]; officers: api.Character[]; close: () => void; saved: () => void }) {
   const [character, setCharacter] = useState(characters.find(c => c.id === item.borrower_character_id)?.id || characters[0]?.id || "");
+  const [officer, setOfficer] = useState("");
+  const officerChoices = officers.filter(c => c.id !== character);
+  const recipient = selectedOfficer(officerChoices, officer)?.id ?? "";
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(40);
@@ -19,8 +23,8 @@ export function CollateralPicker({ csrf, item, security, characters, close, save
   const picked = choices.filter(a => selected[a.item_id] !== undefined);
   const location = picked[0]?.location_id;
   const filtered = choices.filter(a => `${a.name} ${a.type_id} ${a.location_id}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
-  const valid = picked.length > 0 && picked.length === Object.keys(selected).length && picked.every(a => Number.isSafeInteger(Number(selected[a.item_id])) && Number(selected[a.item_id]) > 0 && Number(selected[a.item_id]) <= Number(a.available) && a.location_id === location);
-  const selectionKey = JSON.stringify({ character_id: character, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) });
+  const valid = !!recipient && picked.length > 0 && picked.length === Object.keys(selected).length && picked.every(a => Number.isSafeInteger(Number(selected[a.item_id])) && Number(selected[a.item_id]) > 0 && Number(selected[a.item_id]) <= Number(a.available) && a.location_id === location);
+  const selectionKey = JSON.stringify({ character_id: character, recipient_character_id: recipient, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) });
   const [quoteKey, setQuoteKey] = useState("");
   useEffect(() => { const timer = setTimeout(() => setQuoteKey(selectionKey), 250); return () => clearTimeout(timer); }, [selectionKey]);
   const quote = useQuery({ queryKey: ["loan", "collateral-quote", item.id, quoteKey], queryFn: () => api.quoteCollateral(csrf, item.id, JSON.parse(quoteKey)), enabled: valid && quoteKey === selectionKey, retry: false, refetchOnWindowFocus: false, staleTime: 0 });
@@ -29,12 +33,13 @@ export function CollateralPicker({ csrf, item, security, characters, close, save
   return <FormDialog title={msg("选择抵押物品")} size="form" close={close} busy={busy} disabled={!canSubmit || assets.isFetching || assets.isError} submitLabel={msg("保存并查看交付信息")} className="loan-asset-picker" onSubmit={async () => {
     if (!canSubmit || busy || !estimate) return;
     setBusy(true); setError("");
-    try { await api.createCollateralRequest(csrf, item.id, { character_id: character, coverage_minor: estimate.required_minor, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) }); saved(); }
+    try { await api.createCollateralRequest(csrf, item.id, { character_id: character, recipient_character_id: recipient, coverage_minor: estimate.required_minor, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) }); saved(); }
     catch (e) { setError(e instanceof Error ? e.message : msg("保存抵押物失败")); void assets.refetch(); void quote.refetch(); }
     finally { setBusy(false); }
   }}>
     <p className="loan-dialog-note">{msg("选择同一地点的个人物品，保存后通过游戏合同交付。装配和容器内容一并抵押。")}</p>
     <AccountCharacterSelect label={msg("物品所属角色")} characters={characters} value={character} onChange={value => { setCharacter(value); setSelected({}); setSearch(""); setLimit(40); setError(""); }} autoFocus />
+    <LoanOfficerSelect officers={officerChoices} value={officer} onChange={setOfficer} />
     <label>{msg("搜索物品")}<input type="search" value={search} onChange={e => { setSearch(e.target.value); setLimit(40); }} /></label>
     <div className="loan-security-quote" aria-live="polite">
       <label>{msg("抵押额度（ISK）")}<input readOnly value={String((estimate?.required_minor ?? security.unallocated_minor) / 100)} /></label>

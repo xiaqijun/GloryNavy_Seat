@@ -66,12 +66,6 @@ func cashMatches(c Contract, payer, receiver cashParty, amount int64) bool {
 	}
 	return false
 }
-func custody(p store.Pool) cashParty {
-	if p.CustodianCharacterID != nil {
-		return cashParty{"character", *p.CustodianCharacterID}
-	}
-	return cashParty{}
-}
 func contributionParty(c store.Contribution) cashParty {
 	if c.LenderKind == "corporation" && c.CorporationID != nil {
 		return cashParty{"corporation", *c.CorporationID}
@@ -92,75 +86,6 @@ func (s *Service) ownsCharacter(ctx context.Context, actor string, id int64) (bo
 		}
 	}
 	return false, nil
-}
-func (s *Service) validCustody(ctx context.Context, p store.Pool) error {
-	if p.LenderKind == "personal" && p.LenderUserID != nil && p.CustodianCharacterID != nil {
-		ok, e := s.ownsCharacter(ctx, *p.LenderUserID, *p.CustodianCharacterID)
-		if e != nil {
-			return e
-		}
-		if ok {
-			return nil
-		}
-	} else if p.LenderKind == "corporation" && p.CorporationID != nil {
-		if p.CustodianCharacterID == nil || s.AccountForCharacter == nil {
-			return ErrRule
-		}
-		if _, e := s.AccountForCharacter(ctx, *p.CustodianCharacterID); e != nil {
-			return ErrRule
-		}
-		return nil
-	}
-	return ErrRule
-}
-
-func (s *Service) ConfigureCustodian(ctx context.Context, actor string, poolID, characterID, version int64) (store.Pool, error) {
-	if poolID <= 0 || characterID <= 0 || version <= 0 || s.AccountForCharacter == nil {
-		return store.Pool{}, ErrInvalid
-	}
-	p, err := store.SharedPool(ctx, s.db(), false)
-	if err != nil {
-		return p, err
-	}
-	if p.ID != poolID {
-		return p, ErrForbidden
-	}
-	ok, err := s.canManage(ctx, actor, p)
-	if err != nil || !ok {
-		return p, ErrForbidden
-	}
-	if _, err = s.AccountForCharacter(ctx, characterID); err != nil {
-		return p, ErrInvalid
-	}
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return p, err
-	}
-	defer tx.Rollback(ctx)
-	if err = s.guardAccounts(ctx, tx, actor); err != nil {
-		return p, err
-	}
-	locked, err := store.SharedPool(ctx, tx, true)
-	if err != nil {
-		return p, err
-	}
-	if locked.ID != poolID || locked.Version != version {
-		return p, ErrConflict
-	}
-	out, err := store.UpdateCustodian(ctx, tx, poolID, characterID, version)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return p, ErrConflict
-		}
-		return p, err
-	}
-	if err = store.Audit(ctx, tx, 0, actor, "custodian_updated", locked, out); err != nil {
-		return p, err
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return p, err
-	}
-	return s.decoratePool(ctx, out), nil
 }
 
 // AddAdminFunding records capital supplied directly by a site administrator.
@@ -377,15 +302,19 @@ func (s *Service) VerifyContribution(ctx context.Context, actor string, id int64
 	if e = s.canContribute(ctx, actor, c); e != nil {
 		return c, e
 	}
+	p, e := store.SharedPool(ctx, s.db(), false)
+	if e != nil {
+		return c, e
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return c, e
 	}
 	defer tx.Rollback(ctx)
-	if e = s.guardAccounts(ctx, tx, actor, c.AccountID); e != nil {
+	if e = s.lockOfficerAccounts(ctx, tx, p, actor, c.AccountID); e != nil {
 		return c, e
 	}
-	p, e := store.SharedPool(ctx, tx, true)
+	p, e = store.SharedPool(ctx, tx, true)
 	if e != nil {
 		return c, e
 	}
@@ -396,19 +325,19 @@ func (s *Service) VerifyContribution(ctx context.Context, actor string, id int64
 	if c.State != "pending" || c.Version != in.Version || c.PoolID != p.ID {
 		return c, ErrConflict
 	}
-	if e = s.validCustody(ctx, p); e != nil {
-		return c, e
-	}
-	source, target := contributionParty(c), custody(p)
-	if partyEqual(source, target) {
-		return c, ErrInvalid
-	}
 	contract, e := s.ReadContractTx(ctx, tx, actor, in.ContractKind, in.ContractOwnerID, in.ContractID)
 	if e != nil {
 		return c, e
 	}
-	if contract.ID != in.ContractID || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID || !cashMatches(contract, source, target, c.AmountMinor) {
+	if contract.ID != in.ContractID || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID {
 		return c, ErrContract
+	}
+	officer, e := s.cashOfficer(ctx, p, contract, contributionParty(c), c.AmountMinor, false)
+	if e != nil {
+		return c, e
+	}
+	if e = s.guardOfficer(ctx, tx, p, officer.ID); e != nil {
+		return c, e
 	}
 	if e = s.Contracts.Claim(ctx, tx, contract.ID, "loan_deposit", c.ID); e != nil {
 		return c, ErrConflict
@@ -452,9 +381,12 @@ func (s *Service) AutoVerifyContribution(ctx context.Context, actor string, id, 
 	if err != nil {
 		return c, err
 	}
-	payer, receiver := contributionParty(c), custody(p)
 	for _, candidate := range candidates {
-		if cashMatches(candidate, payer, receiver, c.AmountMinor) {
+		_, matchErr := s.cashOfficer(ctx, p, candidate, contributionParty(c), c.AmountMinor, false)
+		if matchErr != nil && !errors.Is(matchErr, ErrContract) {
+			return c, matchErr
+		}
+		if matchErr == nil {
 			return s.VerifyContribution(ctx, actor, id, DepositInput{Version: version, ContractKind: candidate.OwnerKind, ContractOwnerID: candidate.OwnerID, ContractID: candidate.ID})
 		}
 	}
@@ -469,15 +401,19 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	if e != nil {
 		return store.Payment{}, e
 	}
+	p, e := store.SharedPool(ctx, s.db(), false)
+	if e != nil {
+		return store.Payment{}, e
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return store.Payment{}, e
 	}
 	defer tx.Rollback(ctx)
-	if e = s.guardAccounts(ctx, tx, actor, c.BorrowerAccountID); e != nil {
+	if e = s.lockOfficerAccounts(ctx, tx, p, actor, c.BorrowerAccountID); e != nil {
 		return store.Payment{}, e
 	}
-	p, e := store.SharedPool(ctx, tx, true)
+	p, e = store.SharedPool(ctx, tx, true)
 	if e != nil {
 		return store.Payment{}, e
 	}
@@ -488,10 +424,6 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	if c.PoolID != p.ID || c.Version != in.Version {
 		return store.Payment{}, ErrConflict
 	}
-	if e = s.validCustody(ctx, p); e != nil {
-		return store.Payment{}, e
-	}
-	payer, receiver := custody(p), cashParty{"character", c.BorrowerCharacterID}
 	amount := c.PrincipalMinor
 	if in.Kind == "disbursement" {
 		ok, e := s.canManage(ctx, actor, p)
@@ -518,10 +450,9 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 		if c.State != "active" && c.State != "defaulted" {
 			return store.Payment{}, ErrConflict
 		}
-		payer, receiver = receiver, payer
 		amount = in.ExpectedMinor
 	}
-	if !validLoanPaymentAmount(amount) || partyEqual(payer, receiver) {
+	if !validLoanPaymentAmount(amount) {
 		return store.Payment{}, ErrInvalid
 	}
 	ok, e := s.ownsCharacter(ctx, c.BorrowerAccountID, c.BorrowerCharacterID)
@@ -532,16 +463,24 @@ func (s *Service) createSharedPayment(ctx context.Context, actor string, id int6
 	if e != nil {
 		return store.Payment{}, e
 	}
-	if contract.ID != in.ContractID || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID || !cashMatches(contract, payer, receiver, amount) {
+	if contract.ID != in.ContractID || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID {
 		return store.Payment{}, ErrContract
+	}
+	officer, e := s.cashOfficer(ctx, p, contract, cashParty{"character", c.BorrowerCharacterID}, amount, in.Kind == "disbursement")
+	if e != nil {
+		return store.Payment{}, e
+	}
+	if e = s.guardOfficer(ctx, tx, p, officer.ID); e != nil {
+		return store.Payment{}, e
+	}
+	receiver := cashParty{"character", officer.ID}
+	if in.Kind == "disbursement" {
+		receiver.id = c.BorrowerCharacterID
 	}
 	if e = s.Contracts.Claim(ctx, tx, contract.ID, "loan", c.ID); e != nil {
 		return store.Payment{}, ErrConflict
 	}
-	payerAccount, receiverAccount := c.BorrowerAccountID, ""
-	if p.LenderUserID != nil {
-		receiverAccount = *p.LenderUserID
-	}
+	payerAccount, receiverAccount := c.BorrowerAccountID, officer.AccountID
 	if in.Kind == "disbursement" {
 		payerAccount, receiverAccount = receiverAccount, payerAccount
 	}

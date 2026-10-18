@@ -52,6 +52,7 @@ func TestCollateralRequestLifecycle(t *testing.T) {
 		copy.Items = append([]AssetChoice(nil), catalog.Items...)
 		return copy, nil
 	}, CollateralValue: func(context.Context, json.RawMessage) (int64, error) { return 100000, nil }}
+	setTestOfficers(s, Character{ID: 333, AccountID: manager, IsMain: true})
 	input := CollateralRequestInput{CharacterID: 222, Items: []AssetSelection{{ItemID: 501, Quantity: 6}}}
 	c := newCase()
 	if _, e := s.CollateralAssets(ctx, manager, c.ID, 222); !errors.Is(e, ErrForbidden) {
@@ -234,6 +235,7 @@ func TestCollateralRequestRoutes(t *testing.T) {
 	s := &Service{Pool: db, CollateralValue: func(context.Context, json.RawMessage) (int64, error) { return 125000, nil }, LockAccounts: func(context.Context, pgx.Tx, []string) error { return nil }, AssetChoices: func(context.Context, string, int64) (AssetCatalog, error) {
 		return AssetCatalog{CharacterID: 111, ObservedAt: time.Now(), Items: []AssetChoice{{ItemID: 1, TypeID: 34, Quantity: 1, LocationID: 60, Items: []AssetItem{{ItemID: 1, TypeID: 34, Quantity: 1, Included: true}}}}}, nil
 	}}
+	setTestOfficers(s, Character{ID: 333, IsMain: true})
 	h := Handler{Service: s, User: func(*http.Request) string { return borrower }}
 	router := chi.NewRouter()
 	for _, route := range h.Module().Routes {

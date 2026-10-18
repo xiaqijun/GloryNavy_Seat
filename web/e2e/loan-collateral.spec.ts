@@ -22,7 +22,7 @@ for (const language of ["zh-CN", "en"]) {
       else if (path.endsWith("/access/me")) data = { administrator: true, can_manage: true, can_manage_sync: false, site_roles: [], characters: [] };
       else if (path.endsWith("/identity/characters")) data = { characters: [{ id: "111", name: "Loan Pilot With A Long Character Name", status: "active", is_main: true }] };
       else if (path.endsWith("/community/profile")) data = { version: "1", complete: true, qq: { value: "10000", version: "1", confirmation: "confirmed" }, kook: { value: "Pilot", version: "1", confirmation: "confirmed" } };
-      else if (path.endsWith("/loan/context")) data = { administrator: true, can_manage_pool: true, pools: [{ id: "1", name: "Shared pool", is_shared: true, lender_kind: "corporation", state: "open", custodian_character_id: "333", custodian_character_name: "Loan Custodian", config: {}, version: 1 }], credit: { score: 80, total_limit_minor: 100000000, state: "active" }, pool_summary: { pending_minor: 0, funded_minor: 0, cash_minor: 100000000, reserved_minor: 0, available_minor: 100000000 } };
+      else if (path.endsWith("/loan/context")) data = { administrator: true, can_manage_pool: true, loan_officers: [{id:"333",name:"Officer Main",is_main:true},{id:"334",name:"Officer Alt"}], pools: [{ id: "1", name: "Shared pool", is_shared: true, lender_kind: "corporation", state: "open", custodian_character_id: "333", custodian_character_name: "Loan Custodian", config: {}, version: 1 }], credit: { score: 80, total_limit_minor: 100000000, state: "active" }, pool_summary: { pending_minor: 0, funded_minor: 0, cash_minor: 100000000, reserved_minor: 0, available_minor: 100000000 } };
       else if (path.endsWith("/loan/cases")) data = { items: [loan] };
       else if (path.endsWith("/cases/1")) data = { security: security(), case: loan, guarantees: [], collateral, collateral_requests: pending, installments: [] };
       else if (path.endsWith("/collateral-assets")) data = assets;
@@ -32,15 +32,15 @@ for (const language of ["zh-CN", "en"]) {
       }
       else if (path.endsWith("/collateral-requests")) {
         expect(r.request().headers()["x-csrf-token"]).toBe("csrf");
-        expect(r.request().postDataJSON()).toEqual({ character_id: "111", coverage_minor: 200000, items: [{ item_id: "501", quantity: "3" }] });
+        expect(r.request().postDataJSON()).toEqual({ character_id: "111", recipient_character_id: "334", coverage_minor: 200000, items: [{ item_id: "501", quantity: "3" }] });
         writes++;
         if (writes === 1) return r.fulfill({ status: 409, json: { error: { message: "Assets changed; retry" } } });
-        data = { coverage_minor: 200000, valuation_minor: 375000, id: "1", public_id: "LNC-TEST-DELIVERY", case_id: "1", source_character_id: "111", recipient_character_id: "333", items: [{ type_id: "34", quantity: "3", name: "Tritanium", included: true }], state: "awaiting_delivery", version: 1, created_at: "2026-10-16T00:00:00Z" };
+        data = { coverage_minor: 200000, valuation_minor: 375000, id: "1", public_id: "LNC-TEST-DELIVERY", case_id: "1", source_character_id: "111", recipient_character_id: "334", items: [{ type_id: "34", quantity: "3", name: "Tritanium", included: true }], state: "awaiting_delivery", version: 1, created_at: "2026-10-16T00:00:00Z" };
         pending.push(data);
       } else if (path.includes("/eve/contracts/")) {
         contractReads++;
         const entity = (id: string) => ({ id, name: id, category: "character" });
-        data = { items: [{ id: "9001", title: "LNC-TEST-DELIVERY", type: "item_exchange", status: "finished", availability: "personal", for_corporation: false, issuer: entity("111"), assignee: entity("333"), acceptor: entity("333"), start: entity("6001"), end: entity("6001"), price: "0", reward: "0", collateral: "0", buyout: "0", volume: "1", days_to_complete: "0", date_issued: "2026-10-16T00:00:00Z", date_expired: "2026-10-20T00:00:00Z", date_accepted: "2026-10-16T01:00:00Z", date_completed: "2026-10-16T01:00:00Z", checked_at: "2026-10-16T01:01:00Z" }], next_cursor: "" };
+        data = { items: [{ id: "9001", title: "LNC-TEST-DELIVERY", type: "item_exchange", status: "finished", availability: "personal", for_corporation: false, issuer: entity("111"), assignee: entity("334"), acceptor: entity("334"), start: entity("6001"), end: entity("6001"), price: "0", reward: "0", collateral: "0", buyout: "0", volume: "1", days_to_complete: "0", date_issued: "2026-10-16T00:00:00Z", date_expired: "2026-10-20T00:00:00Z", date_accepted: "2026-10-16T01:00:00Z", date_completed: "2026-10-16T01:00:00Z", checked_at: "2026-10-16T01:01:00Z" }], next_cursor: "" };
       } else if (path.endsWith("/cases/1/collateral")) {
         expect(r.request().postDataJSON().request_id).toBe("1");
         expect(r.request().postDataJSON().contract_id).toBe(9001);
@@ -59,6 +59,9 @@ for (const language of ["zh-CN", "en"]) {
     expect(contractReads).toBe(0);
     await dialog.getByRole("button", { name: tr("物品抵押"), exact: true }).click();
     dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("combobox", { name: tr("贷款专员") })).toContainText("Officer Main");
+    await dialog.getByRole("combobox", { name: tr("贷款专员") }).click();
+    await page.getByRole("option", { name: "Officer Alt", exact: true }).click();
     await dialog.getByRole("checkbox", { name: /Tritanium/ }).check();
     await expect(dialog.getByRole("checkbox", { name: /Pyerite/ })).toBeDisabled();
     await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toHaveValue("2000");
@@ -74,7 +77,7 @@ for (const language of ["zh-CN", "en"]) {
     await page.screenshot({ path: info.outputPath("asset-selection.png"), fullPage: true });
     await dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true }).click();
     await expect(dialog.getByText(tr("待交付"), { exact: true })).toBeVisible();
-    await expect(dialog.locator('input[value="Loan Custodian"]')).toBeVisible();
+    await expect(dialog.locator('input[value="Officer Alt"]')).toBeVisible();
     expect(await dialog.evaluate(e => e.scrollWidth <= e.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath("pending-delivery.png"), fullPage: true });

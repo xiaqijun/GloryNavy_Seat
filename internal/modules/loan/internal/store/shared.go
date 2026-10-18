@@ -7,19 +7,19 @@ import (
 )
 
 type Contribution struct {
-	ID                int64      `json:"id,string"`
-	PoolID            int64      `json:"pool_id,string"`
-	AccountID         string     `json:"account_id"`
-	LenderKind        string     `json:"lender_kind"`
-	SourceCharacterID int64      `json:"source_character_id,string"`
-	SourceCharacterName string   `json:"source_character_name,omitempty"`
-	CorporationID     *int64     `json:"corporation_id,string"`
-	AmountMinor       int64      `json:"amount_minor"`
-	State             string     `json:"state"`
-	ContractID        *int64     `json:"contract_id,string"`
-	Version           int64      `json:"version"`
-	CreatedAt         time.Time  `json:"created_at"`
-	FundedAt          *time.Time `json:"funded_at"`
+	ID                  int64      `json:"id,string"`
+	PoolID              int64      `json:"pool_id,string"`
+	AccountID           string     `json:"account_id"`
+	LenderKind          string     `json:"lender_kind"`
+	SourceCharacterID   int64      `json:"source_character_id,string"`
+	SourceCharacterName string     `json:"source_character_name,omitempty"`
+	CorporationID       *int64     `json:"corporation_id,string"`
+	AmountMinor         int64      `json:"amount_minor"`
+	State               string     `json:"state"`
+	ContractID          *int64     `json:"contract_id,string"`
+	Version             int64      `json:"version"`
+	CreatedAt           time.Time  `json:"created_at"`
+	FundedAt            *time.Time `json:"funded_at"`
 }
 type PoolSummary struct {
 	PendingMinor   int64 `json:"pending_minor"`
@@ -39,15 +39,6 @@ func SharedPool(ctx context.Context, db DBTX, lock bool) (Pool, error) {
 	return p, err
 }
 
-func UpdateCustodian(ctx context.Context, db DBTX, id, characterID, version int64) (Pool, error) {
-	var p Pool
-	err := db.QueryRow(ctx, `UPDATE loan_pools
-SET custodian_character_id=$2,version=version+1,updated_at=now()
-WHERE id=$1 AND is_shared AND version=$3
-	RETURNING id,lender_kind,lender_user_id,corporation_id,name,state,config,version,is_shared,custodian_character_id`, id, characterID, version).
-		Scan(&p.ID, &p.LenderKind, &p.LenderUserID, &p.CorporationID, &p.Name, &p.State, &p.Config, &p.Version, &p.IsShared, &p.CustodianCharacterID)
-	return p, err
-}
 func Summary(ctx context.Context, db DBTX, id int64) (PoolSummary, error) {
 	var v PoolSummary
 	err := db.QueryRow(ctx, `SELECT

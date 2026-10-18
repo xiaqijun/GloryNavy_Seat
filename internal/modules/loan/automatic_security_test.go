@@ -28,6 +28,7 @@ func newAutoSecurityFixture(t *testing.T) *autoSecurityFixture {
 	if _, err := f.db.Exec(f.ctx, `UPDATE loan_pools SET custodian_character_id=333,config='{"collateral_haircut_bps":7000}' WHERE id=$1`, f.poolID); err != nil {
 		t.Fatal(err)
 	}
+	setTestOfficers(f.s, Character{ID: 333, AccountID: f.guarantor, IsMain: true})
 	f.s.AccountForCharacter = func(context.Context, int64) (string, error) { return f.guarantor, nil }
 	f.s.AssetChoices = func(_ context.Context, actor string, character int64) (AssetCatalog, error) {
 		if actor != f.borrower || character != 111 {

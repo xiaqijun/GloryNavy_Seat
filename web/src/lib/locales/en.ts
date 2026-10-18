@@ -1,5 +1,8 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+	"暂无可用贷款专员": "No loan officer available",
+	"{0}（主角色）": "{0} (main)",
+	"贷款专员不可用，请刷新或联系管理员": "The loan officer is unavailable. Refresh or contact an administrator.",
   "最多选择 100 个军团或联盟": "Select up to 100 corporations or alliances",
   "请选择军团或联盟，或选择不限范围": "Select a corporation or alliance, or choose unrestricted access",
   "暂无可选项": "No available options",

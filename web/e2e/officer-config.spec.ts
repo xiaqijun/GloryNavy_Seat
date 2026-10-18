@@ -40,7 +40,7 @@ async function fixture(page: Page, allowed = true) {
     } else if (path.endsWith("/access/audit")) data = { items: [], next: "" };
     else if (path.endsWith("/community/profile")) data = { version: "1", complete: true, qq: { value: "10000", version: "1", confirmation: "confirmed" }, kook: { value: "Pilot", version: "1", confirmation: "confirmed" } };
     else if (path.endsWith("/identity/characters")) data = { characters: [{ id: "111", name: "Contract Pilot", status: "active", is_main: true }] };
-    else if (path.endsWith("/loan/context")) data = { administrator: allowed, can_manage_pool: true, pools: [{ id: "1", name: "Shared Pool", is_shared: true, lender_kind: "corporation", state: "open", config: {}, version: 1, custodian_character_id: "111", custodian_character_name: "Contract Pilot" }], credit: { state: "active", total_limit_minor: 0 } };
+    else if (path.endsWith("/loan/context")) data = { administrator: allowed, can_manage_pool: true, pools: [{ id: "1", name: "Shared Pool", is_shared: true, lender_kind: "corporation", state: "open", config: {}, version: 1,  }], credit: { state: "active", total_limit_minor: 0 } };
     else if (path.endsWith("/loan/settings/policy")) data = { can_manage: true, policy: { income_window_days: 30, annual_rate_bps: 100, term_months: 6, debt_ratio_bps: 1000, score_factor_bps: 10000, income_weight_bps: 7000, asset_credit_ltv_bps: 1000, guarantee_cap_bps: 10000, collateral_cap_bps: 8000, stale_after_hours: 72, min_income_samples: 1, insufficient_income_policy: "zero", version: 1, updated_at: "2026-10-17T00:00:00Z" } };
     else if (path.startsWith("/api/v1/loan/")) data = { items: [] };
     return route.fulfill({ json: { data } });
@@ -121,12 +121,11 @@ test("existing welfare role stays editable without changing grants or assignment
   expect(state.assigned).toEqual([legacy.id]);
 });
 
-test("loan officer authorization is separate from contract character", async ({ page }, info) => {
+test("loan contract recipient configuration is removed", async ({ page }, info) => {
   await fixture(page);
   await page.goto("/loans/operations?view=risk");
   await expect(page.getByRole("link", { name: "配置贷款专员", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "设置合同处理角色", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "设置合同处理角色" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "设置合同处理角色", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "设置贷款专员", exact: true })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath("loan-contract-character.png"), fullPage: true });
@@ -139,6 +138,35 @@ test("ordinary member cannot configure officers", async ({ page }) => {
   await expect(page.getByRole("region", { name: "专员配置" })).toHaveCount(0);
   expect(state.writes).toBe(0);
 });
+
+for (const language of ["zh-CN", "en"]) {
+  test(`deposit defaults to main and allows alt, with no legacy fallback (${language})`, async ({ page }, info) => {
+    const tr = (v: string) => language === "en" ? english[v] ?? v : v;
+    await page.addInitScript(lang => localStorage.setItem("glorynavy.locale", lang), language);
+    await fixture(page);
+    let officers = [{ id: "333", name: "Officer Main", is_main: true }, { id: "334", name: "Officer Alt", is_main: false }];
+    await page.route("**/api/v1/loan/context", r => r.fulfill({ json: { data: { administrator: false, can_manage_pool: false,
+      pools: [{ id: "1", name: "Pool", state: "open", is_shared: true, config: {}, custodian_character_id: "999", custodian_character_name: "Legacy Target" }],
+      credit: { state: "active", total_limit_minor: 0 }, loan_officers: officers } } }));
+    await page.route("**/api/v1/loan/contributions", r => r.fulfill({ json: { data: { items: [{ id: "1", pool_id: "1", account_id: operator, lender_kind: "personal", source_character_id: "111", source_character_name: "Lender", amount_minor: 123400, state: "pending", version: 1, created_at: "2026-10-19T00:00:00Z" }] } } }));
+    await page.goto("/loans/operations?view=business");
+    await page.getByRole("button", { name: /Lender/ }).click();
+    const dialog = page.getByRole("dialog", { name: tr("出借详情") });
+    await expect(dialog.getByRole("combobox", { name: tr("贷款专员") })).toContainText("Officer Main");
+    await expect(dialog.locator('input[value="Officer Main"]')).toBeVisible();
+    await dialog.getByRole("combobox", { name: tr("贷款专员") }).click();
+    await page.getByRole("option", { name: "Officer Alt", exact: true }).click();
+    await expect(dialog.locator('input[value="Officer Alt"]')).toBeVisible();
+    await expect.poll(() => dialog.evaluate(e => e.scrollWidth <= e.clientWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath("deposit-officer.png"), fullPage: true });
+    officers = [];
+    await page.reload();
+    await page.getByRole("button", { name: /Lender/ }).click();
+    await expect(dialog.getByRole("combobox", { name: tr("贷款专员") })).toBeDisabled();
+    await expect(dialog).toContainText(tr("暂无可用贷款专员"));
+    await expect(dialog).not.toContainText("Legacy Target");
+  });
+}
 
 test("unavailable scope options preserve existing filters and never imply unrestricted access", async ({ page }) => {
   const state = await fixture(page);

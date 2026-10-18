@@ -6,7 +6,7 @@ Officers are ordinary site roles: use New role at `/access`, enter a name, selec
 
 `GET /api/v1/access/scope-options` supplies named corporation and alliance choices for multi-selection. It requires current `access.manage`; corporations must be configured, visible to the actor and have a valid corporation snapshot. Alliances are deduplicated from those corporations. EVE's existing cached/batched public name resolver decorates labels, with an ID fallback, without granting access. Existing filters survive missing choices and read errors. New restricted scopes require a selection; unrestricted access must be chosen explicitly. Saved filters retain string IDs, version checks, audit and account/object authorization. No migration is needed.
 
-These roles do not grant site administration. Welfare rules, discretionary grants/reversals and direct administrator loan funding retain their existing restrictions. Contract custody is configured separately and never grants its owner's account permissions. QQ remains disabled.
+These roles do not grant site administration. Welfare rules, discretionary grants/reversals and direct administrator loan funding retain their existing restrictions. Loan contract characters come from explicitly authorized officers, defaulting to their main while allowing active alts. There is no separate custodian setting and selecting a character never grants permissions. QQ remains disabled.
 
 ## 2026-10-17: Configured corporations and business scope
 

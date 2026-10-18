@@ -9,6 +9,7 @@ import (
 type preparedCollateral struct {
 	c          store.Case
 	pool       store.Pool
+	officer    Character
 	catalog    AssetCatalog
 	candidates map[int64]AssetChoice
 	items      []AssetItem
@@ -35,7 +36,11 @@ func (s *Service) prepareCollateralSelection(ctx context.Context, actor string, 
 	if err != nil {
 		return preparedCollateral{}, err
 	}
-	if pool.CustodianCharacterID == nil || *pool.CustodianCharacterID == in.CharacterID {
+	officer, err := s.chooseOfficer(ctx, pool, in.RecipientCharacterID)
+	if err != nil {
+		return preparedCollateral{}, err
+	}
+	if officer.ID == in.CharacterID {
 		return preparedCollateral{}, ErrRule
 	}
 	if s.AssetChoices == nil {
@@ -86,7 +91,7 @@ func (s *Service) prepareCollateralSelection(ctx context.Context, actor string, 
 	if len(items) > 500 {
 		return preparedCollateral{}, ErrInvalid
 	}
-	return preparedCollateral{c: c, pool: pool, catalog: catalog, candidates: candidates, items: items}, nil
+	return preparedCollateral{c: c, pool: pool, officer: officer, catalog: catalog, candidates: candidates, items: items}, nil
 }
 
 func (s *Service) selectionValue(ctx context.Context, items []AssetItem) (int64, error) {

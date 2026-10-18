@@ -25,7 +25,7 @@ func (h Handler) Module() module.Definition {
 		method, path string
 		fn           http.HandlerFunc
 	}{
-		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/custodian", h.custodianUpdate}, {"POST", "/settings/funding", h.adminFunding},
+		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/funding", h.adminFunding},
 		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review}, {"POST", "/cases/{id}/cancel", h.applicationCancel},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
@@ -67,6 +67,8 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 		code, status, msg = "loan_collateral_value_insufficient", 409, "物品总估值的八折不足抵押额度，请增加物品或数量"
 	case errors.Is(e, ErrCollateralQuote):
 		code, status, msg = "loan_collateral_quote_unavailable", 409, "所选物品暂时无法完整估值，请调整选择或稍后重试"
+	case errors.Is(e, ErrOfficer):
+		code, status, msg = "loan_officer_unavailable", 409, "贷款专员不可用，请刷新或联系管理员"
 	case errors.Is(e, ErrInvalid):
 		code, status, msg = "invalid_loan", 400, "贷款参数无效"
 	case errors.Is(e, ErrForbidden):
@@ -104,12 +106,13 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	canManage := false
-	managerCharacters := []Character{}
+	officers, e := h.Service.Officers(r.Context())
+	if e != nil {
+		respond(w, r, nil, e)
+		return
+	}
 	if len(p) > 0 {
 		canManage, _ = h.Service.CanManageSharedPool(r.Context(), u)
-		if canManage && h.Service.ManageCharacters != nil {
-			managerCharacters, _ = h.Service.ManageCharacters(r.Context())
-		}
 	}
 	// Pool cash-flow totals are management data. Keep the response shape stable
 	// for ordinary users, but only resolve the real summary for administrators or
@@ -123,7 +126,7 @@ func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "custodian_characters": managerCharacters}, nil)
+	respond(w, r, map[string]any{"pools": p, "credit": c, "pool_summary": summary, "administrator": admin, "can_manage_pool": canManage, "loan_officers": officers}, nil)
 }
 func (h Handler) credit(w http.ResponseWriter, r *http.Request) {
 	c, e := h.Service.Credit(r.Context(), h.User(r))
@@ -180,18 +183,6 @@ func (h Handler) contributionCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, e := h.Service.AddContribution(r.Context(), h.User(r), in)
-	respond(w, r, v, e)
-}
-func (h Handler) custodianUpdate(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		PoolID      int64 `json:"pool_id"`
-		CharacterID int64 `json:"character_id"`
-		Version     int64 `json:"version"`
-	}
-	if !read(w, r, &in) {
-		return
-	}
-	v, e := h.Service.ConfigureCustodian(r.Context(), h.User(r), in.PoolID, in.CharacterID, in.Version)
 	respond(w, r, v, e)
 }
 func (h Handler) adminFunding(w http.ResponseWriter, r *http.Request) {

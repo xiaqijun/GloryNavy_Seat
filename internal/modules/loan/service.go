@@ -35,6 +35,7 @@ type Character struct {
 	Name      string `json:"name"`
 	AccountID string `json:"account_id,omitempty"`
 	Nickname  string `json:"nickname,omitempty"`
+	IsMain    bool   `json:"is_main,omitempty"`
 }
 
 type Contract struct {
@@ -85,21 +86,23 @@ func (a ContractAdapter) Claim(ctx context.Context, tx pgx.Tx, id int64, module 
 }
 
 type Service struct {
-	AssetChoices        func(context.Context, string, int64) (AssetCatalog, error)
-	Pool                *pgxpool.Pool
-	Characters          func(context.Context, string) ([]Character, error)
-	GuaranteeCharacters func(context.Context) ([]Character, error)
-	ManageCharacters    func(context.Context) ([]Character, error)
-	CharacterNames      func(context.Context, []int64) (map[int64]string, error)
-	CanManagePool       func(context.Context, string, string, int64) (bool, error)
-	IsAdministrator     func(context.Context, string) (bool, error)
-	Contracts           ContractReader
-	LockAccounts        func(context.Context, pgx.Tx, []string) error
-	ReadContractTx      func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error)
-	AccountForCharacter func(context.Context, int64) (string, error)
-	CreditEvidence      func(context.Context, string) (CreditEvidence, error)
-	IncomeEvidence      func(context.Context, string, time.Time) (IncomeEvidence, error)
-	CollateralValue     func(context.Context, json.RawMessage) (int64, error)
+	AssetChoices          func(context.Context, string, int64) (AssetCatalog, error)
+	Pool                  *pgxpool.Pool
+	Characters            func(context.Context, string) ([]Character, error)
+	GuaranteeCharacters   func(context.Context) ([]Character, error)
+	LoanOfficers          func(context.Context, int64) ([]Character, error)
+	LockOfficerCharacters func(context.Context, pgx.Tx, []int64) error
+	GuardLoanOfficer      func(context.Context, pgx.Tx, int64, int64) error
+	CharacterNames        func(context.Context, []int64) (map[int64]string, error)
+	CanManagePool         func(context.Context, string, string, int64) (bool, error)
+	IsAdministrator       func(context.Context, string) (bool, error)
+	Contracts             ContractReader
+	LockAccounts          func(context.Context, pgx.Tx, []string) error
+	ReadContractTx        func(context.Context, pgx.Tx, string, string, int64, int64) (Contract, error)
+	AccountForCharacter   func(context.Context, int64) (string, error)
+	CreditEvidence        func(context.Context, string) (CreditEvidence, error)
+	IncomeEvidence        func(context.Context, string, time.Time) (IncomeEvidence, error)
+	CollateralValue       func(context.Context, json.RawMessage) (int64, error)
 }
 
 // PledgedCollateralQuantities exposes only the type/quantity totals needed to
@@ -283,13 +286,9 @@ func (s *Service) Pools(ctx context.Context, user string, admin bool) ([]store.P
 }
 
 func (s *Service) decoratePool(ctx context.Context, p store.Pool) store.Pool {
-	if p.CustodianCharacterID != nil && *p.CustodianCharacterID > 0 && s.CharacterNames != nil {
-		if names, err := s.CharacterNames(ctx, []int64{*p.CustodianCharacterID}); err == nil {
-			if name := strings.TrimSpace(names[*p.CustodianCharacterID]); name != "" {
-				p.CustodianCharacterName = name
-			}
-		}
-	}
+	// The legacy column remains for historical compatibility, not contract routing.
+	p.CustodianCharacterID = nil
+	p.CustodianCharacterName = ""
 	return p
 }
 
@@ -544,20 +543,6 @@ func (s *Service) contractOwnerMatchesPool(ctx context.Context, p store.Pool, ki
 		}
 	}
 	return false, nil
-}
-
-// collateralMatchesPool requires the completed item contract to identify the
-// configured custody target. A borrower-supplied contract is only collateral
-// after the item transfer is addressed to the shared pool's custodian.
-func collateralMatchesPool(p store.Pool, c Contract) bool {
-	target := custody(p)
-	if target.kind == "character" {
-		return hasParty(c, target.id)
-	}
-	if target.kind == "corporation" {
-		return c.ForCorporation && (c.AssigneeID == target.id || c.AcceptorID == target.id || c.IssuerCorporationID == target.id)
-	}
-	return false
 }
 
 func (s *Service) CreatePayment(ctx context.Context, actor string, id int64, in PaymentInput) (store.Payment, error) {
@@ -927,7 +912,7 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 		if request.CaseID != id || request.State != "awaiting_delivery" {
 			return store.Collateral{}, ErrConflict
 		}
-		if in.ContractKind != "character" || in.ContractOwnerID != request.SourceCharacterID || p.CustodianCharacterID == nil || *p.CustodianCharacterID != request.RecipientCharacterID {
+		if in.ContractKind != "character" || in.ContractOwnerID != request.SourceCharacterID {
 			return store.Collateral{}, ErrContract
 		}
 		sourceCharacter = request.SourceCharacterID
@@ -944,7 +929,7 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 		in.HaircutBPS = collateralAdvanceBPS
 	}
 	contract, e := s.Contracts.Read(ctx, actor, in.ContractKind, in.ContractOwnerID, in.ContractID)
-	if e != nil || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID || contract.Type != "item_exchange" || contract.Status != "finished" || !contract.ItemsReady || len(contract.Items) == 0 || !hasParty(contract, sourceCharacter) || !collateralMatchesPool(p, contract) || !exactAmount(contract.Price, 0) || !exactAmount(contract.Reward, 0) {
+	if e != nil || contract.OwnerKind != in.ContractKind || contract.OwnerID != in.ContractOwnerID || contract.Type != "item_exchange" || contract.Status != "finished" || !contract.ItemsReady || len(contract.Items) == 0 || contract.ForCorporation || contract.IssuerID != sourceCharacter || contract.AcceptorID == sourceCharacter || !s.collateralMatchesPool(ctx, p, contract) || !exactAmount(contract.Price, 0) || !exactAmount(contract.Reward, 0) {
 		return store.Collateral{}, ErrContract
 	}
 	if in.RequestID > 0 && !requestMatchesContract(request, contract) {
@@ -974,7 +959,7 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 		return store.Collateral{}, e
 	}
 	defer tx.Rollback(ctx)
-	if e = s.guardAccounts(ctx, tx, actor); e != nil {
+	if e = s.lockOfficerAccounts(ctx, tx, p, actor); e != nil {
 		return store.Collateral{}, e
 	}
 	if e = store.LockCreditAccounts(ctx, tx, actor); e != nil {
@@ -986,6 +971,9 @@ func (s *Service) AddCollateral(ctx context.Context, actor string, id int64, in 
 	}
 	if locked.BorrowerAccountID != actor || locked.State == "settled" || locked.State == "rejected" || locked.State == "cancelled" || locked.State == "defaulted" {
 		return store.Collateral{}, ErrConflict
+	}
+	if e = s.guardOfficer(ctx, tx, p, contract.AcceptorID); e != nil {
+		return store.Collateral{}, e
 	}
 	if in.RequestID == 0 {
 		if locked.State != "submitted" && locked.State != "awaiting_acceptance" {
@@ -1071,6 +1059,7 @@ func (s *Service) DecideCollateral(ctx context.Context, actor string, id int64, 
 	if caseRow.State != "submitted" && caseRow.State != "awaiting_acceptance" && caseRow.State != "approved" {
 		return c, ErrConflict
 	}
+	var recipient int64
 	if in.State == "approved" {
 		var cfg struct {
 			CollateralHaircutBPS int `json:"collateral_haircut_bps"`
@@ -1086,17 +1075,27 @@ func (s *Service) DecideCollateral(ctx context.Context, actor string, id int64, 
 			return c, e
 		}
 		contract, e := s.Contracts.Read(ctx, actor, c.ContractKind, c.ContractOwnerID, c.ContractID)
-		if e != nil || contract.OwnerKind != c.ContractKind || contract.OwnerID != c.ContractOwnerID || contract.Type != "item_exchange" || contract.Status != "finished" || !contract.ItemsReady || len(contract.Items) == 0 || !hasParty(contract, sourceCharacter) || !collateralMatchesPool(p, contract) || !exactAmount(contract.Price, 0) || !exactAmount(contract.Reward, 0) || !sameJSON(c.Items, contract.Items) {
+		if e != nil || contract.OwnerKind != c.ContractKind || contract.OwnerID != c.ContractOwnerID || contract.Type != "item_exchange" || contract.Status != "finished" || !contract.ItemsReady || len(contract.Items) == 0 || contract.ForCorporation || contract.IssuerID != sourceCharacter || contract.AcceptorID == sourceCharacter || !s.collateralMatchesPool(ctx, p, contract) || !exactAmount(contract.Price, 0) || !exactAmount(contract.Reward, 0) || !sameJSON(c.Items, contract.Items) {
 			return c, ErrContract
 		}
+		recipient = contract.AcceptorID
 	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return c, e
 	}
 	defer tx.Rollback(ctx)
-	if s.LockAccounts != nil {
+	if in.State == "approved" {
+		if e = s.lockOfficerAccounts(ctx, tx, p, actor, caseRow.BorrowerAccountID); e != nil {
+			return c, e
+		}
+	} else if s.LockAccounts != nil {
 		if e = s.guardAccounts(ctx, tx, caseRow.BorrowerAccountID); e != nil {
+			return c, e
+		}
+	}
+	if in.State == "approved" {
+		if e = s.guardOfficer(ctx, tx, p, recipient); e != nil {
 			return c, e
 		}
 	}
