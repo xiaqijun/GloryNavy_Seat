@@ -1,3 +1,5 @@
+import { SearchInput } from "@/components/search-input";
+import { normalizeSearch, useSearchDraft } from "@/lib/use-search-draft";
 import { msg } from "@/lib/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -382,7 +384,7 @@ function ContractList({
   const search = params.get("q") ?? "";
   const type = params.get("type") ?? "";
   const status = params.get("status") ?? "";
-  const [draft, setDraft] = useState(search);
+  const [draft, setDraft] = useSearchDraft(search);
   const cursors = [
     "",
     ...(params.get("trail") ?? "")
@@ -412,15 +414,19 @@ function ContractList({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            update({ q: draft.trim() });
+            const next = normalizeSearch(draft);
+            setDraft(next);
+            update({ q: next });
           }}
         >
           <label className="sr-only" htmlFor="contract-search">
             {msg("搜索合同")}{" "}
           </label>
-          <input
+          <SearchInput
             id="contract-search"
-            placeholder={msg("描述或合同 ID")}
+            clearable={!!search}
+            onClear={() => { setDraft(""); update({ q: "" }); }}
+            placeholder={msg("编号 / 描述 / 物品 / 合同双方")}
             value={draft}
             maxLength={100}
             onChange={(e) => setDraft(e.target.value)}

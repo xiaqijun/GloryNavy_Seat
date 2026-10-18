@@ -1,3 +1,5 @@
+import { SearchInput } from "@/components/search-input";
+import { normalizeSearch, useSearchDraft } from "@/lib/use-search-draft";
 import { msg } from "@/lib/i18n";
 import { getModuleCatalog } from "@/app/catalog";
 import { Clock3, Orbit } from "lucide-react";
@@ -126,7 +128,7 @@ function MemberDirectory({
 }) {
   const search = params.get("q") ?? "",
     after = params.get("after") ?? "";
-  const [draft, setDraft] = useState(search);
+  const [draft, setDraft] = useSearchDraft(search);
   const trail = (params.get("trail") ?? "").split(",").filter(Boolean);
   const query = useQuery({
     queryKey: ["access", "member-directory", actor, search, after],
@@ -139,14 +141,18 @@ function MemberDirectory({
         className="member-toolbar"
         onSubmit={(e) => {
           e.preventDefault();
-          patch({ q: draft.trim(), after: "", trail: "" });
+          const next = normalizeSearch(draft);
+          setDraft(next);
+          patch({ q: next, after: "", trail: "" });
         }}
       >
         <label className="sr-only" htmlFor="member-search">
           {msg("搜索成员")}{" "}
         </label>
-        <input
+        <SearchInput
           id="member-search"
+          clearable={!!search}
+          onClear={() => { setDraft(""); patch({ q: "", after: "", trail: "" }); }}
           placeholder={msg("角色名称或 ID")}
           maxLength={200}
           value={draft}

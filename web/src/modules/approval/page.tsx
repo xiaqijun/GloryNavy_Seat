@@ -1,3 +1,5 @@
+import { SearchInput } from "@/components/search-input";
+import { normalizeSearch, useSearchDraft } from "@/lib/use-search-draft";
 import { RepaymentSummary } from "@/modules/loan/repayment";
 import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -172,7 +174,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
         : tab === "history"
           ? "time_desc"
           : "time_asc";
-  const [search, setSearch] = useState(params.get("q") || "");
+  const [search, setSearch] = useSearchDraft(params.get("q") || "");
   const [moreOpen, setMoreOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [settling, setSettling] = useState(false);
@@ -395,13 +397,18 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
         className="approval-filters"
         onSubmit={(e) => {
           e.preventDefault();
-          change("q", search.trim());
+          const next = normalizeSearch(search);
+          setSearch(next);
+          change("q", next);
         }}
       >
         <div className="approval-search">
           <Search size={16} aria-hidden="true" />
-          <input
+          <SearchInput
             aria-label={msg("搜索编号或角色")}
+            maxLength={200}
+            clearable={!!params.get("q")}
+            onClear={() => { setSearch(""); change("q", ""); }}
             placeholder={msg("搜索编号或角色")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}

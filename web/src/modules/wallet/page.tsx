@@ -1,3 +1,5 @@
+import { SearchInput } from "@/components/search-input";
+import { normalizeSearch } from "@/lib/use-search-draft";
 import { msg, getLocale } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -295,7 +297,8 @@ function History({
         className="wallet-toolbar"
         onSubmit={(e) => {
           e.preventDefault();
-          const next = { ...draft };
+          const next: Record<string, string> = { ...draft, search: normalizeSearch(draft.search || "") };
+          setDraft({ ...next });
           if (next.from)
             next.from = new Date(`${next.from}T00:00:00`).toISOString();
           if (next.until) {
@@ -312,18 +315,22 @@ function History({
           setPages([""]);
         }}
       >
-        <label className="wallet-search">
+        <div className="wallet-search">
           <Search size={18} aria-hidden="true" />
-          <input
-            aria-label={
-              journal ? msg("搜索备注或流水编号") : msg("搜索交易编号")
-            }
-            placeholder={journal ? msg("备注 / 流水编号") : msg("交易编号")}
+          <SearchInput
+            aria-label={journal ? msg("搜索流水") : msg("搜索市场交易")}
+            placeholder={journal ? msg("备注 / 编号 / 交易方") : msg("物品 / 编号 / 交易方")}
+            clearable={!!filters.search}
+            onClear={() => {
+              field("search", "");
+              setFilters((current) => ({ ...current, search: "" }));
+              setPages([""]);
+            }}
             value={draft.search || ""}
             onChange={(e) => field("search", e.target.value)}
             maxLength={200}
           />
-        </label>
+        </div>
         <Select
           label={msg("收支方向")}
           value={draft.direction || ""}

@@ -330,10 +330,10 @@ func (h *ContractHTTP) list(w http.ResponseWriter, r *http.Request) {
 	}
 	query := r.URL.Query()
 	before, e := readCursor(query.Get("before"), math.MaxInt64)
-	search := strings.TrimSpace(query.Get("q"))
+	search := strings.Join(strings.Fields(query.Get("q")), " ")
 	kind := query.Get("type")
 	status := query.Get("status")
-	if e != nil || len([]rune(search)) > 100 || !slices.Contains([]string{"", "item_exchange", "auction", "courier", "loan", "unknown"}, kind) || !slices.Contains([]string{"", "outstanding", "in_progress", "finished_issuer", "finished_contractor", "finished", "cancelled", "rejected", "failed", "deleted", "reversed"}, status) {
+	if e != nil || len([]rune(search)) > 100 || len(strings.Fields(search)) > 10 || strings.ContainsRune(search, 0) || !slices.Contains([]string{"", "item_exchange", "auction", "courier", "loan", "unknown"}, kind) || !slices.Contains([]string{"", "outstanding", "in_progress", "finished_issuer", "finished_contractor", "finished", "cancelled", "rejected", "failed", "deleted", "reversed"}, status) {
 		httpapi.Failure(w, r, 400, "invalid_filter", "合同筛选条件无效")
 		return
 	}

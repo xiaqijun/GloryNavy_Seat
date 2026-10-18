@@ -232,7 +232,7 @@ func parseID(v string, optional bool) (int64, error) {
 }
 func parseFilter(r *http.Request) (eve.WalletFilter, error) {
 	q := r.URL.Query()
-	f := eve.WalletFilter{Kind: q.Get("owner_kind"), Part: q.Get("part"), Search: strings.TrimSpace(q.Get("search")), Ref: q.Get("ref_type"), Direction: q.Get("direction")}
+	f := eve.WalletFilter{Kind: q.Get("owner_kind"), Part: q.Get("part"), Search: strings.Join(strings.Fields(q.Get("search")), " "), Ref: q.Get("ref_type"), Direction: q.Get("direction")}
 	var e error
 	if f.Kind != "character" && f.Kind != "corporation" {
 		return f, errors.New("invalid owner")
@@ -240,7 +240,7 @@ func parseFilter(r *http.Request) (eve.WalletFilter, error) {
 	if f.Part != "balance" && f.Part != "journal" && f.Part != "transactions" && f.Part != "divisions" {
 		return f, errors.New("invalid part")
 	}
-	if len(f.Search) > 200 || len(f.Ref) > 100 {
+	if len([]rune(f.Search)) > 200 || len(strings.Fields(f.Search)) > 10 || strings.ContainsRune(f.Search, 0) || len(f.Ref) > 100 {
 		return f, errors.New("invalid filter")
 	}
 	if f.Owner, e = parseID(q.Get("owner_id"), false); e != nil {

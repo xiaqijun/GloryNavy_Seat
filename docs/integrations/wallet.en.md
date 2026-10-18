@@ -1,5 +1,12 @@
 # EVE ISK wallets
 
+## Search (2026-10-19)
+
+`records.search` supports description/reason, partial record IDs, cached public participant/client/tax-corporation names and exact IDs; market transactions also support Chinese/English item names and exact type IDs. Matching reads only active SDE data, existing public caches and stored character/corporation names, with no additional ESI requests. Uncached names may not match; use IDs instead. After Unicode whitespace normalization, the limit is 200 Unicode characters and 10 whitespace-separated keywords. Every case-insensitive keyword must match at least one field. Numeric tokens may start with `#`; `%` and `_` are literal, NUL is rejected.
+
+Search precedes pagination and preserves owner/division, credential ownership/scopes, dates, direction/tax filters and composite cursors. Clearing keywords retains other applied filters and returns to page one. Repeated submissions retain local date inputs instead of replacing them with ISO timestamps. Amounts and tax presentation are unchanged; no migration, payment or synchronization change.
+
+
 ## Separate personal income and tax rows (2026-10-17)
 
 The API `tax` field carries withholding and `amount` remains net received ISK. For positive withholding, the personal page displays two rows: income before tax (`amount+tax`) and corporation tax (`-tax`). Decimal integer arithmetic keeps their sum equal to the original net amount. Only the tax row shows the actual final balance; no intermediate balance is invented. Both rows share the original record ID/entry_key, with a display-kind suffix for UI keys. No synthetic records are stored. The API still pages 50 source observations, yielding up to 100 display rows while keeping each pair together.
@@ -58,7 +65,7 @@ Journal endpoints expose the last 30 days. Local upserts distinguish record ID a
 
 ## Read API and presentation
 
-`GET /api/v1/wallet/context?member=...` returns readable owners, divisions and categories; foreign member selection is administrator-only. `GET /api/v1/wallet/records` takes owner kind/ID, division and part. Journals support reference type, direction, party ID, description/reason/record ID search and dates. Transactions support buy/sell, party ID, transaction ID and dates. Pages contain up to 50 rows; `before` is a composite `recordID.fingerprint` cursor for journals and a decimal-string record ID for transactions. `from` is inclusive and `until` exclusive; the UI includes the entire locally selected end date. See [OpenAPI](../../api/openapi.yaml).
+`GET /api/v1/wallet/context?member=...` returns readable owners, divisions and categories; foreign member selection is administrator-only. `GET /api/v1/wallet/records` takes owner kind/ID, division and part. Journals support reference type, direction, party ID, keyword search as described above and dates. Transactions support buy/sell, party ID, keyword search and dates. Pages contain up to 50 rows; `before` is a composite `recordID.fingerprint` cursor for journals and a decimal-string record ID for transactions. `from` is inclusive and `until` exclusive; the UI includes the entire locally selected end date. See [OpenAPI](../../api/openapi.yaml).
 
 The corporation workbench personal-wallet figure uses `GET /api/v1/wallet/personal-corporation-summary?corporation_id=...&from=...` to aggregate the latest balance and current-month income/expense for valid bound characters of the selected corporation. The server includes only characters that still belong to that corporation, whose current credential owner matches, whose credential is usable, and which have `esi-wallet.read_character_wallet.v1`; the caller must also have the current site's `access.members.read` capability. This is a corporation-wide aggregate, accepts no arbitrary member selector, and does not return per-character detail. `from` must be within the past 45 days. It reads local snapshots only; for duplicate journal observations, only the latest variant contributes. Missing balance is `null`; ISK values and the corporation ID are decimal strings. Personal-wallet detail pages keep their existing signed-in-account/member read behavior.
 

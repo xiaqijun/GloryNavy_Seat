@@ -404,14 +404,39 @@ func ReadCorporationPersonalWalletTaxRanking(ctx context.Context, db DBTX, corpo
 }
 
 func ReadWallet(ctx context.Context, db DBTX, f WalletFilter) ([]WalletRow, error) {
-	rows, e := db.Query(ctx, `SELECT w.record_id,w.division,w.payload,to_char(w.observed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),w.entry_key
+	rows, e := db.Query(ctx, `WITH search_terms AS MATERIALIZED (
+ SELECT DISTINCT lower(CASE WHEN part ~ '^#[0-9]+$' THEN substr(part,2) ELSE part END) AS term
+ FROM unnest(regexp_split_to_array($9::text,'[[:space:]]+')) AS parts(part) WHERE part<>''
+), search_types AS NOT MATERIALIZED (
+ SELECT t.term,n.type_id FROM search_terms t
+ JOIN eve_sde_type_names n ON n.type_id::text=t.term OR strpos(lower(n.name_zh),t.term)>0 OR strpos(lower(n.name_en),t.term)>0
+ WHERE n.release_id=(SELECT release_id FROM eve_sde_active_names WHERE singleton)
+ UNION ALL
+ SELECT t.term,n.entity_id FROM search_terms t JOIN eve_entity_names n ON strpos(lower(n.name),t.term)>0
+ WHERE n.category='inventory_type'
+), search_entities AS NOT MATERIALIZED (
+ SELECT t.term,n.entity_id FROM search_terms t JOIN eve_entity_names n ON strpos(lower(n.name),t.term)>0
+ WHERE n.category IN ('character','corporation','alliance','station','solar_system')
+ UNION ALL
+ SELECT t.term,p.character_id FROM search_terms t JOIN eve_character_profiles p ON strpos(lower(p.name),t.term)>0
+ UNION ALL
+ SELECT t.term,p.corporation_id FROM search_terms t JOIN eve_role_snapshots p ON strpos(lower(p.corporation_name),t.term)>0
+)
+SELECT w.record_id,w.division,w.payload,to_char(w.observed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),w.entry_key
  FROM eve_wallet_observations w JOIN eve_credentials c ON c.character_id=w.source_character_id
  WHERE w.owner_kind=$1 AND w.owner_id=$2 AND w.kind=$3 AND ($4::int=-1 OR w.division=$4)
  AND w.owner_hash=c.owner_hash AND c.state<>'reauthorize'
  AND (CASE WHEN w.kind='divisions' THEN 'esi-corporations.read_divisions.v1' WHEN w.owner_kind='character' THEN 'esi-wallet.read_character_wallet.v1' ELSE 'esi-wallet.read_corporation_wallets.v1' END)=ANY(c.scopes)
  AND ($5::bigint=0 OR w.record_id<$5 OR (w.record_id=$5 AND $13::text<>'' AND w.entry_key>$13)) AND ($6::bigint=0 OR w.record_id=$6)
  AND ($7::timestamptz IS NULL OR w.occurred_at>=$7) AND ($8::timestamptz IS NULL OR w.occurred_at<$8)
- AND ($9::text='' OR strpos(lower(coalesce(w.payload->>'description','')||' '||coalesce(w.payload->>'reason','')),lower($9))>0 OR w.record_id::text=$9)
+ AND ($9::text='' OR NOT EXISTS (
+ SELECT 1 FROM search_terms t WHERE
+ strpos(lower(coalesce(w.payload->>'description','')||' '||coalesce(w.payload->>'reason','')),t.term)=0
+ AND strpos(w.record_id::text,t.term)=0
+ AND (t.term<>'0' AND t.term=ANY(ARRAY[w.payload->>'first_party_id',w.payload->>'second_party_id',w.payload->>'client_id',w.payload->>'tax_receiver_id']::text[])) IS NOT TRUE
+ AND NOT EXISTS (SELECT 1 FROM search_entities n WHERE n.term=t.term AND n.entity_id=ANY(ARRAY[w.payload->>'first_party_id',w.payload->>'second_party_id',w.payload->>'client_id',w.payload->>'tax_receiver_id']::bigint[]))
+ AND (w.kind='transactions' AND (coalesce(w.payload->>'type_id','')=t.term OR EXISTS(SELECT 1 FROM search_types n WHERE n.term=t.term AND n.type_id=(w.payload->>'type_id')::bigint))) IS NOT TRUE
+ ))
  AND ($10::text='' OR w.payload->>'ref_type'=$10)
  AND ($11::bigint=0 OR w.payload->>'first_party_id'=$11::text OR w.payload->>'second_party_id'=$11::text OR w.payload->>'client_id'=$11::text OR (w.owner_kind='character' AND w.kind='journal' AND w.payload->>'tax_receiver_id'=$11::text))
  AND ($12::text='' OR ($12='in' AND ((w.payload->>'amount')::numeric + CASE WHEN w.owner_kind='character' AND w.kind='journal' THEN greatest(coalesce((w.payload->>'tax')::numeric,0),0) ELSE 0 END)>0)
