@@ -1,5 +1,7 @@
 # Skill management
 
+2026-10-18 offline-training reconciliation fix: the [current official OpenAPI](https://esi.evetech.net/meta/openapi.json) describes skill lists that lag completed training until the next game login. Fetch order is not evidence of a level conflict. Skill display, corporation checks and growth eligibility overlay completed queue entries through the queue observation time, preserving higher trained levels and unchanged active levels. Wall-clock progress never promotes future training; missing authorization or observations remain unknown. No migration, API or frontend change; see project status for release evidence.
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 2026-09-19 bilingual data update: business requests send `Accept-Language: zh-CN|en`; the server selects presentation language in request context and returns `Content-Language` and `Vary: Accept-Language`, retaining private-response `no-store`. Local SDE type/system names prefer the requested language, with the other language, existing type-name cache or ID as fallback. Generated contract summaries and registered server messages follow the locale. Player names/notes/descriptions, business IDs, permissions, prices, content tokens and ESI caches remain unchanged. No new migration, scope or SDE import; local only. See [interface language](../ui/language.en.md).
@@ -43,9 +45,9 @@ Either `skills` or `fittings` enables the one shared skill target per character.
 
 The official documentation explains that offline completed training can remain absent from `/skills` until the character logs into the game. Display calculations retain raw snapshots and overlay completed queue levels/end SP when confirmed by the queue observation. They do not promote active levels: Alpha restrictions and expert systems can make active and trained levels differ.
 
-- Completion must precede the queue observation, not merely the browser clock. A queue observed before the skill snapshot does not overwrite the newer skill observation; conflicting levels yield unknown checks for the affected requirements.
+- Completion must precede the queue observation, not merely the browser clock. A queue observed before the skill snapshot can still confirm offline completion; the relative fetch timestamps do not prove a conflict.
 - Corporation requirements use trained levels from the latest readable skills and queue observations. Both `ready` and `stale` are usable; expiry schedules refresh without clearing results. Checks reread local data every 60 seconds and recompute when replacement observations become available, preserving the observation timestamp.
-- Pending/blocked resources, missing payloads or observation times, and conflicting observations remain unknown rather than a zero-level failure. Historical results do not claim real-time game state; future training is never marked complete solely because wall-clock time has advanced.
+- Pending/blocked resources, missing payloads or observation times remain unknown rather than a zero-level failure. Historical results do not claim real-time game state; future training is never marked complete solely because wall-clock time has advanced.
 - Missing optional unallocated SP remains unknown. Queue progress is a date-based estimate; entries without start/end times show paused or unscheduled. A passed expected finish time without a confirming observation remains awaiting confirmation.
 
 ## Storage and API

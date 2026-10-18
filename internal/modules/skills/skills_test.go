@@ -31,8 +31,8 @@ func TestSkillsQueueReconciliationAndFreshness(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if evaluate([]Requirement{{3300, 4}}, mixed)[0].State != "unknown" {
-		t.Fatal("conflicting observation order must not falsely fail")
+	if evaluate([]Requirement{{3300, 4}}, mixed)[0].State != "met" {
+		t.Fatal("fetch order must not hide confirmed offline training")
 	}
 	q.ObservedAt = &at
 	checks := evaluate([]Requirement{{3300, 4}, {3301, 1}}, s)
@@ -47,8 +47,8 @@ func TestSkillsQueueReconciliationAndFreshness(t *testing.T) {
 		}
 	}
 	mixed.SkillsMeta.Status, mixed.QueueMeta.Status = "stale", "stale"
-	if evaluate([]Requirement{{3300, 4}}, mixed)[0].State != "unknown" {
-		t.Fatal("historical conflicting observations must remain unknown")
+	if evaluate([]Requirement{{3300, 4}}, mixed)[0].State != "met" {
+		t.Fatal("readable historical queue must retain confirmed offline training")
 	}
 	for _, resource := range []string{"skills", "queue"} {
 		for _, invalid := range []string{"pending", "blocked", "unexpected", "no payload", "no observation"} {

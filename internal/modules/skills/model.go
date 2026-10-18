@@ -71,14 +71,12 @@ type Snapshot struct {
 	TotalSP       *int64            `json:"total_sp"`
 	UnallocatedSP *int64            `json:"unallocated_sp"`
 	CalculatedAt  time.Time         `json:"calculated_at"`
-	uncertain     map[int64]bool
 }
 
 // Completed entries are applied only through the queue's observation time, not the wall clock.
 // A stale queue cannot prove that a user has not paused/changed a future training item.
 func combine(sk, queue eve.SkillResource, now time.Time) (Snapshot, error) {
 	out := Snapshot{SkillsMeta: sk, QueueMeta: queue, Skills: []Skill{}, Queue: []QueueItem{}, CalculatedAt: now}
-	out.uncertain = map[int64]bool{}
 	var raw struct {
 		Skills []struct {
 			ID      int64 `json:"skill_id"`
@@ -118,12 +116,12 @@ func combine(sk, queue eve.SkillResource, now time.Time) (Snapshot, error) {
 					state = "awaiting_sync"
 				}
 			}
-			if q.Finish != nil && queue.ObservedAt != nil && !q.Finish.After(*queue.ObservedAt) {
+			if q.Finish != nil && readableSkillResource(queue) && !q.Finish.After(*queue.ObservedAt) {
 				state = "completed"
-				if sk.ObservedAt != nil && queue.ObservedAt.Before(*sk.ObservedAt) && q.Level > byID[q.ID].Trained {
-					out.uncertain[q.ID] = true
-				}
-				if len(sk.Payload) > 0 && (sk.ObservedAt == nil || !queue.ObservedAt.Before(*sk.ObservedAt)) {
+				// ESI's skills list may lag offline training until the next game
+				// login. Fetch order is not evidence of a conflict: overlay only
+				// completions already confirmed at the queue observation time.
+				if readableSkillResource(sk) {
 					v := byID[q.ID]
 					v.ID = q.ID
 					if q.Level > v.Trained {
@@ -203,11 +201,8 @@ func remainingTotal(checks []Check) *int64 {
 
 func evaluate(reqs []Requirement, s Snapshot) []Check {
 	// Expiry schedules refresh; it does not erase an authorized observation.
-	// Both resources must exist, and conflicting observations remain unknown.
-	readable := func(r eve.SkillResource) bool {
-		return (r.Status == "ready" || r.Status == "stale") && r.ObservedAt != nil && len(r.Payload) > 0
-	}
-	canCheck := readable(s.SkillsMeta) && readable(s.QueueMeta)
+	// Both resources must remain readable within the current authorization.
+	canCheck := readableSkillResource(s.SkillsMeta) && readableSkillResource(s.QueueMeta)
 	byID := map[int64]Skill{}
 	for _, k := range s.Skills {
 		byID[k.ID] = k
@@ -215,7 +210,7 @@ func evaluate(reqs []Requirement, s Snapshot) []Check {
 	out := []Check{}
 	for _, r := range reqs {
 		c := Check{ID: r.ID, Required: r.Level, State: "unknown"}
-		if canCheck && !s.uncertain[r.ID] {
+		if canCheck {
 			n := byID[r.ID].Trained
 			c.Trained = &n
 			c.State = "missing"
@@ -227,4 +222,8 @@ func evaluate(reqs []Requirement, s Snapshot) []Check {
 		out = append(out, c)
 	}
 	return out
+}
+
+func readableSkillResource(r eve.SkillResource) bool {
+	return (r.Status == "ready" || r.Status == "stale") && r.ObservedAt != nil && len(r.Payload) > 0
 }

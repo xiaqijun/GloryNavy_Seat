@@ -49,12 +49,10 @@ func TestSkillPointGapUsesObservedPartialTraining(t *testing.T) {
 	if got := evaluate([]Requirement{{3300, 4}}, s)[0].RemainingSP; got != nil {
 		t.Fatal("conflicting level and SP must not imply zero deficit")
 	}
-	s.uncertain = map[int64]bool{3300: true}
 	checks = evaluate([]Requirement{{3300, 4}, {3301, 1}}, s)
 	if checks[0].RemainingSP != nil || remainingTotal(checks) != nil || checks[1].RemainingSP == nil {
 		t.Fatal("partial unknown must not present partial sum as full total")
 	}
-	s.uncertain = nil
 	s.QueueMeta.Status = "blocked"
 	if evaluate([]Requirement{{3301, 1}}, s)[0].RemainingSP != nil {
 		t.Fatal("blocked data must remain unknown")
