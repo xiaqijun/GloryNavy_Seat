@@ -1,5 +1,17 @@
 # Linux 生产部署
 
+## 2026-10-19 合同与相似列表搜索
+
+前后端 `v0.1.0-search-20261019` 来自干净且已推送 main 提交 `96148bd6f35abf7185e81321a3fdf9273c20fe63`。合同／钱包增加物品、参与方及部分编号的多关键词搜索；成员／审批统一清空、输入法和历史导航交互。无迁移、scope、环境或权限配置变更，Goose 98。名称查询按索引匹配且空搜索跳过匹配分支，保留所有权／凭据／范围与分页规则，契约见[合同](integrations/contracts.zh-CN.md)和[钱包](integrations/wallet.zh-CN.md)。
+
+隔离 PostgreSQL 的合同／钱包及宿主权限回归（race）、go vet、类型／构建／受影响 lint、9 项词表／注册单测和 63 项浏览器检查通过。截图检查覆盖中英文桌面与 375/320px；原有钱包金额／税金／详情和合同导出继续通过。大数据量实验及生产只读 SQL 单轮耗时见[项目状态](project-status.md)，不作为 p95；首次规模夹具列顺序错误和初版名称集合物化导致的超时已修正后复测。GitNexus 刷新后暂存／main 比较为 CRITICAL（27 文件、16 条流程），人工核对仅预期查询与页面范围；调用截断和大文件跳过由源码核对补足。
+
+140 个前端文件与测试产物相同，7 个受测后端源码／查询文件与最终源码按换行归一后完全一致。应用机从同一干净 main 构建 6 个 Linux 程序；标准停服备份后先激活后端，再切换边缘。备份 `/var/backups/glorynavy/before-v0.1.0-search-20261019-20261018T201912Z.dump`（259740871 bytes）及同前缀 `.env`／`.meta.json` 留存，本轮未演练恢复。
+
+线上 active/running/ready、NRestarts=0，`/`、`/contracts`、`/wallet`、`/members`、`/approvals` 200；匿名合同归属／列表、钱包、成员及审批接口 401。完整 SHA256 清单、OpenResty 配置及 HTML／6 个相关脚本逐字节校验通过；HTML SHA256 `09a3a111291bce9d36dd8fdd4bc7b40948125eaacc255fba1f3ef41005adb006`。内置浏览器真实会话读取超时，未将隔离界面截图冒充真实登录验收。未创建合同、付款、角色授权或测试通知。核查时提醒为 true/revision 4、选中 exchange_result／loan_result／welfare_result，授权 ready、发送与回执 0；该配置不是本次发布修改，保留当前设置。QQ false／绑定 0，原福利编号修复审计 12 条保留。
+
+回退可恢复前端 `v0.1.0-navigation-20261019` 与后端 `v0.1.0-loan-officers-20261019`；将恢复旧搜索范围，保留 Goose 98、当前环境及业务记录，不执行 Down 或用旧备份覆盖新增记录。旧发布目录保留。材料在忽略目录 `.local/search/`，远程发布源码 `/root/glorynavy-search-release-20261019`。
+
 ## 2026-10-19 主导航整理（仅前端）
 
 前端 `v0.1.0-navigation-20261019` 来自干净且已推送 main 提交 `31d01803f2e93c10587be45d75f952ab45ae29a4`，138 个文件与已测构建相同。业务分组、固定顺序、底部反馈、当前组定位和手机关闭见[主导航](ui/navigation.md)。没有修改后端、数据库、环境配置、角色授权、提醒或 QQ 开关；后端保持 `v0.1.0-loan-officers-20261019`，Goose 98。无需迁移或停服，不为静态菜单发布重新备份业务库。
