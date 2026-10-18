@@ -34,7 +34,7 @@ func (s *Service) guardLossCancellation(ctx context.Context, tx pgx.Tx, actor st
 	if s.PaymentContracts == nil {
 		return nil, ErrRule
 	}
-	rows, err := s.PaymentContracts(ctx, tx, v.AccountID, d.CharacterID, lossReference(v), v.CreatedAt)
+	rows, _, err := s.casePaymentContracts(ctx, tx, v, d.CharacterID)
 	if err != nil {
 		return nil, err
 	}

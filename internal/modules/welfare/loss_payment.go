@@ -65,7 +65,7 @@ func (s *Service) checkLossPayment(ctx context.Context, previous Case, pd Detail
 	if err := s.allowedCase(ctx, actor, previous.CorporationID, previous.Kind, true); err != nil {
 		return err
 	}
-	preview, err := s.PaymentContracts(ctx, nil, previous.AccountID, pd.CharacterID, lossReference(previous), previous.CreatedAt)
+	preview, _, err := s.casePaymentContracts(ctx, nil, previous, pd.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (s *Service) checkLossPayment(ctx context.Context, previous Case, pd Detail
 	if err = s.allowedCase(ctx, actor, v.CorporationID, v.Kind, true); err != nil {
 		return err
 	}
-	rows, err := s.PaymentContracts(ctx, tx, v.AccountID, pd.CharacterID, lossReference(v), v.CreatedAt)
+	rows, references, err := s.casePaymentContracts(ctx, tx, v, pd.CharacterID)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (s *Service) checkLossPayment(ctx context.Context, previous Case, pd Detail
 		if !slices.Contains(ids, c.IssuerID) {
 			return ErrConflict
 		}
-		status = fulfillmentState(v, pd, c, s.MatchReward)
+		status = fulfillmentState(caseForContractReference(v, references, c.Title), pd, c, s.MatchReward)
 		issuer := owners[c.IssuerID]
 		if issuer == "" || issuer == v.AccountID {
 			status = "issuer_unverified"

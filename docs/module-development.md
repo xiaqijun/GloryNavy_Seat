@@ -1,5 +1,7 @@
 # 新增模块开发约定
 
+Goose 97 的福利单据换号审计只由显式运维修复写入，迁移不改历史单号；自动交付与取消查询必须同时使用本单当前号和审计旧号，游戏合同证据保持原文。已有审计后不可回退旧匹配逻辑，见[福利指南](integrations/welfare.zh-CN.md)。
+
 feedback 为账号级数据模块示例：SQL/sqlc 私有，宿主注入站点管理员检查与活跃账号锁；即使 UI 停用仍登记合并参与方，原作者/历史不改，归属变更保留首次 original_account_id。仅 feedback.self，不授予可委派管理能力。见[反馈指南](integrations/feedback.zh-CN.md)。
 
 ## 2026-09-23 元数据收敛（已发布）

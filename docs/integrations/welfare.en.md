@@ -1,5 +1,13 @@
 # Corporation welfare
 
+## Legacy welfare reference repairs (2026-10-18, Goose 97)
+
+Goose 97 creates welfare_case_reference_repairs without automatic renumbering. Explicit operations may repair verified unfinished UUID cases with no aggregate batch membership, delivery evidence or live/completed contract. Prefix and UTC creation date remain, using the shared short-reference sequence. Previous/new references, operator, reason and time are retained permanently. Issued contracts, aggregate sources and terminal records keep their references.
+
+Automatic cash/growth/activity fulfillment and cancellation guards query the current reference and this case's recorded old reference. Matching requires the exact recorded title; other cases, stale references and prefix-similar titles cannot borrow aliases. Multiple valid contracts across old/new titles block completion; a live old-title contract blocks cancellation. Amount, items, recipient, current issuer permission, issue time and global claim guards remain. Original contract title and content token are preserved in evidence.
+
+A repair changes only the reference and version, preserving amounts, states, application content, frozen rewards, claims, coin ledgers and batches. Back up and stop the application, then recheck exact records, bindings and contract synchronization within 30 minutes inside the transaction. Down refuses populated audits; retain the alias table and compatible program. See [project status](../project-status.md) for deployment evidence.
+
 ## Batch reference repairs and contract progress (2026-10-18, Goose 95)
 
 Goose 95 creates a welfare-private repair audit table and does not automatically renumber historical batches. Explicitly selected legacy batches may be repaired only after backup, pausing settlement writes, and rechecking current contract evidence and frozen sources. One transaction records the old/new references, operator, reason and timestamp and updates the canonical reference. Existing valid unaccepted or completed contracts retain their references. Amounts, source records/references, claims and completion counts remain unchanged. Each batch permits one repair and permanently retains its old reference.

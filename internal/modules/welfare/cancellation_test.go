@@ -163,6 +163,11 @@ func TestLossCancellationNoContractRequiresAttestationAndRevokedAccess(t *testin
 	if _, err = provider.DownTo(ctx, 41); err == nil {
 		t.Fatal("pending cancellation allowed unsafe downgrade")
 	}
+	// DownTo may remove later migrations before the cancellation guard stops it.
+	// Restore the current schema before exercising the current application.
+	if _, err = provider.Up(ctx); err != nil {
+		t.Fatal(err)
+	}
 	s.PaymentContracts = func(context.Context, pgx.Tx, string, int64, string, time.Time) ([]eve.DeliveryContract, error) {
 		return nil, nil
 	}
