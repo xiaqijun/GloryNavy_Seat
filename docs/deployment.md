@@ -1,5 +1,17 @@
 # Linux 生产部署
 
+## 2026-10-19 反馈截图
+
+前后端 `v0.1.0-feedback-images-20261019` 来自干净且已推送 main 提交 `0ef24896664bb4aab084fc179f41976eb4c48795`，Goose 99 新增私有 `feedback_images` 与父反馈/回复约束。每次 0–3 张 PNG/JPG、每张 2,000,000 bytes/1600 万像素，原子保存、SHA-256 重试比较、归属/当前站点管理员鉴权及合并跟随；详情只返回图片元数据。API JSON 上限 8 MiB，生产边缘原 8m 配置可容纳三张满额图片，无环境、角色或通知配置变更。具体行为见[反馈指南](integrations/feedback.zh-CN.md)。
+
+隔离 PostgreSQL 的 feedback/locale 和宿主反馈/合并/底座/元数据回归（race）及 go vet 通过，包含图片格式/损坏/像素限制、跨账号拒绝/管理员撤权、错误父单、幂等、合并、存储失败回滚、三张满额 HTTP 上传、CSRF 和私有响应头。前端类型/构建、9 项词表/模块注册单测、中英文 1280/375/320px 共 30 项浏览器流程通过，已检查详情截图；lint 无错误，仅混合 hook/组件导出的 Fast Refresh 开发提示。GitNexus 已刷新，暂存/main 比较为 CRITICAL（27 文件、28 条预期反馈流程），已核对源码及宿主边界。未把隔离截图当作真实用户上传验收。
+
+140 个前端文件与测试产物相同；12 个后端源/查询/迁移/测试文件与隔离测试及发布源码按换行归一核对一致。6 个 Linux 程序从同一 main 构建，先停服备份并迁移后激活后端，再切换边缘。备份 `/var/backups/glorynavy/before-v0.1.0-feedback-images-20261019-20261018T203957Z.dump`（259825102 bytes）及同前缀 `.env`/`.meta.json` 留存，本轮未演练恢复。
+
+线上 active/running/ready、NRestarts=0，`/` 与 `/feedback` 200，匿名反馈列表/详情/图片均 401；完整 SHA256 清单、OpenResty 配置、HTML 与两个相关脚本逐字节校验通过。HTML SHA256 `b8ede1dd1d4589fea1bb98c2bc8dfac610638ab3820d759a0f6043b3ae18f1d3`。生产反馈/回复/图片均 0，未写入测试业务数据；提醒维持 true/revision 4 和 exchange_result/loan_result/welfare_result，发件授权 ready，发送/回执 0；QQ false/绑定 0，福利编号修复审计 12 条保留。
+
+Goose 99 Down 在已有图片时拒绝。产生图片后应修复并向前发布，禁止回退忽略图片的旧程序或使用备份覆盖新增反馈。若仍无图片，可同时恢复前后端 `v0.1.0-search-20261019`，保留 Goose 99 与当前数据，不执行 Down。发布材料在忽略目录 `.local/feedback-images/`，远程源码 `/root/glorynavy-feedback-images-release-20261019`；本轮隔离数据库容器和本地预览已清理。
+
 ## 2026-10-19 合同与相似列表搜索
 
 前后端 `v0.1.0-search-20261019` 来自干净且已推送 main 提交 `96148bd6f35abf7185e81321a3fdf9273c20fe63`。合同／钱包增加物品、参与方及部分编号的多关键词搜索；成员／审批统一清空、输入法和历史导航交互。无迁移、scope、环境或权限配置变更，Goose 98。名称查询按索引匹配且空搜索跳过匹配分支，保留所有权／凭据／范围与分页规则，契约见[合同](integrations/contracts.zh-CN.md)和[钱包](integrations/wallet.zh-CN.md)。
