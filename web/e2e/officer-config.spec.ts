@@ -6,7 +6,7 @@ const operator = "01994763-4111-7000-8000-111111111111";
 const member = "01994763-4111-7000-8000-222222222222";
 const presets = [
   ["补损专员", "corporation.welfare.compensation", "补损审核与交付"],
-  ["福利发放专员", "corporation.welfare", "福利审核与交付"],
+  ["福利专员", "corporation.welfare", "福利审核与交付"],
   ["贷款专员", "corporation.loan", "贷款管理"],
 ] as const;
 
@@ -96,6 +96,22 @@ for (const language of ["zh-CN", "en"]) {
     expect(state.roles.find(role => role.id === loan.id)?.grants).toEqual(loan.grants);
   });
 }
+
+test("welfare officer reuses the legacy role without changing grants or assignments", async ({ page }) => {
+  const state = await fixture(page);
+  const legacy: Role = { id: "01994763-4111-7000-8000-333333333333", name: "福利发放专员", version: "4",
+    grants: [{ permission: "corporation.welfare", corporations: ["12345"], alliances: [] }] };
+  state.roles = [legacy];
+  state.assigned = [legacy.id];
+  await page.goto("/access");
+  await page.getByRole("region", { name: "专员配置" }).getByRole("button", { name: "福利专员", exact: true }).click();
+  await expect(page.getByLabel("角色名称", { exact: true })).toHaveValue("福利专员");
+  expect(state.writes).toBe(0);
+  await page.getByRole("button", { name: "保存角色", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("角色已保存");
+  expect(state.roles).toEqual([{ ...legacy, name: "福利专员", version: "5" }]);
+  expect(state.assigned).toEqual([legacy.id]);
+});
 
 test("loan officer authorization is separate from contract character", async ({ page }, info) => {
   await fixture(page);

@@ -4,9 +4,9 @@ import { msg } from "@/lib/i18n";
 import type { Permission } from "./manage-api";
 
 const officerPresets = [
-  { name: "补损专员", permission: "corporation.welfare.compensation" },
-  { name: "福利发放专员", permission: "corporation.welfare" },
-  { name: "贷款专员", permission: "corporation.loan" },
+  { name: "补损专员", permission: "corporation.welfare.compensation", legacyNames: [] },
+  { name: "福利专员", permission: "corporation.welfare", legacyNames: ["福利发放专员"] },
+  { name: "贷款专员", permission: "corporation.loan", legacyNames: [] },
 ] as const;
 
 export type OfficerPreset = (typeof officerPresets)[number];

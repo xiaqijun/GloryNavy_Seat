@@ -140,7 +140,7 @@ export const english: Record<string, string> = {
 
   "专员配置": "Officer roles",
   "补损专员": "Reimbursement officer",
-  "福利发放专员": "Welfare officer",
+  "福利专员": "Welfare officer",
   "贷款专员": "Loan officer",
   "补损审核与交付": "Reimbursement review and delivery",
   "贷款管理": "Loan management",

@@ -183,10 +183,13 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
             <Tabs.Content value="roles">
               <OfficerPresets permissions={permissions.data} busy={busy} onSelect={(preset) => {
                 const existing = roles.data.find((role) =>
-                  [preset.name, translate("en", preset.name)].includes(role.name) &&
+                  [preset.name, translate("en", preset.name), ...preset.legacyNames].includes(role.name) &&
                   role.grants.length === 1 && role.grants[0].permission === preset.permission,
                 );
-                setSelected(existing ?? {
+                setSelected(existing ? {
+                  ...existing,
+                  name: (preset.legacyNames as readonly string[]).includes(existing.name) ? msg(preset.name) : existing.name,
+                } : {
                   id: crypto.randomUUID(), name: msg(preset.name), version: "0",
                   grants: [{ permission: preset.permission, corporations: [], alliances: [] }],
                 });

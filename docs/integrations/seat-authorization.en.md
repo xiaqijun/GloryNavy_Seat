@@ -1,5 +1,7 @@
 # SeAT-style corporation authorization
 
+2026-10-19: The Chinese welfare officer label is shortened to “福利专员”; the English label remains Welfare officer. The preset reuses a role with the old default Chinese name and only `corporation.welfare`, renaming it on explicit save while preserving its ID, scope and member assignments. No permission or schema changes.
+
 ## 2026-10-17: Business officer configuration
 
 Role configuration at `/access` offers three presets: reimbursement officer (`corporation.welfare.compensation`), welfare officer (`corporation.welfare`), and loan officer (`corporation.loan`). Reimbursement officers handle srp/solo cases; welfare officers review and deliver benefits while rules, discretionary coin grants and reversals retain their existing administrator checks. Loan officers receive existing corporation loan operations; direct administrator funding remains separately restricted. The user cancelled the PAP settlement officer; no attendance/PAP ability is added.
