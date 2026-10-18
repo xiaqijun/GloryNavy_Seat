@@ -888,6 +888,19 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		s := identity.Principal(r.Context())
 		return feedback.Actor{ID: s.UserID, Name: s.MainCharacter.Name}
 	}}
+	registerReminderSources(reminderModule.Service, enabled, "welfare", welfareModule.Service, "welfare_result")
+	registerReminderSources(reminderModule.Service, enabled, "exchange", exchangeService, "exchange_result", "coin_change")
+	registerReminderSources(reminderModule.Service, enabled, "loan", loanService, "loan_result", "guarantee_pending", "loan_due", "loan_overdue", "collateral_pending", "contribution_result")
+	registerReminderSources(reminderModule.Service, enabled, "attendance", attendanceModule.Service, "pap_change")
+	registerReminderSources(reminderModule.Service, enabled, "sentry", sentryService, "sentry_alert")
+	registerReminderSources(reminderModule.Service, enabled, "feedback", feedbackService, "feedback_update", "feedback_pending")
+	wireEveReminders(reminderModule.Service, identityService, accessService, syncService, eveHandler.Contracts, structureHandler, enabled)
+	if slices.Contains(enabled, "loan") {
+		reminderModule.Service.Sources["loan_funding"] = loanService.FundingReminderKeys
+	}
+	if slices.Contains(enabled, "attendance") {
+		reminderModule.Service.Sources["pap_requirement"] = attendanceModule.Service.RequirementReminderKeys
+	}
 	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module(), feedbackHandler.Module(), (courier.Handler{Service: courier.NewService()}).Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err

@@ -17,6 +17,10 @@ Goose 47 奖励库可组合配装/物品/PLEX/ISK，果壳币独立；合同快�
 
 SEC-01 已上线限制模块/完整 EVE 状态为会话、系统状态为当前管理员，匿名仅 login-status 与最小健康。联盟 PAP automatic 已发布补齐：每角色每月首快照基线、随后增量同事务币账、下降冲正、显式合并迁移快照。当前生产仍以 project-status 的发布记录为准。
 
+## 游戏邮件提醒
+
+Goose 98 多类型提醒只读来源事实，按模块注册注入服务，SQL 留在来源私有 store；默认不自动启用新类型。修改来源须保持当前账号/对象权限、历史起点、稳定引用、最终复核和未知发送结果不自动重试。回退前停用并取消队列任务，保留新类型回执与合并参与方。规则与发布状态见 `docs/integrations/reminder.zh-CN.md`、`docs/project-status.md`。
+
 ## 审批中心
 
 approval 为已发布的只读聚合模块，开发前读取 docs/integrations/approval.zh-CN.md。来源私有 store 经宿主注入 reviewqueue.Source，中心不复制审批状态、付款或币账。启用时原福利/兑换管理入口集中到 /approvals，个人记录/配置及主动发币保留；停用时兼容旧入口。approval.self 不授予管理范围，原业务 API 继续鉴权；管理员不得审批本人或审核自己的取消，exchange.DecideOrder 已补齐。无新 Goose 迁移，是否上线以 project-status 为准。

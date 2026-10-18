@@ -31,6 +31,8 @@ func respond(w http.ResponseWriter, r *http.Request, v any, err error) {
 		return
 	}
 	switch {
+	case errors.Is(err, ErrEvents):
+		httpapi.Failure(w, r, 400, "invalid_events", "请选择有效的提醒类型")
 	case errors.Is(err, ErrForbidden):
 		httpapi.Failure(w, r, 403, "forbidden", "无权管理提醒")
 	case errors.Is(err, ErrVersion):

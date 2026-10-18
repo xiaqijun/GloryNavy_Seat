@@ -20,3 +20,11 @@
 .reminder-table td:nth-child(4){min-width:8rem}
 .reminder-toggle{flex-shrink:0}
 .reminder-page [role="alert"]{color:var(--destructive);overflow-wrap:anywhere}
+
+.reminder-events{margin-top:1rem;border:0;border-top:1px solid var(--border);padding:1rem 0 0;min-width:0}
+.reminder-events legend{font-size:.875rem;font-weight:600;padding-right:.75rem}
+.reminder-event-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-bottom:.5rem}
+.reminder-event-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:.25rem 1rem}
+.reminder-toggle{min-height:44px;overflow-wrap:anywhere}
+.reminder-toggle input{flex:none;width:1rem;height:1rem;accent-color:var(--primary)}
+.reminder-table td:nth-child(5){min-width:8rem}
