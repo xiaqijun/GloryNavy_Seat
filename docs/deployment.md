@@ -12,6 +12,10 @@
 
 回退时先恢复前端 `v0.1.0-welfare-officer-name-20261019`，再按需恢复后端 `v0.1.0-reminder-content-20261019`；新界面依赖 scope-options，不能单独先回退后端。角色范围仍使用原 ID 数组，无迁移或 Down，不用旧数据库覆盖新增业务记录。材料位于忽略目录 `.local/role-scope/`，远程发布源码 `/root/glorynavy-role-scope-release-20261019`。
 
+### 角色初始化（2026-10-19）
+
+按用户明确要求仅创建角色、暂不授权成员。通过应用模块现有 `access.SaveRole` 创建补损专员（`corporation.welfare.compensation`）、福利专员（`corporation.welfare`）、贷款专员（`corporation.loan`），均只选择已配置的 Glory Navy，联盟过滤为空。预检未发现已有同名角色，保存使用版本 0，结果版本均为 1；三个角色成员数均为 0，写入三条 `role.saved` 审计，操作者为 `local-operator:configure-officers-20261019`。无程序发布、迁移或管理员／成员授权变更。运维材料在忽略目录 `.local/configure-officers/`。
+
 ## 2026-10-19 福利专员更名（仅前端）
 
 前端 `v0.1.0-welfare-officer-name-20261019` 来自干净且已推送 main 提交 `be39d1acdc8439c4bca51c19107247f1d6098e8d`。入口和默认角色名称改为“福利专员”；旧默认名的单能力角色复用原 ID，在明确保存后更名，范围和成员授权不变。生产角色表只读核查为空，本轮没有写入角色或权限。
