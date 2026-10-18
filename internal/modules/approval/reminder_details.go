@@ -52,7 +52,7 @@ func (s *Service) PendingNotificationDetails(ctx context.Context, user string, _
 }
 
 func approvalReminderMessage(row reviewqueue.Item) remindermessage.Item {
-	kind := remindermessage.Label(row.Kind, map[string]string{"loan": "贷款申请", "srp": "军团补损", "solo": "PVP 补损", "supercarrier": "超级航母补贴", "titan": "泰坦补贴"})
+	kind := remindermessage.Label(row.Kind, map[string]string{"loan": "贷款申请", "srp": "军团补损", "alliance": "联盟补损", "solo": "PVP 补损", "capital": "旗舰补贴", "supercarrier": "超级航母补贴", "titan": "泰坦补贴"})
 	if row.Source == "exchange" {
 		kind = "兑换取消申请"
 	}
