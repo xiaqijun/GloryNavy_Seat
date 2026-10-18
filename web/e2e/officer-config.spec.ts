@@ -20,6 +20,7 @@ async function fixture(page: Page, allowed = true) {
     else if (path.endsWith("/identity/session")) data = { authenticated: true, session: { user_id: operator, character: { id: "111", name: "权限管理员" }, csrf_token: "csrf", expires_at: "2099-01-01T00:00:00Z" } };
     else if (path.endsWith("/access/me")) data = { administrator: allowed, can_manage: allowed, site_roles: [], characters: [] };
     else if (path.endsWith("/access/catalog")) data = presets.map(([,id,label]) => ({ id, label, scope: "corporation" }));
+    else if (path.endsWith("/access/scope-options")) data = { corporations: [{ id: "12345", name: "已接入军团一" }, { id: "67890", name: "已接入军团二" }], alliances: [{ id: "1000009", name: "已接入联盟" }] };
     else if (path.endsWith("/access/roles")) data = state.roles;
     else if (/\/access\/roles\//.test(path)) {
       expect(request.headers()["x-csrf-token"]).toBe("csrf");
@@ -48,24 +49,31 @@ async function fixture(page: Page, allowed = true) {
 }
 
 for (const language of ["zh-CN", "en"]) {
-  test(`officer grants, reuse, assignment and revocation (${language})`, async ({ page }, info) => {
+  test(`business roles use standard creation, editing, assignment and revocation (${language})`, async ({ page }, info) => {
     const tr = (value: string) => language === "en" ? english[value] ?? value : value;
     await page.addInitScript(lang => localStorage.setItem("glorynavy.locale", lang), language);
     const state = await fixture(page);
     await page.goto("/access");
-    const shortcuts = page.getByRole("region", { name: tr("专员配置") });
-    await expect(shortcuts.getByRole("button")).toHaveCount(3);
+    await expect(page.getByRole("region", { name: tr("专员配置") })).toHaveCount(0);
     await expect(page.getByText(/PAP.*专员|PAP.*officer/i)).toHaveCount(0);
-    for (const [name, permission] of presets) {
-      await shortcuts.getByRole("button", { name: tr(name), exact: true }).focus();
+    for (const [name, permission, label] of presets) {
+      await page.getByRole("button", { name: tr("新建角色"), exact: true }).focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByLabel(tr("角色名称"), { exact: true })).toHaveValue(tr(name));
+      await expect(page.getByLabel(tr("角色名称"), { exact: true })).toHaveValue("");
+      await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(0);
+      await page.getByLabel(tr("角色名称"), { exact: true }).fill(tr(name));
+      await page.getByRole("checkbox", { name: tr(label), exact: true }).check();
       await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(1);
+      await expect(page.getByLabel(tr("军团 ID"), { exact: true })).toHaveCount(0);
+      await page.getByRole("combobox", { name: tr("{0}：{1}").replace("{0}", tr(label)).replace("{1}", tr("军团")) }).click();
+      await page.getByRole("option", { name: "已接入军团一", exact: true }).click();
+      await page.getByRole("combobox", { name: tr("{0}：{1}").replace("{0}", tr(label)).replace("{1}", tr("联盟")) }).click();
+      await page.getByRole("option", { name: "已接入联盟", exact: true }).click();
       await page.getByRole("button", { name: tr("保存角色"), exact: true }).click();
       await expect(page.getByRole("status")).toHaveText(tr("角色已保存"));
-      expect(state.roles.find(role => role.name === tr(name))?.grants).toEqual([{ permission, corporations: [], alliances: [] }]);
+      expect(state.roles.find(role => role.name === tr(name))?.grants).toEqual([{ permission, corporations: ["12345"], alliances: ["1000009"] }]);
     }
-    await shortcuts.getByRole("button", { name: tr("贷款专员"), exact: true }).click();
+    await page.getByRole("group", { name: tr("平台角色列表") }).getByRole("button", { name: new RegExp("^" + tr("贷款专员")) }).click();
     await expect(page.getByRole("button", { name: tr("配置成员"), exact: true })).toBeVisible();
     expect(state.roles).toHaveLength(3);
     expect(state.writes).toBe(3);
@@ -86,9 +94,8 @@ for (const language of ["zh-CN", "en"]) {
     loan.grants[0].corporations = ["12345"];
     const other = language === "en" ? "zh-CN" : "en";
     await page.goto(`/access?lang=${other}`);
-    const loanLabel = other === "en" ? english["贷款专员"] : "贷款专员";
-    await page.getByRole("region", { name: other === "en" ? english["专员配置"] : "专员配置" })
-      .getByRole("button", { name: loanLabel, exact: true }).click();
+    await page.getByRole("group", { name: other === "en" ? english["平台角色列表"] : "平台角色列表" })
+      .getByRole("button", { name: new RegExp("^" + loan.name) }).click();
     await expect(page.getByLabel(other === "en" ? english["角色名称"] : "角色名称", { exact: true })).toHaveValue(loan.name);
     await page.getByRole("button", { name: other === "en" ? english["保存角色"] : "保存角色", exact: true }).click();
     await expect(page.getByRole("status")).toHaveText(other === "en" ? english["角色已保存"] : "角色已保存");
@@ -97,18 +104,19 @@ for (const language of ["zh-CN", "en"]) {
   });
 }
 
-test("welfare officer reuses the legacy role without changing grants or assignments", async ({ page }) => {
+test("existing welfare role stays editable without changing grants or assignments", async ({ page }) => {
   const state = await fixture(page);
   const legacy: Role = { id: "01994763-4111-7000-8000-333333333333", name: "福利发放专员", version: "4",
     grants: [{ permission: "corporation.welfare", corporations: ["12345"], alliances: [] }] };
   state.roles = [legacy];
   state.assigned = [legacy.id];
   await page.goto("/access");
-  await page.getByRole("region", { name: "专员配置" }).getByRole("button", { name: "福利专员", exact: true }).click();
-  await expect(page.getByLabel("角色名称", { exact: true })).toHaveValue("福利专员");
+  await page.getByRole("group", { name: "平台角色列表" }).getByRole("button", { name: new RegExp("^" + legacy.name) }).click();
+  await expect(page.getByLabel("角色名称", { exact: true })).toHaveValue(legacy.name);
   expect(state.writes).toBe(0);
+  await page.getByLabel("角色名称", { exact: true }).fill("福利专员");
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("角色已保存");
+  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
   expect(state.roles).toEqual([{ ...legacy, name: "福利专员", version: "5" }]);
   expect(state.assigned).toEqual([legacy.id]);
 });
@@ -116,7 +124,7 @@ test("welfare officer reuses the legacy role without changing grants or assignme
 test("loan officer authorization is separate from contract character", async ({ page }, info) => {
   await fixture(page);
   await page.goto("/loans/operations?view=risk");
-  await expect(page.getByRole("link", { name: "配置贷款专员", exact: true })).toHaveAttribute("href", "/access");
+  await expect(page.getByRole("link", { name: "配置贷款专员", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "设置合同处理角色", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "设置合同处理角色" })).toBeVisible();
   await expect(page.getByRole("button", { name: "设置贷款专员", exact: true })).toHaveCount(0);
@@ -130,4 +138,31 @@ test("ordinary member cannot configure officers", async ({ page }) => {
   await expect(page.getByText("没有权限管理权限", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "专员配置" })).toHaveCount(0);
   expect(state.writes).toBe(0);
+});
+
+test("unavailable scope options preserve existing filters and never imply unrestricted access", async ({ page }) => {
+  const state = await fixture(page);
+  const existing: Role = { id: "01994763-4111-7000-8000-333333333333", name: "范围测试", version: "4",
+    grants: [{ permission: "corporation.welfare", corporations: ["99999"], alliances: ["1000009"] }] };
+  state.roles = [existing];
+  await page.route("**/api/v1/access/scope-options", (route) => route.fulfill({ status: 503, json: { error: { message: "服务暂不可用" } } }));
+  await page.goto("/access");
+  await page.getByRole("group", { name: "平台角色列表" }).getByRole("button", { name: /^范围测试/ }).click();
+  await expect(page.getByText("军团与联盟读取失败", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "保存角色", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
+  expect(state.roles[0].grants).toEqual(existing.grants);
+  await page.route("**/api/v1/access/scope-options", (route) => route.fulfill({ json: { data: { corporations: [], alliances: [] } } }));
+  await page.reload();
+  await page.getByRole("button", { name: "新建角色", exact: true }).click();
+  await page.getByLabel("角色名称", { exact: true }).fill("空范围");
+  await page.getByRole("checkbox", { name: "福利审核与交付", exact: true }).check();
+  await expect(page.getByRole("combobox", { name: "福利审核与交付：军团" })).toBeDisabled();
+  await page.getByRole("button", { name: "保存角色", exact: true }).click();
+  await expect(page.getByText("请选择军团或联盟，或选择不限范围").first()).toBeVisible();
+  expect(state.writes).toBe(1);
+  await page.getByLabel("福利审核与交付授权范围", { exact: true }).selectOption("all");
+  await page.getByRole("button", { name: "保存角色", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
+  expect(state.roles.find((role) => role.name === "空范围")?.grants).toEqual([{ permission: "corporation.welfare", corporations: [], alliances: [] }]);
 });

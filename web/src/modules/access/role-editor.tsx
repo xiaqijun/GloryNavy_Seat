@@ -3,21 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { Filter, Save, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Grant, Permission, Role } from "./manage-api";
+import { ScopePicker } from "./scope-picker";
 
 interface DraftGrant extends Grant {
   limited: boolean;
-  corpText: string;
-  allianceText: string;
 }
-const ids = (text: string) => [
-  ...new Set(
-    text
-      .trim()
-      .split(/[\s,，]+/)
-      .filter(Boolean),
-  ),
-];
 export function RoleEditor({
+  user,
   role,
   permissions,
   busy,
@@ -25,6 +17,7 @@ export function RoleEditor({
   onSave,
   onReload,
 }: {
+  user: string;
   role: Role;
   permissions: Permission[];
   busy: boolean;
@@ -39,8 +32,6 @@ export function RoleEditor({
       .map((g) => ({
         ...g,
         limited: g.corporations.length + g.alliances.length > 0,
-        corpText: g.corporations.join(", "),
-        allianceText: g.alliances.join(", "),
       })),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,11 +65,11 @@ export function RoleEditor({
         if (!name.trim() || [...name.trim()].length > 80)
           next.name = msg("请输入 1–80 字的角色名称");
         const parsed = grants.map((g) => {
-          const corporations = g.limited ? ids(g.corpText) : [],
-            alliances = g.limited ? ids(g.allianceText) : [];
+          const corporations = g.limited ? [...new Set(g.corporations)] : [],
+            alliances = g.limited ? [...new Set(g.alliances)] : [];
           if (g.limited && corporations.length + alliances.length === 0)
             next[g.permission] = msg(
-              "填写至少一个军团或联盟 ID，或明确选择不限范围",
+              "请选择军团或联盟，或选择不限范围",
             );
           if (
             corporations.length + alliances.length > 100 ||
@@ -86,7 +77,7 @@ export function RoleEditor({
               (v) => !/^[1-9]\d*$/.test(v) || BigInt(v) > 9223372036854775807n,
             )
           )
-            next[g.permission] = msg("请输入有效 ID，最多 100 个");
+            next[g.permission] = msg("最多选择 100 个军团或联盟");
           return { permission: g.permission, corporations, alliances };
         });
         setErrors(next);
@@ -204,8 +195,6 @@ export function RoleEditor({
                                     corporations: [],
                                     alliances: [],
                                     limited: p.scope === "corporation",
-                                    corpText: "",
-                                    allianceText: "",
                                   },
                                 ]
                               : gs.filter((g) => g.permission !== p.id),
@@ -242,49 +231,8 @@ export function RoleEditor({
                           </select>
                         </label>
                         {grant.limited && (
-                          <>
-                            <div className="access-filter-fields">
-                              <div className="access-field">
-                                <label htmlFor={`${p.id}-corp`}>
-                                  {msg("军团 ID")}
-                                </label>
-                                <input
-                                  id={`${p.id}-corp`}
-                                  value={grant.corpText}
-                                  disabled={busy}
-                                  aria-invalid={!!errors[p.id]}
-                                  aria-describedby={
-                                    errors[p.id] ? `${p.id}-error` : undefined
-                                  }
-                                  onChange={(e) =>
-                                    update(p.id, { corpText: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div className="access-field">
-                                <label htmlFor={`${p.id}-alliance`}>
-                                  {msg("联盟 ID")}{" "}
-                                </label>
-                                <input
-                                  id={`${p.id}-alliance`}
-                                  value={grant.allianceText}
-                                  disabled={busy}
-                                  aria-invalid={!!errors[p.id]}
-                                  aria-describedby={
-                                    errors[p.id] ? `${p.id}-error` : undefined
-                                  }
-                                  onChange={(e) =>
-                                    update(p.id, {
-                                      allianceText: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                            </div>
-                            <p className="access-scope-note">
-                              {msg("任一匹配即可，多个 ID 用逗号分隔")}{" "}
-                            </p>
-                          </>
+                          <ScopePicker user={user} label={p.label} value={grant} disabled={busy}
+                            onChange={(scope) => update(p.id, scope)} />
                         )}
                         {errors[p.id] && (
                           <p className="login-error" id={`${p.id}-error`}>

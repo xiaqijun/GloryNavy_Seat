@@ -1,5 +1,12 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "最多选择 100 个军团或联盟": "Select up to 100 corporations or alliances",
+  "请选择军团或联盟，或选择不限范围": "Select a corporation or alliance, or choose unrestricted access",
+  "暂无可选项": "No available options",
+  "选择联盟": "Select alliance",
+  "{0}：{1}": "{0}: {1}",
+  "联盟 #{0}": "Alliance #{0}",
+  "军团与联盟读取失败": "Could not load corporations and alliances",
   "福利申请进度": "Welfare application updates",
   "兑换进度": "Redemption updates",
   "贷款进度": "Loan updates",

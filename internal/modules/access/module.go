@@ -38,6 +38,7 @@ func (h Handler) Module() module.Definition {
 		{Method: "GET", Path: "/me", Permission: "access.self", Handler: http.HandlerFunc(h.current)},
 		{Method: "GET", Path: "/catalog", Permission: "access.manage", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { httpapi.Respond(w, r, 200, ManageableCatalog()) })},
 		{Method: "GET", Path: "/roles", Permission: "access.manage", Handler: http.HandlerFunc(h.roles)},
+		{Method: "GET", Path: "/scope-options", Permission: "access.manage", Handler: http.HandlerFunc(h.scopeOptions)},
 		{Method: "GET", Path: "/members", Permission: "access.manage", Handler: http.HandlerFunc(h.members)},
 		{Method: "GET", Path: "/audit", Permission: "access.manage", Handler: http.HandlerFunc(h.audit)},
 		{Method: "PUT", Path: "/roles/{id}", Permission: "access.manage", Handler: http.HandlerFunc(h.save)},

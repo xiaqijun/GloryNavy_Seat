@@ -1,15 +1,12 @@
 # SeAT-style corporation authorization
 
-2026-10-19: The Chinese welfare officer label is shortened to “福利专员”; the English label remains Welfare officer. The preset reuses a role with the old default Chinese name and only `corporation.welfare`, renaming it on explicit save while preserving its ID, scope and member assignments. No permission or schema changes.
+## 2026-10-19: Standard role configuration
 
-## 2026-10-17: Business officer configuration
+Officers are ordinary site roles: use New role at `/access`, enter a name, select abilities and scope, save, then assign or revoke it for members. Reimbursement uses `corporation.welfare.compensation`, welfare uses `corporation.welfare`, and loans use `corporation.loan`. Dedicated preset buttons and the loan-page permission shortcut are removed. Existing roles and assignments remain; no PAP settlement officer is added.
 
-Role configuration at `/access` offers three presets: reimbursement officer (`corporation.welfare.compensation`), welfare officer (`corporation.welfare`), and loan officer (`corporation.loan`). Reimbursement officers handle srp/solo cases; welfare officers review and deliver benefits while rules, discretionary coin grants and reversals retain their existing administrator checks. Loan officers receive existing corporation loan operations; direct administrator funding remains separately restricted. The user cancelled the PAP settlement officer; no attendance/PAP ability is added.
+`GET /api/v1/access/scope-options` supplies named corporation and alliance choices for multi-selection. It requires current `access.manage`; corporations must be configured, visible to the actor and have a valid corporation snapshot. Alliances are deduplicated from those corporations. EVE's existing cached/batched public name resolver decorates labels, with an ID fallback, without granting access. Existing filters survive missing choices and read errors. New restricted scopes require a selection; unrestricted access must be chosen explicitly. Saved filters retain string IDs, version checks, audit and account/object authorization. No migration is needed.
 
-Save the role, then assign it to a site account through member assignments. All characters of that account share the assignment. Presets start without additional role-level filters, but configured-corporation and current membership boundaries still apply; the existing editor can narrow them further. Existing versioned role and audited assignment APIs are reused. Configuration requires `access.manage`; existing grants are not modified and selecting a contract character never promotes its owner.
-
-The previous loan-officer character selector is now labelled “Set contract character”. Business permissions and game contract custody are configured separately. Approval QQ reminders continue to use current permissions, verified numeric QQ bindings and group membership.
-
+These roles do not grant site administration. Welfare rules, discretionary grants/reversals and direct administrator loan funding retain their existing restrictions. Contract custody is configured separately and never grants its owner's account permissions. QQ remains disabled.
 
 ## 2026-10-17: Configured corporations and business scope
 

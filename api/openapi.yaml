@@ -5944,7 +5944,7 @@ paths:
     get:
       operationId: getPermissionCatalog
       summary: Configurable abilities for delivered features; requires access.manage
-      description: Currently exposes access.manage only. Business abilities are published when their features ship. Internal policy mappings and historical grants remain independent.
+      description: Includes only shipped configurable business and management abilities. Internal policy mappings and historical grants remain independent.
       security: [{ SessionCookie: [] }]
       responses:
         "200":
@@ -5966,6 +5966,35 @@ paths:
                         label: { type: string }
                         scope:
                           { type: string, enum: [self, global, corporation] }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/AccessUnavailable" }
+  /api/v1/access/scope-options:
+    get:
+      operationId: getAccessScopeOptions
+      summary: Named configured corporation and alliance choices; requires current access.manage
+      description: Corporations are restricted to the configured list, current visibility and valid cached corporation snapshots. Alliances are deduplicated from those corporations. Names are decorative and may be empty when unavailable. Existing role filters are not modified. Business object authorization remains authoritative.
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200":
+          description: Available named scope choices
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, request_id]
+                properties:
+                  request_id: { type: string }
+                  data:
+                    type: object
+                    required: [corporations, alliances]
+                    properties:
+                      corporations:
+                        type: array
+                        items: { $ref: "#/components/schemas/AccessScopeOption" }
+                      alliances:
+                        type: array
+                        items: { $ref: "#/components/schemas/AccessScopeOption" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/AccessUnavailable" }
@@ -9898,6 +9927,12 @@ components:
               },
           },
       }
+    AccessScopeOption:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, pattern: "^[1-9][0-9]*$" }
+        name: { type: string }
     AccessGrant:
       type: object
       additionalProperties: false

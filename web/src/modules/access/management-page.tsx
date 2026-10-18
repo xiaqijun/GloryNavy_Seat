@@ -1,4 +1,4 @@
-import { msg, getLocale, translate } from "@/lib/i18n";
+import { msg, getLocale } from "@/lib/i18n";
 import { ConfirmDialog as Confirm } from "@/components/ui/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
@@ -36,7 +36,6 @@ import {
   type Member,
 } from "./manage-api";
 import { RoleEditor } from "./role-editor";
-import { OfficerPresets } from "./officer-presets";
 import "./management.css";
 
 export default function ManagementPage() {
@@ -181,22 +180,6 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
         ) : (
           <>
             <Tabs.Content value="roles">
-              <OfficerPresets permissions={permissions.data} busy={busy} onSelect={(preset) => {
-                const existing = roles.data.find((role) =>
-                  [preset.name, translate("en", preset.name), ...preset.legacyNames].includes(role.name) &&
-                  role.grants.length === 1 && role.grants[0].permission === preset.permission,
-                );
-                setSelected(existing ? {
-                  ...existing,
-                  name: (preset.legacyNames as readonly string[]).includes(existing.name) ? msg(preset.name) : existing.name,
-                } : {
-                  id: crypto.randomUUID(), name: msg(preset.name), version: "0",
-                  grants: [{ permission: preset.permission, corporations: [], alliances: [] }],
-                });
-                setEditorKey((key) => key + 1);
-                save.reset();
-                setNotice("");
-              }} />
               <div className="access-role-layout">
                 <div className="access-role-sidebar">
                   <div className="access-section-heading">
@@ -283,6 +266,7 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
                     )}
                     {selected ? (
                       <RoleEditor
+                        user={user}
                         key={`${selected.id}-${editorKey}`}
                         role={selected}
                         permissions={permissions.data}

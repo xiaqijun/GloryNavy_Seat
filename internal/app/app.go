@@ -253,6 +253,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	reminderJobs := &reminder.Jobs{Service: reminderModule.Service}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
+	accessService.ScopeNames = reader.WalletNames
 	identityHandler.CorporationCleanup = characterCleanup
 	var sentryRemote sentry.Remote
 	if auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != "" {

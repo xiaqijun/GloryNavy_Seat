@@ -2,7 +2,7 @@
 
 ## 2026-10-17: Loan officer operating permissions
 
-A loan officer is a site account with `corporation.loan`. Permission management offers a named role preset that must be saved and assigned/revoked for members; administrators can open configuration from loan settings. Configured corporations, current account membership and object checks still apply. This role grants neither site administration nor permission management. Choosing a contract character does not automatically grant loan permissions to its owner.
+A loan officer is a site account with `corporation.loan`. Since 2026-10-19, use New role in permission management, select the loan ability, save and assign/revoke it for members. Dedicated presets and the loan-page permission shortcut are removed. Configured corporations, current account membership and object checks still apply. This role grants neither site administration nor permission management. Choosing a contract character does not automatically grant loan permissions to its owner.
 
 Game character configuration is separately labelled “Set contract character”, and loan details/contribution instructions use “Contract character” instead of the former “Current loan officer” label. Existing custodian_character_id/name, the `/settings/custodian` endpoint and active-binding checks are retained. No backend, migration or contract workflow change.
 

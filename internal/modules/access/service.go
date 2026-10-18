@@ -21,6 +21,7 @@ type Service struct {
 	facts                  Facts
 	lookup                 Lookup
 	ConfiguredCorporations func(context.Context) ([]int64, error)
+	ScopeNames             func(context.Context, []int64) (map[string]string, error)
 }
 
 var ErrInvalid = errors.New("invalid access change")
