@@ -1,5 +1,16 @@
 # Linux 生产部署
 
+## 2026-10-19：业务提醒邮件正文
+
+后端 `v0.1.0-reminder-content-20261019` 来自干净且已推送 main 的 `7c353d2a403bd7a575d5fe7a05ce338e4e45bed4`；前端继续使用 `v0.1.0-reminder-events-20261018`，没有前端源文件改动。6 个 Linux 二进制、发布来源元数据及 SHA256SUMS 在应用机从干净 main 构建；前端文件复用校验通过的当前发布包。Goose 98、River 不变，无环境配置变更。
+
+通过标准 `activate-release.sh` 停服备份后切换。备份 `/var/backups/glorynavy/before-v0.1.0-reminder-content-20261019-20261018T161209Z.dump`（259356186 bytes）及同前缀 `.env`／`.meta.json` 保存原后端版本；本轮未做恢复演练。上线检查 active/running/ready、NRestarts=0、发布包校验、提醒页 200、匿名配置／历史 401 均通过。
+
+推送设置保持 enabled=false、revision=2、events={approval_pending}，发件授权 ready 且含发信 scope；发送／回执均 0。QQ 仍 disabled、绑定 0，旧福利编号修复审计 12 条。所有测试使用独立 PostgreSQL 临时容器和随机 schema，结束后移除测试容器，未在生产创建测试单据或发送邮件。实际游戏内排版／收信待 REMINDER-01。
+
+正文功能无迁移，可在关闭发送并处理未结束提醒任务后恢复 `v0.1.0-reminder-events-20261018`，保留 Goose 98 及已有回执；旧版将恢复汇总正文，不能回退到不识别多类型回执的更早版本。完整数据库恢复须同时保留备份环境与对应二进制，不执行 Down。
+
+
 ## 2026-10-18 多类型游戏邮件提醒
 
 前后端 v0.1.0-reminder-events-20261018，来源为干净且推送的 main ab4fbce475a59f71bba005d97504761b09b4b02e。Goose 97→98，River 和环境配置不变。保留发件人、授权、revision=2 和 enabled=false，所选类型仍为原 approval_pending；迁移不发信或改变业务账务。
