@@ -56,7 +56,7 @@ func TestLossQuotaDefaultsEnforced(t *testing.T) {
 			day := int64(10000)
 			cfg := Config{LossDailyCapMinor: &day}
 			limit := int64(70000)
-			expected := ErrLossWeeklyQuota
+			expected := ErrLossMonthlyConfirmation
 			if period == "month" {
 				week := int64(1000000)
 				cfg.LossWeeklyCapMinor = &week

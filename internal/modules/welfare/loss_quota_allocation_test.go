@@ -96,7 +96,7 @@ func quotaPending(t *testing.T, s *Service, km int64) Case {
 }
 func quotaApprove(v Case, amount int64, n int) Command {
 	version := int64(1)
-	return Command{Action: "approve", ID: v.ID, Version: v.Version, RequestKey: key(n), Note: "审核", Detail: Detail{BaseMinor: amount}, LossPolicyVersion: &version}
+	return Command{Action: "approve", LossQuotaConsent: "weekly", ID: v.ID, Version: v.Version, RequestKey: key(n), Note: "审核", Detail: Detail{BaseMinor: amount}, LossPolicyVersion: &version}
 }
 func setQuota(t *testing.T, s *Service, c Config) {
 	t.Helper()
@@ -145,7 +145,7 @@ func TestLossQuotaWeeklyMonthlyRemainCeilings(t *testing.T) {
 			}
 			second := quotaPending(t, s, 8102)
 			amount := int64(5001)
-			expected := ErrLossWeeklyQuota
+			expected := ErrLossMonthlyConfirmation
 			if period == "month" {
 				amount = 15001
 				expected = ErrLossMonthlyQuota
@@ -202,7 +202,7 @@ func TestLossQuotaConcurrentAdvanceReplayAndCancellation(t *testing.T) {
 		t.Fatal("automatic caps must not create new advances", used, future)
 	}
 	third := quotaPending(t, s, 8203)
-	if _, err := s.Execute(ctx, adminID, quotaApprove(third, 10001, 8203)); !errors.Is(err, ErrLossWeeklyQuota) {
+	if _, err := s.Execute(ctx, adminID, quotaApprove(third, 10001, 8203)); !errors.Is(err, ErrLossMonthlyConfirmation) {
 		t.Fatal("automatic weekly ceiling bypassed", err)
 	}
 	// Reconstruct already frozen allocations from the prior release. They

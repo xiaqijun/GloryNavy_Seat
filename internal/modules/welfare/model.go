@@ -60,6 +60,7 @@ type LossQuota struct {
 	FutureReservedMinor int64           `json:"future_reserved_minor"`
 }
 type Config struct {
+	LossOccurredAfter   string         `json:"loss_occurred_after,omitempty"`
 	LossRateBPS         *int64         `json:"loss_rate_bps,omitempty"`
 	LossCapMinor        *int64         `json:"loss_cap_minor,omitempty"`
 	LossDailyCapMinor   *int64         `json:"loss_daily_cap_minor,omitempty"`
@@ -81,6 +82,7 @@ type Config struct {
 	Note                string         `json:"note"`
 }
 type Detail struct {
+	LossQuotaApproval    *LossQuotaApproval    `json:"loss_quota_approval,omitempty"`
 	ImageCount           int                   `json:"image_count,omitempty"`
 	Cancellation         *Cancellation         `json:"cancellation,omitempty"`
 	PaymentStatus        string                `json:"payment_status,omitempty"`
@@ -119,6 +121,7 @@ type GrantLine struct {
 	Amount    int64  `json:"amount_minor"`
 }
 type Command struct {
+	LossQuotaConsent      string            `json:"loss_quota_consent,omitempty"`
 	Images                []ActivityImage   `json:"-"`
 	ConfirmedNotDelivered bool              `json:"confirmed_not_delivered,omitempty"`
 	LossPolicyVersion     *int64            `json:"loss_policy_version,string,omitempty"`
@@ -177,6 +180,11 @@ func Calculate(kind string, base int64, discipline bool) (int64, error) {
 	return amount, nil
 }
 func validateConfig(k string, c Config) error {
+	if c.LossOccurredAfter != "" {
+		if _, err := time.Parse(time.RFC3339, c.LossOccurredAfter); err != nil || !cashLoss(k) {
+			return ErrInvalid
+		}
+	}
 	if c.LossRateBPS != nil && (!cashLoss(k) || *c.LossRateBPS < 1 || *c.LossRateBPS > 10000) {
 		return ErrInvalid
 	}

@@ -1,5 +1,17 @@
 # Corporation welfare
 
+## Explicit quota escalation and earliest eligible loss (2026-10-19)
+
+This supersedes automatic daily overages and the weekly hard ceiling below. Apply rate/per-claim cap first. Insufficient monthly remaining capacity always rejects approval. Insufficient weekly capacity requires explicit `loss_quota_consent="monthly"`; otherwise insufficient daily capacity requires `"weekly"`. No consent is needed within all limits. These are cumulative totals, not additional pools. Missing weekly/monthly caps still derive from positive daily ×7/×30; without daily, omitted periods remain unlimited. New approvals consume today only, never future days.
+
+Protected GET `/api/v1/welfare/cases/{id}/loss-quota` requires current scoped reimbursement management access and a non-applicant reviewer of an srp/solo case. It returns `policy_version`, `case_version`, `checked_at`, and `quota` with daily/weekly/monthly usage, other pending reservations, caps and remaining amounts. A read-only consistent snapshot uses the claimant's account, excluding the current application; it does not reserve funds. Approval recomputes under the existing publication lock and checks current scope, versions and exact required consent tier. Missing/wrong consent returns HTTP 409 `welfare_loss_weekly_confirmation` or `welfare_loss_monthly_confirmation`; monthly exhaustion retains `welfare_loss_quota`. The UI reloads quota and clears consent after failure or changes in amount, manual appraisal mode or balances. Successful replay retains the original command fingerprint.
+
+Server-owned `detail.loss_quota_approval` freezes the actual tier (empty within limits), amount and quota review snapshot alongside reviewer, policy version, current-day allocation and audit in one transaction. Existing approval/delivery/cancellation/merge authorization stays intact; no new capability or migration.
+
+Optional per-corporation srp/solo setting `loss_occurred_after` is an inclusive RFC3339 earliest loss timestamp; empty means unrestricted. UI input is Beijing time. The application transaction checks the latest rule against the server's synced KM timestamp, or the administrator's manual evidence. Forged request timestamps cannot replace synced evidence. Older losses return HTTP 409 `welfare_loss_before_start`. Existing applications can still be reviewed, supplemented or cancelled; a fresh application after withdrawal uses the new cutoff. Other benefits' `effective_at` is unchanged. Only site administrators configure the cutoff.
+
+Deploy frontend/backend together, with Goose 101 unchanged. Existing cutoffs remain unset and historical approvals are not repriced. Once cutoffs or escalation snapshots exist, use forward fixes rather than older code that ignores the new rules or drops snapshots. Release evidence: [project status](../project-status.md).
+
 ## Whole-battle PVP report (2026-10-19)
 
 Layout: compact comparison tables share metric labels, at most two sides per group. Assessed/approved value precedes the report. Ready valuation and application KM details are collapsed initially; abnormal valuation remains expanded, with errors and actions preserved.
@@ -14,9 +26,9 @@ Protected GET `/api/v1/welfare/cases/{id}/battle-report` rechecks claim object a
 
 This supersedes the older daily-only advance rule below. With a positive daily allowance, each missing/zero weekly cap becomes daily × 7 and each missing/zero monthly cap becomes daily × 30, fixed regardless of month length. Positive manual caps are preserved independently. Without a daily allowance, missing period caps remain unlimited. Existing settings work immediately without saving again.
 
-Stored zero/omitted caps retain automatic mode: changing daily updates automatic periods. API policies expose stored settings; loss_quotas exposes effective caps. Approval enforces and freezes the same effective configuration. A claim may exceed daily, but both weekly/monthly total ceilings include approved amounts and other same-period pending reservations. Beijing calendar days, Monday–Sunday weeks and calendar months remain; ×30 is an amount multiplier, not a rolling 30-day window. Daily/weekly/monthly maxima are 10^14 / 7×10^14 / 3×10^15 ISK hundredths; per-claim limits are unchanged.
+Stored zero/omitted caps retain automatic mode: changing daily updates automatic periods. API policies expose stored settings; loss_quotas exposes effective caps. Approval enforces and freezes the same effective configuration. Daily/weekly overages require the explicit consent above; monthly remains a hard ceiling. Totals include approved amounts and other same-period pending reservations. Beijing calendar days, Monday–Sunday weeks and calendar months remain; ×30 is an amount multiplier, not a rolling 30-day window. Daily/weekly/monthly maxima are 10^14 / 7×10^14 / 3×10^15 ISK hundredths; per-claim limits are unchanged.
 
-Daily is a calculation basis, not an approval ceiling. New approvals no longer create daily advances. Existing Goose 101 allocations retain dates, cancellation release and parent account ownership without rewriting or automatic approvals. No new migration; deploy frontend/backend together. Prefer forward fixes: rollback loses automatic ceilings and older code rejects the expanded period-cap range.
+Daily is a calculation basis and explicit overage threshold, not an absolute approval ceiling. New approvals no longer create daily advances. Existing Goose 101 allocations retain dates, cancellation release and parent account ownership without rewriting or automatic approvals. No new migration; deploy frontend/backend together. Prefer forward fixes: rollback loses automatic ceilings and older code rejects the expanded period-cap range.
 
 ## Daily reimbursement advances (2026-10-19, Goose 101)
 

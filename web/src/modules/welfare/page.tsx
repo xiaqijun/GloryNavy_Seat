@@ -1,3 +1,4 @@
+import { LossQuotaConfirmation, useLossQuotaReview, beijingInput, lossStartTimestamp } from "./loss-quota-review";
 import { FulfillmentSummary } from "./fulfillment-summary";
 import { msg, getLocale } from "@/lib/i18n";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -640,6 +641,7 @@ function LossQuotaCard({ quotas }: { quotas: api.LossQuota[] }) {
   );
 }
 type EditorProps = {
+  onFailure?: () => void;
   size?: "compact" | "form";
   title: string;
   csrf: string;
@@ -651,6 +653,7 @@ type EditorProps = {
   disabled?: boolean;
 };
 function Editor({
+  onFailure,
   size,
   title,
   csrf,
@@ -690,6 +693,7 @@ function Editor({
         }}
         onSubmit={async (e) => {
           e.preventDefault();
+          if (busy || disabled) return;
           setBusy(true);
           setError("");
           try {
@@ -700,6 +704,7 @@ function Editor({
             done();
           } catch (e) {
             setError(e instanceof Error ? e.message : msg("保存失败"));
+            onFailure?.();
           } finally {
             setBusy(false);
           }
@@ -853,6 +858,8 @@ export function Apply({
   const growth = kind.startsWith("growth_");
   const status = useGrowthStatus(corp, character, kind, policy?.version);
   const manual = loss && !initialLoss;
+  const lossDate = linkedLoss?.occurred_at || (at ? new Date(at).toISOString() : "");
+  const beforeStart = !!policy?.config.loss_occurred_after && !!lossDate && Date.parse(lossDate) < Date.parse(policy.config.loss_occurred_after);
   const ready =
     loss ||
     (policy?.config.enabled &&
@@ -906,6 +913,7 @@ export function Apply({
       done={done}
       disabled={
         !ready ||
+        beforeStart ||
         !character ||
         (!growth && !ship) ||
         (growth && (status.isError || status.data?.state !== "met")) ||
@@ -934,6 +942,7 @@ export function Apply({
             },
       })}
     >
+      {beforeStart && <p className="welfare-warning wide" role="alert">{msg("损失时间早于可申请起始时间")} · {beijingInput(policy?.config.loss_occurred_after).replace("T", " ")} {msg("北京时间")}</p>}
       {!ready && (
         <p className="welfare-warning">
           {msg("该项目规则尚未生效，请联系管理员。")}
@@ -1676,6 +1685,7 @@ function LossPolicyEditor({
   const [dailyCap, setDailyCap] = useState(capValue(policy?.config.loss_daily_cap_minor));
   const [weeklyCap, setWeeklyCap] = useState(capValue(policy?.config.loss_weekly_cap_minor));
   const [monthlyCap, setMonthlyCap] = useState(capValue(policy?.config.loss_monthly_cap_minor));
+  const [occurredAfter, setOccurredAfter] = useState(beijingInput(policy?.config.loss_occurred_after));
   let automatic = api.lossPeriodCaps();
   try {
     automatic = api.lossPeriodCaps({ loss_daily_cap_minor: optionalMinor(dailyCap) });
@@ -1715,6 +1725,7 @@ function LossPolicyEditor({
             loss_daily_cap_minor: daily,
             loss_weekly_cap_minor: weekly,
             loss_monthly_cap_minor: monthly,
+            loss_occurred_after: lossStartTimestamp(occurredAfter),
           },
         };
       }}
@@ -1732,6 +1743,7 @@ function LossPolicyEditor({
         onChange={setCap}
         type="number"
       />
+      <Field label={msg("可申请起始时间（北京时间）")} value={occurredAfter} onChange={setOccurredAfter} type="datetime-local" wide />
       <div className="welfare-period-caps wide">
         <Field label={msg("每人每日额度 / ISK")} value={dailyCap} onChange={setDailyCap} type="number" />
         <Field label={msg("每人每周上限 / ISK")} value={weeklyCap || capValue(automatic.weekly)} onChange={v => setWeeklyCap(v === "0" ? "" : v)} type="number" />
@@ -1811,6 +1823,7 @@ export function CaseView({
     reviewEvidenceRef.current.scrollIntoView({ block: "nearest" });
   };
   const automaticPricing = v.kind === "solo" && !manualPricing;
+  const quotaReview = useLossQuotaReview(v.id, v.version, policy?.version || "0", api.lossPreview(automaticPricing ? v.detail.valuation?.amount_minor || 0 : base, policy?.config), action === "approve" && loss);
   const [receipt, setReceipt] = useState("");
   const [evidence, setEvidence] = useState(v.detail.evidence);
   const actions: { value: string; label: string }[] = [];
@@ -2039,6 +2052,7 @@ export function CaseView({
                       : "outline"
                   }
                   onClick={() => {
+                    quotaReview.clear();
                     setConfirmedNotDelivered(false);
                     setNote("");
                     setReviewCase(v);
@@ -2082,7 +2096,9 @@ export function CaseView({
       close={() => setAction("")}
       done={done}
       label={msg("确认")}
+      onFailure={action === "approve" && loss ? quotaReview.retry : undefined}
       disabled={
+        quotaReview.blocked ||
         (action === "approve_cancel" && !confirmedNotDelivered) ||
         (action === "approve" &&
           ((automaticPricing && v.detail.valuation?.state !== "ready") ||
@@ -2098,7 +2114,7 @@ export function CaseView({
           action === "approve_cancel" && confirmedNotDelivered,
         manual_pricing: action === "approve" && manualPricing,
         ...(action === "approve" && loss
-          ? { loss_policy_version: policy?.version || "0" }
+          ? { loss_policy_version: policy?.version || "0", loss_quota_consent: quotaReview.consent }
           : {}),
         detail: {
           base_minor:
@@ -2150,6 +2166,7 @@ export function CaseView({
             type="checkbox"
             checked={manualPricing}
             onChange={(e) => {
+              quotaReview.clear();
               setManualPricing(e.target.checked);
               setBase(
                 String(
@@ -2174,7 +2191,7 @@ export function CaseView({
                 : msg("核准计价基数 / ISK")
             }
             value={base}
-            onChange={setBase}
+            onChange={value => { quotaReview.clear(); setBase(value); }}
             required
             wide
           />
@@ -2217,6 +2234,7 @@ export function CaseView({
           </strong>
         </div>
       )}
+      {action === "approve" && loss && <LossQuotaConfirmation review={quotaReview} />}
       {lossReviewAction && (
         <details className="wide welfare-review-support" ref={reviewEvidenceRef}>
           <summary>{msg("损失与核价明细")}</summary>

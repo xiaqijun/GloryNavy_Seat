@@ -273,6 +273,8 @@ async function setup(
           { corporation_id: "10", kind: loss ? "solo" : item.kind, version: "1", config: loss ? { ...rule, project_name: "", loss_rate_bps: 8000 } : rule },
         ],
       };
+    else if (p === "/api/v1/welfare/cases/9/loss-quota")
+      data = { policy_version: "1", case_version: "2", checked_at: "2026-10-19T00:00:00Z", quota: { kind: "solo", daily: { used_minor: 0, reserved_minor: 0 }, weekly: { used_minor: 0, reserved_minor: 0 }, monthly: { used_minor: 0, reserved_minor: 0 } } };
     else if (p === "/api/v1/welfare/cases/7")
       data = {
         item,

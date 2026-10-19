@@ -327,7 +327,11 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 	}
 	// Members may maintain their existing applications even if live ESI metadata is temporarily missing.
 	if !(c.ID > 0 && !manage && owner == actor) {
-		if err = s.allowedCase(ctx, actor, c.CorporationID, c.Kind, manage); err != nil {
+		kind := c.Kind
+		if previous.Kind != "" {
+			kind = previous.Kind
+		}
+		if err = s.allowedCase(ctx, actor, c.CorporationID, kind, manage); err != nil {
 			return nil, err
 		}
 	}
@@ -636,6 +640,16 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 		m.Version++
 		result = m
 	case "apply":
+		if cashLoss(c.Kind) {
+			p, cfg, err := s.lossPolicy(ctx, tx, c.CorporationID, c.Kind)
+			if err != nil {
+				return nil, err
+			}
+			if err = checkLossStart(cfg, d.OccurredAt); err != nil {
+				return nil, err
+			}
+			d.Rule, d.PolicyVersion = cfg, p.Version
+		}
 		if isSuper(c.Kind) {
 			if e = s.guardCapitalPurchase(ctx, tx, actor, c.Kind, d); e != nil {
 				return nil, e
@@ -859,10 +873,14 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 					if e != nil {
 						return nil, e
 					}
-					quotaDays, err := s.checkLossQuota(ctx, tx, v, cfg)
+					quotaApproval, err := s.checkLossQuota(ctx, tx, v, cfg, c.LossQuotaConsent)
 					if err != nil {
 						return nil, err
 					}
+					quotaApproval.Review.PolicyVersion = p.Version
+					d.LossQuotaApproval = quotaApproval
+					day := quotaDay(quotaApproval.Review.CheckedAt)
+					quotaDays := []store.LossQuotaSpan{{Kind: v.Kind, Start: day, End: day + 1, Amount: v.Award}}
 					if e = store.SaveLossQuotaDays(ctx, tx, v.ID, quotaDays); e != nil {
 						return nil, e
 					}

@@ -22,6 +22,7 @@ type Handler struct {
 
 func (h Handler) Module() module.Definition {
 	routes := []module.Route{}
+	routes = append(routes, module.Route{Method: "GET", Path: "/cases/{id}/loss-quota", Permission: "welfare.self", Handler: http.HandlerFunc(h.lossQuotaReview)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/cases/{id}/battle-report", Permission: "welfare.self", Handler: http.HandlerFunc(h.battleReport)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/losses/battle-report", Permission: "welfare.self", Handler: http.HandlerFunc(h.battleReport)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/growth/check", Permission: "welfare.self", Handler: http.HandlerFunc(h.growthCheck)})
@@ -148,6 +149,12 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 		httpapi.Failure(w, r, 409, "welfare_purchase_required", "请同步已完成的个人购舰合同，合同须包含一艘对应旗舰")
 	case errors.Is(e, ErrAttendanceRequired):
 		httpapi.Failure(w, r, 409, "welfare_attendance_required", "该损失尚未关联有效出勤，无法申请军团补损")
+	case errors.Is(e, ErrLossWeeklyConfirmation):
+		httpapi.Failure(w, r, 409, "welfare_loss_weekly_confirmation", "日额度不足，请确认使用周额度")
+	case errors.Is(e, ErrLossMonthlyConfirmation):
+		httpapi.Failure(w, r, 409, "welfare_loss_monthly_confirmation", "周额度不足，请确认使用月额度")
+	case errors.Is(e, ErrLossBeforeStart):
+		httpapi.Failure(w, r, 409, "welfare_loss_before_start", "损失时间早于可申请起始时间")
 	case errors.Is(e, ErrLossDailyQuota):
 		httpapi.Failure(w, r, 409, "welfare_loss_quota", "该成员今日补损额度不足，请核对额度设置")
 	case errors.Is(e, ErrLossWeeklyQuota):

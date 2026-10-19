@@ -222,11 +222,11 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 	proposed := Case{AccountID: userID, CorporationID: 10, Kind: "srp", Award: 10000}
 	cap := int64(30000)
 	for _, cfg := range []Config{{LossWeeklyCapMinor: &cap}, {LossMonthlyCapMinor: &cap}} {
-		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); err != nil {
+		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg, ""); err != nil {
 			t.Fatal("exact remaining quota rejected", err)
 		}
 		proposed.Award++
-		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); !errors.Is(err, ErrLossQuota) {
+		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg, ""); !errors.Is(err, ErrLossQuota) {
 			t.Fatal("over-quota award accepted", err)
 		}
 		proposed.Award--
@@ -235,7 +235,7 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 		t.Fatal(err)
 	}
 	proposed.Award = 30000
-	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossDailyCapMinor: &cap}); err != nil {
+	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossDailyCapMinor: &cap}, ""); err != nil {
 		t.Fatal("previous-day approval counted today", err)
 	}
 	if _, err = s.Pool.Exec(ctx, `UPDATE welfare_audit SET created_at=now() WHERE case_id=$1 AND action='approve'`, prior.ID); err != nil {
@@ -259,7 +259,7 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 		t.Fatal(err)
 	}
 	proposed.Award = 30000
-	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossMonthlyCapMinor: &cap}); err != nil {
+	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossMonthlyCapMinor: &cap}, ""); err != nil {
 		t.Fatal("cancelled award still consumes quota", err)
 	}
 	if validateConfig("growth_gila", Config{LossDailyCapMinor: &cap}) == nil {

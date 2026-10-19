@@ -153,71 +153,27 @@ func (s *Service) lossPolicy(ctx context.Context, db store.DB, corp int64, kind 
 	return Policy{}, Config{}, nil
 }
 
-// Caller holds the welfare publication lock, then saves the allocation with
-// approval. Weekly/monthly totals remain hard ceilings; only daily can advance.
-func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg Config) ([]store.LossQuotaSpan, error) {
-	cfg = effectiveLossConfig(cfg)
-	var now time.Time
-	if err := db.QueryRow(ctx, `SELECT now()`).Scan(&now); err != nil {
-		return nil, err
+// Caller holds the welfare publication lock. Consent cannot bypass the monthly
+// ceiling; the actual tier and current balances are frozen with the approval.
+func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg Config, consent string) (*LossQuotaApproval, error) {
+	if consent != "" && consent != "weekly" && consent != "monthly" {
+		return nil, ErrInvalid
 	}
-	day, nextDay, week, nextWeek, month, nextMonth := lossQuotaPeriods(now)
-	periods := []struct {
-		cap        *int64
-		start, end time.Time
-		exceeded   error
-	}{
-		{cfg.LossWeeklyCapMinor, week, nextWeek, ErrLossWeeklyQuota},
-		{cfg.LossMonthlyCapMinor, month, nextMonth, ErrLossMonthlyQuota},
-	}
-	pending, err := store.PendingLosses(ctx, db, v.AccountID, v.CorporationID)
+	review, err := s.lossQuotaReview(ctx, db, v, effectiveLossConfig(cfg))
 	if err != nil {
 		return nil, err
 	}
-	for _, p := range periods {
-		if p.cap == nil || *p.cap == 0 {
-			continue
-		}
-		used, err := store.ApprovedLossTotal(ctx, db, v.AccountID, v.CorporationID, v.Kind, p.start, p.end)
-		if err != nil {
-			return nil, err
-		}
-		for _, candidate := range pending {
-			if candidate.ID == v.ID || candidate.Kind != v.Kind || candidate.CreatedAt.Before(p.start) || !candidate.CreatedAt.Before(p.end) {
-				continue
-			}
-			var pendingConfig Config
-			if candidate.Kind == v.Kind {
-				pendingConfig = cfg
-			}
-			used = quotaAdd(used, pendingLossAward(candidate, pendingConfig))
-		}
-		if v.Award > *p.cap || used > *p.cap-v.Award {
-			return nil, p.exceeded
-		}
-	}
-	index := quotaDay(now)
-	occupied, err := store.LossQuotaDays(ctx, db, v.AccountID, v.CorporationID, index)
+	level, err := lossQuotaLevel(review.Quota, v.Award)
 	if err != nil {
 		return nil, err
 	}
-	if dailyAdvance(cfg) {
-		for _, candidate := range pending {
-			if candidate.ID == v.ID || candidate.Kind != v.Kind || candidate.CreatedAt.Before(day) || !candidate.CreatedAt.Before(nextDay) {
-				continue
-			}
-			amount := pendingLossAward(candidate, cfg)
-			if amount <= 0 {
-				continue
-			}
-			plan, err := planDailyQuota(v.Kind, index, amount, cfg, occupied)
-			if err != nil {
-				return nil, err
-			}
-			occupied = append(occupied, plan...)
+	if level != "" && consent != level {
+		if level == "monthly" {
+			return nil, ErrLossMonthlyConfirmation
 		}
+		return nil, ErrLossWeeklyConfirmation
 	}
-	return planDailyQuota(v.Kind, index, v.Award, cfg, occupied)
+	return &LossQuotaApproval{Level: level, Amount: v.Award, Review: review}, nil
 }
 
 func lossAward(base int64, cfg Config) (int64, error) {

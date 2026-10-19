@@ -55,6 +55,7 @@ export type Character = {
   main_character_name?: string;
 };
 export type Config = {
+  loss_occurred_after?: string;
   loss_rate_bps?: number;
   loss_cap_minor?: number;
   loss_daily_cap_minor?: number;

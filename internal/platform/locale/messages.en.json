@@ -278,5 +278,8 @@
   "预警平台密钥服务暂未配置或不可用": "The warning platform key service is not configured or unavailable",
   "预警服务异常": "Warning service problems",
   "领取角色": "Recipient character",
-  "首行应为 [舰船名称, 方案名称]": "First line must be [Ship name, Fitting name]"
+  "首行应为 [舰船名称, 方案名称]": "First line must be [Ship name, Fitting name]",
+  "日额度不足，请确认使用周额度": "Daily quota is insufficient. Confirm use of the weekly quota.",
+  "周额度不足，请确认使用月额度": "Weekly quota is insufficient. Confirm use of the monthly quota.",
+  "损失时间早于可申请起始时间": "The loss occurred before the application start time."
 }
