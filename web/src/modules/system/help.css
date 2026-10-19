@@ -1,0 +1,319 @@
+.help-page {
+  min-width: 0;
+}
+.help-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.help-heading h1 {
+  margin: 0 0 8px;
+}
+.help-heading p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.help-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.help-search label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.help-search input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 48px 10px 12px;
+  font: inherit;
+  background: var(--background);
+}
+.help-search input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.help-layout {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.help-directory {
+  position: sticky;
+  top: 24px;
+  max-height: max(320px, calc(100dvh - 330px));
+  overflow-y: auto;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+.help-topic-group + .help-topic-group {
+  margin-top: 20px;
+}
+.help-topic-group h2 {
+  margin: 0 0 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.help-topic-group a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--foreground);
+  text-decoration: none;
+  line-height: 1.55;
+}
+.help-topic-group a:hover {
+  background: #eff6ff;
+}
+.help-topic-group a[aria-current="page"] {
+  background: #eff6ff;
+  color: var(--primary);
+  box-shadow: inset 3px 0 var(--primary);
+  font-weight: 600;
+}
+.help-mobile-directory {
+  display: none;
+}
+.help-article,
+.help-results {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.help-article {
+  padding: 28px 32px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.help-article-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.5;
+  scroll-margin-top: 24px;
+}
+.help-article-heading h2:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.help-article-heading p {
+  margin: 10px 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+.help-business-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.help-business-links a {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 14px;
+}
+.help-business-links a:hover {
+  text-decoration: underline;
+}
+.help-business-links svg,
+.help-result svg {
+  flex-shrink: 0;
+}
+.help-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.help-section h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.help-section ol {
+  margin: 0;
+  padding-left: 24px;
+  list-style: decimal;
+}
+.help-section li,
+.help-question p {
+  font-size: 15px;
+  line-height: 1.85;
+}
+.help-section li + li {
+  margin-top: 10px;
+}
+.help-section ol > li {
+  padding-left: 4px;
+}
+.help-section ol > li::marker {
+  color: var(--primary);
+  font-weight: 600;
+}
+.help-notes {
+  list-style: disc;
+  margin: 20px 0 0;
+  padding: 16px 20px 16px 36px;
+  background: var(--background);
+  border-radius: 8px;
+}
+.help-question p {
+  margin: 0;
+}
+.help-article-footer {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.help-results > h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+.help-result {
+  display: block;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+}
+.help-result + .help-result {
+  margin-top: 12px;
+}
+.help-result:hover {
+  border-color: var(--primary);
+}
+.help-result-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.help-result p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.help-empty {
+  display: grid;
+  justify-items: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+@media (max-width: 1100px) {
+  .help-layout {
+    grid-template-columns: 208px minmax(0, 1fr);
+    gap: 20px;
+  }
+  .help-directory {
+    padding-right: 12px;
+  }
+  .help-article {
+    padding: 24px;
+  }
+}
+@media (max-width: 900px) {
+  .help-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .help-directory {
+    display: none;
+  }
+  .help-mobile-directory {
+    display: block;
+  }
+  .help-mobile-directory .ui-select-trigger {
+    width: 100%;
+  }
+}
+@media (max-width: 600px) {
+  .help-heading {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .help-heading h1 {
+    font-size: 24px;
+  }
+  .help-heading p {
+    font-size: 14px;
+  }
+  .help-search {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .help-article {
+    padding: 20px;
+  }
+  .help-article-heading h2 {
+    font-size: 20px;
+  }
+  .help-result {
+    padding: 20px;
+  }
+}
+@media print {
+  body:has(.help-page) {
+    background: white;
+  }
+  body:has(.help-page) .sidebar,
+  body:has(.help-page) .topbar,
+  body:has(.help-page) .navigation-toggle,
+  .help-heading,
+  .help-search,
+  .help-directory,
+  .help-mobile-directory,
+  .help-business-links {
+    display: none !important;
+  }
+  body:has(.help-page) .app-shell {
+    display: block;
+  }
+  body:has(.help-page) main {
+    padding: 0;
+  }
+  .help-layout {
+    display: block;
+  }
+  .help-article {
+    border: 0;
+    padding: 0;
+  }
+  .help-section {
+    break-inside: avoid;
+  }
+  .help-notes {
+    background: transparent;
+  }
+}

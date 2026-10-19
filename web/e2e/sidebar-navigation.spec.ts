@@ -102,10 +102,12 @@ for (const language of ["zh-CN", "en"]) {
     await expect(nav.locator(".navigation-primary > a")).toHaveText(
       english ? ["Dashboard", "Approval center"] : ["工作台", "审批中心"],
     );
-    await expect(nav.locator(".navigation-footer a")).toHaveAttribute(
-      "href",
-      "/feedback",
+    await expect(nav.locator(".navigation-footer a")).toHaveText(
+      english ? ["Feedback", "User guide"] : ["意见反馈", "使用帮助"],
     );
+    await expect(
+      nav.locator('.navigation-footer a[href="/help"]'),
+    ).toBeVisible();
     await expect(nav.locator("#navigation-finance a")).toHaveText(
       english
         ? ["Wallet", "Contracts", "Item appraisal", "Loans", "Courier service"]
@@ -178,7 +180,7 @@ for (const language of ["zh-CN", "en"]) {
       await expect(page.locator(".navigation-toggle")).toBeFocused();
       await expect(nav).toBeHidden();
       await openMenu(page);
-      await nav.locator(".navigation-footer a").focus();
+      await nav.locator('.navigation-footer a[href="/help"]').focus();
       await page.keyboard.press("Escape");
       await expect(page.locator(".navigation-toggle")).toBeFocused();
       await expect(nav).toBeHidden();
@@ -217,8 +219,13 @@ for (const language of ["zh-CN", "en"]) {
     await page.goto(`/wallet?lang=${language}`);
     const nav = await openMenu(page);
     await expect(nav.locator(".navigation-group-trigger")).toHaveCount(1);
-    await expect(nav.locator(".navigation-footer")).toHaveCount(0);
-    await expect(nav.locator("a")).toHaveCount(2);
+    await expect(
+      nav.locator('.navigation-footer a[href="/feedback"]'),
+    ).toHaveCount(0);
+    await expect(
+      nav.locator('.navigation-footer a[href="/help"]'),
+    ).toBeVisible();
+    await expect(nav.locator("a")).toHaveCount(3);
     await expect(nav.locator('a[href="/wallet"]')).toBeVisible();
   });
 }

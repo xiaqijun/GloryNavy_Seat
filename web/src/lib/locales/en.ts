@@ -1,5 +1,316 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  搜索结果: "Search results",
+  入门: "Getting started",
+  日常使用: "Everyday use",
+  业务办理: "Requests & services",
+  专员与管理: "Officers & administration",
+  登录与绑定角色: "Sign in & link characters",
+  "先把常用角色绑定到同一个本站账号，再办理申请和领取。":
+    "Link your characters to one site account before submitting requests or collecting rewards.",
+  首次使用: "First visit",
+  "在首页点击“EVE 登录”，使用国际服账号选择角色并完成授权。":
+    "Choose EVE sign-in on the homepage, select a Tranquility character and authorize access.",
+  "返回网站后，在“我的角色”填写 QQ 号和账号昵称，保存社区资料。":
+    "After returning, open My characters, enter your QQ number and account nickname, and save your community profile.",
+  "需要使用小号时，在当前账号内点击“添加角色”，完成该角色的 EVE 授权。":
+    "To add an alt, choose Add character within your current account and complete EVE authorization for that character.",
+  "设定常用主角色。主角色用于账号识别和游戏邮件收件；查看角色只影响当前查看对象。":
+    "Set your main character for account identification and in-game mail. The character you are viewing only determines which records you see.",
+  "普通登录不会把其他本站账号自动合并。角色已属于另一个账号时，使用“合并账号”，验证并核对预览后再确认。":
+    "Signing in does not merge site accounts. If a character belongs to another account, use Merge accounts, verify ownership and review the preview before confirming.",
+  "授权失效时，为提示的角色更新授权，并在 EVE 页面选择同一角色。解除绑定不等于清空历史业务记录。":
+    "When authorization expires, reauthorize the indicated character and select that same character in EVE. Unlinking does not erase historical business records.",
+  "QQ 机器人目前已停用，不需要通过机器人完成绑定。":
+    "The QQ bot is currently disabled; bot verification is not required.",
+  找到功能与查看状态: "Find features & read statuses",
+  "按菜单分组找到功能，先确认角色、军团与数据时间。":
+    "Use the navigation groups, and check the selected character, corporation and data time.",
+  "右上角账号入口管理角色；手机先点击“菜单”展开功能列表。":
+    "Manage characters from the account entry at the top right. On mobile, open Menu to see the navigation.",
+  "“作战训练”查看配装、技能和舰船损失；“资产服务”办理钱包、合同、估价、贷款和快递。":
+    "Combat & training contains fittings, skills and ship losses. Assets & services contains wallets, contracts, appraisal, loans and courier services.",
+  "“福利兑换”申请福利和兑换奖励；有办理权限的人员从“审批中心”处理待办。":
+    "Use Benefits & exchange for welfare and rewards. Authorized officers handle requests in the Approval center.",
+  "菜单按已启用功能和当前权限显示。军团范围以页面可选项为准，军团管理员也不能因此查看其他军团。":
+    "Menus depend on enabled features and your permissions. Corporation selectors define your available scope; corporation administrators do not thereby gain access to other corporations.",
+  "游戏数据按后台同步更新。页面刷新会重新读取本站记录，不等于立即从游戏抓取全部数据。":
+    "Game data is synchronized in the background. Refreshing a page reloads site records; it does not immediately fetch all game data.",
+  "M 表示百万，B 表示十亿，T 表示万亿。创建合同时使用复制按钮提供的完整数字。":
+    "M means million, B billion and T trillion. Use the full values from the copy buttons when creating contracts.",
+  钱包与交税记录: "Wallet & corporation tax",
+  "分别查看收支流水和市场交易，税款在个人流水中单独列出。":
+    "View journal entries separately from market transactions. Personal corporation tax appears on its own line.",
+  查询流水: "Find transactions",
+  "选择个人角色；查看军团钱包时，再选择有权限的军团和钱包分部。":
+    "Choose a personal character, or an authorized corporation and wallet division.",
+  "在“收支流水”查询赏金、合同付款、转账和税款；购买或出售物品还可查看“市场交易”。":
+    "Use Journal for bounties, contract payments, transfers and taxes. Check Market transactions for item purchases and sales.",
+  "使用日期、方向、类型和关键词筛选，点击记录查看交易方、金额、税额与完整备注。":
+    "Filter by date, direction, type and keywords. Open an entry for the parties, amount, tax and full notes.",
+  "个人收入与对应军团税金分两行显示，税款为负数；两行合计为实际到账金额。":
+    "Personal income and the associated corporation tax appear on separate lines, with tax shown as a negative amount. Their sum is the amount actually received.",
+  "ISK 钱包与果壳币余额是两套记录；本页不显示果壳币消费。":
+    "ISK wallets and Nutshell Coins are separate records. Nutshell Coin spending is not shown here.",
+  合同搜索与结算编号: "Contract search & settlement references",
+  "先选合同归属，再搜索编号、描述、物品或合同双方。":
+    "Choose the contract owner before searching by ID, description, items or parties.",
+  查找与核对合同: "Find and check a contract",
+  "选择个人角色或有权限的军团，按合同类型和状态缩小范围。":
+    "Choose a character or authorized corporation, then filter by contract type and status.",
+  "输入完整或部分编号，也可使用物品名、描述和交易方关键词；需要时继续翻页。":
+    "Enter a full or partial ID, item name, description or party keywords. Continue through the pages when needed.",
+  "打开详情，核对发起方、指定对象、实际接收人、金额、物品和完成状态。":
+    "Open the details and verify the issuer, assignee, actual acceptor, amounts, items and completion status.",
+  "游戏合同 ID 是游戏中的数字编号；合同结算 ID 是本站生成的 EX、SRP、PVP、WF 或 BATCH 等业务编号。两者不能互相替代。":
+    "A game contract ID is the numeric in-game identifier. A settlement reference is a site-generated business reference such as EX, SRP, PVP, WF or BATCH. They are not interchangeable.",
+  "办理发放时，把本站复制的合同结算 ID 原样填入游戏合同描述，不加其他文字，也不要自行截短或改号。":
+    "When delivering a reward, paste the copied settlement reference exactly into the game contract description. Do not add text, shorten it or change it.",
+  "网站不会替你在游戏中创建或接取合同。合同已创建、已领取和本站核验完成是不同阶段。":
+    "The site does not create or accept contracts for you. Creation, acceptance and site verification are separate stages.",
+  配装与技能检查: "Fittings & skill checks",
+  "查看军团配装和技能要求，按所选角色确认训练差距。":
+    "Browse corporation fittings and skill requirements, and check the selected character’s training gap.",
+  检查角色是否达标: "Check training requirements",
+  "在“舰船配置”打开目标配装，查看舰船、物品清单和关联技能要求。":
+    "Open a fitting in Ship fittings to see the ship, item list and linked skill requirements.",
+  "在“技能管理”选择角色，查看已训练技能、训练队列和军团要求。":
+    "In Skills, choose a character to view trained skills, the training queue and corporation requirements.",
+  "按缺少的技能或等级安排训练；训练完成后等待技能与队列同步，再查看达标结果。":
+    "Plan training for missing skills or levels. Once training finishes, wait for skills and the queue to synchronize before checking the result.",
+  "“待确认”不等于未达标。先检查角色授权和同步时间；系统不会仅凭预计训练结束时间认定已经学会。":
+    "Unconfirmed does not mean requirements failed. Check authorization and synchronization times first; an estimated training completion time alone does not prove a skill was trained.",
+  "需要保存配装到游戏时，按页面提示完成额外授权，再使用保存操作。":
+    "To save a fitting in game, complete any additional authorization requested by the page before using Save.",
+  集结分与果壳币: "PAP & Nutshell Coins",
+  "军团 PAP、联盟 PAP 和果壳币分别查看，分数同步不等于已经发币。":
+    "Corporation PAP, alliance PAP and Nutshell Coins are separate. Synchronized points do not necessarily mean coins have been issued.",
+  核对集结分: "Check PAP records",
+  "进入“军团考勤”，在军团 PAP 与联盟 PAP 之间选择需要核对的来源。":
+    "Open Attendance and choose corporation PAP or alliance PAP as appropriate.",
+  "选择月份或活动，确认参战角色已经绑定，查看角色明细和最近同步时间。":
+    "Choose the month or activity, check that participating characters are linked, and inspect the character details and latest synchronization time.",
+  "军团活动结束后还需由有权限的人员发分；发现漏记时，提供活动、角色和时间请组织者核对。":
+    "An authorized organizer must award points after a corporation activity ends. For missing points, provide the activity, character and time to the organizer.",
+  "PAP 按站内配置手动或自动兑换果壳币，实际到账以兑换中心余额和币流水为准。":
+    "PAP is converted to Nutshell Coins manually or automatically according to site settings. Confirm the credit in the Exchange balance and coin ledger.",
+  "联盟 PAP 的月度目标以页面当前设置为准；同步中、缺失和失败不能按零分理解。":
+    "The alliance PAP monthly target follows the current page settings. Synchronizing, missing or failed data must not be interpreted as zero points.",
+  申请舰船补损: "Request ship reimbursement",
+  "从已同步的舰船损失发起申请，提交后在个人记录中跟进。":
+    "Start from a synchronized ship loss and follow the request in your personal records.",
+  提交补损: "Submit a reimbursement request",
+  "在“舰船损失”选择角色与损失记录，打开详情核对舰船、时间、地点和物品。":
+    "In Ship losses, select a character and loss, then check the ship, time, location and items.",
+  "按实际情况选择军团补损或 PVP 补损，填写页面要求的出勤、购舰合同或申请说明。":
+    "Choose corporation or PvP reimbursement as appropriate, and supply any attendance, purchase contract or explanation required by the form.",
+  "检查核价和申请条件后提交。PVP 详情可查看整场战报摘要及原战报链接。":
+    "Review the valuation and eligibility before submitting. PvP details include a battle summary and a link to the original report.",
+  "审批后按记录中的接收角色领取游戏合同，等待本站同步核验发放结果。":
+    "After approval, accept the game contract using the recipient character shown in the record, then wait for site verification.",
+  "补损默认仅允许损失发生后 30 天内申请，军团补损和 PVP 补损可分别配置，以当前规则为准。":
+    "Reimbursement requests default to a 30-day window after the loss. Corporation and PvP reimbursement can have separate settings; the current rule applies.",
+  "待审申请可按页面操作撤回；已批准或正在核对发放的申请通常需要申请取消，由他人审核。已完成发放不能直接撤销。":
+    "Pending requests can be withdrawn when the page allows it. Approved requests or those being checked for delivery generally require a cancellation request reviewed by someone else. Completed delivery cannot be directly withdrawn.",
+  "日额度不足时由管理员或补损专员确认使用周额度，周额度不足再确认月额度；月额度不足不能批准，不占用第二天额度。":
+    "If the daily allowance is insufficient, an administrator or reimbursement officer must confirm use of the weekly allowance, then the monthly allowance if needed. Insufficient monthly allowance blocks approval; future daily allowance is not borrowed.",
+  成长福利与旗舰补贴: "Growth benefits & capital subsidies",
+  "选择当前开放的项目，查看资格与奖励后申请。":
+    "Choose an open program and review its requirements and rewards before applying.",
+  办理福利申请: "Apply for benefits",
+  "在“军团福利”选择成长、活动福利或旗舰补贴，查看项目当前是否开放。":
+    "In Corporation benefits, select growth, event benefits or capital subsidies and check whether the program is open.",
+  "成长福利按技能及领取历史检查资格；选择符合要求的领取角色后提交。活动福利按项目要求填写材料和选择角色。":
+    "Growth benefits check skills and claim history; choose an eligible recipient and submit. For event benefits, supply the required evidence and characters.",
+  "申请超级航母或泰坦补贴时，选择购舰角色，从已完成的个人购舰合同中搜索并选择凭证，可继续加载更多合同。":
+    "For a supercarrier or titan subsidy, choose the purchasing character and search completed personal purchase contracts. Load more contracts when needed.",
+  "核对系统识别的舰船、成交价和预计补贴后提交；后续在申请详情查看审核意见、购舰凭证与发放进度。":
+    "Check the identified ship, purchase price and estimated subsidy before submitting. Follow the review, purchase evidence and delivery progress in the request details.",
+  "福利金额、比例和开放状态以站内当前项目为准，不使用旧招募文案中的固定补助承诺。":
+    "Benefit amounts, rates and availability follow the current site program, not fixed promises in older recruitment material.",
+  "纯果壳币奖励与游戏合同奖励的到账方式不同；含物品或 ISK 的奖励需完成相应游戏合同并核验。":
+    "Coin-only rewards and game-contract rewards have different delivery methods. Rewards containing items or ISK require the appropriate completed game contract and verification.",
+  兑换奖励与撤销退款: "Redeem rewards & cancel orders",
+  "同一种奖励可以一次兑换多份，确认前核对整单数量和扣币。":
+    "Redeem multiple units of the same reward in one order. Check the total quantity and coin cost before confirming.",
+  兑换与领取: "Redeem and collect",
+  "选择奖励，查看完整物品或 ISK 内容，再选择接收角色与兑换份数。":
+    "Choose a reward, inspect its complete items or ISK content, and select the recipient and number of units.",
+  "确认总扣币和库存后提交。不同奖励需要分别兑换，不是多种奖励购物车。":
+    "Confirm the total cost and stock, then submit. Different rewards require separate orders; there is no mixed-reward cart.",
+  "在“兑换记录”查看状态；管理员开始发放后会办理游戏合同。":
+    "Follow the status in Redemption records. An administrator starts delivery and arranges the game contract.",
+  "使用订单指定角色在游戏内核对并领取合同，等待本站确认已发放。":
+    "Use the order’s recipient character to check and accept the contract in game, then wait for the site to confirm delivery.",
+  "尚未开始发放且没有合同证据的订单，可直接“撤销兑换”，整单果壳币随撤销退回。":
+    "An order with no delivery started and no contract evidence can be withdrawn directly. The full coin cost is returned with the withdrawal.",
+  "已开始发放的订单只能申请取消；申请取消时不会立即退款，需管理员确认游戏内未交付后批准。":
+    "Once delivery has started, request cancellation instead. The request does not immediately refund coins; an administrator must verify non-delivery in game and approve it.",
+  "余额可以显示负数。可兑换金额以当前可用余额为准；退款应对照原订单和币流水核对。":
+    "Balances may be negative. Redemption depends on the currently available balance. Check refunds against the original order and coin ledger.",
+  "借款、出借与抵押": "Borrowing, lending & collateral",
+  "在“贷款办理”查看个人额度，超出剩余额度的部分才需要担保或抵押。":
+    "View your personal credit in Loan operations. Only the amount above your remaining credit needs a guarantee or collateral.",
+  "选择收款角色、填写本金，并选择按期限一次还清、指定日期一次还清或分期还款。":
+    "Choose the recipient, enter the principal, and select a term-based single repayment, a specific repayment date or installments.",
+  "按期限可选 1 个月、3 个月、半年、1 年或自定义天数，放款后起算；指定日期截止当日 23:59:59（北京时间）。":
+    "Terms include one month, three months, half a year, one year or a custom number of days, starting after disbursement. A specified date ends at 23:59:59 Beijing time.",
+  "提交后打开借款详情。剩余额度不足时，按自动计算的缺口邀请担保人或选择自己的资产抵押。":
+    "After submitting, open the loan details. If remaining credit is insufficient, invite a guarantor or select your own assets as collateral for the automatically calculated shortfall.",
+  "查看审批意见和还款计划；如需确认调整后的条款，先确认再等待放款。批准不等于资金已到账。":
+    "Review the decision and repayment plan. Confirm amended terms if requested, then wait for disbursement. Approval does not mean the funds have arrived.",
+  选择与交付抵押物: "Select and deliver collateral",
+  "选择本人有效绑定角色的资产及数量；同一次选择的物品需要位于同一地点，装配或容器内容按整体交付。":
+    "Select assets and quantities from your own linked character. Items in one selection must be in the same location; fitted ships and containers are delivered with their contents.",
+  "所选物品估值合计的 80%（八折）必须覆盖本次抵押额度。例如缺口为 2B ISK，物品估值至少需要 2.5B ISK。":
+    "80% of the selected assets’ total valuation must cover the required collateral. A 2B ISK shortfall therefore needs assets valued at least 2.5B ISK.",
+  "选择贷款专员的接收角色，默认其主角色，也可选有效小号。保存后按详情创建游戏合同，交付后关联已完成合同并等待审核。":
+    "Choose a loan officer’s recipient character: their main is the default, with valid alts also available. Save, create the game contract as instructed, then link the completed contract and wait for review.",
+  "邀请尚未接受、抵押尚未交付或尚未批准时，不计为有效保障。缺价物品不能按零价凑数提交。":
+    "Unaccepted guarantees and undelivered or unapproved collateral do not count as effective security. Unpriced items cannot be treated as zero-value entries to complete the submission.",
+  出借与还款: "Lend and repay",
+  "出借时选择来源角色并填写金额，按出借详情完成游戏合同；本站核验后才记为已入池。":
+    "To lend, choose the source character and amount, then complete the game contract shown in the contribution details. Funds enter the pool only after verification.",
+  "还款按贷款详情指定的角色、金额和合同要求办理，完成后核对已还金额与剩余计划；系统不会自动从游戏钱包扣款。":
+    "Repay using the character, amount and contract requirements in the loan details. Afterwards, check the recorded payment and remaining schedule. The system does not automatically debit your game wallet.",
+  "贷款专员是办理人，不等于这笔统一资金池借款的原出资人。暂无可用专员时，请管理员分配贷款权限角色。":
+    "The loan officer handles the transaction and is not necessarily the original contributor to the shared pool. If no officer is available, ask an administrator to assign the loan role.",
+  快递估价与游戏合同: "Courier quotes & game contracts",
+  "本站提供路线报价和合同字段，运输需要在游戏内创建快递合同。":
+    "The site provides route quotes and contract fields. Create the courier contract in game to arrange transport.",
+  准备运输合同: "Prepare a courier contract",
+  "选择服务方当前开放的起点和终点。":
+    "Choose a currently available origin and destination.",
+  "粘贴物品清单估价，核对体积和押金；也可按页面手动填写体积及押金。":
+    "Paste an item list for appraisal and check the volume and collateral, or enter those values manually.",
+  "修正未识别物品并重新估价，确认容量、运费、押金、到期和完成期限。":
+    "Correct unrecognized items and appraise again. Check capacity, reward, collateral, expiry and completion time.",
+  "复制页面合同字段，在游戏内创建发给 Heavy Assets Logistics 的快递合同。":
+    "Copy the contract fields and create a courier contract addressed to Heavy Assets Logistics in game.",
+  "编辑物品清单后需要重新估价。本站报价不代表已经下单、付款或完成运输。":
+    "Re-appraise after editing the item list. A site quote is not an order, payment or completed shipment.",
+  "估价、建筑与预警": "Appraisal, structures & alerts",
+  "查看辅助工具的来源、数据时间和当前权限。":
+    "Check the source, data time and permissions for supporting tools.",
+  使用辅助工具: "Use supporting tools",
+  "“物品估价”支持粘贴清单或从合同选择提供／要求物品，查看收购价、中间价、出售价及未识别项目。":
+    "Appraisal accepts pasted item lists or offered/requested items from a contract, and shows buy, midpoint and sell values plus unrecognized items.",
+  "“建筑管理”按可见军团查看建筑状态、燃料和拆除时间；估算值与数据时间应一起看。":
+    "Structures shows status, fuel and unanchoring times for authorized corporations. Read estimates together with their data timestamps.",
+  "“预警平台”按页面指引管理本人接入密钥和同步状态，使用前确认当前收费与余额；密钥不要发给他人。":
+    "In Alerts, follow the page instructions to manage your connection key and synchronization status. Check current pricing and balance before use, and do not share your key.",
+  "估价只是行情参考，不等于补损批准金额、抵押审核结果或实际成交价。":
+    "An appraisal is a market reference, not an approved reimbursement, approved collateral value or actual sale price.",
+  接收游戏邮件提醒: "Receive in-game reminders",
+  "已启用的提醒发给本站账号的当前主角色。":
+    "Enabled reminders are sent to your site account’s current main character.",
+  查看与处理提醒: "Read and act on reminders",
+  "在“我的角色”确认主角色和授权有效，在游戏客户端查看该角色邮箱。":
+    "Check your main character and authorization in My characters, then open that character’s mailbox in game.",
+  "按邮件中的单号、处理意见和详情链接进入对应业务；是否完成仍以业务记录为准。":
+    "Use the reference, comments and detail link in the email to open the relevant record. The business record determines whether the task is complete.",
+  "提醒类型由管理员选择启用，包括审批、业务进度、待领取合同、贷款到期、积分和授权等；不是所有类型默认发送。":
+    "Administrators choose which types are enabled, including approvals, progress, contracts to collect, loan due dates, points and authorization. Not all types are sent by default.",
+  "每封同类邮件最多列出 5 项，同一账号最多每 5 分钟尝试一封，其余事项后续分批；未变化事项不会持续重复提醒。":
+    "Each email lists up to five items of the same type. At most one email is attempted per account every five minutes; remaining items are sent in later batches. Unchanged items are not repeatedly notified.",
+  "邮件中的时间标注 UTC。未收到提醒时，先核对主角色，再请管理员检查该提醒类型和发送记录。":
+    "Email timestamps are marked UTC. If a reminder is missing, check your main character first, then ask an administrator to check the type and delivery record.",
+  "提交 BUG 与功能需求": "Report bugs & request features",
+  "通过意见反馈提交问题、截图并跟进处理回复。":
+    "Submit issues and screenshots through Feedback and follow the replies.",
+  提交一条有效反馈: "Submit useful feedback",
+  "选择 BUG 或功能需求，填写能说明问题的标题。":
+    "Choose Bug or Feature request and enter a descriptive title.",
+  "BUG 请写清页面、角色、操作步骤、预期结果和实际结果；涉及业务时附单号或游戏合同 ID。":
+    "For a bug, include the page, character, steps, expected result and actual result. Include the business reference or game contract ID when relevant.",
+  "选择或粘贴截图，每次最多 3 张 PNG/JPG，文件大小不设固定上限；确认预览后提交。":
+    "Choose or paste up to three PNG/JPG screenshots per submission. There is no fixed file-size cap. Check the previews before submitting.",
+  "在自己的反馈详情查看“待处理、处理中、已解决、已关闭”状态，并通过回复补充材料。":
+    "Open your feedback to view Pending, In progress, Resolved or Closed status, and add information through replies.",
+  "反馈仅本人和站点管理员可查看。提交前遮挡截图中的密码、令牌或密钥。":
+    "Only you and site administrators can view your feedback. Hide passwords, tokens and keys in screenshots before submitting.",
+  审批与合同发放: "Review requests & deliver contracts",
+  "补损专员、福利专员和贷款专员按已分配的业务权限办理。":
+    "Reimbursement, welfare and loan officers act within their assigned business permissions.",
+  审核待办: "Review pending work",
+  "进入“审批中心”，按来源、军团、状态或关键词筛选，打开原单据详情。":
+    "Open the Approval center, filter by source, corporation, status or keywords, and open the original record.",
+  "核对申请人、领取角色、资格、金额与证据，按实际情况批准、拒绝或要求补充。本人申请及本人取消申请不能自行审批。":
+    "Verify the applicant, recipient, eligibility, amount and evidence, then approve, reject or request information as appropriate. Do not review your own request or cancellation.",
+  "补损超出日额度时，明确确认使用周额度；周额度不足再确认月额度。金额或余额变化后需要重新核对。":
+    "For reimbursement above the daily allowance, explicitly confirm use of the weekly allowance, then monthly allowance if necessary. Recheck after amounts or balances change.",
+  发放与取消: "Delivery and cancellation",
+  "兑换订单先点击“开始发放”，再按“合同信息”复制接收角色、完整结算 ID 和支付金额，核对整单物品及份数。":
+    "For a redemption order, choose Start delivery first. Then copy the recipient, complete settlement reference and payment amount from Contract details, and check all items and units.",
+  "在游戏中按单据要求创建合同。福利、兑换发放使用物品交换合同，价格为 0，物品与支付 ISK 以单据冻结明细和复制金额为准。":
+    "Create the contract in game as required. Welfare and reward deliveries use item exchange contracts with a price of zero; use the record’s frozen items and copied ISK reward amount.",
+  "等待对方领取及同步核验。发现多份有效合同、物品或金额不符时，先核对游戏证据，不用改写结算编号来强行完成。":
+    "Wait for acceptance and synchronization. If there are multiple valid contracts or mismatched items or amounts, check the game evidence rather than changing the reference to force completion.",
+  "批准取消前，核实游戏内确实未交付并按页面确认；仅提出取消请求不会自动退款或撤销游戏合同。":
+    "Before approving cancellation, verify that delivery has not occurred in game and confirm as required. A cancellation request alone does not refund coins or cancel the game contract.",
+  "使用合并结算批次时，按批次汇总的接收角色、完整物品和 BATCH 编号办理，不再逐来源单重复发放。":
+    "For a combined settlement batch, use its recipient, complete item totals and BATCH reference. Do not also deliver each source request separately.",
+  配置角色与提醒: "Configure roles & reminders",
+  "权限角色、军团范围和提醒开关分别配置，创建角色后还需分配成员。":
+    "Configure roles, corporation scope and reminders separately. A newly created role still needs members assigned.",
+  分配专员权限: "Assign officer permissions",
+  "在“权限管理”使用“新建角色”或编辑现有角色，选择对应业务能力和允许的军团／联盟范围。":
+    "In Access management, create or edit a role and choose the business capabilities and permitted corporation/alliance scope.",
+  "将角色分配给本站成员。补损专员负责补损审核与交付，福利专员负责福利审核与交付，贷款专员负责贷款管理。":
+    "Assign the role to site members. Reimbursement officers review and deliver reimbursement, welfare officers review and deliver benefits, and loan officers manage loans.",
+  "贷款专员需有有效绑定的游戏角色，主角色默认用于合同办理，也可选择其有效小号。仅有站点管理员身份不会自动成为贷款专员候选。":
+    "Loan officers need valid linked game characters. Their main is the default for contracts, with valid alts available. Site administrator status alone does not make someone a loan officer candidate.",
+  "专员权限不等于站点管理员权限，不能因此配置所有规则、主动发币或读取全部成员数据。":
+    "An officer role is not site administrator access. It does not automatically grant all configuration, direct coin issuance or access to every member’s data.",
+  开启游戏邮件提醒: "Enable in-game mail reminders",
+  "站点管理员在“提醒”选择本人已绑定的发件角色，点击“授权发信”，在 EVE 授权页选择同一角色。":
+    "In Reminders, a site administrator selects their own linked sender and chooses Authorize mail. Select that same character on the EVE authorization page.",
+  "返回后勾选需要的提醒类型，启用推送并保存。授权成功本身不会自动开启推送。":
+    "After returning, choose the reminder types, enable sending and save. Successful authorization alone does not enable sending.",
+  "在发送记录检查结果。明确失败可按页面重试；“结果未知”不要直接当作未发送而重复操作。":
+    "Check the delivery history. Explicit failures can be retried through the page; an unknown result must not be assumed unsent and repeated.",
+  配置角色清理: "Configure character cleanup",
+  "站点管理员在“成员”配置允许保留的军团名称，先预览再启用每周清理。":
+    "In Members, a site administrator configures corporation names to retain, previews the result and enables weekly cleanup.",
+  "规则严格按角色判断：不在指定军团的小号也会解除绑定。清理不等于删除本站账号和历史单据。":
+    "Rules apply to each character: alts outside the permitted corporations are also unlinked. Cleanup does not delete the site account or historical requests.",
+  常见问题: "Common questions",
+  "找不到入口、数据未更新或合同未结算时，从这里排查。":
+    "Start here for missing menus, stale data or unsettled contracts.",
+  "为什么看不到某个菜单或军团？": "Why is a menu or corporation missing?",
+  "先确认已登录并补齐社区资料；菜单还取决于模块是否启用和当前权限。请管理员核对本站角色及军团范围，不要反复添加角色。":
+    "Check that you are signed in and your community profile is complete. Menus also depend on enabled modules and permissions. Ask an administrator to check your site roles and corporation scope rather than repeatedly adding characters.",
+  "为什么已经在游戏操作，网站还没更新？":
+    "Why is an in-game action not reflected yet?",
+  "先核对所选角色、筛选条件和最近同步时间，再检查授权状态。后台同步和游戏缓存有延迟；刷新页面不会跳过这些等待。仍异常时提交角色、时间和编号。":
+    "Check the selected character, filters, synchronization time and authorization. Background synchronization and game caches introduce delays; refreshing the page does not bypass them. If the issue persists, report the character, time and reference.",
+  "合同已经领取，为什么仍待核验？":
+    "Why is an accepted contract still awaiting verification?",
+  "确认使用了指定接收角色，游戏合同已完成且明细已同步，并核对结算 ID、双方、物品数量和金额。只看到合同编号或已创建，不代表本站核验通过。":
+    "Confirm the designated character accepted it, the game contract is finished and its details have synchronized. Check the settlement reference, parties, item quantities and amounts. Seeing an ID or a created contract does not mean site verification passed.",
+  "取消了兑换，为什么余额还没退回？":
+    "Why are coins not refunded after cancellation?",
+  "区分“撤销兑换”和“申请取消”：符合直接撤销条件的订单会整单退款；已开始发放的订单需取消审核通过。核对订单最终状态和对应币流水，不要只看已提交取消请求。":
+    "Distinguish withdrawal from a cancellation request. Eligible direct withdrawals refund the full order; an order whose delivery started needs cancellation approval. Check the final order status and ledger rather than only the submitted request.",
+  "为什么旗舰购舰合同不在候选列表？":
+    "Why is a purchase contract absent from capital subsidy candidates?",
+  "选择实际购舰角色，清除过窄的关键词并继续加载；合同须为已完成的个人购买合同，舰船与物品明细已同步，并符合所选补贴类别。":
+    "Select the purchasing character, broaden the search and load more results. The contract must be a completed personal purchase with synchronized ship/item details and match the chosen subsidy category.",
+  "为什么贷款暂无可用专员或抵押不能提交？":
+    "Why is no loan officer available, or why is collateral blocked?",
+  "请管理员核对贷款角色是否已分配给成员且军团范围有效。抵押还需当前借款确有保障缺口、全部物品有估值、八折价值足额，且角色与资产仍有效。":
+    "Ask an administrator to check that the loan role is assigned to a member with valid corporation scope. Collateral also requires a remaining security shortfall, prices for all items, sufficient value at 80%, and valid characters and assets.",
+  "按主题查阅本站操作，申请条件与金额以业务页面当前规则为准。":
+    "Browse instructions by topic. Eligibility and amounts follow the current rules shown on each business page.",
+  使用帮助: "User guide",
+  打印本节: "Print this topic",
+  搜索帮助: "Search help",
+  "搜索操作、问题或关键词": "Search tasks, questions or keywords",
+  帮助目录: "Help topics",
+  "找到 {0} 个主题": "Found {0} topics",
+  "试试更短的关键词，或从目录选择主题。":
+    "Try a shorter keyword or select a topic from the directory.",
+  "更新于 {0}": "Updated {0}",
   "军团介绍": "About us",
   "成员保障": "Support",
   "欢迎新老舰长。": "New and veteran pilots welcome.",

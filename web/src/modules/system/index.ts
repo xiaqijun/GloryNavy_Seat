@@ -1,5 +1,10 @@
 import { msg } from "@/lib/i18n";
-import { Activity, ChartNoAxesCombined, LayoutDashboard } from "lucide-react";
+import {
+  Activity,
+  BookOpen,
+  ChartNoAxesCombined,
+  LayoutDashboard,
+} from "lucide-react";
 import type { FrontendModule } from "@/app/module-registry";
 
 export const systemModule: FrontendModule = {
@@ -7,6 +12,15 @@ export const systemModule: FrontendModule = {
   apiVersion: 1,
   required: true,
   pages: [
+    {
+      id: "system.help",
+      path: "/help",
+      label: msg("使用帮助"),
+      icon: BookOpen,
+      navigationFooter: true,
+      navigationOrder: 20,
+      load: () => import("./help-page"),
+    },
     {
       id: "system.landing",
       path: "/",

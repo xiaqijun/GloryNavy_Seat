@@ -1,5 +1,7 @@
 # 项目文档
 
+成员操作：[站内使用帮助](https://seat.kisectool.com/help) · [完整中文指南](user-guide.zh-CN.md) · [帮助页面与内容维护](ui/help.md)。本轮交付见[站内使用帮助](history/seat-help-20261020.md)，实际发布状态见[项目状态](project-status.md)。
+
 最新交付：[公开首页层级优化（2026-10-20）](history/public-home-ux-20261020.md) / [公开首页分屏翻页（2026-10-19）](history/public-home-pages-20261019.md) / [公开首页招募内容整理（2026-10-19）](history/public-home-content-20261019.md) / [公开首页视觉强化（二轮，2026-10-19）](history/public-home-impact-20261019.md) / [公开首页优化（2026-10-19）](history/public-home-20261019.md) / [同一奖励多份兑换（2026-10-19）](history/exchange-quantity-20261019.md) / [旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。
 
 - 意见反馈：[中文指南](integrations/feedback.zh-CN.md)、[English](integrations/feedback.en.md)、[页面布局](ui/feedback.md)。
@@ -19,6 +21,7 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 | 目的 | 入口 |
 | --- | --- |
 | 当前生产版本、已上线功能和验证边界 | [项目状态](project-status.md) |
+| 成员、专员的实际操作步骤与常见问题 | [使用指南](user-guide.zh-CN.md)、[站内使用帮助](https://seat.kisectool.com/help) |
 | 尚未完成、需联调、需核实与暂停的事项 | [待办清单](backlog.md) |
 | 本地启动、配置、迁移与调试 | [开发指南](development.md) |
 | 发布、备份、反代、证书与恢复 | [生产部署](deployment.md)、[存储保留与清理](storage-retention.md) |
