@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, RefreshCw } from "lucide-react";
+import {
+  ArrowUpRight,
+  RefreshCw,
+  Swords,
+  Compass,
+  Pickaxe,
+  GraduationCap,
+  ShieldCheck,
+  Gift,
+} from "lucide-react";
 import { msg, getLocale } from "@/lib/i18n";
 import { getPublicCorporation } from "./public-corporation-api";
 import { getPublicActivity } from "./public-activity-api";
@@ -138,70 +147,50 @@ export function FleetChapters() {
   return (
     <section
       id="fleet"
-      className="landing-chapters"
+      className="landing-activities"
       aria-labelledby="fleet-title"
     >
-      <div className="landing-width landing-chapter-stage">
-        <div className="landing-chapter-art" aria-hidden="true">
-          <img
-            src="/images/home-avatar.png"
-            alt=""
-            width="1400"
-            height="980"
-            loading="lazy"
-          />
-        </div>
-        <div className="landing-chapter-content">
-          <p className="landing-kicker">{msg("舰队生活")}</p>
-          <h2 id="fleet-title" className="sr-only">
-            {msg("从集结，到下一次出发")}
-          </h2>
-          <div className="landing-chapter-panels">
-            {[
-              [
-                "01",
-                "集结。",
-                "与舰队，一起出征。",
-                "从确认配装到抵达集结点，在同一个频道里，找到属于你的作战席位。",
-                "舰船配置",
-                "活动出勤",
-              ],
-              [
-                "02",
-                "成长。",
-                "每一次训练，都有方向。",
-                "从技能要求到舰船方案，了解自己距离目标还差什么，把下一步变得清晰。",
-                "技能方案",
-                "达标检查",
-              ],
-              [
-                "03",
-                "再出发。",
-                "让准备，跟上你的热爱。",
-                "成员福利、补损与奖励兑换，让每一次申请都有记录，让下一次出发更有准备。",
-                "军团福利",
-                "奖励兑换",
-              ],
-            ].map(([number, title, sub, text, a, b]) => (
-              <article className="landing-chapter-panel" key={number}>
-                <span className="landing-chapter-number" aria-hidden="true">
-                  {number}
-                </span>
-                <h3>{msg(title)}</h3>
-                <p className="landing-chapter-subtitle">{msg(sub)}</p>
-                <p>{msg(text)}</p>
-                <div className="landing-chapter-tags">
-                  <span>{msg(a)}</span>
-                  <span>{msg(b)}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="landing-chapter-progress" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
+      <div className="landing-width">
+        <h2 id="fleet-title">{msg("军团活动与成员支持")}</h2>
+        <div className="landing-activity-grid">
+          {[
+            {
+              icon: Swords,
+              title: "PVP 舰队",
+              text: "收割、堵门、反收割与旗舰作战，由 FC 组织，和经验丰富的老玩家一起实战。",
+            },
+            {
+              icon: Compass,
+              title: "PVE 教学",
+              text: "古斯塔斯异常与死亡空间教学舰队，帮助新人熟悉战斗与生存。",
+            },
+            {
+              icon: Pickaxe,
+              title: "工业生产",
+              text: "月矿、冰矿与异常矿舰队，和军团生产团队一起协作。",
+            },
+            {
+              icon: GraduationCap,
+              title: "新人帮助",
+              text: "保留认真对待每一位新人的传统，提供群内答疑与一对一指导。",
+            },
+            {
+              icon: ShieldCheck,
+              title: "补损与福利",
+              text: "舰船补损、成长福利与旗舰补贴，申请条件和额度以站内当前规则为准。",
+            },
+            {
+              icon: Gift,
+              title: "PAP 与奖励",
+              text: "活动积分按军团规则结算成果壳币，用于兑换物资奖励。",
+            },
+          ].map(({ icon: Icon, title, text }) => (
+            <article className="landing-activity landing-reveal" key={title}>
+              <Icon size={22} aria-hidden="true" />
+              <h3>{msg(title)}</h3>
+              <p>{msg(text)}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

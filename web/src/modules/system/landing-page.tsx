@@ -71,54 +71,7 @@ export default function LandingPage() {
             });
           });
       });
-      motion.add(
-        "(min-width: 1000px) and (min-height: 650px) and (prefers-reduced-motion: no-preference)",
-        () => {
-          const panels = gsap.utils.toArray<HTMLElement>(
-            ".landing-chapter-panel",
-          );
-          const markers = gsap.utils.toArray<HTMLElement>(
-            ".landing-chapter-progress span",
-          );
-          gsap.set(".landing-chapter-panels", {
-            display: "grid",
-          });
-          gsap.set(panels, {
-            gridArea: "1 / 1",
-          });
-          gsap.set(panels.slice(1), {
-            autoAlpha: 0,
-            y: 60,
-          });
-          gsap.set(markers.slice(1), { opacity: 0.22 });
-          const story = gsap.timeline({
-            scrollTrigger: {
-              trigger: ".landing-chapters",
-              start: () =>
-                `top ${root.current?.querySelector(".landing-topbar")?.getBoundingClientRect().height ?? 80}px`,
-              end: "+=100%",
-              pin: true,
-              scrub: 0.6,
-              invalidateOnRefresh: true,
-            },
-          });
-          story.to(
-            ".landing-chapter-art",
-            { scale: 1.13, xPercent: 5, duration: 5, ease: "none" },
-            0,
-          );
-          panels.slice(1).forEach((panel, index) => {
-            const at = 1 + index * 2;
-            story
-              .to(panels[index], { autoAlpha: 0, y: -50, duration: 0.5 }, at)
-              .to(panel, { autoAlpha: 1, y: 0, duration: 0.6 }, at + 0.2)
-              .to(markers[index], { opacity: 0.22, duration: 0.4 }, at)
-              .to(markers[index + 1], { opacity: 1, duration: 0.4 }, at + 0.45);
-          });
-        },
-      );
-      // Public data arrives after the timeline is built. Re-measure downstream
-      // pin/reveal offsets when that section's layout changes.
+      // Public data can change section height after reveal triggers are built.
       let refreshFrame = 0;
       const strength = root.current?.querySelector(".landing-strength");
       const observer =
@@ -172,7 +125,7 @@ export default function LandingPage() {
           <nav className="landing-nav" aria-label={msg("军团介绍导航")}>
             <a href="#strength">{msg("军团实力")}</a>
             <a href="#about">{msg("关于我们")}</a>
-            <a href="#fleet">{msg("舰队生活")}</a>
+            <a href="#fleet">{msg("军团活动")}</a>
             <a href="#join">{msg("加入我们")}</a>
           </nav>
           <div className="landing-account">
@@ -214,9 +167,11 @@ export default function LandingPage() {
                 <span /> EVE ONLINE · TRANQUILITY
               </p>
               <h1 id="landing-title">GloryNavy</h1>
-              <p className="landing-tagline">{msg("在新伊甸，一起远航。")}</p>
+              <p className="landing-tagline">
+                {msg("荣耀海军 · 00 精英 PVP 军团")}
+              </p>
               <p className="landing-intro">
-                {msg("从第一次跃迁，到并肩出征。下一段故事，与你一起。")}
+                {msg("从晨曦到宁静，欢迎热爱战斗的新老舰长。")}
               </p>
               <div className="landing-hero-actions">
                 <a className="landing-primary" href="#join">
@@ -249,21 +204,30 @@ export default function LandingPage() {
           <div className="landing-about-heading landing-reveal">
             <p className="landing-kicker">{msg("关于我们")}</p>
             <h2 id="about-title">
-              {msg("星海很大，")}
+              {msg("荣耀海军，")}
               <br />
-              {msg("一起走得更远。")}
+              {msg("全员猛男！")}
             </h2>
           </div>
           <div className="landing-about-copy landing-reveal">
-            <p>
-              {msg(
-                "Glory Navy 是 EVE Online 国际服军团。我们因新伊甸相遇，在舰队中找到伙伴，也为每一次出发做好准备。",
-              )}
-            </p>
-            <a className="landing-text-link" href="#fleet">
-              {msg("舰队生活")}
-              <ArrowUpRight size={16} aria-hidden="true" />
-            </a>
+            <dl className="landing-history">
+              <div>
+                <dt>{msg("2016 · 晨曦启航")}</dt>
+                <dd>
+                  {msg(
+                    "成立于晨曦服的 00 主权战斗军团，曾组织单军团 80 余人的作战舰队。",
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{msg("2021.08 · 宁静重建")}</dt>
+                <dd>
+                  {msg(
+                    "转战宁静服，以精英 PVP 为方向，延续作战、生产与新人培养的军团传统。",
+                  )}
+                </dd>
+              </div>
+            </dl>
           </div>
         </section>
 
@@ -276,8 +240,10 @@ export default function LandingPage() {
           <div className="landing-width landing-join-inner landing-reveal">
             <div>
               <p className="landing-kicker">{msg("加入我们")}</p>
-              <h2 id="join-title">{msg("下一次跃迁，一起。")}</h2>
-              <p>{msg("加入招募群，认识下一次并肩出征的伙伴。")}</p>
+              <h2 id="join-title">{msg("加入荣耀海军")}</h2>
+              <p>
+                {msg("欢迎新老玩家。申请入团，请先联系新人 QQ 群内管理员。")}
+              </p>
             </div>
             <div className="landing-join-action">
               <span className="landing-group-number">
@@ -319,6 +285,23 @@ export default function LandingPage() {
               </span>
             </div>
           </div>
+          <section
+            className="landing-requirements landing-width"
+            aria-labelledby="requirements-title"
+          >
+            <h3 id="requirements-title">{msg("入团要求")}</h3>
+            <ul>
+              <li>{msg("心智成熟、诚实守信，与军团成员友善相处。")}</li>
+              <li>{msg("热爱 PVP，不畏惧 00、战斗与舰船损失。")}</li>
+              <li>{msg("上线保持 Mumble 语音协作；现实不便时除外。")}</li>
+              <li>{msg("尊重队友和对手，不辱骂、不嘲讽，用战绩证明实力。")}</li>
+              <li>
+                {msg(
+                  "禁止脚本、外挂，以及通过非官方渠道购买 ISK、PLEX、技能点等物品。",
+                )}
+              </li>
+            </ul>
+          </section>
           <JoiningSteps />
         </section>
       </main>

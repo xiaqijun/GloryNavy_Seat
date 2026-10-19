@@ -283,7 +283,7 @@ for (const width of [320, 375, 768, 1440]) {
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
       await expect(page.locator("#join-title")).toHaveCSS("opacity", "1");
       await expect(page.locator(".pin-spacer")).toHaveCount(0);
-      for (const panel of await page.locator(".landing-chapter-panel").all()) {
+      for (const panel of await page.locator(".landing-activity").all()) {
         await expect(panel).toBeVisible();
       }
       await expect(
@@ -307,49 +307,28 @@ for (const width of [320, 375, 768, 1440]) {
   });
 }
 
-test("desktop chapters remain visible through forward and reverse scrolling and clean up on exit", async ({
-  page,
-}) => {
+test("activities remain readable through navigation and leaving the page", async ({ page }) => {
   await setup(page, "signed-in");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
-  await expect(page.locator(".pin-spacer")).toHaveCount(1);
-  const scrollChapter = async (progress: number) => {
-    await page.evaluate((p) => {
-      const spacer = document.querySelector(".pin-spacer")!;
-      const bar = document.querySelector(".landing-topbar")!.getBoundingClientRect().height;
-      const start = spacer.getBoundingClientRect().top + scrollY - bar;
-      window.scrollTo({
-        top: start + innerHeight * p,
-        behavior: "instant",
-      });
-    }, progress);
-  };
-  for (const [progress, panel] of [
-    [0.1, 0],
-    [0.48, 1],
-    [0.9, 2],
-    [0.62, 1],
-    [0.48, 1],
-    [0.1, 0],
-  ]) {
-    await scrollChapter(progress);
-    const chapter = page.locator(".landing-chapter-panel").nth(panel);
-    await expect(chapter).toHaveCSS("visibility", "visible");
-    await expect
-      .poll(async () =>
-        Number(await chapter.evaluate((e) => getComputedStyle(e).opacity)),
-      )
-      .toBeGreaterThan(0.5);
-    expect(
-      Math.abs((await page.locator(".landing-chapters").boundingBox())!.y -
-        (await page.locator(".landing-topbar").boundingBox())!.height),
-    ).toBeLessThan(2);
+  await expect(page.locator(".landing-activity")).toHaveCount(6);
+  for (const id of ["fleet", "join", "fleet"]) {
+    await page.locator(`.landing-nav a[href="#${id}"]`).click();
+    await expect(page.locator(`#${id}`)).toBeInViewport();
+    if (id === "fleet") {
+      for (const activity of await page.locator(".landing-activity").all()) {
+        await expect(activity).toBeInViewport();
+        await expect(activity).toHaveCSS("opacity", "1");
+      }
+    }
+    await expect(page.locator(".pin-spacer")).toHaveCount(0);
   }
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.getByRole("link", { name: "进入工作台" }).click();
   await expect(page).toHaveURL(/\/workspace$/);
+  await expect(page.locator(".landing-activity, .pin-spacer")).toHaveCount(0);
+  await page.goBack();
+  await expect(page.locator(".landing-activity")).toHaveCount(6);
   await expect(page.locator(".pin-spacer")).toHaveCount(0);
 });
 
