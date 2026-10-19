@@ -1,6 +1,6 @@
 # Nutshell Coins and unified redemption
 
-## Multiple packs of one reward (2026-10-19, implemented locally)
+## Multiple packs of one reward (2026-10-19, released)
 
 The confirmation dialog accepts a pack count, defaulting to one. This is not a multi-product cart. Optional claim `units` is an integer from 1 to 1,000,000; omission means one. The server rechecks stock, balance and quote versions. Total coin cost is the already rounded-up per-pack minor-unit price multiplied by units. Items, fitted ships and ISK are expanded into an immutable order snapshot; valuation is multiplied too. Each redemption remains one order, one settlement reference and one delivery contract.
 
