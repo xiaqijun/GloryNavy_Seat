@@ -5,6 +5,7 @@ import { FulfillmentSummary } from "./fulfillment-summary";
 import { LossCombatAndItems, LossEvidence } from "./loss-browser";
 import { ValuationView } from "./valuation";
 import * as api from "./api";
+import { BattleReportPanel } from "./battle-report";
 
 export function LossCaseContent({
   item: v,
@@ -28,6 +29,7 @@ export function LossCaseContent({
   return (
     <div className="welfare-loss-detail">
       <LossIdentity item={v} />
+      {v.kind === "solo" && <BattleReportPanel killmailID={d.killmail_id} caseID={v.id} />}
       <div className="welfare-loss-total">
         <div>
           <span>{pending ? msg("核价金额") : msg("核准金额")}</span>
@@ -120,6 +122,7 @@ export function LossReviewOverview({ item: v, onOpenEvidence }: { item: api.Case
   return (
     <section className="welfare-loss-review-overview" aria-label={msg("补损审查要点")}>
       <LossIdentity item={v} onOpenEvidence={onOpenEvidence} />
+      {v.kind === "solo" && <BattleReportPanel killmailID={v.detail.killmail_id} caseID={v.id} />}
       {v.kind === "solo" && (
         <div className="welfare-loss-review-quote">
           <span>

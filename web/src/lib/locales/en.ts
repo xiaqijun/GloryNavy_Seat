@@ -1,5 +1,14 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "战报摘要": "Battle summary",
+  "查看战报": "View battle report",
+  "本方": "Your side",
+  "参战人数": "Pilots",
+  "击毁": "Kills",
+  "损失": "Losses",
+  "损失金额": "Loss value",
+  "正在生成战报摘要": "Generating battle summary",
+  "战报摘要暂不可用": "Battle summary unavailable",
   "截图最多 3 张，仅支持 PNG/JPG": "Up to 3 PNG/JPG screenshots",
   "截图最多 3 张，请选择有效的 PNG/JPG 图片": "Use up to 3 valid PNG/JPG screenshots",
   "截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB": "Up to 3 PNG/JPG screenshots, 2 MB each",

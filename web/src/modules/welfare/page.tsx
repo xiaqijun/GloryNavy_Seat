@@ -27,6 +27,7 @@ import { getData } from "@/lib/http";
 import { EveImage } from "@/components/eve-image";
 import * as api from "./api";
 import { LossEvidence } from "./loss-browser";
+import { BattleReportPanel } from "./battle-report";
 import { DeliveryContracts, DeliverySummary } from "./delivery-contracts";
 import { LossCaseContent, LossCaseEvidence, LossReviewOverview } from "./loss-case-content";
 import { ValuationView } from "./valuation";
@@ -967,6 +968,7 @@ export function Apply({
       </label>
       {linkedLoss && (
         <div className="wide">
+          {kind === "solo" && <BattleReportPanel killmailID={linkedLoss.id} corporationID={corp} characterID={character} />}
           <LossEvidence loss={linkedLoss} />
         </div>
       )}

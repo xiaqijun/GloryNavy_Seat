@@ -20,6 +20,7 @@ import (
 )
 
 type Service struct {
+	BattleReports    *BattleReportClient
 	MatchReward      func(json.RawMessage, eve.DeliveryContract) (bool, error)
 	PaymentContracts func(context.Context, pgx.Tx, string, int64, string, time.Time) ([]eve.DeliveryContract, error)
 	PaymentBindings  func(context.Context, pgx.Tx, []int64) (map[int64]string, error)

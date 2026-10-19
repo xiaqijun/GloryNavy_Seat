@@ -1,5 +1,13 @@
 # Corporation welfare
 
+## Whole-battle PVP report (2026-10-19)
+
+PVP (solo) applications with a selected synced loss, personal claim details and approval details show battle time/systems, total KMs/value, and each side's pilots, kills, losses and loss value. All source sides are retained. The seed KM victim's organization marks the claimant's side. Pilots are unique positive character IDs across victims and attackers in the report, excluding NPCs without character IDs. Values are public estimates displayed in M/B/T, with full loss value in the tooltip.
+
+Source: [SCTools Battle Report](https://br.scers.cn/). Links are generated on the fixed host as `https://br.scers.cn/q?mode=expand&km=<killmail_id>`. The server posts only the public KM ID and language to `https://scit.scers.cn:45161/api/public/battle_reports/expand`, then polls `/api/public/battle_reports/jobs/<job_id>` using a validated UUID. No account/session/EVE tokens, arbitrary URLs, redirects, embedded pages or copied site code. Require the seed KM in the result. The compact public projection is display-only and never changes valuation, caps, approval or delivery snapshots. No migration.
+
+Protected GET `/api/v1/welfare/cases/{id}/battle-report` rechecks claim object access and solo kind before cache lookup. GET `/api/v1/welfare/losses/battle-report?corporation_id=…&character_id=…&killmail_id=…` verifies scoped synced victim/corporation evidence first. Response: ready with summary, pending, or unavailable. Failure leaves the original link and retry available without blocking business actions. Outbound limits: 12 seconds/request, 16 MiB, 4 concurrent requests, same-KM/language coalescing, 256 cache entries; ready TTL 15 minutes, failure TTL 1 minute, pending polling at least 3 seconds apart and at most 3 minutes. The page polls pending every 5 seconds. Source grouping and valuations may evolve and are not settlement evidence.
+
 ## Automatic reimbursement period caps (2026-10-19)
 
 This supersedes the older daily-only advance rule below. With a positive daily allowance, each missing/zero weekly cap becomes daily × 7 and each missing/zero monthly cap becomes daily × 30, fixed regardless of month length. Positive manual caps are preserved independently. Without a daily allowance, missing period caps remain unlimited. Existing settings work immediately without saving again.

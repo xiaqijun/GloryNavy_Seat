@@ -1,5 +1,13 @@
 # 军团福利
 
+## PVP 整场战报（2026-10-19）
+
+PVP（solo）申请选择已同步损失后、个人详情和审批详情显示整场战报摘要：时间、星系、KM 总数、总损失金额，以及每个阵营的参战人数、击毁、损失、损失金额。保留来源的全部阵营，不把多方战斗强行合为两方；本方按申请 KM 的受害者军团/联盟标记。人数按战报内受害者和攻击者的正数角色 ID 去重，不计无角色 ID 的 NPC；不是单份 KM 的攻击者人数。金额为来源站估算，以 M/B/T 显示，悬浮可看完整损失值。
+
+来源为 [SCTools 战报](https://br.scers.cn/)，每单链接固定生成 `https://br.scers.cn/q?mode=expand&km=<killmail_id>`。服务器向固定 `https://scit.scers.cn:45161/api/public/battle_reports/expand` POST 公开 KM ID 与语言，再按 UUID 查询 `/api/public/battle_reports/jobs/<job_id>`；不传会话、账号或 EVE 令牌，不接受任意地址或跳转，不嵌入第三方页面。响应只提取显示统计，校验包含原 KM；不保存战报全文、不更改核价/审批/额度/交付快照，无迁移。
+
+受保护读取：`GET /api/v1/welfare/cases/{id}/battle-report` 每次复用单据对象权限且限 solo；`GET /api/v1/welfare/losses/battle-report?corporation_id=…&character_id=…&killmail_id=…` 先查授权损失及受害角色/军团。命中公共缓存也先鉴权。返回 ready + summary、pending 或 unavailable；失败不阻止申请和审批，链接一直保留并可重试。每次外部请求 12 秒、响应上限 16 MiB、并发最多 4、相同 KM/语言合并；成功缓存 15 分钟，失败 1 分钟，pending 至少间隔 3 秒、最多 3 分钟，缓存最多 256 项。页面只在 pending 时每 5 秒重读。第三方归组和金额可能更新，不作为本站结算依据。
+
 ## 补损周期额度自动计算（2026-10-19）
 
 本节覆盖下方旧“周/月未配置则顺延”规则：有日额度时，未填或 0 的周额度自动取日额度 × 7，月额度自动取日额度 × 30（固定值，不随月份天数变化）。各周期独立补齐，正数手动额度保持；没有日额度时，未填周/月仍不限。旧配置无需重新保存即可生效。

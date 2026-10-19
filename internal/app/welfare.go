@@ -23,6 +23,7 @@ func welfareHandler(pool *pgxpool.Pool, accounts *identity.Service, communityPro
 		reader = eve.ReadAuthorization(pool)
 	}
 	s := &welfare.Service{Pool: pool, Administrator: policy.IsAdministrator, LockAccounts: accounts.LockActiveAccounts, Credit: coins.WelfareGrantTx}
+	s.BattleReports = welfare.NewBattleReportClient()
 	s.AccountNicknames = communityProfiles.Nicknames
 	s.MainCharacterID = func(ctx context.Context, account string) (int64, error) {
 		ids, err := accounts.MainCharacterIDs(ctx, []string{account})
