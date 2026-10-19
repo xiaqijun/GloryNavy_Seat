@@ -22,6 +22,7 @@ const purchase = {
   checked_at: "2026-10-19T00:00:00Z",
   title: "Purchase",
   issuer_id: "456",
+  issuer_name: "Capital Shipyard",
   issuer_corporation_id: "10",
   assignee_id: "123",
   acceptor_id: "123",
@@ -32,7 +33,16 @@ const purchase = {
   content_token: "v1",
   for_corporation: false,
   items_ready: true,
-  items: [{ type_id: "23919", quantity: "1", name: "Aeon", included: true }],
+  items: [
+    { type_id: "23919", quantity: "1", name: "Aeon", included: true },
+    {
+      type_id: "13922",
+      quantity: "4",
+      name: "Capital Module " + "LongName".repeat(12),
+      included: true,
+    },
+    { type_id: "999", quantity: "2", name: "", included: true },
+  ],
 };
 const preview = {
   contract_id: "901",
@@ -85,6 +95,7 @@ async function setup(
   review = false,
   initialState = "contract_required",
   caseState = "submitted",
+  evidence: "complete" | "missing" = "complete",
 ) {
   let state = initialState,
     failed = false,
@@ -94,6 +105,10 @@ async function setup(
   const commands: Record<string, any>[] = [];
   const item = {
     ...baseItem,
+    detail: {
+      ...baseItem.detail,
+      purchase: evidence === "missing" ? undefined : purchase,
+    },
     state: caseState,
     award_minor: caseState === "submitted" ? 0 : 125000000000,
   };
@@ -480,7 +495,7 @@ for (const language of ["zh-CN", "en"]) {
       .check();
     await expect(submit).toBeEnabled();
     await page.screenshot({
-      path: `../.local/capital-contract-fix/picker-${language}-${info.project.name}.png`,
+      path: `../.local/purchase-evidence/picker-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     expect(
@@ -559,7 +574,7 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toContainText("1.25B ISK");
     await page.screenshot({
-      path: `../.local/capital-contract-fix/preview-${language}-${info.project.name}.png`,
+      path: `../.local/purchase-evidence/preview-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     await page
@@ -603,7 +618,7 @@ for (const language of ["zh-CN", "en"]) {
       await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
     await page.screenshot({
-      path: `../.local/capital-contract-fix/detail-${language}-${info.project.name}.png`,
+      path: `../.local/purchase-evidence/detail-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     await expect(
@@ -631,6 +646,67 @@ for (const language of ["zh-CN", "en"]) {
       version: "1",
     });
   });
+  test(`${language} approval displays the saved purchase and all its items`, async ({
+    page,
+  }, info) => {
+    const ctl = await setup(page, language, true);
+    const evidence = page.getByRole("region", {
+      name: en ? "Purchase contract details" : "购舰合同明细",
+    });
+    await expect(evidence).toBeVisible();
+    await expect(evidence).toContainText("Capital Shipyard");
+    await expect(evidence).toContainText("Capital Pilot");
+    await expect(evidence).toContainText("10B ISK");
+    await expect(evidence.locator('[title="10,000,000,000 ISK"]')).toHaveCount(
+      1,
+    );
+    await expect(evidence).toContainText("2026");
+    const items = evidence.getByRole("list", {
+      name: en ? "Contract items" : "合同物品",
+    });
+    await expect(items.getByRole("listitem")).toHaveCount(3);
+    await expect(items).toContainText("Aeon");
+    await expect(items).toContainText("× 4");
+    await expect(items).toContainText(en ? "Item #999" : "物品 #999");
+    await evidence.scrollIntoViewIfNeeded();
+    expect(
+      await evidence.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    expect(await items.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    );
+    expect(ctl.searches).toHaveLength(0);
+    expect(ctl.commands).toHaveLength(0);
+    await page.screenshot({
+      path: `../.local/purchase-evidence/evidence-${language}-${info.project.name}.png`,
+      fullPage: true,
+    });
+  });
+  test(`${language} old applications explicitly show missing purchase evidence`, async ({
+    page,
+  }) => {
+    const ctl = await setup(
+      page,
+      language,
+      true,
+      "pending",
+      "submitted",
+      "missing",
+    );
+    await expect(
+      page.getByText(
+        en ? "Purchase contract details were not saved" : "未保存购舰合同明细",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", {
+        name: en ? "Purchase contract details" : "购舰合同明细",
+      }),
+    ).toHaveCount(0);
+    expect(ctl.searches).toHaveLength(0);
+    expect(ctl.commands).toHaveLength(0);
+  });
   test(`${language} payout shows exact contract handoff and current stage`, async ({
     page,
   }, info) => {
@@ -655,7 +731,7 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: `../.local/capital-contract-fix/payout-${language}-${info.project.name}.png`,
+      path: `../.local/purchase-evidence/payout-${language}-${info.project.name}.png`,
       fullPage: true,
     });
   });

@@ -1,5 +1,7 @@
 # Approval center
 
+2026-10-19: Capital approval details display and expand the source case's saved purchase evidence, including both parties, price, status, timestamps and every item. The center reuses welfare details without gaining access to members' private contract lists or copying evidence. See the [welfare guide](welfare.en.md).
+
 ## Batch reference repairs and contract progress (2026-10-18, Goose 95)
 
 Goose 95 creates a welfare-private repair audit table and does not automatically renumber historical batches. Explicitly selected legacy batches may be repaired only after backup, pausing settlement writes, and rechecking current contract evidence and frozen sources. One transaction records the old/new references, operator, reason and timestamp and updates the canonical reference. Existing valid unaccepted or completed contracts retain their references. Amounts, source records/references, claims and completion counts remain unchanged. Each batch permits one repair and permanently retains its old reference.

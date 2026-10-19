@@ -11,6 +11,7 @@ import {
   type CapitalCheck,
 } from "./capital-api";
 import { FulfillmentSummary } from "./fulfillment-summary";
+import { CapitalPurchaseEvidence } from "./capital-purchase-evidence";
 import * as api from "./api";
 import "./capital.css";
 
@@ -315,17 +316,10 @@ export function CapitalCaseContent({
         </p>
       )}
       <FulfillmentSummary item={v} user={user} manage={manage} />
-      <details>
+      <details open={manage}>
         <summary>{msg("购舰凭证")}</summary>
+        <CapitalPurchaseEvidence item={v} />
         <dl className="welfare-capital-facts">
-          <div>
-            <dt>{msg("购舰合同 ID")}</dt>
-            <dd>{d.contract_id}</dd>
-          </div>
-          <div>
-            <dt>{msg("购舰完成时间")}</dt>
-            <dd>{api.date(d.purchase?.completed || "")}</dd>
-          </div>
           <div>
             <dt>{msg("提交时间")}</dt>
             <dd>{api.date(v.created_at)}</dd>
