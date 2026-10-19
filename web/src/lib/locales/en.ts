@@ -1770,6 +1770,8 @@ export const english: Record<string, string> = {
   登记发放: "Record delivery",
   "发放凭据 / 说明": "Delivery evidence / note",
   取消原因: "Cancellation reason",
+  撤销兑换: "Withdraw redemption",
+  开始发放: "Start delivery",
   确认已发放: "Confirm delivery",
   确认取消: "Confirm cancellation",
   正在提交: "Submitting",

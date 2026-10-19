@@ -1,5 +1,7 @@
 # Linux 生产部署
 
+兑换直接撤销（Goose 103）部署边界：备份后同步发布 API、任务和前端。已有合同证据/合并结算回填开始标记，不自动退款。出现开始记录或撤销审计后禁止回退旧程序/Down，优先前向修复。验收与发布证据见[本轮记录](history/exchange-withdrawal-20261019.md)。
+
 ## 2026-10-19：同一奖励多份兑换
 
 前后端 `v0.1.0-exchange-quantity-20261019` 由干净且推送的 main `773fd6370f9b9f8550ac1dc3a9f60c19785da930` 发布，Goose 102。备份 `/var/backups/glorynavy/before-v0.1.0-exchange-quantity-20261019-20261019T090136Z.dump`（261757601 字节），同前缀环境与元数据保留；未做恢复演练。143 个前端文件与测试构建、729 个后端相关文件与隔离测试源码一致。线上服务 active/running/ready、NRestarts=0，公网页面 200、匿名业务 401、完整清单/公开资源字节/OpenResty 检查通过。库存、币账、订单和提醒/QQ 配置未变化，未执行生产兑换或发信。已有多份订单后禁止回退旧的单份退款或匹配程序，保留 Goose 102 和业务数据并向前修复；详见[交付记录](history/exchange-quantity-20261019.md)。

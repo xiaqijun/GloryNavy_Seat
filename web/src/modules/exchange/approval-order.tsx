@@ -70,12 +70,15 @@ export function ApprovalOrder({
         </div>
         <RewardSummary rewards={order.content} />
         {order.note && <p>{order.note}</p>}
-        <DeliveryInfo
-          order={order}
-          copyReference={order.state === "pending" && item.account_id !== user}
-        />
+        <DeliveryInfo order={order} copyReference={false} />
         {order.state === "pending" && item.account_id !== user && (
-          <ContractInfo order={order} user={user} close={close} embedded />
+          <ContractInfo
+            csrf={csrf}
+            order={order}
+            user={user}
+            close={close}
+            embedded
+          />
         )}
         {!!order.history?.length && (
           <details>

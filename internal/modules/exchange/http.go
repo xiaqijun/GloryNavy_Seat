@@ -23,7 +23,7 @@ func (h Handler) Module() module.Definition {
 		handler      http.HandlerFunc
 	}{
 		{"GET", "/catalog", h.catalog}, {"POST", "/catalog", h.saveCatalog},
-		{"GET", "/rewards/{id}/valuation", h.rewardValuation}, {"GET", "/rewards", h.shop}, {"POST", "/rewards/rate", h.editShop("rate")}, {"POST", "/rewards/items", h.editShop("reward")}, {"GET", "/rewards/types", h.searchTypes}, {"POST", "/rewards/claim", h.claimReward}, {"GET", "/rewards/orders/{id}/handoff", h.handoff}, {"GET", "/rewards/orders", h.orders}, {"POST", "/rewards/orders/{id}", h.decideOrder},
+		{"GET", "/rewards/{id}/valuation", h.rewardValuation}, {"GET", "/rewards", h.shop}, {"POST", "/rewards/rate", h.editShop("rate")}, {"POST", "/rewards/items", h.editShop("reward")}, {"GET", "/rewards/types", h.searchTypes}, {"POST", "/rewards/claim", h.claimReward}, {"POST", "/rewards/orders/{id}/handoff", h.startHandoff}, {"GET", "/rewards/orders/{id}/handoff", h.handoff}, {"GET", "/rewards/orders", h.orders}, {"POST", "/rewards/orders/{id}", h.decideOrder},
 		{"GET", "/context", h.context}, {"GET", "/wallet", h.wallet}, {"POST", "/sources", h.editSource},
 	} {
 		routes = append(routes, module.Route{Method: r.method, Path: r.path, Permission: "exchange.self", Handler: r.handler})

@@ -2938,40 +2938,235 @@ paths:
         },
     }
   /api/v1/exchange/rewards/orders/{id}/handoff:
-    get:
-      operationId: exchangeRewardHandoff
-      summary: Current administrator recipient and settlement reference; no game writes or order mutation.
-      security: [{ SessionCookie: [] }]
-      parameters:
-        - { in: path, name: id, required: true, schema: { type: string, pattern: '^[1-9][0-9]*$' } }
-      responses:
-        '200':
-          description: Saved recipient and persistent contract settlement ID (EX-UTC YYYYMMDD-uppercase UUID v4 for new orders; legacy numeric and UUID references retained). Paste only reference into the game description; it is not the numeric ESI contract ID.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    required: [reference, recipient_id, recipient_name, state]
-                    properties:
-                      reference: { type: string, example: EX-20260921-A2C49E70-91F6-4AF1-8B52-3D8AE61C2097 }
-                      amount: {type: string, pattern: '^(0|[1-9][0-9]*)$', description: Whole ISK amount copied into the game contract; positive frozen ISK hundredths are rounded down, without separators or suffix}
-                      recipient_id: { type: string }
-                      recipient_name: { type: string }
-                      state: { type: string, enum: [pending, cancel_requested, fulfilled, cancelled] }
-                  request_id: { type: string }
-        '400': { description: Invalid ID }
-        '401': { description: Session required }
-        '404': { description: Not a current site administrator or unknown order }
-        '503': { description: Order data unavailable }
+    {
+      "get": {
+        "operationId": "exchangeRewardHandoff",
+        "summary": "Current administrator recipient and settlement reference; no game writes or order mutation.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved recipient and persistent contract settlement ID (EX-UTC YYYYMMDD-uppercase UUID v4 for new orders; legacy numeric and UUID references retained). Paste only reference into the game description; it is not the numeric ESI contract ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "reference",
+                        "recipient_id",
+                        "recipient_name",
+                        "state",
+                        "started",
+                        "can_start"
+                      ],
+                      "properties": {
+                        "reference": {
+                          "type": "string",
+                          "example": "EX-20260921-A2C49E70-91F6-4AF1-8B52-3D8AE61C2097"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]*)$",
+                          "description": "Whole ISK amount copied into the game contract; positive frozen ISK hundredths are rounded down",
+                          "without separators or suffix": null
+                        },
+                        "recipient_id": {
+                          "type": "string"
+                        },
+                        "recipient_name": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "cancel_requested",
+                            "fulfilled",
+                            "cancelled"
+                          ]
+                        },
+                        "started": {
+                          "type": "boolean",
+                          "description": "Dispatch has been durably started."
+                        },
+                        "can_start": {
+                          "type": "boolean",
+                          "description": "Current different administrator may start this pending order."
+                        }
+                      }
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "404": {
+            "description": "Not a current site administrator or unknown order"
+          },
+          "503": {
+            "description": "Order data unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "exchangeStartDelivery",
+        "summary": "Start dispatch before creating a game contract; current different administrator only. Atomic with owner withdrawal; retries retain the first operator and time. Does not create a game contract.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]*$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved recipient and persistent contract settlement ID (EX-UTC YYYYMMDD-uppercase UUID v4 for new orders; legacy numeric and UUID references retained). Paste only reference into the game description; it is not the numeric ESI contract ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "reference",
+                        "recipient_id",
+                        "recipient_name",
+                        "state",
+                        "started",
+                        "can_start"
+                      ],
+                      "properties": {
+                        "reference": {
+                          "type": "string",
+                          "example": "EX-20260921-A2C49E70-91F6-4AF1-8B52-3D8AE61C2097"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^(0|[1-9][0-9]*)$",
+                          "description": "Whole ISK amount copied into the game contract; positive frozen ISK hundredths are rounded down",
+                          "without separators or suffix": null
+                        },
+                        "recipient_id": {
+                          "type": "string"
+                        },
+                        "recipient_name": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "cancel_requested",
+                            "fulfilled",
+                            "cancelled"
+                          ]
+                        },
+                        "started": {
+                          "type": "boolean",
+                          "description": "Dispatch has been durably started."
+                        },
+                        "can_start": {
+                          "type": "boolean",
+                          "description": "Current different administrator may start this pending order."
+                        }
+                      }
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "404": {
+            "description": "Not a current site administrator or unknown order"
+          },
+          "503": {
+            "description": "Order data unavailable"
+          },
+          "409": {
+            "description": "Changed version or order is no longer pending."
+          }
+        }
+      }
+    }
   /api/v1/exchange/rewards/orders/{id}:
     {
       "post":
         {
           "operationId": "exchangeRewardDecision",
-          "summary": "Owner requests cancellation without refund. Current administrator approves or rejects the request; approval requires undelivered_confirmed and no live delivery evidence. Contract completion is automatic; manual fulfilled is rejected. Notes, version and idempotency required.",
+          "summary": "Owner withdrawn directly refunds an unstarted pending/cancel_requested order under the delivery fence. Otherwise cancel_requested retains funds until a different current administrator approves or rejects; approval requires undelivered_confirmed and contract checks. Version and idempotency required; note optional only for withdrawn. No manual fulfilled.",
           "security": [{ "SessionCookie": [] }],
           "parameters":
             [
@@ -10697,15 +10892,67 @@ components:
     ExchangeRewardDecision:
       {
         "type": "object",
-        "required": ["version", "request_key", "state", "note"],
-        "properties":
-          {
-            "version": { "type": "string", "pattern": "^[1-9][0-9]*$" },
-            "request_key": { "type": "string", "format": "uuid" },
-            "state": { "type": "string", "enum": ["cancel_requested", "pending", "cancelled"] },
-            "note": { "type": "string", "minLength": 1, "maxLength": 200 },
-            "undelivered_confirmed": {"type":"boolean","description":"Must be true when approving cancellation; absent evidence is not proof of no delivery."},
+        "required": [
+          "version",
+          "request_key",
+          "state"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
           },
+          "request_key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "cancel_requested",
+              "pending",
+              "cancelled",
+              "withdrawn"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200
+          },
+          "undelivered_confirmed": {
+            "type": "boolean",
+            "description": "Must be true when approving cancellation; absent evidence is not proof of no delivery."
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "state": {
+                "enum": [
+                  "withdrawn"
+                ]
+              }
+            }
+          },
+          {
+            "required": [
+              "note"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "pending",
+                  "cancelled",
+                  "cancel_requested"
+                ]
+              },
+              "note": {
+                "minLength": 1
+              }
+            }
+          }
+        ]
       }
     ExchangeRewardOrder:
       {
@@ -10731,7 +10978,8 @@ components:
           {
             "reference":{"type":"string","example":"EX-20261018-000001"},
             "can_request_cancel":{"type":"boolean"},
-            "delivery":{"type":"object","required":["status","contracts","checked_at"],"properties":{"status":{"type":"string","enum":["waiting_contract","waiting_items","awaiting_acceptance","fulfilled","mismatch","multiple_contracts","issuer_unverified","contract_claimed","evidence_unavailable"]},"checked_at":{"type":"string","format":"date-time","nullable":true},"contracts":{"type":"array","items":{"$ref":"#/components/schemas/WelfareDeliveryContract"}}}},
+            "can_withdraw":{"type":"boolean","description":"Owner may withdraw immediately; server rechecks dispatch and evidence under lock."},
+            "delivery":{"type":"object","required":["status","contracts","checked_at"],"properties":{"started":{"type":"boolean"},"status":{"type":"string","enum":["waiting_contract","waiting_items","awaiting_acceptance","fulfilled","mismatch","multiple_contracts","issuer_unverified","contract_claimed","evidence_unavailable"]},"checked_at":{"type":"string","format":"date-time","nullable":true},"contracts":{"type":"array","items":{"$ref":"#/components/schemas/WelfareDeliveryContract"}}}},
             "content": {"$ref":"#/components/schemas/ExchangeOrderContent"},
             "id": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "version": { "type": "string", "pattern": "^[1-9][0-9]*$" },

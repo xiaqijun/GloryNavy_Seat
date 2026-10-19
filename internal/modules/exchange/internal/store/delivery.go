@@ -8,6 +8,7 @@ import (
 )
 
 type Delivery struct {
+	Started   bool            `json:"started"`
 	Status    string          `json:"status"`
 	Evidence  json.RawMessage `json:"contracts"`
 	CheckedAt *time.Time      `json:"checked_at"`
@@ -19,8 +20,9 @@ func EnsureDelivery(ctx context.Context, db DBTX, id int64) error {
 }
 func ReadDelivery(ctx context.Context, db DBTX, id int64) (Delivery, error) {
 	v := Delivery{Status: "waiting_contract", Evidence: json.RawMessage(`[]`)}
-	e := db.QueryRow(ctx, `SELECT status,evidence,checked_at FROM exchange_deliveries WHERE order_id=$1`, id).Scan(&v.Status, &v.Evidence, &v.CheckedAt)
+	e := db.QueryRow(ctx, `SELECT status,evidence,checked_at,started_at IS NOT NULL FROM exchange_deliveries WHERE order_id=$1`, id).Scan(&v.Status, &v.Evidence, &v.CheckedAt, &v.Started)
 	if e == pgx.ErrNoRows {
+		v.Started = true // No delivery snapshot cannot authorize owner withdrawal.
 		return v, nil
 	}
 	return v, e

@@ -413,16 +413,20 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 		return ErrInvalid
 	}
 	c.Note = strings.TrimSpace(c.Note)
+	withdraw := c.State == "withdrawn"
+	if withdraw && c.Note == "" {
+		c.Note = "撤销兑换"
+	}
 	actor, err := uuid(user)
 	key, e := uuid(c.RequestKey)
-	if err != nil || e != nil || c.Version < 1 || len([]rune(c.Note)) < 1 || len([]rune(c.Note)) > 200 || (c.State != "fulfilled" && c.State != "cancelled" && c.State != "cancel_requested" && c.State != "pending") {
+	if err != nil || e != nil || c.Version < 1 || len([]rune(c.Note)) < 1 || len([]rune(c.Note)) > 200 || (c.State != "fulfilled" && c.State != "cancelled" && c.State != "cancel_requested" && c.State != "pending" && c.State != "withdrawn") {
 		return ErrInvalid
 	}
 	row, err := store.New(s.Pool).Redemption(ctx, id)
 	if err != nil {
 		return err
 	}
-	if c.State == "cancel_requested" {
+	if c.State == "cancel_requested" || withdraw {
 		if row.AccountID != actor {
 			return pgx.ErrNoRows
 		}
@@ -488,7 +492,7 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 			return ErrConflict
 		}
 	}
-	if c.State != "cancel_requested" {
+	if c.State != "cancel_requested" && !withdraw {
 		if row.AccountID == actor {
 			return pgx.ErrNoRows
 		}
@@ -496,10 +500,23 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 			return err
 		}
 	}
-	if c.State == "cancel_requested" && row.AccountID != actor {
+	if (c.State == "cancel_requested" || withdraw) && row.AccountID != actor {
 		return ErrConflict
 	}
-	if c.State == "cancelled" {
+	if withdraw {
+		delivery, e := store.ReadDelivery(ctx, tx, id)
+		if e != nil {
+			return e
+		}
+		if !withdrawable(delivery) {
+			return ErrDeliveryPending
+		}
+	}
+	targetState := c.State
+	if withdraw {
+		targetState = "cancelled"
+	}
+	if targetState == "cancelled" {
 		if err = s.guardCancellation(ctx, tx, row); err != nil {
 			return err
 		}
@@ -513,15 +530,18 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 			}
 		}
 	}
-	if c.State == "cancelled" {
+	if targetState == "cancelled" {
 		if err = q.CoinEntry(ctx, store.CoinEntryParams{AccountID: row.AccountID, Kind: "refund", Reference: strconv.FormatInt(id, 10), RequestKey: key, Delta: row.CoinsMinor, Reason: c.Note}); err != nil {
 			return err
 		}
 	}
-	if err = q.DecideRedemption(ctx, store.DecideRedemptionParams{ID: id, State: c.State, Note: c.Note, DecidedBy: actor}); err != nil {
+	if err = q.DecideRedemption(ctx, store.DecideRedemptionParams{ID: id, State: targetState, Note: c.Note, DecidedBy: actor}); err != nil {
 		return err
 	}
 	payload, _ := json.Marshal(c)
+	if withdraw {
+		payload, _ = json.Marshal(map[string]any{"state": targetState, "action": "withdrawn", "note": c.Note, "version": c.Version})
+	}
 	if err = q.ShopAudit(ctx, store.ShopAuditParams{ActorID: actor, RequestKey: key, Kind: "decision", TargetID: id, Fingerprint: fp, Payload: payload}); err != nil {
 		return err
 	}
@@ -532,6 +552,7 @@ type RewardOrder struct {
 	Units            int32           `json:"units"`
 	Reference        string          `json:"reference"`
 	Delivery         store.Delivery  `json:"delivery"`
+	CanWithdraw      bool            `json:"can_withdraw"`
 	CanRequestCancel bool            `json:"can_request_cancel"`
 	Content          *PhysicalReward `json:"content,omitempty"`
 	ID               int64           `json:"id,string"`
@@ -602,7 +623,7 @@ func (s *Service) RewardOrders(ctx context.Context, user string, all bool, befor
 		if e != nil {
 			return out, e
 		}
-		out.Items = append(out.Items, RewardOrder{Reference: r.SettlementReference, Delivery: delivery, CanRequestCancel: r.AccountID == actor && r.State == "pending", Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, Units: r.Units, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time})
+		out.Items = append(out.Items, RewardOrder{Reference: r.SettlementReference, Delivery: delivery, CanWithdraw: r.AccountID == actor && (r.State == "pending" || r.State == "cancel_requested") && withdrawable(delivery), CanRequestCancel: r.AccountID == actor && r.State == "pending", Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, Units: r.Units, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time})
 	}
 	return out, nil
 }

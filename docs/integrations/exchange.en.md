@@ -1,5 +1,15 @@
 # Nutshell Coins and unified redemption
 
+## Direct withdrawal before delivery starts (2026-10-19, Goose 103)
+
+This overrides the old requirement to review every cancellation. The owner may POST `state=withdrawn` to `/api/v1/exchange/rewards/orders/{id}` with current version and UUID request_key. Only pending or previously cancel_requested orders without a dispatch marker or delivery evidence qualify. The command persists cancelled and atomically refunds the entire frozen coins_minor; all units return to stock only when catalog content versions still match. Blank note defaults to the withdrawal label. Owner administrators can withdraw their own unstarted orders, but cannot review their own cancellation. Other accounts cannot withdraw. Replay is idempotent and any ledger, stock or audit error rolls back everything.
+
+Goose 103 records started_at/started_by on the private delivery record and conservatively marks historical contract evidence or batch membership as started; it never issues historical refunds. Lists expose can_withdraw; delivery/handoff expose started, and handoff exposes can_start. Server-side binding, ownership, version, dispatch and current/prior contract evidence are rechecked under transaction locks. Unavailable evidence, missing prior live evidence or live contracts block withdrawal. Started orders retain the existing owner cancellation request and independent administrator review with explicit in-game non-delivery confirmation.
+
+GET handoff remains read-only. Before creating a game contract, a different current administrator POSTs `{version}` to the same handoff URL to start delivery. Replays retain the first operator/time. The UI then exposes recipient, amount and reference copy controls; list references must not bypass the start step. The host injects exchange.StartSettlementTx into welfare.ExchangeSettlementStartTx. Batch creation locks and marks every exchange order in the batch transaction, sharing the wallet/order fence with withdrawal. A cancelled or cancellation-requested order cannot begin new dispatch; existing batches retain their checking behavior and permanent claims. This does not create or complete game contracts.
+
+Back up and deploy matching backend, workers and frontend with Goose/River migrations. Goose 103 Down refuses started records or withdrawal audits. Do not run old code that ignores this fence. Unsynced game state cannot be inferred by migration; staff must start delivery before creating a contract. No new capability, scope or setting is introduced.
+
 ## Multiple packs of one reward (2026-10-19, released)
 
 The confirmation dialog accepts a pack count, defaulting to one. This is not a multi-product cart. Optional claim `units` is an integer from 1 to 1,000,000; omission means one. The server rechecks stock, balance and quote versions. Total coin cost is the already rounded-up per-pack minor-unit price multiplied by units. Items, fitted ships and ISK are expanded into an immutable order snapshot; valuation is multiplied too. Each redemption remains one order, one settlement reference and one delivery contract.

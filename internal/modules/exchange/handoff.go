@@ -12,6 +12,8 @@ import (
 )
 
 type Handoff struct {
+	Started       bool   `json:"started"`
+	CanStart      bool   `json:"can_start"`
 	Amount        string `json:"amount"`
 	Reference     string `json:"reference"`
 	RecipientID   int64  `json:"recipient_id,string"`
@@ -30,6 +32,12 @@ func (s *Service) Handoff(ctx context.Context, actor string, id int64) (Handoff,
 	if e != nil {
 		return out, e
 	}
+	delivery, e := store.ReadDelivery(ctx, s.Pool, id)
+	if e != nil {
+		return out, e
+	}
+	out.Started = delivery.Started
+	out.CanStart = r.State == "pending" && r.AccountID.String() != actor
 	out.Reference = r.SettlementReference
 	out.RecipientID = r.RecipientID
 	out.RecipientName = r.RecipientName

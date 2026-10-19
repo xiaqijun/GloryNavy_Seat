@@ -47,7 +47,7 @@ export function RewardsPanel({
   );
   const [decision, setDecision] = useState<{
     order: Order;
-    state: "cancelled" | "cancel_requested" | "pending";
+    state: "cancelled" | "cancel_requested" | "pending" | "withdrawn";
   } | null>(null);
   const q = useQuery({
     queryKey: ["exchange", "shop", user, after],
@@ -112,6 +112,7 @@ export function RewardsPanel({
     <div className="exchange-section">
       {handoff && (
         <ContractInfo
+          csrf={csrf}
           user={user}
           order={orders.data?.items.find((o) => o.id === handoff.id) ?? handoff}
           close={() => setHandoff(null)}
@@ -328,23 +329,26 @@ export function RewardsPanel({
                   {(o.state === "pending" ||
                     o.state === "cancel_requested") && (
                     <div className="exchange-toolbar">
-                      {o.state === "pending" &&
-                        (o.can_request_cancel ?? !all) && (
-                          <Button
-                            variant="outline"
-                            disabled={formOpen}
-                            onClick={() => {
-                              remember();
-                              close();
-                              setDecision({
-                                order: o,
-                                state: "cancel_requested",
-                              });
-                            }}
-                          >
-                            {msg("申请取消")}
-                          </Button>
-                        )}
+                      {(o.can_withdraw ||
+                        (o.state === "pending" &&
+                          (o.can_request_cancel ?? !all))) && (
+                        <Button
+                          variant="outline"
+                          disabled={formOpen}
+                          onClick={() => {
+                            remember();
+                            close();
+                            setDecision({
+                              order: o,
+                              state: o.can_withdraw
+                                ? "withdrawn"
+                                : "cancel_requested",
+                            });
+                          }}
+                        >
+                          {msg(o.can_withdraw ? "撤销兑换" : "申请取消")}
+                        </Button>
+                      )}
                       {shop.admin &&
                         !approvalEnabled &&
                         o.state === "cancel_requested" && (
@@ -538,7 +542,6 @@ function ClaimForm({
             characters={characters}
           />
         </div>
-        <small>{msg("取消需管理员审核，同意后退回果壳币。")}</small>
         {m.isError && <p role="alert">{m.error.message}</p>}
       </form>
     </Modal>
@@ -553,7 +556,7 @@ export function DecisionForm({
   csrf: string;
   decision: {
     order: Order;
-    state: "cancelled" | "cancel_requested" | "pending";
+    state: "cancelled" | "cancel_requested" | "pending" | "withdrawn";
   };
   done: () => void;
   close: () => void;
@@ -561,7 +564,13 @@ export function DecisionForm({
   const formId = useId();
   const [note, setNote] = useState("");
   const [undelivered, setUndelivered] = useState(false);
+  const withdrawing = decision.state === "withdrawn";
   const action = {
+    withdrawn: {
+      title: msg("撤销兑换"),
+      label: msg("取消原因"),
+      submit: msg("确认撤销"),
+    },
     cancel_requested: {
       title: msg("申请取消"),
       label: msg("取消原因"),
@@ -620,7 +629,7 @@ export function DecisionForm({
             variant={decision.state === "cancelled" ? "destructive" : "default"}
             disabled={
               m.isPending ||
-              !note.trim() ||
+              (!withdrawing && !note.trim()) ||
               (decision.state === "cancelled" && !undelivered)
             }
             aria-busy={m.isPending}
@@ -638,7 +647,7 @@ export function DecisionForm({
           e.preventDefault();
           if (
             !m.isPending &&
-            note.trim() &&
+            (withdrawing || note.trim()) &&
             (decision.state !== "cancelled" || undelivered)
           )
             m.mutate();
@@ -653,27 +662,29 @@ export function DecisionForm({
             #{decision.order.id} · {decision.order.recipient_name}
           </span>
         </div>
-        {decision.state === "cancelled" && (
+        {(decision.state === "cancelled" || withdrawing) && (
           <div className="exchange-refund-summary">
             <span>{msg("退还果壳币")}</span>
             <strong>{coin(decision.order.coins_minor)}</strong>
           </div>
         )}
-        <label>
-          {action.label}
-          <textarea
-            autoFocus={decision.state !== "cancelled"}
-            rows={3}
-            required
-            maxLength={200}
-            value={note}
-            disabled={m.isPending}
-            onChange={(e) => {
-              setNote(e.target.value);
-              setKey(crypto.randomUUID());
-            }}
-          />
-        </label>
+        {!withdrawing && (
+          <label>
+            {action.label}
+            <textarea
+              autoFocus={decision.state !== "cancelled"}
+              rows={3}
+              required
+              maxLength={200}
+              value={note}
+              disabled={m.isPending}
+              onChange={(e) => {
+                setNote(e.target.value);
+                setKey(crypto.randomUUID());
+              }}
+            />
+          </label>
+        )}
         {decision.state === "cancel_requested" && (
           <small>{msg("审核期间保留果壳币占用和库存预留。")}</small>
         )}

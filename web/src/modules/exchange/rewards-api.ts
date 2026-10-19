@@ -54,6 +54,7 @@ export type Order = {
   isk_value: number;
   state: "pending" | "cancel_requested" | "fulfilled" | "cancelled";
   can_request_cancel?: boolean;
+  can_withdraw?: boolean;
   note: string;
   created_at: string;
 };
@@ -132,6 +133,7 @@ export const isOrders = (v: unknown): v is Orders =>
       ["pending", "cancel_requested", "fulfilled", "cancelled"].includes(
         String(r.state),
       ) &&
+      (r.can_withdraw === undefined || typeof r.can_withdraw === "boolean") &&
       (r.can_request_cancel === undefined ||
         typeof r.can_request_cancel === "boolean") &&
       typeof r.created_at === "string" &&

@@ -626,6 +626,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	welfareModule.Service.ExchangeSettlementComplete = exchangeService.SettlementComplete
 	welfareModule.Service.ExchangeSettlementAccount = exchangeService.SettlementAccount
 	welfareModule.Service.ExchangeSettlementEligible = exchangeService.SettlementEligible
+	welfareModule.Service.ExchangeSettlementStartTx = exchangeService.StartSettlementTx
 	welfareModule.Service.ExchangeSettlementCompleteTx = exchangeService.CompleteMergedDeliveryTx
 	welfareModule.Service.SettlementCompleteTx = welfareModule.Service.CompleteMergedDeliveryTx
 	welfareModule.Service.ExchangeSettlementReward = func(ctx context.Context, id int64) (welfare.SettlementReward, error) {

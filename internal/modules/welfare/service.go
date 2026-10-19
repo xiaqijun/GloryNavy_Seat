@@ -70,6 +70,7 @@ type Service struct {
 	ExchangeSettlementComplete func(context.Context, int64) (bool, error)
 	ExchangeSettlementAccount  func(context.Context, int64) (string, error)
 	ExchangeSettlementEligible func(context.Context, int64) error
+	ExchangeSettlementStartTx  func(context.Context, pgx.Tx, string, string, int64) error
 	// ExchangeSettlementReward returns the frozen ISK/items projection for an
 	// exchange order. The host adapts the exchange module so welfare never
 	// imports its private store.

@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+兑换发放准备边界（Goose 103）：exchange 私有交付表保存开始操作者/时间；宿主向 welfare 注入 `ExchangeSettlementStartTx`，合并结算在自身事务中经 exchange 业务方法锁定兑换单并开始发放。直接撤销与单笔/批次准备使用相同账号及订单锁，模块不互读私有 store。详见[兑换约定](integrations/exchange.zh-CN.md)。
+
 2026-10-19：exchange 私有订单 `units`（Goose 102）随原订单参与账号合并，内容和金额保存整单展开快照；取消按原份数返库存。审批中心/提醒仅投影来源份数，宿主结算接口仍读取冻结内容，无新增跨模块 SQL。详见[兑换指南](integrations/exchange.zh-CN.md)。
 
 

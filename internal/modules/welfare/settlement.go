@@ -236,6 +236,18 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 		return out, e
 	}
 	defer tx.Rollback(context.Background())
+	// Serialize preparation with member withdrawal before publishing a batch.
+	for _, item := range input.Items {
+		if item.Source != "exchange" {
+			continue
+		}
+		if s.ExchangeSettlementStartTx == nil {
+			return out, ErrSettlement
+		}
+		if e = s.ExchangeSettlementStartTx(ctx, tx, actor, accountGroup, item.ID); e != nil {
+			return out, e
+		}
+	}
 	reference, e := settlementReference(ctx, tx)
 	if e != nil {
 		return out, e

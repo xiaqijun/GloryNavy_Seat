@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Check } from "lucide-react";
 import { Modal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getData } from "@/lib/http";
+import { write } from "./api";
 import { msg } from "@/lib/i18n";
 import type { Order } from "./rewards-api";
 
 type Handoff = {
+  started?: boolean;
+  can_start?: boolean;
   amount?: string;
   reference: string;
   recipient_id: string;
@@ -18,6 +21,8 @@ const obj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object";
 const isHandoff = (v: unknown): v is Handoff =>
   obj(v) &&
+  (v.started === undefined || typeof v.started === "boolean") &&
+  (v.can_start === undefined || typeof v.can_start === "boolean") &&
   (v.amount === undefined ||
     (typeof v.amount === "string" && /^(0|[1-9]\d*)$/.test(v.amount))) &&
   typeof v.reference === "string" &&
@@ -70,14 +75,17 @@ function CopyButton({
 export function ContractInfo({
   order,
   user,
+  csrf,
   close,
   embedded = false,
 }: {
   order: Order;
   user: string;
+  csrf: string;
   close: () => void;
   embedded?: boolean;
 }) {
+  const client = useQueryClient();
   const q = useQuery({
     queryKey: ["exchange", "handoff", user, order.id, order.version],
     queryFn: ({ signal }) =>
@@ -90,6 +98,19 @@ export function ContractInfo({
     gcTime: 0,
     refetchInterval: 30000,
   });
+  const start = useMutation({
+    mutationFn: () =>
+      write(
+        `/rewards/orders/${order.id}/handoff`,
+        csrf,
+        { version: order.version },
+        isHandoff,
+      ),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["exchange"] });
+      void client.invalidateQueries({ queryKey: ["approval"] });
+    },
+  });
   const data = q.data;
   const content = (
     <>
@@ -100,6 +121,15 @@ export function ContractInfo({
         </div>
       ) : !data ? (
         <p role="status">{msg("正在读取")}</p>
+      ) : data.state === "pending" && data.started === false ? (
+        <div className="exchange-contract-info">
+          {data.can_start && (
+            <Button disabled={start.isPending} onClick={() => start.mutate()}>
+              {msg(start.isPending ? "正在提交" : "开始发放")}
+            </Button>
+          )}
+          {start.isError && <p role="alert">{start.error.message}</p>}
+        </div>
       ) : (
         <div className="exchange-contract-info">
           {data.state !== "pending" && (
