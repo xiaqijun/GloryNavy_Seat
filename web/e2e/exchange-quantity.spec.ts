@@ -196,7 +196,7 @@ for (const locale of ["zh-CN", "en"] as const) {
       locale === "en" ? "3 packs" : "3 份",
     );
     await page
-      .getByText(locale === "en" ? "Reward contents" : "奖励内容", {
+      .getByText(locale === "en" ? "Redemption details" : "兑换详情", {
         exact: true,
       })
       .click();

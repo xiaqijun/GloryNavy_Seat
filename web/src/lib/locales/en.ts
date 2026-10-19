@@ -3115,4 +3115,6 @@ export const english: Record<string, string> = {
   "登录已失效，请重新登录后授权发信": "Your session has expired. Sign in again to authorize mail.",
   "缺少发信权限，请确认 EVE 应用权限后重新授权": "Mail permission is missing. Check the EVE application's permissions and authorize again.",
   "当前账号无权授权发信": "This account cannot authorize mail.",
+  "兑换详情": "Redemption details",
+  "兑换记录 #{0}": "Redemption #{0}",
 };

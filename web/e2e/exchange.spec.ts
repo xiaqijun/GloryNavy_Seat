@@ -390,9 +390,9 @@ test("rewards admin pricing local SDE and fulfillment", async ({ page }) => {
   await page.getByRole("button", { name: "兑换", exact: true }).click();
   await page.getByRole("button", { name: "确认兑换", exact: true }).click();
   await expect(page.getByRole("button",{name:"标记已发放"})).toHaveCount(0);
+  await page.getByRole("button",{name:"兑换详情",exact:true}).click();
   await expect(page.getByRole("button",{name:"复制合同结算 ID"})).toContainText("EX-20260921-A2C49E70-91F6-4AF1-8B52-3D8AE61C2097");
-  await page.getByText("奖励内容",{exact:true}).click();
-  await expect(page.locator(".exchange-delivery-details")).toContainText("三钛合金");
+  await expect(page.locator(".exchange-record-details")).toContainText("三钛合金");
   await page.getByRole("button",{name:"申请取消",exact:true}).click();
   await page.getByLabel("取消原因").fill("暂不领取");
   await page.getByRole("button",{name:"提交申请",exact:true}).click();

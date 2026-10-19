@@ -1,3 +1,4 @@
+import { OrderRecord } from "./order-record";
 import { ContractInfo } from "./contract-info";
 import { maxRewardUnits, scaledReward } from "./reward-quantity";
 import { useApprovalEnabled, approvalLink } from "@/modules/approval/api";
@@ -22,7 +23,7 @@ import {
   type Order,
 } from "./rewards-api";
 import { isSaved } from "./api";
-import { formatDate, write, type Context } from "./api";
+import { write, type Context } from "./api";
 const number = (n: number) => n.toLocaleString(getLocale());
 const coin = (n: number) => number(n / 100);
 
@@ -299,32 +300,22 @@ export function RewardsPanel({
             {!orders.data.items.length && (
               <p className="exchange-note">{msg("暂无兑换记录")}</p>
             )}
-            {orders.data.items.map((o) => (
-              <div className="exchange-order-row" key={o.id}>
-                <EveImage
-                  kind="type"
-                  id={o.type_id}
-                  className="exchange-avatar"
-                />
-                <div className="exchange-event-copy">
-                  <strong>
-                    {o.name || `#${o.type_id}`} ·{" "}
-                    {msg("{0} 份", number(o.units ?? 1))}
-                  </strong>
-                  <small>
-                    {o.recipient_name} · {coin(o.coins_minor)} {msg("币 ·")}{" "}
-                    {formatDate(o.created_at)}
-                  </small>
-                  {o.note && <small>{o.note}</small>}
-                  <DeliveryInfo order={o} />
+            <div className="exchange-record-list">
+              {orders.data.items.map((o) => (
+                <OrderRecord
+                  key={o.id}
+                  order={o}
+                  delivery={<DeliveryInfo order={o} />}
+                >
                   {shop.admin && approvalEnabled && (
-                    <Link to={approvalLink("exchange", o.id)}>
-                      {msg("前往审批中心")}
-                    </Link>
+                    <Button asChild variant="ghost">
+                      <Link to={approvalLink("exchange", o.id)}>
+                        {msg("前往审批中心")}
+                      </Link>
+                    </Button>
                   )}
                   {shop.admin && !approvalEnabled && (
                     <Button
-                      className="exchange-contract-trigger"
                       variant="outline"
                       disabled={formOpen}
                       onClick={() => setHandoff(o)}
@@ -332,75 +323,59 @@ export function RewardsPanel({
                       {msg("合同信息")}
                     </Button>
                   )}
-                  {o.content && (
-                    <details className="exchange-delivery-details">
-                      <summary>{msg("奖励内容")}</summary>
-                      <RewardSummary rewards={o.content} />
-                    </details>
+                  {(o.state === "pending" ||
+                    o.state === "cancel_requested") && (
+                    <div className="exchange-toolbar">
+                      {o.state === "pending" &&
+                        (o.can_request_cancel ?? !all) && (
+                          <Button
+                            variant="outline"
+                            disabled={formOpen}
+                            onClick={() => {
+                              remember();
+                              close();
+                              setDecision({
+                                order: o,
+                                state: "cancel_requested",
+                              });
+                            }}
+                          >
+                            {msg("申请取消")}
+                          </Button>
+                        )}
+                      {shop.admin &&
+                        !approvalEnabled &&
+                        o.state === "cancel_requested" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              disabled={formOpen}
+                              onClick={() => {
+                                remember();
+                                close();
+                                setDecision({ order: o, state: "cancelled" });
+                              }}
+                            >
+                              {msg("同意取消")}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              disabled={formOpen}
+                              onClick={() => {
+                                remember();
+                                close();
+                                setDecision({ order: o, state: "pending" });
+                              }}
+                            >
+                              {msg("驳回取消")}
+                            </Button>
+                          </>
+                        )}
+                    </div>
                   )}
-                  <small>
-                    #{o.id} ·{" "}
-                    {
-                      {
-                        pending: msg("待发放"),
-                        cancel_requested: msg("取消待审核"),
-                        fulfilled: msg("已发放"),
-                        cancelled: msg("已取消"),
-                      }[o.state]
-                    }
-                  </small>
-                </div>
-                {(o.state === "pending" || o.state === "cancel_requested") && (
-                  <div className="exchange-toolbar">
-                    {o.state === "pending" &&
-                      (o.can_request_cancel ?? !all) && (
-                        <Button
-                          variant="outline"
-                          disabled={formOpen}
-                          onClick={() => {
-                            remember();
-                            close();
-                            setDecision({
-                              order: o,
-                              state: "cancel_requested",
-                            });
-                          }}
-                        >
-                          {msg("申请取消")}
-                        </Button>
-                      )}
-                    {shop.admin &&
-                      !approvalEnabled &&
-                      o.state === "cancel_requested" && (
-                        <>
-                          <Button
-                            variant="outline"
-                            disabled={formOpen}
-                            onClick={() => {
-                              remember();
-                              close();
-                              setDecision({ order: o, state: "cancelled" });
-                            }}
-                          >
-                            {msg("同意取消")}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            disabled={formOpen}
-                            onClick={() => {
-                              remember();
-                              close();
-                              setDecision({ order: o, state: "pending" });
-                            }}
-                          >
-                            {msg("驳回取消")}
-                          </Button>
-                        </>
-                      )}
-                  </div>
-                )}
-              </div>
-            ))}
+                </OrderRecord>
+              ))}
+            </div>
             {(before || orders.data.next_cursor) && (
               <div className="exchange-toolbar">
                 <Button
