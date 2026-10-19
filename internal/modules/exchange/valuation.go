@@ -28,6 +28,13 @@ func rewardMarketItems(content PhysicalReward) ([]market.Item, error) {
 	if !physicalValid(content) {
 		return nil, ErrInvalid
 	}
+	return rewardSnapshotItems(content)
+}
+
+func rewardSnapshotItems(content PhysicalReward) ([]market.Item, error) {
+	if !physicalSnapshotValid(content) {
+		return nil, ErrInvalid
+	}
 	counts := map[int64]int64{}
 	add := func(id, quantity, packs int64) bool {
 		if id <= 0 || quantity <= 0 || packs <= 0 || quantity > 1000000000/packs {

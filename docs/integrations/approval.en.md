@@ -1,5 +1,8 @@
 # Approval center
 
+2026-10-19: Exchange projections and source details include pack `units` and full order totals. Cancellation displays pack count; approval does not recalculate stock or coins. See [exchange](exchange.en.md).
+
+
 2026-10-19: Capital approval details display and expand the source case's saved purchase evidence, including both parties, price, status, timestamps and every item. The center reuses welfare details without gaining access to members' private contract lists or copying evidence. See the [welfare guide](welfare.en.md).
 
 ## Batch reference repairs and contract progress (2026-10-18, Goose 95)

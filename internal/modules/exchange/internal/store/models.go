@@ -44,6 +44,7 @@ type ExchangeRedemption struct {
 	RewardContent       []byte
 	CatalogVersion      int64
 	SettlementReference string
+	Units               int32
 }
 
 type ExchangeReward struct {

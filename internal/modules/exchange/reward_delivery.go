@@ -14,7 +14,7 @@ func MatchRewardDelivery(snapshot json.RawMessage, c eve.DeliveryContract) (bool
 	if err := json.Unmarshal(snapshot, &content); err != nil {
 		return false, err
 	}
-	want, err := rewardMarketItems(content)
+	want, err := rewardSnapshotItems(content)
 	if err != nil {
 		return false, err
 	}

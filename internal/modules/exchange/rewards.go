@@ -281,9 +281,21 @@ type ClaimReward struct {
 	RateVersion   int64  `json:"rate_version,string"`
 	RecipientID   int64  `json:"recipient_id,string"`
 	RequestKey    string `json:"request_key"`
+	Units         *int32 `json:"units,omitempty"`
 }
 
 func (s *Service) ClaimReward(ctx context.Context, user string, c ClaimReward) (int64, error) {
+	units := int32(1)
+	if c.Units != nil {
+		units = *c.Units
+	}
+	if units < 1 || units > maxRewardUnits {
+		return 0, ErrInvalid
+	}
+	// Explicit one and legacy requests share their original idempotency fingerprint.
+	if units == 1 {
+		c.Units = nil
+	}
 	actor, err := uuid(user)
 	key, e := uuid(c.RequestKey)
 	if err != nil || e != nil || c.RewardID < 1 || c.RecipientID < 1 || c.RewardVersion < 1 || c.RateVersion < 1 {
@@ -343,10 +355,25 @@ func (s *Service) ClaimReward(ctx context.Context, user string, c ClaimReward) (
 	if settings.Version != c.RateVersion || reward.Version != c.RewardVersion {
 		return 0, ErrConflict
 	}
-	if settings.IskPerCoin <= 0 || !reward.Enabled || reward.Archived || reward.Stock < 1 {
+	if settings.IskPerCoin <= 0 || !reward.Enabled || reward.Archived || reward.Stock < units {
 		return 0, ErrRewardUnavailable
 	}
-	cost := rewardCost(reward.IskValue*100, settings.IskPerCoin)
+	cost, err := rewardTotal(rewardCost(reward.IskValue*100, settings.IskPerCoin), units)
+	if err != nil {
+		return 0, err
+	}
+	value, err := rewardTotal(reward.IskValue, units)
+	if err != nil {
+		return 0, err
+	}
+	quantity := int64(reward.Quantity) * int64(units)
+	if quantity > 1000000000 {
+		return 0, ErrInvalid
+	}
+	content, err := expandReward(reward.Content, units)
+	if err != nil {
+		return 0, err
+	}
 	balance, err := q.ShopBalance(ctx, actor)
 	if err != nil {
 		return 0, err
@@ -354,14 +381,14 @@ func (s *Service) ClaimReward(ctx context.Context, user string, c ClaimReward) (
 	if balance.Earned-balance.Reserved-balance.Spent < cost {
 		return 0, ErrInsufficientCoinsMinor
 	}
-	order, err := q.CreateRedemption(ctx, store.CreateRedemptionParams{AccountID: actor, RequestKey: key, Fingerprint: fp, RewardID: reward.ID, TypeID: reward.TypeID, Quantity: reward.Quantity, RecipientID: recipient.ID, RecipientName: recipient.Name, IskPerCoin: settings.IskPerCoin, IskValue: reward.IskValue, CoinsMinor: cost})
+	order, err := q.CreateRedemption(ctx, store.CreateRedemptionParams{AccountID: actor, RequestKey: key, Fingerprint: fp, RewardID: reward.ID, TypeID: reward.TypeID, Quantity: int32(quantity), Units: units, RecipientID: recipient.ID, RecipientName: recipient.Name, IskPerCoin: settings.IskPerCoin, IskValue: value, CoinsMinor: cost})
 	if err != nil {
 		return 0, err
 	}
-	if err = q.ChangeRewardStock(ctx, store.ChangeRewardStockParams{ID: reward.ID, Delta: -1}); err != nil {
+	if err = q.ChangeRewardStock(ctx, store.ChangeRewardStockParams{ID: reward.ID, Delta: -units}); err != nil {
 		return 0, err
 	}
-	if err = q.SnapshotRedemption(ctx, order.ID, store.Catalog{Name: reward.Name, Content: reward.Content, Version: reward.CatalogVersion}); err != nil {
+	if err = q.SnapshotRedemption(ctx, order.ID, store.Catalog{Name: reward.Name, Content: content, Version: reward.CatalogVersion}); err != nil {
 		return 0, err
 	}
 	if err = q.CoinEntry(ctx, store.CoinEntryParams{AccountID: actor, Kind: "reserve", Reference: strconv.FormatInt(order.ID, 10), RequestKey: key, Delta: -cost, Reason: "奖励兑换"}); err != nil {
@@ -481,7 +508,7 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 			return e
 		}
 		if current.CatalogVersion == row.CatalogVersion {
-			if err = q.ChangeRewardStock(ctx, store.ChangeRewardStockParams{ID: row.RewardID, Delta: 1}); err != nil {
+			if err = q.ChangeRewardStock(ctx, store.ChangeRewardStockParams{ID: row.RewardID, Delta: row.Units}); err != nil {
 				return err
 			}
 		}
@@ -502,6 +529,7 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 }
 
 type RewardOrder struct {
+	Units            int32           `json:"units"`
 	Reference        string          `json:"reference"`
 	Delivery         store.Delivery  `json:"delivery"`
 	CanRequestCancel bool            `json:"can_request_cancel"`
@@ -574,7 +602,7 @@ func (s *Service) RewardOrders(ctx context.Context, user string, all bool, befor
 		if e != nil {
 			return out, e
 		}
-		out.Items = append(out.Items, RewardOrder{Reference: r.SettlementReference, Delivery: delivery, CanRequestCancel: r.AccountID == actor && r.State == "pending", Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time})
+		out.Items = append(out.Items, RewardOrder{Reference: r.SettlementReference, Delivery: delivery, CanRequestCancel: r.AccountID == actor && r.State == "pending", Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, Units: r.Units, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time})
 	}
 	return out, nil
 }

@@ -61,7 +61,8 @@ export function ApprovalOrder({
       <div className="approval-order">
         <div className="approval-order-heading">
           <strong>
-            {order.name} × {order.quantity}
+            {order.name} ·{" "}
+            {msg("{0} 份", (order.units ?? 1).toLocaleString(getLocale()))}
           </strong>
           <span>
             #{order.id} · {order.recipient_name}

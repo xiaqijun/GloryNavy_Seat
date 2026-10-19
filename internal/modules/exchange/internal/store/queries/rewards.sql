@@ -27,7 +27,7 @@ SELECT coalesce((SELECT sum(a.delta) FROM exchange_coin_ledger a WHERE a.account
 -- name: FindRedemption :one
 SELECT * FROM exchange_redemptions WHERE account_id=$1 AND request_key=$2;
 -- name: CreateRedemption :one
-INSERT INTO exchange_redemptions(account_id,request_key,fingerprint,reward_id,type_id,quantity,recipient_id,recipient_name,isk_per_coin,isk_value,coins_minor) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *;
+INSERT INTO exchange_redemptions(account_id,request_key,fingerprint,reward_id,type_id,quantity,recipient_id,recipient_name,isk_per_coin,isk_value,coins_minor,units) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *;
 -- name: Redemption :one
 SELECT * FROM exchange_redemptions WHERE id=$1;
 -- name: LockRedemption :one

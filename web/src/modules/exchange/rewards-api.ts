@@ -1,5 +1,9 @@
 import { getData } from "@/lib/http";
-import { isPhysical, type PhysicalContent } from "./catalog-api";
+import {
+  isPhysical,
+  isPhysicalSnapshot,
+  type PhysicalContent,
+} from "./catalog-api";
 export type Reward = {
   pricing?: {
     automatic: boolean;
@@ -30,6 +34,7 @@ export type Shop = {
   next_cursor: string;
 };
 export type Order = {
+  units?: number;
   reference?: string;
   delivery?: {
     status: string;
@@ -97,7 +102,9 @@ export const isOrders = (v: unknown): v is Orders =>
   v.items.every(
     (r) =>
       obj(r) &&
-      (r.content === undefined || isPhysical(r.content)) &&
+      (r.content === undefined || isPhysicalSnapshot(r.content)) &&
+      (r.units === undefined ||
+        (integer(r.units) && r.units >= 1 && r.units <= 1000000)) &&
       (r.reference === undefined || typeof r.reference === "string") &&
       (r.delivery === undefined ||
         (obj(r.delivery) &&

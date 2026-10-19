@@ -1,5 +1,16 @@
 # Nutshell Coins and unified redemption
 
+## Multiple packs of one reward (2026-10-19, implemented locally)
+
+The confirmation dialog accepts a pack count, defaulting to one. This is not a multi-product cart. Optional claim `units` is an integer from 1 to 1,000,000; omission means one. The server rechecks stock, balance and quote versions. Total coin cost is the already rounded-up per-pack minor-unit price multiplied by units. Items, fitted ships and ISK are expanded into an immutable order snapshot; valuation is multiplied too. Each redemption remains one order, one settlement reference and one delivery contract.
+
+Goose 102 adds private order `units`, defaulting existing records to one without changing their content or amounts. Order `quantity` is the representative item quantity times units; `units` is pack count; `content`, `isk_value` and `coins_minor` are order totals. Lists, approval details and result mail include pack count. Contract handoff uses total ISK. Catalog per-pack limits remain unchanged; expanded snapshots allow up to 10^9 of each contract item and at most 9,007,199,254,740,991 integer minor units for API amounts. Excess totals reject the entire request.
+
+Existing binding/account/settings/reward lock order, object permissions and atomic order/stock/ledger/delivery writes remain intact. Quantity participates in idempotency; omitted and explicit one retain the legacy fingerprint. Cancellation requests reserve everything until an administrator approves; approval refunds the original total and restores all packs only when catalog content versions match. Account merging carries units with the original order. Approval only projects source data and aggregate settlement consumes the expanded snapshot.
+
+Back up first, run Goose/River migrations and deploy matching API, worker and frontend. Once multi-pack orders exist, do not roll back to code that refunds one stock unit or ignores totals; Goose 102 Down rejects those records. Prefer a forward fix and never overwrite business data with an old backup. No new permission, ESI scope or configuration is introduced. Real in-game multi-pack delivery remains to be verified; simulated tests are not live fulfillment evidence.
+
+
 ## Short contract settlement references (2026-10-18, Goose 94)
 
 New records use `TYPE-YYYYMMDD-sequence`, for example `BATCH-20261018-000001`. EX, SRP, PVP, WF and BATCH share one non-cycling database bigint sequence; dates use UTC creation time. The sequence has at least six decimal digits and grows without truncation, giving a maximum reference length of 34 within EVE's 50-character title limit. References remain identifiers, not authorization: recipient, issuer, amounts, items and global contract claims retain their existing checks.

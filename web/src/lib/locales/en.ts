@@ -1,5 +1,9 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "兑换份数": "Packs",
+  "{0} 份": "{0} packs",
+  "请输入 1–{0} 之间的整数": "Enter a whole number from 1 to {0}",
+  "物品数量": "Item quantity",
   "购舰合同明细": "Purchase contract details",
   "未保存购舰合同明细": "Purchase contract details were not saved",
   "购买角色": "Buyer",

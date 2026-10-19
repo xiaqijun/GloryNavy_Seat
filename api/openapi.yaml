@@ -10686,6 +10686,7 @@ components:
           ],
         "properties":
           {
+            "units": {"type":"integer","minimum":1,"maximum":1000000,"default":1,"description":"Packs of this reward; omitted means one. Cost is rounded per pack then multiplied; stock and total snapshot limits apply."},
             "reward_id": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "reward_version": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "rate_version": { "type": "string", "pattern": "^[1-9][0-9]*$" },
@@ -10716,6 +10717,7 @@ components:
             "type_id",
             "name",
             "quantity",
+            "units",
             "recipient_id",
             "recipient_name",
             "coins_minor",
@@ -10730,11 +10732,12 @@ components:
             "reference":{"type":"string","example":"EX-20261018-000001"},
             "can_request_cancel":{"type":"boolean"},
             "delivery":{"type":"object","required":["status","contracts","checked_at"],"properties":{"status":{"type":"string","enum":["waiting_contract","waiting_items","awaiting_acceptance","fulfilled","mismatch","multiple_contracts","issuer_unverified","contract_claimed","evidence_unavailable"]},"checked_at":{"type":"string","format":"date-time","nullable":true},"contracts":{"type":"array","items":{"$ref":"#/components/schemas/WelfareDeliveryContract"}}}},
-            "content": {"$ref":"#/components/schemas/PhysicalRewardContent"},
+            "content": {"$ref":"#/components/schemas/ExchangeOrderContent"},
             "id": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "version": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "type_id": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
             "name": { "type": "string" },
+            "units": {"type":"integer","minimum":1,"maximum":1000000,"description":"Frozen pack count; historical orders have one."},
             "quantity": { "type": "integer", "format": "int64", "minimum": 1 },
             "recipient_id": { "type": "string", "pattern": "^[1-9][0-9]*$" },
             "recipient_name": { "type": "string" },
@@ -10752,7 +10755,7 @@ components:
                 "type": "integer",
                 "format": "int64",
                 "minimum": 1,
-                "maximum": 1000000000000,
+                "maximum": 9007199254740991,
               },
             "state":
               {
@@ -11499,6 +11502,38 @@ components:
         "required": ["items", "next_cursor"],
         "additionalProperties": false,
       }
+
+    ExchangeOrderContent:
+      type: object
+      additionalProperties: false
+      required: [fittings, items]
+      description: Frozen whole-order totals, expanded by units; each contract type total cannot exceed 1000000000. Names and fits are server-owned; site coins excluded.
+      properties:
+        isk_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, default: 0, description: Frozen hundredths of ISK; zero or at least 100, with whole-ISK contract payment rounded down}
+        fittings:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required: [fitting_id, quantity]
+            properties:
+              fitting_id: {type: string, pattern: '^[1-9][0-9]*$'}
+              quantity: {type: integer, minimum: 1, maximum: 1000000000}
+              name: {type: string, readOnly: true}
+              ship_type_id: {type: string, readOnly: true}
+              corporation_id: {type: string, readOnly: true}
+              version: {type: string, readOnly: true}
+              fit: {type: object, readOnly: true}
+        items:
+          type: array
+          maxItems: 30
+          items:
+            type: object
+            required: [type_id, quantity]
+            properties:
+              type_id: {type: string, pattern: '^[1-9][0-9]*$'}
+              quantity: {type: integer, minimum: 1, maximum: 1000000000}
+              name: {type: string, readOnly: true}
 
     PhysicalRewardContent:
       type: object

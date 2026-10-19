@@ -44,6 +44,19 @@ export const isCatalog = (v: unknown): v is CatalogEntry =>
   typeof v.name === "string" &&
   typeof v.archived === "boolean" &&
   isPhysical(v.content);
+
+// Order totals can exceed the per-pack catalog limits.
+export const isPhysicalSnapshot = (v: unknown): v is PhysicalContent =>
+  obj(v) &&
+  !("coins_minor" in v) &&
+  (v.isk_minor === undefined ||
+    (Number.isSafeInteger(v.isk_minor) && Number(v.isk_minor) >= 0)) &&
+  Array.isArray(v.fittings) &&
+  v.fittings.length <= 10 &&
+  v.fittings.every((f) => obj(f) && id(f.fitting_id) && qty(f.quantity, 1e9)) &&
+  Array.isArray(v.items) &&
+  v.items.length <= 30 &&
+  v.items.every((i) => obj(i) && id(i.type_id) && qty(i.quantity, 1e9));
 export async function getCatalog(
   signal?: AbortSignal,
 ): Promise<CatalogEntry[]> {

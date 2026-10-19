@@ -102,8 +102,9 @@ func TestApprovalQueueKeepsCountWhenOptionalNamesAreUnavailable(t *testing.T) {
 	}
 	s.Names = unavailableApprovalNames{}
 	s.Administrator = func(_ context.Context, u string) (bool, error) { return u == reviewer, nil }
-	p, err := s.ApprovalQueue(ctx, reviewer, reviewqueue.Filter{View: "pending"}, reviewqueue.Position{}, 31)
-	if err != nil || len(p.Items) != 1 || p.Counts["pending"] != 1 {
+	// Ordinary redemptions await fulfillment, not approval; only cancellations need review.
+	p, err := s.ApprovalQueue(ctx, reviewer, reviewqueue.Filter{View: "fulfillment"}, reviewqueue.Position{}, 31)
+	if err != nil || len(p.Items) != 1 || p.Counts["fulfillment"] != 1 {
 		t.Fatalf("optional name lookup made queue unavailable: %+v %v", p, err)
 	}
 }

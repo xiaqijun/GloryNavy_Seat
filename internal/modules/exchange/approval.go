@@ -22,7 +22,7 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 		if when.IsZero() {
 			when = r.CreatedAt.Time
 		}
-		order := RewardOrder{ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: r.RewardName, Quantity: r.Quantity, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: when, Reference: r.SettlementReference}
+		order := RewardOrder{ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: r.RewardName, Quantity: r.Quantity, Units: r.Units, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: when, Reference: r.SettlementReference}
 		if len(r.RewardContent) > 0 {
 			var content PhysicalReward
 			if json.Unmarshal(r.RewardContent, &content) == nil {
@@ -88,11 +88,13 @@ func (s *Service) ApprovalDetail(ctx context.Context, user string, id int64) (re
 	if err != nil {
 		return reviewqueue.Item{}, err
 	}
-	order := RewardOrder{Reference: r.SettlementReference, Delivery: delivery, Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time}
+	order := RewardOrder{Reference: r.SettlementReference, Delivery: delivery, Content: &content, ID: r.ID, Version: r.Version, TypeID: r.TypeID, Name: name, Quantity: r.Quantity, Units: r.Units, RecipientID: r.RecipientID, RecipientName: r.RecipientName, CoinsMinor: r.CoinsMinor, Rate: r.IskPerCoin, Value: r.IskValue, State: r.State, Note: r.Note, CreatedAt: r.CreatedAt.Time}
 	payload, _ := json.Marshal(order)
 	var action string
 	if len(history) > 0 {
-		var latest struct{ Action string `json:"action"` }
+		var latest struct {
+			Action string `json:"action"`
+		}
 		if json.Unmarshal(history[len(history)-1], &latest) == nil {
 			action = latest.Action
 		}

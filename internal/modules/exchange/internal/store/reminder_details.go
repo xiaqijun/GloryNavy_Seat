@@ -6,12 +6,14 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/platform/remindermessage"
+	"strconv"
 	"time"
 )
 
 type reminderDetail struct {
 	Ref, State, Name, Recipient, Reason string
 	Amount                              int64
+	Units                               int32
 	Time                                time.Time
 }
 
@@ -24,7 +26,7 @@ func ReminderDetails(ctx context.Context, db *pgxpool.Pool, kind string, keys []
 	var query string
 	switch kind {
 	case "exchange_result":
-		query = `SELECT id::text||':'||state key,jsonb_build_object('ref',settlement_reference,'state',state,'name',reward_name,'recipient',recipient_name,'amount',coins_minor,'reason',note,'time',decided_at) data FROM exchange_redemptions`
+		query = `SELECT id::text||':'||state key,jsonb_build_object('ref',settlement_reference,'state',state,'name',reward_name,'units',units,'recipient',recipient_name,'amount',coins_minor,'reason',note,'time',decided_at) data FROM exchange_redemptions`
 	case "coin_change":
 		query = `SELECT id::text key,jsonb_build_object('ref',reference,'state',kind,'amount',delta,'reason',reason,'time',created_at) data FROM exchange_coin_ledger`
 	default:
@@ -55,6 +57,9 @@ func reminderDetailMessage(kind, key string, r reminderDetail) remindermessage.I
 
 	if kind == "coin_change" {
 		return remindermessage.Item{Key: key, Title: "果壳币变动", Fields: []remindermessage.Field{remindermessage.Text("变动", remindermessage.Signed(r.Amount, "果壳币")), remindermessage.Text("原因", r.Reason), remindermessage.Text("发生时间", remindermessage.Date(r.Time))}, Action: "请查看果壳币流水。"}
+	}
+	if r.Units > 1 {
+		r.Name += " × " + strconv.FormatInt(int64(r.Units), 10) + " 份"
 	}
 	state := remindermessage.Label(r.State, map[string]string{"fulfilled": "已完成", "cancelled": "已取消"})
 	amountLabel := "兑换花费"

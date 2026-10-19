@@ -21,7 +21,7 @@ const isHandoff = (v: unknown): v is Handoff =>
   (v.amount === undefined ||
     (typeof v.amount === "string" && /^(0|[1-9]\d*)$/.test(v.amount))) &&
   typeof v.reference === "string" &&
-  /^(?:GNV-EX-(?:[1-9]\d*|[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})|EX-\d{8}-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})$/.test(
+  /^(?:GNV-EX-(?:[1-9]\d*|[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})|EX-\d{8}-(?:\d{6,19}|[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}))$/.test(
     v.reference,
   ) &&
   typeof v.recipient_id === "string" &&

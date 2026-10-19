@@ -26,7 +26,7 @@ func (q *Queries) ChangeRewardStock(ctx context.Context, arg ChangeRewardStockPa
 }
 
 const createRedemption = `-- name: CreateRedemption :one
-INSERT INTO exchange_redemptions(account_id,request_key,fingerprint,reward_id,type_id,quantity,recipient_id,recipient_name,isk_per_coin,isk_value,coins_minor) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference
+INSERT INTO exchange_redemptions(account_id,request_key,fingerprint,reward_id,type_id,quantity,recipient_id,recipient_name,isk_per_coin,isk_value,coins_minor,units) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference, units
 `
 
 type CreateRedemptionParams struct {
@@ -41,6 +41,7 @@ type CreateRedemptionParams struct {
 	IskPerCoin    int64
 	IskValue      int64
 	CoinsMinor    int64
+	Units         int32
 }
 
 func (q *Queries) CreateRedemption(ctx context.Context, arg CreateRedemptionParams) (ExchangeRedemption, error) {
@@ -56,6 +57,7 @@ func (q *Queries) CreateRedemption(ctx context.Context, arg CreateRedemptionPara
 		arg.IskPerCoin,
 		arg.IskValue,
 		arg.CoinsMinor,
+		arg.Units,
 	)
 	var i ExchangeRedemption
 	err := row.Scan(
@@ -82,6 +84,7 @@ func (q *Queries) CreateRedemption(ctx context.Context, arg CreateRedemptionPara
 		&i.RewardContent,
 		&i.CatalogVersion,
 		&i.SettlementReference,
+		&i.Units,
 	)
 	return i, err
 }
@@ -108,7 +111,7 @@ func (q *Queries) DecideRedemption(ctx context.Context, arg DecideRedemptionPara
 }
 
 const findRedemption = `-- name: FindRedemption :one
-SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference FROM exchange_redemptions WHERE account_id=$1 AND request_key=$2
+SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference, units FROM exchange_redemptions WHERE account_id=$1 AND request_key=$2
 `
 
 type FindRedemptionParams struct {
@@ -143,6 +146,7 @@ func (q *Queries) FindRedemption(ctx context.Context, arg FindRedemptionParams) 
 		&i.RewardContent,
 		&i.CatalogVersion,
 		&i.SettlementReference,
+		&i.Units,
 	)
 	return i, err
 }
@@ -173,7 +177,7 @@ func (q *Queries) FindShopAudit(ctx context.Context, arg FindShopAuditParams) (E
 }
 
 const listRedemptions = `-- name: ListRedemptions :many
-SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference FROM exchange_redemptions WHERE id<$1 AND ($2::boolean OR account_id=$3::uuid) ORDER BY id DESC LIMIT 31
+SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference, units FROM exchange_redemptions WHERE id<$1 AND ($2::boolean OR account_id=$3::uuid) ORDER BY id DESC LIMIT 31
 `
 
 type ListRedemptionsParams struct {
@@ -215,6 +219,7 @@ func (q *Queries) ListRedemptions(ctx context.Context, arg ListRedemptionsParams
 			&i.RewardContent,
 			&i.CatalogVersion,
 			&i.SettlementReference,
+			&i.Units,
 		); err != nil {
 			return nil, err
 		}
@@ -277,7 +282,7 @@ func (q *Queries) LockAccount(ctx context.Context, accountID string) error {
 }
 
 const lockRedemption = `-- name: LockRedemption :one
-SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference FROM exchange_redemptions WHERE id=$1 FOR UPDATE
+SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference, units FROM exchange_redemptions WHERE id=$1 FOR UPDATE
 `
 
 func (q *Queries) LockRedemption(ctx context.Context, id int64) (ExchangeRedemption, error) {
@@ -307,6 +312,7 @@ func (q *Queries) LockRedemption(ctx context.Context, id int64) (ExchangeRedempt
 		&i.RewardContent,
 		&i.CatalogVersion,
 		&i.SettlementReference,
+		&i.Units,
 	)
 	return i, err
 }
@@ -346,7 +352,7 @@ func (q *Queries) LockShopSettings(ctx context.Context) (ExchangeShopSetting, er
 }
 
 const redemption = `-- name: Redemption :one
-SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference FROM exchange_redemptions WHERE id=$1
+SELECT id, account_id, request_key, fingerprint, reward_id, type_id, quantity, recipient_id, recipient_name, isk_per_coin, isk_value, coins_minor, state, version, created_at, decided_at, decided_by, note, original_account_id, reward_name, reward_content, catalog_version, settlement_reference, units FROM exchange_redemptions WHERE id=$1
 `
 
 func (q *Queries) Redemption(ctx context.Context, id int64) (ExchangeRedemption, error) {
@@ -376,6 +382,7 @@ func (q *Queries) Redemption(ctx context.Context, id int64) (ExchangeRedemption,
 		&i.RewardContent,
 		&i.CatalogVersion,
 		&i.SettlementReference,
+		&i.Units,
 	)
 	return i, err
 }

@@ -99,7 +99,7 @@ func (s *Service) SettlementReward(ctx context.Context, id int64) (PhysicalRewar
 		return PhysicalReward{}, 0, "", "", err
 	}
 	var reward PhysicalReward
-	if err := json.Unmarshal(row.RewardContent, &reward); err != nil || !physicalValid(reward) {
+	if err := json.Unmarshal(row.RewardContent, &reward); err != nil || !physicalSnapshotValid(reward) {
 		return PhysicalReward{}, 0, "", "", ErrConflict
 	}
 	return reward, row.RecipientID, row.AccountID.String(), row.RecipientName, nil

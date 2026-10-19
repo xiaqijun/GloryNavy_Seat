@@ -1,4 +1,5 @@
 import { ContractInfo } from "./contract-info";
+import { maxRewardUnits, scaledReward } from "./reward-quantity";
 import { useApprovalEnabled, approvalLink } from "@/modules/approval/api";
 import { Link } from "react-router-dom";
 import { RewardSummary } from "@/components/reward-summary";
@@ -307,7 +308,8 @@ export function RewardsPanel({
                 />
                 <div className="exchange-event-copy">
                   <strong>
-                    {o.name || `#${o.type_id}`} × {o.quantity}
+                    {o.name || `#${o.type_id}`} ·{" "}
+                    {msg("{0} 份", number(o.units ?? 1))}
                   </strong>
                   <small>
                     {o.recipient_name} · {coin(o.coins_minor)} {msg("币 ·")}{" "}
@@ -330,7 +332,7 @@ export function RewardsPanel({
                       {msg("合同信息")}
                     </Button>
                   )}
-                  {shop.admin && o.content && (
+                  {o.content && (
                     <details className="exchange-delivery-details">
                       <summary>{msg("奖励内容")}</summary>
                       <RewardSummary rewards={o.content} />
@@ -441,6 +443,14 @@ function ClaimForm({
     node?.querySelector<HTMLButtonElement>('[role="combobox"]')?.focus();
   }, []);
   const [recipient, setRecipient] = useState(characters[0]?.id ?? "");
+  const [units, setUnits] = useState("1");
+  const count = Number(units);
+  const max = maxRewardUnits(quote.reward, quote.shop);
+  const valid =
+    /^\d+$/.test(units) &&
+    Number.isSafeInteger(count) &&
+    count >= 1 &&
+    count <= max;
   const [key, setKey] = useState(() => crypto.randomUUID());
   const m = useMutation({
     mutationFn: () =>
@@ -452,6 +462,7 @@ function ClaimForm({
           reward_version: quote.reward.version,
           rate_version: quote.shop.version,
           recipient_id: recipient,
+          units: count,
           request_key: key,
         },
         isClaimed,
@@ -477,7 +488,7 @@ function ClaimForm({
           <Button
             type="submit"
             form={formId}
-            disabled={m.isPending || !recipient}
+            disabled={m.isPending || !recipient || !valid}
             aria-busy={m.isPending}
           >
             {m.isPending ? msg("正在提交") : msg("确认兑换")}
@@ -492,24 +503,52 @@ function ClaimForm({
         aria-label={msg("确认兑换")}
         onSubmit={(e) => {
           e.preventDefault();
-          if (!m.isPending && recipient) m.mutate();
+          if (!m.isPending && recipient && valid) m.mutate();
         }}
       >
         <div className="exchange-decision-summary">
-          <strong>
-            {quote.reward.name || `#${quote.reward.type_id}`} ×{" "}
-            {quote.reward.quantity}
-          </strong>
+          <strong>{quote.reward.name || `#${quote.reward.type_id}`}</strong>
         </div>
-        <RewardSummary rewards={quote.reward.content} compact />
+        <label>
+          {msg("兑换份数")}
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={max}
+            step={1}
+            required
+            value={units}
+            disabled={m.isPending}
+            aria-invalid={!valid}
+            onChange={(e) => {
+              setUnits(e.target.value);
+              setKey(crypto.randomUUID());
+              m.reset();
+            }}
+          />
+        </label>
+        {!valid && (
+          <p role="alert">{msg("请输入 1–{0} 之间的整数", number(max))}</p>
+        )}
+        {valid &&
+          (quote.reward.content ? (
+            <RewardSummary
+              rewards={scaledReward(quote.reward.content, count)}
+              compact
+            />
+          ) : (
+            <p>
+              {msg("物品数量")} × {number(quote.reward.quantity * count)}
+            </p>
+          ))}
         <div className="exchange-refund-summary">
           {msg("本次扣占")}{" "}
           <strong>
-            {coin(quote.reward.coins_minor)} {msg("币")}
+            {valid ? coin(quote.reward.coins_minor * count) : "—"} {msg("币")}
           </strong>
         </div>
         <div className="exchange-recipient-field">
-          <span>{msg("接收角色")}</span>
           <AccountCharacterSelect
             disabled={m.isPending}
             label={msg("接收角色")}
@@ -630,8 +669,8 @@ export function DecisionForm({
       >
         <div className="exchange-decision-summary">
           <strong>
-            {decision.order.name || `#${decision.order.type_id}`} ×{" "}
-            {decision.order.quantity}
+            {decision.order.name || `#${decision.order.type_id}`} ·{" "}
+            {msg("{0} 份", number(decision.order.units ?? 1))}
           </strong>
           <span>
             #{decision.order.id} · {decision.order.recipient_name}

@@ -698,9 +698,14 @@ test("claim dialog preserves selection and separates dropdown dismissal", async(
  const opener=page.getByRole('button',{name:'兑换',exact:true});await opener.click();
  const dialog=page.getByRole('dialog',{name:'确认兑换',exact:true});
  const recipient=dialog.getByRole('combobox',{name:'接收角色'});
- await expect(recipient).toBeFocused();await recipient.click();
- await expect(page.getByRole('option',{name:'Hajimi1'})).toBeVisible();
- await page.keyboard.press('Escape');await expect(dialog).toBeVisible();await expect(recipient).toBeFocused();
+ await expect(recipient).toBeFocused();
+ if (await recipient.evaluate(e => e.tagName === 'SELECT')) {
+   // The account/character picker uses a native select for a single account.
+   await recipient.selectOption('123');await expect(recipient).toHaveValue('123');
+ } else {
+   await recipient.click();await expect(page.getByRole('option',{name:'Hajimi1'})).toBeVisible();
+   await page.keyboard.press('Escape');await expect(dialog).toBeVisible();await expect(recipient).toBeFocused();
+ }
  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(opener).toBeFocused();
  await opener.click();
  const dir='../.local/exchange-claim-dialog/screenshots';mkdirSync(dir,{recursive:true});
