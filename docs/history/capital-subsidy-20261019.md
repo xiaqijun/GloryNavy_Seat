@@ -50,4 +50,16 @@ GitNexus 对 Apply 的上游影响为 LOW：直接调用 Board 与损失 Records
 
 验证：类型/构建、10 项单测、48 项中英文 1280/375/320px 浏览器流程通过，覆盖稀疏分页自动补齐、边界继续加载、异常游标/分页失败、军团卖方、搜索/角色重置、错误提示与禁用提交。隔离 PostgreSQL 福利/统一交付/词表回归（race，226 秒）及宿主福利/权限回归（22 秒）通过；所有新增无效合同在真实 Execute 中仍被拒绝，纯预览不写申请。受影响 oxlint 无错误，仅既有 Capital hook 的 Fast Refresh 提示；曾误用不存在的 ESLint 入口，随后使用项目 oxlint 检查。
 
-已检查桌面与 320px 英文截图，长列表保持滚动与固定提交区：[桌面](../ui/reviews/welfare/capital-contract-fix-desktop.png)、[窄屏](../ui/reviews/welfare/capital-contract-fix-narrow.png)。截图使用模拟数据。GitNexus 预编辑影响为 LOW，capitalPurchase 的直接调用为 findCapitalPurchase/guardCapitalPurchase；索引落后 11 次提交，新增 CapitalCheck/前端符号未命中，补查调用链。go vet 通过；GitNexus 暂存与 main 比较均 LOW（19 文件、13 个已索引变更，无已索引受影响流程），新增符号及共享 Execute/HTTP 错误映射已人工补查。发布结果待补充。
+已检查桌面与 320px 英文截图，长列表保持滚动与固定提交区：[桌面](../ui/reviews/welfare/capital-contract-fix-desktop.png)、[窄屏](../ui/reviews/welfare/capital-contract-fix-narrow.png)。截图使用模拟数据。GitNexus 预编辑影响为 LOW，capitalPurchase 的直接调用为 findCapitalPurchase/guardCapitalPurchase；索引落后 11 次提交，新增 CapitalCheck/前端符号未命中，补查调用链。go vet 通过；GitNexus 暂存与 main 比较均 LOW（19 文件、13 个已索引变更，无已索引受影响流程），新增符号及共享 Execute/HTTP 错误映射已人工补查。前后端已从干净且推送的 main `0ab8da3026d5c6a864b7e59e64b3c7b8706f552c` 发布 `v0.1.0-capital-contract-fix-20261019`，Goose 101 不变。143 个前端文件及 3 个后端/测试文件与测试产物/源码一致；服务 active/running/ready、NRestarts=0，页面 200、匿名业务 401、完整清单与公开 HTML/主包/福利脚本字节校验通过，OpenResty 正常。
+
+当前超级航母/泰坦均 enabled=true、1000 bps，仍无旗舰申请；solo 状态 approved 11/cancelled 3/completed 23/rejected 14，提醒 enabled/revision 4/原三类事件、QQ 关闭/绑定 0，发布前后保持。备份 `/var/backups/glorynavy/before-v0.1.0-capital-contract-fix-20261019-20261019T074851Z.dump`（261477459 bytes）。
+
+必要时后端回到 `v0.1.0-capital-flow-20261019`、前端回到 `v0.1.0-capital-contract-picker-20261019`；会恢复旧分页和通用提示，保留 Goose 101 与全部业务数据。不要用备份覆盖后续业务，优先向前修复。
+
+
+本轮公开 HTML SHA256 `49b0b459258c7914d9b639e9ea584c607336e633fdc6c460ca4f1733563728dd`；相关静态资源验证：
+
+- `index-DSXxd1IF.js`：`95825459580c83085ec2724c6af8c49fbb84394701325886ae874a6275dfa561`
+- `page-0L0Wbr77.js`：`ae83a675e7a2882a3307ef4037267ca090e008803684a3c07097b9bdae0ca257`
+
+验证材料位于忽略目录 `.local/capital-contract-fix/`；没有真实申请/审批或发送测试消息，FUL-01 仍按业务使用验收。

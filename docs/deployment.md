@@ -1,5 +1,11 @@
 # Linux 生产部署
 
+## 2026-10-19 旗舰合同筛选与核验提示
+
+前后端已从干净且推送的 main `0ab8da3026d5c6a864b7e59e64b3c7b8706f552c` 发布 `v0.1.0-capital-contract-fix-20261019`，Goose 101 不变。143 个前端文件及 3 个后端/测试文件与测试产物/源码一致；服务 active/running/ready、NRestarts=0，页面 200、匿名业务 401、完整清单与公开 HTML/主包/福利脚本字节校验通过，OpenResty 正常。 无新环境配置或数据库迁移。备份 `/var/backups/glorynavy/before-v0.1.0-capital-contract-fix-20261019-20261019T074851Z.dump`（261477459 bytes），同前缀环境/元数据保留，未演练恢复。当前旗舰规则及补损状态未变；详情见[交付证据](history/capital-subsidy-20261019.md)。
+
+必要时后端回到 `v0.1.0-capital-flow-20261019`、前端回到 `v0.1.0-capital-contract-picker-20261019`；会恢复旧分页和通用提示，保留 Goose 101 与全部业务数据。不要用备份覆盖后续业务，优先向前修复。
+
 ## 2026-10-19 旗舰合同搜索选择（仅前端）
 
 前端 `v0.1.0-capital-contract-picker-20261019` 来自干净且推送的 main `20c7e0a337f6598a279e1c0727be8e6275ba612a`；143 个前端文件与最终测试构建一致。后端仍为 `v0.1.0-capital-flow-20261019`，Goose 101；无数据库、环境配置或代理变更，也未重启应用服务。公网页面 200、业务匿名 401、HTML/主包/福利脚本字节与完整发布清单通过，OpenResty 配置正常，后端 active/running/ready、NRestarts=0。详细验证见[追加交付记录](history/capital-subsidy-20261019.md)。
