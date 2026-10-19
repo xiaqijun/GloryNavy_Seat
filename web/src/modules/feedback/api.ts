@@ -3,7 +3,7 @@ import { msg } from "@/lib/i18n";
 export type Kind = "bug" | "feature";
 export type Status = "submitted" | "in_progress" | "resolved" | "closed";
 export type Screenshot = { id: string; mime: "image/png" | "image/jpeg" };
-export type ImageUpload = { mime: string; content: string };
+export type ImageUpload = File;
 export type Ticket = {
   images?: Screenshot[];
   id: string;
@@ -126,11 +126,17 @@ async function post(
   csrf: string,
   body: Submission | Reply,
 ): Promise<Ticket> {
+  const { images, ...payload } = body;
+  const multipart = new FormData();
+  multipart.append("payload", JSON.stringify(payload));
+  for (const file of images || []) multipart.append("image", file);
   const response = await apiFetch(`/api/v1/feedback/tickets${path}`, {
     method: "POST",
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-    body: JSON.stringify(body),
+    headers: images?.length
+      ? { "X-CSRF-Token": csrf }
+      : { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+    body: images?.length ? multipart : JSON.stringify(payload),
   });
   const p = await response.json().catch(() => null);
   if (!response.ok)

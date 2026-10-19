@@ -3,8 +3,10 @@ package feedback_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"image"
 	"image/png"
+	"io"
 	"strconv"
 	"testing"
 
@@ -18,6 +20,55 @@ func screenshot(t *testing.T) feedback.ImageUpload {
 		t.Fatal(e)
 	}
 	return feedback.ImageUpload{MIME: "image/png", Content: b.Bytes()}
+}
+
+func TestChunkFailureAndLegacyScreenshotRead(t *testing.T) {
+	s, p, a := fixture(t)
+	ctx := context.Background()
+	ticket, e := s.Create(ctx, a[0], input(1))
+	if e != nil {
+		t.Fatal(e)
+	}
+	id, _ := strconv.ParseInt(ticket.ID, 10, 64)
+	old := screenshot(t)
+	digest := sha256.Sum256(old.Content)
+	var imageID int64
+	e = p.QueryRow(ctx, `INSERT INTO feedback_images(ticket_id,ordinal,mime,content,digest,size_bytes) VALUES($1,1,$2,$3,$4,$5) RETURNING id`, id, old.MIME, old.Content, digest[:], len(old.Content)).Scan(&imageID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	_, reader, size, e := s.Image(ctx, a[0].ID, id, imageID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	b, e := io.ReadAll(reader)
+	_ = reader.Close()
+	if e != nil || size != int64(len(b)) || !bytes.Equal(b, old.Content) {
+		t.Fatal("legacy image", e)
+	}
+	_, e = p.Exec(ctx, `CREATE FUNCTION fail_feedback_chunk() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.ordinal=2 THEN RAISE EXCEPTION 'test chunk failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER fail_feedback_chunk BEFORE INSERT ON feedback_image_chunks FOR EACH ROW EXECUTE FUNCTION fail_feedback_chunk()`)
+	if e != nil {
+		t.Fatal(e)
+	}
+	large := screenshot(t)
+	large.Content = append(large.Content, make([]byte, 2<<20)...)
+	_, e = s.Reply(ctx, a[0], id, feedback.Reply{RequestKey: input(2).RequestKey, Revision: 1, Body: "large", Images: []feedback.ImageUpload{large}})
+	if e == nil {
+		t.Fatal("expected second chunk failure")
+	}
+	var n int
+	_ = p.QueryRow(ctx, "SELECT count(*) FROM feedback_image_chunks").Scan(&n)
+	if n != 0 {
+		t.Fatal("orphan chunks", n)
+	}
+	_ = p.QueryRow(ctx, "SELECT count(*) FROM feedback_images").Scan(&n)
+	if n != 1 {
+		t.Fatal("orphan metadata", n)
+	}
+	d, e := s.Detail(ctx, a[0].ID, id)
+	if e != nil || d.Ticket.Revision != 1 || len(d.Messages) != 0 {
+		t.Fatal(d, e)
+	}
 }
 
 func TestScreenshotsAtomicPrivateIdempotentAndMerged(t *testing.T) {
@@ -44,14 +95,19 @@ func TestScreenshotsAtomicPrivateIdempotentAndMerged(t *testing.T) {
 	}
 	imageID, _ := strconv.ParseInt(d.Ticket.Images[0].ID, 10, 64)
 	for _, actor := range []feedback.Actor{a[0], a[2]} {
-		mime, content, e := s.Image(ctx, actor.ID, id, imageID)
-		if e != nil || mime != "image/png" || !bytes.Equal(content, in.Images[0].Content) {
+		mime, reader, size, e := s.Image(ctx, actor.ID, id, imageID)
+		if e != nil {
+			t.Fatal(e)
+		}
+		content, e := io.ReadAll(reader)
+		_ = reader.Close()
+		if e != nil || mime != "image/png" || size != int64(len(content)) || !bytes.Equal(content, in.Images[0].Content) {
 			t.Fatal(mime, e)
 		}
 	}
-	_, _, e = s.Image(ctx, a[1].ID, id, imageID)
+	_, _, _, e = s.Image(ctx, a[1].ID, id, imageID)
 	check(t, e, 404)
-	_, _, e = s.Image(ctx, a[0].ID, id+1, imageID)
+	_, _, _, e = s.Image(ctx, a[0].ID, id+1, imageID)
 	check(t, e, 404)
 	r := feedback.Reply{RequestKey: input(2).RequestKey, Revision: 1, Body: "补充截图", Images: in.Images}
 	ticket, e = s.Reply(ctx, a[0], id, r)
@@ -79,7 +135,7 @@ func TestScreenshotsAtomicPrivateIdempotentAndMerged(t *testing.T) {
 	}
 	// Administrator revocation takes effect on the next image read.
 	s.Administrator = func(context.Context, string) (bool, error) { return false, nil }
-	_, _, e = s.Image(ctx, a[2].ID, id, imageID)
+	_, _, _, e = s.Image(ctx, a[2].ID, id, imageID)
 	check(t, e, 404)
 	// Ownership comes exclusively from the parent ticket. No copied ACL survives a merge.
 	tx, e := p.Begin(ctx)
@@ -92,12 +148,13 @@ func TestScreenshotsAtomicPrivateIdempotentAndMerged(t *testing.T) {
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
 	}
-	_, _, e = s.Image(ctx, a[0].ID, id, imageID)
+	_, _, _, e = s.Image(ctx, a[0].ID, id, imageID)
 	check(t, e, 404)
-	_, _, e = s.Image(ctx, a[1].ID, id, imageID)
+	_, reader, _, e := s.Image(ctx, a[1].ID, id, imageID)
 	if e != nil {
 		t.Fatal(e)
 	}
+	_ = reader.Close()
 }
 
 func TestScreenshotFailureRollsBackTicketAndReply(t *testing.T) {

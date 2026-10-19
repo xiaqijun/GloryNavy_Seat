@@ -1,5 +1,7 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "截图最多 3 张，仅支持 PNG/JPG": "Up to 3 PNG/JPG screenshots",
+  "截图最多 3 张，请选择有效的 PNG/JPG 图片": "Use up to 3 valid PNG/JPG screenshots",
   "截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB": "Up to 3 PNG/JPG screenshots, 2 MB each",
   "截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB，且不超过 1600 万像素": "Use up to 3 PNG/JPG screenshots, each within 2 MB and 16 megapixels",
   "截图读取失败，请重新选择": "Could not read the screenshot. Select it again.",

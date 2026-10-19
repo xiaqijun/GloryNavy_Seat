@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type Handler struct {
@@ -60,16 +61,20 @@ func (h Handler) image(w http.ResponseWriter, r *http.Request) {
 		respond(w, r, nil, err)
 		return
 	}
-	mime, content, err := h.Service.Image(r.Context(), h.Actor(r).ID, id, imageID)
+	mime, content, size, err := h.Service.Image(r.Context(), h.Actor(r).ID, id, imageID)
 	if err != nil {
 		respond(w, r, nil, err)
 		return
 	}
+	defer content.Close()
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
 	w.Header().Set("Content-Type", mime)
-	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	w.Header().Set("Content-Disposition", "inline")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(content)
+	if _, err = io.Copy(w, content); err != nil {
+		panic(http.ErrAbortHandler)
+	}
 }
 func (h Handler) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -101,7 +106,9 @@ func (h Handler) detail(w http.ResponseWriter, r *http.Request) {
 }
 func (h Handler) create(w http.ResponseWriter, r *http.Request) {
 	var in Submission
-	if !read(w, r, &in) {
+	cleanup, ok := readUploads(w, r, &in)
+	defer cleanup()
+	if !ok {
 		return
 	}
 	v, err := h.Service.Create(r.Context(), h.Actor(r), in)
@@ -114,7 +121,9 @@ func (h Handler) reply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in Reply
-	if !read(w, r, &in) {
+	cleanup, ok := readUploads(w, r, &in)
+	defer cleanup()
+	if !ok {
 		return
 	}
 	v, err := h.Service.Reply(r.Context(), h.Actor(r), id, in)

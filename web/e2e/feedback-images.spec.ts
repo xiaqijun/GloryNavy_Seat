@@ -1,4 +1,30 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Request } from "@playwright/test";
+
+function submitted(request: Request) {
+  const type = request.headers()["content-type"] || "";
+  if (!type.startsWith("multipart/form-data")) return request.postDataJSON();
+  const boundary = type.split("boundary=")[1];
+  const parts = request
+    .postDataBuffer()!
+    .toString("latin1")
+    .split(`--${boundary}`);
+  let payload: Record<string, unknown> = {};
+  const images: { mime: string; content: string }[] = [];
+  for (const part of parts) {
+    const split = part.indexOf("\r\n\r\n");
+    if (split < 0) continue;
+    const header = part.slice(0, split),
+      body = Buffer.from(part.slice(split + 4, -2), "latin1");
+    if (header.includes('name="payload"'))
+      payload = JSON.parse(body.toString("utf8"));
+    if (header.includes('name="image"'))
+      images.push({
+        mime: header.match(/Content-Type: ([^\r]+)/i)![1],
+        content: body.toString("base64"),
+      });
+  }
+  return { ...payload, images };
+}
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a2ioAAAAASUVORK5CYII=",
@@ -58,7 +84,7 @@ async function setup(page: Page, language: string, retry = false) {
       return r.fulfill({ contentType: "image/png", body: png });
     if (p === "/api/v1/feedback/tickets") {
       if (r.request().method() === "POST") {
-        const b = r.request().postDataJSON();
+        const b = submitted(r.request());
         attempts.push(b);
         expect(r.request().headers()["x-csrf-token"]).toBe("csrf");
         if (retry && attempts.length === 1)
@@ -81,7 +107,7 @@ async function setup(page: Page, language: string, retry = false) {
     if (p === "/api/v1/feedback/tickets/1")
       data = { ticket, messages, administrator: false };
     if (p === "/api/v1/feedback/tickets/1/messages") {
-      const b = r.request().postDataJSON();
+      const b = submitted(r.request());
       attempts.push(b);
       ticket.revision++;
       messages.push({
@@ -178,8 +204,15 @@ for (const language of ["zh-CN", "en"]) {
     });
     await expect(dialog.getByRole("alert")).toBeVisible();
     await expect(dialog.locator(".feedback-image-draft")).toHaveCount(0);
-    await input.setInputFiles({ ...image, buffer: Buffer.alloc(2_000_001) });
-    await expect(dialog.getByRole("alert")).toBeVisible();
+    await input.setInputFiles({
+      ...image,
+      buffer: Buffer.concat([png, Buffer.alloc(3_000_000)]),
+    });
+    await expect(dialog.getByRole("alert")).toHaveCount(0);
+    await expect(dialog.locator(".feedback-image-draft")).toHaveCount(1);
+    await dialog
+      .getByRole("button", { name: t("移除截图 1", "Remove screenshot 1") })
+      .click();
     await input.setInputFiles([image, image, image, image]);
     await expect(dialog.locator(".feedback-image-draft")).toHaveCount(0);
     await input.setInputFiles([image, image]);

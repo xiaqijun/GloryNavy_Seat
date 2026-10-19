@@ -40,9 +40,9 @@ func (q *Queries) ImageDigests(ctx context.Context, arg ImageDigestsParams) ([][
 	return items, nil
 }
 
-const insertImage = `-- name: InsertImage :exec
-INSERT INTO feedback_images(ticket_id,message_id,ordinal,mime,content,digest)
-VALUES($1,$2,$3,$4,$5,$6)
+const insertImage = `-- name: InsertImage :one
+INSERT INTO feedback_images(ticket_id,message_id,ordinal,mime,content,digest,size_bytes)
+VALUES($1,$2,$3,$4,''::bytea,$5,$6) RETURNING id
 `
 
 type InsertImageParams struct {
@@ -50,19 +50,36 @@ type InsertImageParams struct {
 	MessageID pgtype.Int8
 	Ordinal   int16
 	Mime      string
-	Content   []byte
 	Digest    []byte
+	SizeBytes int64
 }
 
-func (q *Queries) InsertImage(ctx context.Context, arg InsertImageParams) error {
-	_, err := q.db.Exec(ctx, insertImage,
+func (q *Queries) InsertImage(ctx context.Context, arg InsertImageParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertImage,
 		arg.TicketID,
 		arg.MessageID,
 		arg.Ordinal,
 		arg.Mime,
-		arg.Content,
 		arg.Digest,
+		arg.SizeBytes,
 	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertImageChunk = `-- name: InsertImageChunk :exec
+INSERT INTO feedback_image_chunks(image_id,ordinal,content) VALUES($1,$2,$3)
+`
+
+type InsertImageChunkParams struct {
+	ImageID int64
+	Ordinal int64
+	Content []byte
+}
+
+func (q *Queries) InsertImageChunk(ctx context.Context, arg InsertImageChunkParams) error {
+	_, err := q.db.Exec(ctx, insertImageChunk, arg.ImageID, arg.Ordinal, arg.Content)
 	return err
 }
 
@@ -97,7 +114,7 @@ func (q *Queries) ListImages(ctx context.Context, ticketID int64) ([]ListImagesR
 }
 
 const readImage = `-- name: ReadImage :one
-SELECT i.mime,i.content FROM feedback_images i JOIN feedback_tickets t ON t.id=i.ticket_id
+SELECT i.mime,i.content,i.size_bytes FROM feedback_images i JOIN feedback_tickets t ON t.id=i.ticket_id
 WHERE i.ticket_id=$1 AND i.id=$2 AND (t.account_id=$3::uuid OR $4::boolean)
 `
 
@@ -109,8 +126,9 @@ type ReadImageParams struct {
 }
 
 type ReadImageRow struct {
-	Mime    string
-	Content []byte
+	Mime      string
+	Content   []byte
+	SizeBytes int64
 }
 
 func (q *Queries) ReadImage(ctx context.Context, arg ReadImageParams) (ReadImageRow, error) {
@@ -121,6 +139,22 @@ func (q *Queries) ReadImage(ctx context.Context, arg ReadImageParams) (ReadImage
 		arg.Administrator,
 	)
 	var i ReadImageRow
-	err := row.Scan(&i.Mime, &i.Content)
+	err := row.Scan(&i.Mime, &i.Content, &i.SizeBytes)
 	return i, err
+}
+
+const readImageChunk = `-- name: ReadImageChunk :one
+SELECT content FROM feedback_image_chunks WHERE image_id=$1 AND ordinal=$2
+`
+
+type ReadImageChunkParams struct {
+	ImageID int64
+	Ordinal int64
+}
+
+func (q *Queries) ReadImageChunk(ctx context.Context, arg ReadImageChunkParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, readImageChunk, arg.ImageID, arg.Ordinal)
+	var content []byte
+	err := row.Scan(&content)
+	return content, err
 }

@@ -2,8 +2,6 @@ package feedback
 
 import (
 	"bytes"
-	"encoding/binary"
-	"hash/crc32"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -25,12 +23,16 @@ func TestScreenshotValidation(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Valid PNG header with excessive dimensions must be rejected before decoding pixels.
-	bomb := bytes.Clone(p.Bytes())
-	binary.BigEndian.PutUint32(bomb[16:20], 100_000)
-	binary.BigEndian.PutUint32(bomb[20:24], 100_000)
-	binary.BigEndian.PutUint32(bomb[29:33], crc32.ChecksumIEEE(bomb[12:29]))
-	for _, images := range [][]ImageUpload{{good, good, good, good}, {{MIME: "image/png"}}, {{MIME: "image/jpeg", Content: p.Bytes()}}, {{MIME: "image/svg+xml", Content: []byte(`<svg onload="alert(1)"/>`)}}, {{MIME: "image/png", Content: bytes.Repeat([]byte{0}, maxImageBytes+1)}}, {{MIME: "image/png", Content: p.Bytes()[:33]}}, {{MIME: "image/png", Content: bomb}}} {
+	var large bytes.Buffer
+	if err := png.Encode(&large, image.NewGray(image.Rect(0, 0, 5000, 4000))); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateImages([]ImageUpload{{MIME: "image/png", Content: large.Bytes()}, {MIME: "image/png", Content: append(bytes.Clone(p.Bytes()), make([]byte, 12<<20)...)}}); err != nil {
+		t.Fatal("large valid image rejected", err)
+	}
+	broken := bytes.Clone(p.Bytes())
+	broken[40] ^= 1
+	for _, images := range [][]ImageUpload{{good, good, good, good}, {{MIME: "image/png"}}, {{MIME: "image/jpeg", Content: p.Bytes()}}, {{MIME: "image/svg+xml", Content: []byte(`<svg onload="alert(1)"/>`)}}, {{MIME: "image/png", Content: p.Bytes()[:33]}}, {{MIME: "image/png", Content: broken}}, {{MIME: "image/jpeg", Content: j.Bytes()[:j.Len()-2]}}} {
 		if err := validateImages(images); err != invalidImages {
 			t.Fatal("invalid screenshot accepted", err)
 		}

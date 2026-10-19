@@ -1,63 +1,42 @@
-import { useRef, useState, type ClipboardEvent } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent } from "react";
 import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { msg } from "@/lib/i18n";
 import type { ImageUpload, Screenshot } from "./api";
 
-const limit = msg("截图最多 3 张，仅支持 PNG/JPG，每张不超过 2 MB");
-const dataURL = (image: ImageUpload) =>
-  `data:${image.mime};base64,${image.content}`;
-const readFile = (file: File) =>
-  new Promise<ImageUpload>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      resolve({
-        mime: file.type,
-        content: String(reader.result).split(",")[1],
-      });
-    reader.onerror = reader.onabort = () =>
-      reject(new Error(msg("截图读取失败，请重新选择")));
-    reader.readAsDataURL(file);
-  });
+const limit = msg("截图最多 3 张，仅支持 PNG/JPG");
+
+function ScreenshotPreview({ file, index }: { file: File; index: number }) {
+  const image = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const next = URL.createObjectURL(file);
+    if (image.current) image.current.src = next;
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return <img ref={image} alt={msg("截图 {0}", index + 1)} />;
+}
 
 export function useScreenshots(edited: () => void, disabled: boolean) {
   const [images, setImages] = useState<ImageUpload[]>([]);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const reading = useRef(false);
-  const add = async (files: File[]) => {
-    if (disabled || reading.current || !files.length) return;
+  const add = (files: File[]) => {
+    if (disabled || !files.length) return;
     if (
       images.length + files.length > 3 ||
       files.some(
-        (f) =>
-          !["image/png", "image/jpeg"].includes(f.type) ||
-          f.size < 1 ||
-          f.size > 2_000_000,
+        (f) => !["image/png", "image/jpeg"].includes(f.type) || f.size < 1,
       )
     ) {
       setError(limit);
       return;
     }
-    reading.current = true;
-    setBusy(true);
     setError("");
-    try {
-      const next = await Promise.all(files.map(readFile));
-      setImages((current) => [...current, ...next]);
-      edited();
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : msg("截图读取失败，请重新选择"),
-      );
-    } finally {
-      reading.current = false;
-      setBusy(false);
-    }
+    setImages((current) => [...current, ...files]);
+    edited();
   };
   return {
     images,
-    busy,
+    busy: false,
     error,
     add,
     clear: () => {
@@ -65,7 +44,7 @@ export function useScreenshots(edited: () => void, disabled: boolean) {
       setError("");
     },
     remove: (i: number) => {
-      if (!disabled && !reading.current) {
+      if (!disabled) {
         setImages((v) => v.filter((_, n) => n !== i));
         setError("");
         edited();
@@ -123,7 +102,7 @@ export function ScreenshotPicker({
         <div className="feedback-images">
           {value.images.map((image, i) => (
             <div className="feedback-image-draft" key={i}>
-              <img src={dataURL(image)} alt={msg("截图 {0}", i + 1)} />
+              <ScreenshotPreview file={image} index={i} />
               <button
                 type="button"
                 aria-label={msg("移除截图 {0}", i + 1)}
