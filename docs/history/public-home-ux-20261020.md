@@ -33,4 +33,7 @@
 - 更新原首页统计断言，移除不再适用的首页在线到期用例；未为纯排版添加实现镜像测试。
 - TypeScript、Vite 构建、受影响代码 lint 通过；19 项首页回归全部通过，包含匿名权限、未知数据、语言与各尺寸布局、登录和滚动行为。
 - 1440/375/320px × 中英文 6 项逐屏检查通过；已目视复核[桌面三项统计](../ui/reviews/public-home-stats-20261020/1440-zh-CN-strength.png)与[320px 英文三行](../ui/reviews/public-home-stats-20261020/320-en-strength.png)。截图为本地测试夹具，不是生产数据。
-- 待发布，生产仍为 `v0.1.0-public-home-ux-20261020`。
+- 提交前 GitNexus staged 和 compare/main 检查均 LOW：9 文件、7 个变更条目；未解析出受影响流程，结合 upstream 的直接调用者和实际首页回归确认范围。暂存 diff 检查通过。
+- 北京时间 2026-10-20 00:44:22 发布前端 `v0.1.0-public-home-stats-20261020`，来源干净且已推送 main `2af2a15a0506026703f16d5ec505200ae3be797a`。145 个构建文件与冻结清单一致，生产完整清单通过；上一版 `public-home-ux` 保留，无后端或数据变更。
+- 公网页面 `/`、`/login`、`/workspace` 为 200，四个受保护接口匿名为 401，OpenResty 配置正常；HTML 与主包/首页 JS/CSS 均匹配发布产物。HTML SHA-256 `c804840917bbd48d5e2008e63c3e2ec3698647e094c0dc6337045bae7e44e9a4`；首页资源 `landing-page-z_VnkDcA.js` / `landing-page-BSJsCINN.css`。
+- 本地材料保存在忽略目录 `.local/home-stats/`。线上完整浏览器目视矩阵继续按 WEB-01 跟踪，不将本地截图冒充真实线上数据。
