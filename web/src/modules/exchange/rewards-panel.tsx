@@ -129,7 +129,7 @@ export function RewardsPanel({
           {
             icon: <Coins />,
             label: msg("可用果壳币"),
-            value: Math.max(0, shop.available_minor),
+            value: shop.available_minor,
           },
           {
             icon: <Package />,
@@ -144,7 +144,9 @@ export function RewardsPanel({
             </span>
             <div>
               <small>{v.label}</small>
-              <strong>{coin(v.value)}</strong>
+              <strong data-negative={v.value < 0 || undefined}>
+                {coin(v.value)}
+              </strong>
             </div>
           </Card>
         ))}

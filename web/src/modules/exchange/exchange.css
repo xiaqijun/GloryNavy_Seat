@@ -80,6 +80,9 @@
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
+.exchange-metric strong[data-negative] {
+  color: var(--color-destructive);
+}
 .exchange-form {
   display: grid;
   gap: 16px;

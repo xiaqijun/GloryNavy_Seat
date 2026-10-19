@@ -414,6 +414,7 @@ test("rewards admin pricing local SDE and fulfillment", async ({ page }) => {
 });
 test("rewards debt and responsive layout", async ({ page }, info) => {
   await rewardSetup(page, true, true);
+  await expect(page.locator(".exchange-metric").filter({ hasText: "可用果壳币" }).locator("strong")).toHaveText("-5");
   await expect(page.getByRole("alert")).toContainText("果壳币欠额 5");
   await expect(
     page.getByRole("button", { name: "兑换", exact: true }),
