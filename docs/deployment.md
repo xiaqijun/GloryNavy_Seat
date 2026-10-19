@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## 2026-10-19：PVP 战报与紧凑详情
+
+前后端 `v0.1.0-pvp-report-20261019` 来自干净且推送的 main 提交 `712f65c7ac571a2b7ed764df7a37804ccd0c3050`，Goose 101 不变。备份 `/var/backups/glorynavy/before-v0.1.0-pvp-report-20261019-20261019T031533Z.dump`（260514379 字节），同前缀环境与元数据文件保留；未做恢复演练。六个 Linux 程序由该提交构建；142 个前端文件与最终测试构建一致，6 个后端/依赖文件与隔离测试源码一致。
+
+新增固定 SCTools 公开战报读取，页面只显示摘要和链接，不保存整份战报、不更改业务数据或代理规则。上线后 active/running/ready、NRestarts=0，首页/福利/审批/损失页面 200，两个新战报接口匿名 401，发布清单/HTML/主脚本/福利脚本与 OpenResty 配置检查通过。HTML SHA256 `45ddd8361c829767b40c90e5e430b4fe21063b1b815265906d8253045bbe8efa`。KM 139267042 的真实公开读取已从应用服务器经新 Go 客户端验证：80 KM，两方 160/168 名角色，损失约 3.67B/4.60B ISK；未伪造生产会话或测试审批。
+
+发布前后核对：solo 日 200M、周/月原值 0（自动 1.4B/6B）；srp 日 200M、手动周 1B/月 3B，均保持原配置。日分配 0，solo approved 10/cancelled 3/completed 23/rejected 14/submitted 1；提醒 true/revision 4/原三类事件，授权 ready、发送/回执 0；QQ 关闭、绑定 0，三个专员角色各 0 名成员。没有生产测试发信或审批。源码 `/root/glorynavy-pvp-report-release-20261019`，验证材料 `.local/pvp-report/`；隔离数据库和本地预览已清理。
+
+本次无新迁移，必要时前后端一起回退至 `v0.1.0-loss-quota-defaults-20261019` 仅移除战报显示；保留 Goose 101 和现有业务数据，不用备份覆盖后续业务。更早版本仍受下方额度/附件等恢复限制约束。接口和权限边界见[福利指南](integrations/welfare.zh-CN.md)。
+
 ## 2026-10-19：补损周/月自动额度
 
 前后端 `v0.1.0-loss-quota-defaults-20261019` 来自干净且推送的 main 提交 `abee82ce5b30b24102a2d4dd12f890fbf6a6b8c2`，Goose 101 不变。备份 `/var/backups/glorynavy/before-v0.1.0-loss-quota-defaults-20261019-20261019T021619Z.dump`（260320730 字节），同前缀环境与元数据文件保留；未做恢复演练。六个 Linux 程序从该提交构建，140 个前端文件与测试构建一致，4 个后端变更文件与隔离测试源码一致。
