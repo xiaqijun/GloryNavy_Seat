@@ -1,6 +1,6 @@
 # 使用帮助
 
-2026-10-20 新增，发布状态见[项目状态](../project-status.md)，使用内容见[成员指南](../user-guide.zh-CN.md)。
+2026-10-20 随 `v0.1.0-seat-help-20261020` 发布，当前状态见[项目状态](../project-status.md)，使用内容见[成员指南](../user-guide.zh-CN.md)。
 
 ## 入口与内容
 
