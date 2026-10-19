@@ -1,5 +1,13 @@
 # Linux 生产部署
 
+## 2026-10-19：补损周/月自动额度
+
+前后端 `v0.1.0-loss-quota-defaults-20261019` 来自干净且推送的 main 提交 `abee82ce5b30b24102a2d4dd12f890fbf6a6b8c2`，Goose 101 不变。备份 `/var/backups/glorynavy/before-v0.1.0-loss-quota-defaults-20261019-20261019T021619Z.dump`（260320730 字节），同前缀环境与元数据文件保留；未做恢复演练。六个 Linux 程序从该提交构建，140 个前端文件与测试构建一致，4 个后端变更文件与隔离测试源码一致。
+
+有日额度时，原周/月 0 或空自动解析为 ×7 / ×30；正数手动值保留，日额度不是审批硬上限，新批准不向后占用日期。现有 srp/solo 日 200M 自动为周 1.4B/月 6B，原配置不需要数据更新。冻结历史分配仍保留，旧版本会失去自动上限且不接受扩大后的周/月配置范围，优先向前修复。
+
+线上 active/running/ready、NRestarts=0；首页/福利/审批 200，匿名对应业务上下文/详情 401，发布清单/HTML/主脚本及福利脚本一致。HTML SHA256 `9b07f90fc30f823881e9a18eb02352193856b6aef8fbe2923271a997c54da64f`。日分配 0，solo approved 10/cancelled 3/completed 23/rejected 14/submitted 1；提醒 true/revision 4/原三类事件、发信授权 ready、发送/回执 0、QQ 关闭/绑定 0，未审批或发送生产测试数据，未修改反馈专用代理。源码 `/root/glorynavy-loss-quota-defaults-release-20261019`，验证材料 `.local/loss-quota-defaults/`，隔离数据库和本地预览已清理。
+
 ## 2026-10-19：补损日额度顺延
 
 前后端 `v0.1.0-loss-quota-20261019` 来自干净且推送的 main 提交 `6af3fd22fdae336118e4f0bb1bed3e9a6dccb3da`，Goose 101。备份 `/var/backups/glorynavy/before-v0.1.0-loss-quota-20261019-20261019T015711Z.dump`（260254956 字节），同前缀环境和元数据文件保留；未做恢复演练。Linux 六个程序从该提交构建，140 个前端文件与测试构建一致；未更改反馈专用代理。
