@@ -2,7 +2,9 @@
 
 ## 后续：移除额外欠额提示
 
-用户要求不再显示余额卡下方的“果壳币欠额……补足前暂不可兑换”文字，保留带符号余额和余额不足时的禁兑。只删除独立提示，未改后台或余额计算。RewardsPanel 影响分析 LOW，直接调用为 Workspace，间接为 ExchangePage；索引落后 23 个提交，已对照源码。既有欠额布局回归移除过时的提示断言，继续检查负余额、禁兑和三尺寸布局。TypeScript、Vite 构建及受影响 lint 通过；既有欠额响应式流程通过，验证负数余额、兑换禁用及 1440/375/320px 无横向溢出。已检查[桌面](../ui/reviews/exchange-debt-note/1440.png)与[375px](../ui/reviews/exchange-debt-note/375.png)截图，额外提示已移除。上线证据待补充。
+用户要求不再显示余额卡下方的“果壳币欠额……补足前暂不可兑换”文字，保留带符号余额和余额不足时的禁兑。只删除独立提示，未改后台或余额计算。RewardsPanel 影响分析 LOW，直接调用为 Workspace，间接为 ExchangePage；索引落后 23 个提交，已对照源码。既有欠额布局回归移除过时的提示断言，继续检查负余额、禁兑和三尺寸布局。TypeScript、Vite 构建及受影响 lint 通过；既有欠额响应式流程通过，验证负数余额、兑换禁用及 1440/375/320px 无横向溢出。已检查[桌面](../ui/reviews/exchange-debt-note/1440.png)与[375px](../ui/reviews/exchange-debt-note/375.png)截图，额外提示已移除。GitNexus 提交前 staged/compare-main 均为 MEDIUM（8 文件、7 变更符号、3 条页面流程），范围与预期一致。
+
+前端已由干净且推送的 main `5d95caface5c30abc749d812408aff31ff3cb4bf` 发布 `v0.1.0-exchange-debt-note-20261019`，143 个文件与最终测试构建逐字节一致。公开首页、兑换、奖励和审批页面 200，匿名业务接口 401，完整清单及 OpenResty 配置通过；公开 HTML、主包和兑换包字节一致。HTML SHA-256 `30081a20a2ab9d35026ea45d1bd42c61d1af88b5fc6e669f0dba4d238a5af388`，主包 index-CoDe8lil.js `a921fc29f4b41d24243f13703694d2104c22dfb1dcc8db68c283f2582e4a9f88`，兑换包 rewards-panel-ChKkuhjy.js `90a0c84c494b557279daa3d574a7af0e8f7de1a973e3bf306f63073b81286a92`。本次没有后端发布、迁移或生产业务写入。
 
 ## 前次负余额展示交付
 
