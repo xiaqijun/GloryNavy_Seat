@@ -18,8 +18,16 @@ import {
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
+const landingSections = [
+  { id: "strength", label: "军团实力" },
+  { id: "about", label: "关于我们" },
+  { id: "fleet", label: "军团活动" },
+  { id: "join", label: "加入我们" },
+] as const;
+
 export default function LandingPage() {
   const root = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState("");
   const session = useSession();
   const loginError = useLoginError();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
@@ -30,6 +38,51 @@ export default function LandingPage() {
     document.title = msg("GloryNavy · 在新伊甸，一起远航");
     return () => {
       document.title = title;
+    };
+  }, []);
+  useEffect(() => {
+    const sections = landingSections.map(({ id }) =>
+      root.current?.querySelector<HTMLElement>(`#${id}`),
+    );
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      let current = "";
+      for (const section of sections) {
+        if (!section) continue;
+        const offset =
+          parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+        if (section.getBoundingClientRect().top <= offset + 2)
+          current = section.id;
+      }
+      // The final section may not reach the header on a tall viewport.
+      if (
+        window.scrollY > 0 &&
+        window.scrollY + window.innerHeight >=
+          document.documentElement.scrollHeight - 2
+      ) {
+        current = "join";
+      }
+      setActiveSection(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("hashchange", schedule);
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(schedule);
+    if (root.current) observer?.observe(root.current);
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("hashchange", schedule);
+      observer?.disconnect();
+      cancelAnimationFrame(frame);
     };
   }, []);
   useGSAP(
@@ -123,10 +176,15 @@ export default function LandingPage() {
             <span>GloryNavy</span>
           </Link>
           <nav className="landing-nav" aria-label={msg("军团介绍导航")}>
-            <a href="#strength">{msg("军团实力")}</a>
-            <a href="#about">{msg("关于我们")}</a>
-            <a href="#fleet">{msg("军团活动")}</a>
-            <a href="#join">{msg("加入我们")}</a>
+            {landingSections.map(({ id, label }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                aria-current={activeSection === id ? "location" : undefined}
+              >
+                {msg(label)}
+              </a>
+            ))}
           </nav>
           <div className="landing-account">
             <LanguageSwitch />

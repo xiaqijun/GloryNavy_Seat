@@ -1,3 +1,6 @@
+html:has(.public-home) {
+  scroll-behavior: smooth;
+}
 .public-home {
   --landing-dark: #0b0d11;
   --landing-muted: #b6bcc7;
@@ -63,6 +66,7 @@
   gap: 24px;
 }
 .landing-nav a {
+  position: relative;
   color: #c7cbd3;
   font-size: 14px;
   text-decoration: none;
@@ -71,8 +75,26 @@
   align-items: center;
   transition: color 150ms ease-out;
 }
-.landing-nav a:hover {
+.landing-nav a:hover,
+.landing-nav a[aria-current="location"] {
   color: #fff;
+}
+.landing-nav a::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 2px;
+  height: 2px;
+  background: #cbb68b;
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    transform 150ms ease-out,
+    opacity 150ms ease-out;
+}
+.landing-nav a[aria-current="location"]::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 .landing-account {
   gap: 12px;
@@ -773,6 +795,12 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  html:has(.public-home) {
+    scroll-behavior: auto;
+  }
+  .landing-nav a::after {
+    transition: none;
+  }
   .public-home *,
   .public-home *::before,
   .public-home *::after {

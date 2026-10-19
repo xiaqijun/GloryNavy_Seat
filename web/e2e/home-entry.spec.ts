@@ -292,6 +292,7 @@ for (const width of [320, 375, 768, 1440]) {
       // Navigation remains reachable, with every target below the sticky header.
       for (const id of ["strength", "about", "fleet", "join"]) {
         await page.locator(`.landing-nav a[href="#${id}"]`).click();
+    await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", `#${id}`);
         const topbar = await page.locator(".landing-topbar").boundingBox();
         const target = await page.locator(`#${id}`).boundingBox();
         expect(target!.y).toBeGreaterThanOrEqual(topbar!.height - 1);
@@ -315,6 +316,7 @@ test("activities remain readable through navigation and leaving the page", async
   await expect(page.locator(".landing-activity")).toHaveCount(6);
   for (const id of ["fleet", "join", "fleet"]) {
     await page.locator(`.landing-nav a[href="#${id}"]`).click();
+    await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", `#${id}`);
     await expect(page.locator(`#${id}`)).toBeInViewport();
     if (id === "fleet") {
       for (const activity of await page.locator(".landing-activity").all()) {
@@ -324,6 +326,11 @@ test("activities remain readable through navigation and leaving the page", async
     }
     await expect(page.locator(".pin-spacer")).toHaveCount(0);
   }
+  await page.evaluate(() => document.querySelector("#about")!.scrollIntoView({ behavior: "instant", block: "start" }));
+  await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", "#about");
+  await page.setViewportSize({ width: 1440, height: 1400 });
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+  await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", "#join");
   await page.getByRole("link", { name: "进入工作台" }).click();
   await expect(page).toHaveURL(/\/workspace$/);
   await expect(page.locator(".landing-activity, .pin-spacer")).toHaveCount(0);
