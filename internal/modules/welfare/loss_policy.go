@@ -24,10 +24,7 @@ func lossQuotaPeriods(now time.Time) (dayStart, dayEnd, weekStart, weekEnd, mont
 func quotaPeriod(used, reserved int64, cap *int64) LossQuotaPeriod {
 	p := LossQuotaPeriod{UsedMinor: used, ReservedMinor: reserved, CapMinor: cap}
 	if cap != nil && *cap > 0 {
-		remaining := *cap - used - reserved
-		if remaining < 0 {
-			remaining = 0
-		}
+		remaining := max(int64(0), max(int64(0), *cap-used)-reserved)
 		p.RemainingMinor = &remaining
 	} else {
 		p.CapMinor = nil
@@ -75,6 +72,12 @@ func (s *Service) LossQuotas(ctx context.Context, actor string, corp int64, poli
 		return nil, err
 	}
 	reserved := map[string][3]int64{}
+	day := quotaDay(now)
+	occupied, err := store.LossQuotaDays(ctx, s.Pool, actor, corp, day)
+	if err != nil {
+		return nil, err
+	}
+	provisional := []store.LossQuotaSpan{}
 	for _, v := range pending {
 		c := configs[v.Kind]
 		amount := pendingLossAward(v, c)
@@ -83,13 +86,17 @@ func (s *Service) LossQuotas(ctx context.Context, actor string, corp int64, poli
 		}
 		periods := reserved[v.Kind]
 		if !v.CreatedAt.Before(dayStart) && v.CreatedAt.Before(dayEnd) {
-			periods[0] += amount
+			plan, err := planDailyQuota(v.Kind, day, amount, c, append(append([]store.LossQuotaSpan{}, occupied...), provisional...))
+			if err != nil {
+				return nil, err
+			}
+			provisional = append(provisional, plan...)
 		}
 		if !v.CreatedAt.Before(weekStart) && v.CreatedAt.Before(weekEnd) {
-			periods[1] += amount
+			periods[1] = quotaAdd(periods[1], amount)
 		}
 		if !v.CreatedAt.Before(monthStart) && v.CreatedAt.Before(monthEnd) {
-			periods[2] += amount
+			periods[2] = quotaAdd(periods[2], amount)
 		}
 		reserved[v.Kind] = periods
 	}
@@ -98,11 +105,15 @@ func (s *Service) LossQuotas(ctx context.Context, actor string, corp int64, poli
 		c := configs[kind]
 		u := usage[kind]
 		r := reserved[kind]
+		usedToday, usedFuture := dailyUsage(occupied, kind, day)
+		reservedToday, reservedFuture := dailyUsage(provisional, kind, day)
 		out = append(out, LossQuota{
-			Kind:    kind,
-			Daily:   quotaPeriod(u.Daily, r[0], c.LossDailyCapMinor),
-			Weekly:  quotaPeriod(u.Weekly, r[1], c.LossWeeklyCapMinor),
-			Monthly: quotaPeriod(u.Monthly, r[2], c.LossMonthlyCapMinor),
+			Kind:                kind,
+			Daily:               quotaPeriod(usedToday, reservedToday, c.LossDailyCapMinor),
+			Weekly:              quotaPeriod(u.Weekly, r[1], c.LossWeeklyCapMinor),
+			Monthly:             quotaPeriod(u.Monthly, r[2], c.LossMonthlyCapMinor),
+			FutureUsedMinor:     usedFuture,
+			FutureReservedMinor: reservedFuture,
 		})
 	}
 	return out, nil
@@ -124,17 +135,12 @@ func (s *Service) lossPolicy(ctx context.Context, db store.DB, corp int64, kind 
 	return Policy{}, Config{}, nil
 }
 
-// The welfare publication lock serializes approvals, so the usage check and
-// the new award are committed atomically without a separate quota ledger.
-func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg Config) error {
-	if (cfg.LossDailyCapMinor == nil || *cfg.LossDailyCapMinor == 0) &&
-		(cfg.LossWeeklyCapMinor == nil || *cfg.LossWeeklyCapMinor == 0) &&
-		(cfg.LossMonthlyCapMinor == nil || *cfg.LossMonthlyCapMinor == 0) {
-		return nil
-	}
+// Caller holds the welfare publication lock, then saves the allocation with
+// approval. Weekly/monthly totals remain hard ceilings; only daily can advance.
+func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg Config) ([]store.LossQuotaSpan, error) {
 	var now time.Time
 	if err := db.QueryRow(ctx, `SELECT now()`).Scan(&now); err != nil {
-		return err
+		return nil, err
 	}
 	day, nextDay, week, nextWeek, month, nextMonth := lossQuotaPeriods(now)
 	periods := []struct {
@@ -142,13 +148,12 @@ func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg C
 		start, end time.Time
 		exceeded   error
 	}{
-		{cfg.LossDailyCapMinor, day, nextDay, ErrLossDailyQuota},
 		{cfg.LossWeeklyCapMinor, week, nextWeek, ErrLossWeeklyQuota},
 		{cfg.LossMonthlyCapMinor, month, nextMonth, ErrLossMonthlyQuota},
 	}
 	pending, err := store.PendingLosses(ctx, db, v.AccountID, v.CorporationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, p := range periods {
 		if p.cap == nil || *p.cap == 0 {
@@ -156,7 +161,7 @@ func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg C
 		}
 		used, err := store.ApprovedLossTotal(ctx, db, v.AccountID, v.CorporationID, v.Kind, p.start, p.end)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, candidate := range pending {
 			if candidate.ID == v.ID || candidate.Kind != v.Kind || candidate.CreatedAt.Before(p.start) || !candidate.CreatedAt.Before(p.end) {
@@ -166,13 +171,34 @@ func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg C
 			if candidate.Kind == v.Kind {
 				pendingConfig = cfg
 			}
-			used += pendingLossAward(candidate, pendingConfig)
+			used = quotaAdd(used, pendingLossAward(candidate, pendingConfig))
 		}
 		if v.Award > *p.cap || used > *p.cap-v.Award {
-			return p.exceeded
+			return nil, p.exceeded
 		}
 	}
-	return nil
+	index := quotaDay(now)
+	occupied, err := store.LossQuotaDays(ctx, db, v.AccountID, v.CorporationID, index)
+	if err != nil {
+		return nil, err
+	}
+	if dailyAdvance(cfg) {
+		for _, candidate := range pending {
+			if candidate.ID == v.ID || candidate.Kind != v.Kind || candidate.CreatedAt.Before(day) || !candidate.CreatedAt.Before(nextDay) {
+				continue
+			}
+			amount := pendingLossAward(candidate, cfg)
+			if amount <= 0 {
+				continue
+			}
+			plan, err := planDailyQuota(v.Kind, index, amount, cfg, occupied)
+			if err != nil {
+				return nil, err
+			}
+			occupied = append(occupied, plan...)
+		}
+	}
+	return planDailyQuota(v.Kind, index, v.Award, cfg, occupied)
 }
 
 func lossAward(base int64, cfg Config) (int64, error) {

@@ -221,12 +221,12 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 	}
 	proposed := Case{AccountID: userID, CorporationID: 10, Kind: "srp", Award: 10000}
 	cap := int64(30000)
-	for _, cfg := range []Config{{LossDailyCapMinor: &cap}, {LossWeeklyCapMinor: &cap}, {LossMonthlyCapMinor: &cap}} {
-		if err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); err != nil {
+	for _, cfg := range []Config{{LossWeeklyCapMinor: &cap}, {LossMonthlyCapMinor: &cap}} {
+		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); err != nil {
 			t.Fatal("exact remaining quota rejected", err)
 		}
 		proposed.Award++
-		if err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); !errors.Is(err, ErrLossQuota) {
+		if _, err = s.checkLossQuota(ctx, s.Pool, proposed, cfg); !errors.Is(err, ErrLossQuota) {
 			t.Fatal("over-quota award accepted", err)
 		}
 		proposed.Award--
@@ -235,13 +235,13 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 		t.Fatal(err)
 	}
 	proposed.Award = 30000
-	if err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossDailyCapMinor: &cap}); err != nil {
+	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossDailyCapMinor: &cap}); err != nil {
 		t.Fatal("previous-day approval counted today", err)
 	}
 	if _, err = s.Pool.Exec(ctx, `UPDATE welfare_audit SET created_at=now() WHERE case_id=$1 AND action='approve'`, prior.ID); err != nil {
 		t.Fatal(err)
 	}
-	policy, err := s.Execute(ctx, adminID, Command{Action: "configure", CorporationID: 10, Kind: "srp", Config: Config{LossDailyCapMinor: &cap}, RequestKey: key(6098)})
+	policy, err := s.Execute(ctx, adminID, Command{Action: "configure", CorporationID: 10, Kind: "srp", Config: Config{LossMonthlyCapMinor: &cap}, RequestKey: key(6098)})
 	if err != nil || len(policy) == 0 {
 		t.Fatal("cannot configure quota", err)
 	}
@@ -259,7 +259,7 @@ func TestLossPeriodQuotaUsesApprovalDateAndActiveAwards(t *testing.T) {
 		t.Fatal(err)
 	}
 	proposed.Award = 30000
-	if err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossMonthlyCapMinor: &cap}); err != nil {
+	if _, err = s.checkLossQuota(ctx, s.Pool, proposed, Config{LossMonthlyCapMinor: &cap}); err != nil {
 		t.Fatal("cancelled award still consumes quota", err)
 	}
 	if validateConfig("growth_gila", Config{LossDailyCapMinor: &cap}) == nil {

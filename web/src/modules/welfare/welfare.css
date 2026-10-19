@@ -701,6 +701,13 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--border) 75%, transparent);
 }
+.welfare-quota-advance {
+  flex-wrap: wrap;
+}
+.welfare-quota-advance strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .welfare-quota-bar span {
   display: block;
   height: 100%;

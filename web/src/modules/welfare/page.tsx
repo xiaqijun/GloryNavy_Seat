@@ -623,6 +623,15 @@ function LossQuotaCard({ quotas }: { quotas: api.LossQuota[] }) {
                 );
               })}
             </div>
+            {((quota.future_used_minor || 0) > 0 || (quota.future_reserved_minor || 0) > 0) && (
+              <div className="welfare-quota-line welfare-quota-advance" aria-label={msg("后续日额度")}>
+                <span>{msg("后续日额度")}</span>
+                <strong>
+                  {msg("已用")} {api.money(quota.future_used_minor || 0)} ISK
+                  {(quota.future_reserved_minor || 0) > 0 && <> · {msg("预占")} {api.money(quota.future_reserved_minor || 0)} ISK</>}
+                </strong>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -1715,12 +1724,12 @@ function LossPolicyEditor({
         type="number"
       />
       <div className="welfare-period-caps wide">
-        <Field label={msg("每人每日上限 / ISK")} value={dailyCap} onChange={setDailyCap} type="number" />
+        <Field label={msg("每人每日额度 / ISK")} value={dailyCap} onChange={setDailyCap} type="number" />
         <Field label={msg("每人每周上限 / ISK")} value={weeklyCap} onChange={setWeeklyCap} type="number" />
         <Field label={msg("每人每月上限 / ISK")} value={monthlyCap} onChange={setMonthlyCap} type="number" />
       </div>
       <p className="wide">
-        {msg("留空或 0 为不限 · 北京时间 · 已核准计入当期")}
+        {msg("日额度不足时按周/月上限审批；周/月未设置则顺延占用后续日额度。")}
       </p>
     </Editor>
   );

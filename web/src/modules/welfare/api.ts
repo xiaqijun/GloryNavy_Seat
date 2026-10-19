@@ -263,6 +263,8 @@ export type LossQuota = {
   daily: LossQuotaPeriod;
   weekly: LossQuotaPeriod;
   monthly: LossQuotaPeriod;
+  future_used_minor?: number;
+  future_reserved_minor?: number;
 };
 export type Profile = {
   account_id: string;
@@ -510,6 +512,9 @@ export const context = (corp: string, signal?: AbortSignal) =>
             (x: unknown) =>
               obj(x) &&
               (x.kind === "srp" || x.kind === "solo") &&
+              ["future_used_minor", "future_reserved_minor"].every((field) =>
+                x[field] === undefined || (Number.isSafeInteger(x[field]) && Number(x[field]) >= 0),
+              ) &&
               ["daily", "weekly", "monthly"].every((period) => {
                 const p = x[period];
                 return (

@@ -1,5 +1,17 @@
 # Corporation welfare
 
+## Daily reimbursement advances (2026-10-19, Goose 101)
+
+This supersedes the older rule treating every period as a hard ceiling. Rates and per-claim caps still apply first. When a weekly or monthly cap is configured, approval may exceed the daily allowance, but the full award plus approved usage and other same-period pending reservations must satisfy every configured weekly/monthly cap. These caps are total ceilings, not additional pools; payment is not clipped to the daily allowance.
+
+When both weekly and monthly caps are absent/zero and a daily allowance is configured, allocate today's remaining capacity, then tomorrow and successive days until the full award is covered. Existing allocations reduce those days' availability. No daily allowance means no advance. Periods remain Beijing calendar days, Monday-to-Sunday weeks and calendar months. Weekly/monthly totals count the full amount at first approval, not again on allocated dates.
+
+Goose 101 adds private welfare_loss_quota_days rows containing frozen day ranges and a per-day amount, committed atomically with approval, audit and idempotency. Day numbers are Beijing calendar days since 1970-01-01; interval allocation does not expand one row per day even at the maximum award/minimum allowance. Approved, executing, cancellation-requested and completed cases retain usage. Confirmed cancellation releases that case's allocations without moving other cases. Configuration changes never rewrite allocations. Ownership follows the parent case through the existing account merge participant.
+
+Today's used amount includes earlier advances allocated today. future_used_minor and future_reserved_minor expose approved and provisional usage from tomorrow onward. Pending reservations retain their creation-period semantics, current appraisal/rate/per-claim cap and exclude the current case during approval; they use the same daily allocator and are not payments. Legacy cases without allocation rows retain their first approval date; migration neither backfills/recalculates awards nor approves cases or creates game contracts.
+
+Deploy the frontend, backend and Goose 101 together. Down refuses when allocation rows exist; old code ignores future allocations and must not be used as a direct rollback. Prefer a forward fix. Release evidence is maintained in [project status](../project-status.md).
+
 ## Legacy welfare reference repairs (2026-10-18, Goose 97)
 
 Goose 97 creates welfare_case_reference_repairs without automatic renumbering. Explicit operations may repair verified unfinished UUID cases with no aggregate batch membership, delivery evidence or live/completed contract. Prefix and UTC creation date remain, using the shared short-reference sequence. Previous/new references, operator, reason and time are retained permanently. Issued contracts, aggregate sources and terminal records keep their references.

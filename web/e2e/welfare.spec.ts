@@ -607,7 +607,7 @@ test("补损上限与比例可分别配置，批准显示折算金额", async ({
   await page.getByRole("button", { name: "补损设置", exact: true }).click();
   await page.getByLabel("补损比例（%）", { exact: true }).fill("75.25");
   await page.getByLabel("单笔上限 / ISK", { exact: true }).fill("200000000");
-  await page.getByLabel("每人每日上限 / ISK").fill("1000000");
+  await page.getByLabel("每人每日额度 / ISK").fill("1000000");
   await page.getByLabel("每人每周上限 / ISK").fill("5000000");
   await page.getByLabel("每人每月上限 / ISK").fill("10000000");
   mkdirSync("../docs/ui/reviews/welfare", { recursive: true });
@@ -637,7 +637,7 @@ test("补损上限与比例可分别配置，批准显示折算金额", async ({
   await expect(page.getByLabel("单笔上限 / ISK", { exact: true })).toHaveValue(
     "",
   );
-  await expect(page.getByLabel("每人每日上限 / ISK")).toHaveValue("");
+  await expect(page.getByLabel("每人每日额度 / ISK")).toHaveValue("");
   await expect(page.getByLabel("每人每周上限 / ISK")).toHaveValue("");
   await expect(page.getByLabel("每人每月上限 / ISK")).toHaveValue("");
   await page.getByRole("button", { name: "保存", exact: true }).click();

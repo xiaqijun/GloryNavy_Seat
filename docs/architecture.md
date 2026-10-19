@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+2026-10-19：Goose 101 的 welfare_loss_quota_days 归福利私有 store，冻结审批的每日占用区间；与原审批事务/锁/幂等共同发布。按父案件当前账号及有效状态读取，因此取消释放和账号合并不需要跨模块 SQL 或额外账号数据副本。旧案件仅按原批准日兼容统计；周/月总额继续读取原案件与审批审计。详见[福利指南](integrations/welfare.zh-CN.md)。
+
 2026-10-19：access 的只读 scope-options 按当前权限管理能力、配置军团名单和可见军团过滤，再通过已有 EVE 军团快照及宿主注入的公共名称解析投影军团／联盟选项。不跨模块读取 store，不改变角色保存、业务对象鉴权或军团外层边界，无新增持久数据。
 
 提醒多来源（Goose 98）通过宿主注册只读 `ReminderKeys`／`ReminderDetails` 和授权适配器；SQL 归 welfare/exchange/loan/attendance/eve/sentry/feedback 自身私有 store，建筑复用既有已授权快照服务。提醒只保存类型、哈希引用、起点与发送回执，不复制业务状态或正文；`platform/remindermessage` 仅定义临时展示投影，明细在来源模块授权后读取，发送前复查当前范围；来源随模块启用注册，发送前重新核对。新增提醒须具备账号/对象权限、稳定事件键和历史窗口，详见[提醒指南](integrations/reminder.zh-CN.md)。

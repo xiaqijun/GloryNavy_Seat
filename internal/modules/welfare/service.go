@@ -858,7 +858,11 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 					if e != nil {
 						return nil, e
 					}
-					if e = s.checkLossQuota(ctx, tx, v, cfg); e != nil {
+					quotaDays, err := s.checkLossQuota(ctx, tx, v, cfg)
+					if err != nil {
+						return nil, err
+					}
+					if e = store.SaveLossQuotaDays(ctx, tx, v.ID, quotaDays); e != nil {
 						return nil, e
 					}
 					d.PaymentStatus = "waiting_contract"

@@ -52,10 +52,12 @@ type LossQuotaPeriod struct {
 	RemainingMinor *int64 `json:"remaining_minor,omitempty"`
 }
 type LossQuota struct {
-	Kind    string          `json:"kind"`
-	Daily   LossQuotaPeriod `json:"daily"`
-	Weekly  LossQuotaPeriod `json:"weekly"`
-	Monthly LossQuotaPeriod `json:"monthly"`
+	Kind                string          `json:"kind"`
+	Daily               LossQuotaPeriod `json:"daily"`
+	Weekly              LossQuotaPeriod `json:"weekly"`
+	Monthly             LossQuotaPeriod `json:"monthly"`
+	FutureUsedMinor     int64           `json:"future_used_minor"`
+	FutureReservedMinor int64           `json:"future_reserved_minor"`
 }
 type Config struct {
 	LossRateBPS         *int64         `json:"loss_rate_bps,omitempty"`
