@@ -77,7 +77,7 @@ export function PublicStrength() {
       aria-labelledby="strength-title"
     >
       <div className="landing-width">
-        <div className="landing-strength-heading landing-reveal">
+        <div className="landing-strength-heading">
           <h2 id="strength-title">{msg("军团实力")}</h2>
           <a
             className="landing-text-link"
@@ -94,7 +94,7 @@ export function PublicStrength() {
           aria-busy={query.isPending || activity.isPending}
         >
           {stats.map(([value, label]) => (
-            <div key={label} className="landing-stat landing-reveal">
+            <div key={label} className="landing-stat">
               <dt>{label}</dt>
               <dd>{value}</dd>
             </div>
@@ -142,15 +142,6 @@ export function FleetChapters() {
       aria-labelledby="fleet-title"
     >
       <div className="landing-width landing-chapter-stage">
-        <div className="landing-chapter-art" aria-hidden="true">
-          <img
-            src="/images/home-avatar.png"
-            alt=""
-            width="1400"
-            height="980"
-            loading="lazy"
-          />
-        </div>
         <div className="landing-chapter-content">
           <p className="landing-kicker">{msg("舰队生活")}</p>
           <h2 id="fleet-title" className="sr-only">
@@ -183,7 +174,10 @@ export function FleetChapters() {
                 "奖励兑换",
               ],
             ].map(([number, title, sub, text, a, b]) => (
-              <article className="landing-chapter-panel" key={number}>
+              <article
+                className="landing-chapter-panel landing-reveal"
+                key={number}
+              >
                 <span className="landing-chapter-number" aria-hidden="true">
                   {number}
                 </span>
@@ -196,11 +190,6 @@ export function FleetChapters() {
                 </div>
               </article>
             ))}
-          </div>
-          <div className="landing-chapter-progress" aria-hidden="true">
-            <span />
-            <span />
-            <span />
           </div>
         </div>
       </div>
