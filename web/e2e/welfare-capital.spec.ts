@@ -87,7 +87,10 @@ async function setup(
   caseState = "submitted",
 ) {
   let state = initialState,
-    failed = false;
+    failed = false,
+    listFailed = false;
+  let contractTitle = "Aeon purchase";
+  const searches: string[] = [];
   const commands: Record<string, any>[] = [];
   const item = {
     ...baseItem,
@@ -169,6 +172,12 @@ async function setup(
             account_id: review ? admin : member,
             corporation_id: "10",
           },
+          {
+            id: "124",
+            name: "Capital Alt",
+            account_id: review ? admin : member,
+            corporation_id: "10",
+          },
         ],
         policies: ["supercarrier", "titan"].map((kind) => ({
           corporation_id: "10",
@@ -177,7 +186,74 @@ async function setup(
           config: { ...rule, subsidy_rate_bps: 2500 },
         })),
       };
-    else if (path === "/api/v1/welfare/capital/check") {
+    else if (path.startsWith("/api/v1/eve/contracts/character/")) {
+      if (listFailed)
+        return r.fulfill({
+          status: 503,
+          json: { error: { message: "List unavailable" } },
+        });
+      searches.push(url.search);
+      const character = path.endsWith("/124") ? "124" : "123";
+      const entity = (id: string, name: string) => ({
+        id,
+        name,
+        category: "character",
+      });
+      const row = (id: string, label: string) => ({
+        id,
+        title: label,
+        summary: "Aeon × 1",
+        type: "item_exchange",
+        status: "finished",
+        availability: "private",
+        for_corporation: false,
+        issuer: entity("456", "Seller"),
+        assignee: entity(character, "Pilot"),
+        acceptor: entity(character, "Pilot"),
+        start: entity("1", "Station"),
+        end: entity("1", "Station"),
+        price: "10000000000",
+        reward: "0",
+        collateral: null,
+        buyout: null,
+        volume: "1",
+        days_to_complete: null,
+        date_issued: purchase.issued,
+        date_expired: "2026-11-01T00:00:00Z",
+        date_accepted: purchase.completed,
+        date_completed: purchase.completed,
+        checked_at: purchase.checked_at,
+      });
+      const q = url.searchParams.get("q");
+      const before = url.searchParams.get("before");
+      data = {
+        items:
+          character === "124" || q === "missing"
+            ? []
+            : before
+              ? [row("900", "Earlier purchase")]
+              : [
+                  row("901", contractTitle),
+                  row("902", "Other purchase"),
+                  {
+                    ...row("903", "Sold contract"),
+                    acceptor: entity("456", "Seller"),
+                    issuer: entity("123", "Pilot"),
+                  },
+                  {
+                    ...row("904", "Corporate contract"),
+                    for_corporation: true,
+                  },
+                ].filter(
+                  (c) =>
+                    !q ||
+                    `${c.id} ${c.title} ${c.summary} Seller`
+                      .toLowerCase()
+                      .includes(q.replace(/^#/, "").toLowerCase()),
+                ),
+        next_cursor: character === "123" && !q && !before ? "900" : "",
+      };
+    } else if (path === "/api/v1/welfare/capital/check") {
       if (failed)
         return r.fulfill({
           status: 503,
@@ -244,6 +320,13 @@ async function setup(
       .click();
   return {
     commands,
+    searches,
+    setContractTitle: (v: string) => {
+      contractTitle = v;
+    },
+    failList: (v: boolean) => {
+      listFailed = v;
+    },
     setState: (v: string) => {
       state = v;
     },
@@ -255,6 +338,193 @@ async function setup(
 
 for (const language of ["zh-CN", "en"]) {
   const en = language === "en";
+  test(`${language} handles loading, long titles and IME confirmation`, async ({
+    page,
+  }) => {
+    const ctl = await setup(page, language);
+    ctl.setContractTitle("A".repeat(180));
+    let resume!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    await page.route("**/api/v1/eve/contracts/character/*?**", async (r) => {
+      await gate;
+      await r.fallback();
+    });
+    await page
+      .getByRole("button", { name: en ? "Apply" : "申请", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    const submit = dialog.getByRole("button", {
+      name: en ? "Submit application" : "提交申请",
+      exact: true,
+    });
+    await expect(
+      dialog.getByRole("region", {
+        name: en ? "Purchase contract" : "购舰合同",
+        exact: true,
+      }),
+    ).toContainText(en ? "Loading" : "正在读取");
+    await expect(submit).toBeDisabled();
+    resume();
+    await dialog.getByRole("radio", { name: /#901$/ }).check();
+    await expect(submit).toBeEnabled();
+    expect(
+      await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    expect(
+      await dialog.locator(".welfare-capital-contract").evaluateAll((rows) =>
+        rows.every((row) => {
+          const box = row.getBoundingClientRect();
+          return Array.from(row.children).every(
+            (child) => child.getBoundingClientRect().bottom <= box.bottom,
+          );
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    const search = dialog.getByRole("textbox", {
+      name: en ? "Search purchase contracts" : "搜索购舰合同",
+    });
+    await search.fill("Aeon");
+    const count = ctl.searches.length;
+    await search.dispatchEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      keyCode: 229,
+      isComposing: true,
+      bubbles: true,
+    });
+    expect(ctl.commands).toHaveLength(0);
+    expect(ctl.searches).toHaveLength(count);
+    await search.press("Enter");
+    await expect
+      .poll(() =>
+        ctl.searches.some((q) => new URLSearchParams(q).get("q") === "Aeon"),
+      )
+      .toBe(true);
+  });
+  test(`${language} searches, paginates and resets on character changes`, async ({
+    page,
+  }, info) => {
+    const ctl = await setup(page, language);
+    await page
+      .getByRole("button", { name: en ? "Apply" : "申请", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    const submit = dialog.getByRole("button", {
+      name: en ? "Submit application" : "提交申请",
+      exact: true,
+    });
+    await expect(
+      dialog.getByRole("radio", { name: /Sold contract|Corporate contract/ }),
+    ).toHaveCount(0);
+    await dialog
+      .getByRole("button", { name: en ? "Load more" : "加载更多", exact: true })
+      .click();
+    await expect(
+      dialog.getByRole("radio", { name: "Earlier purchase #900", exact: true }),
+    ).toBeVisible();
+    const search = dialog.getByRole("textbox", {
+      name: en ? "Search purchase contracts" : "搜索购舰合同",
+    });
+    await search.fill(" #901 ");
+    await search.press("Enter");
+    await expect(dialog.getByRole("radio")).toHaveCount(1);
+    await expect
+      .poll(() =>
+        ctl.searches.some((q) => new URLSearchParams(q).get("q") === "#901"),
+      )
+      .toBe(true);
+    expect(ctl.commands).toHaveLength(0);
+    await dialog
+      .getByRole("radio", { name: "Aeon purchase #901", exact: true })
+      .focus();
+    await page.keyboard.press("Space");
+    await expect(submit).toBeEnabled();
+    await search.fill("missing");
+    await expect(submit).toBeDisabled();
+    await dialog
+      .getByRole("button", { name: en ? "Search" : "搜索", exact: true })
+      .click();
+    await expect(
+      dialog.getByText(
+        en ? "No eligible contracts on this page" : "当前没有可选合同",
+        {
+          exact: true,
+        },
+      ),
+    ).toBeVisible();
+    await dialog
+      .getByRole("button", {
+        name: en ? "Clear search" : "清除搜索",
+        exact: true,
+      })
+      .click();
+    await dialog
+      .getByRole("radio", { name: "Aeon purchase #901", exact: true })
+      .check();
+    await expect(submit).toBeEnabled();
+    await page.screenshot({
+      path: `../.local/capital-contract-picker/picker-${language}-${info.project.name}.png`,
+      fullPage: true,
+    });
+    expect(
+      await dialog.locator(".welfare-capital-contract").evaluateAll((rows) =>
+        rows.every((row) => {
+          const box = row.getBoundingClientRect();
+          return Array.from(row.children).every(
+            (child) => child.getBoundingClientRect().bottom <= box.bottom,
+          );
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true);
+    await dialog
+      .getByRole("combobox", { name: en ? "Purchasing character" : "购舰角色" })
+      .click();
+    await page
+      .getByRole("option", { name: "Capital Alt", exact: true })
+      .click();
+    await expect(submit).toBeDisabled();
+    await expect(dialog.getByRole("radio")).toHaveCount(0);
+    expect(ctl.commands).toHaveLength(0);
+    expect(
+      ctl.searches.every(
+        (q) =>
+          new URLSearchParams(q).get("type") === "item_exchange" &&
+          new URLSearchParams(q).get("status") === "finished",
+      ),
+    ).toBe(true);
+  });
+  test(`${language} contract-list failure is retryable`, async ({ page }) => {
+    const ctl = await setup(page, language);
+    ctl.failList(true);
+    await page
+      .getByRole("button", { name: en ? "Apply" : "申请", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("List unavailable");
+    await expect(
+      dialog.getByRole("button", {
+        name: en ? "Submit application" : "提交申请",
+        exact: true,
+      }),
+    ).toBeDisabled();
+    ctl.failList(false);
+    await dialog
+      .getByRole("button", { name: en ? "Retry" : "重试", exact: true })
+      .click();
+    await expect(
+      dialog.getByRole("radio", { name: "Aeon purchase #901", exact: true }),
+    ).toBeVisible();
+  });
   test(`${language} previews purchase and invalidates it on edits`, async ({
     page,
   }, info) => {
@@ -267,11 +537,11 @@ for (const language of ["zh-CN", "en"]) {
       exact: true,
     });
     await expect(submit).toBeDisabled();
-    const input = page.getByLabel(
-      en ? "Ship purchase contract ID" : "购舰合同 ID",
-      { exact: true },
-    );
-    await input.fill("901");
+    const input = page.getByRole("radio", {
+      name: "Aeon purchase #901",
+      exact: true,
+    });
+    await input.check();
     await expect(submit).toBeEnabled();
     await expect(
       page.getByRole("region", {
@@ -279,10 +549,12 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toContainText("1.25B ISK");
     await page.screenshot({
-      path: `../.local/capital-flow/preview-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-picker/preview-${language}-${info.project.name}.png`,
       fullPage: true,
     });
-    await input.fill("902");
+    await page
+      .getByRole("radio", { name: "Other purchase #902", exact: true })
+      .check();
     await expect(submit).toBeDisabled();
     await expect(
       page.getByText(
@@ -292,7 +564,7 @@ for (const language of ["zh-CN", "en"]) {
         { exact: true },
       ),
     ).toBeVisible();
-    await input.fill("901");
+    await input.check();
     await expect(submit).toBeEnabled();
     await submit.click();
     await expect.poll(() => ctl.commands.length).toBe(1);
@@ -321,7 +593,7 @@ for (const language of ["zh-CN", "en"]) {
       await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
     await page.screenshot({
-      path: `../.local/capital-flow/detail-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-picker/detail-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     await expect(
@@ -373,7 +645,7 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: `../.local/capital-flow/payout-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-picker/payout-${language}-${info.project.name}.png`,
       fullPage: true,
     });
   });
@@ -386,10 +658,8 @@ for (const language of ["zh-CN", "en"]) {
       .getByRole("button", { name: en ? "Apply" : "申请", exact: true })
       .click();
     await page
-      .getByLabel(en ? "Ship purchase contract ID" : "购舰合同 ID", {
-        exact: true,
-      })
-      .fill("901");
+      .getByRole("radio", { name: "Aeon purchase #901", exact: true })
+      .check();
     const submit = page.getByRole("button", {
       name: en ? "Submit application" : "提交申请",
       exact: true,

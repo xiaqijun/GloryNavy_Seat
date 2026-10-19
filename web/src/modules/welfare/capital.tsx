@@ -169,14 +169,11 @@ export function CapitalPreview({
     );
   const result = check.data;
   if (!result) return null;
+  if (result.state === "contract_required") return null;
   if (!result.purchase || result.state !== "ready")
     return (
       <p className="wide welfare-warning" role="status">
-        {msg(
-          result.state === "contract_required"
-            ? "输入购舰合同 ID，核验后提交申请。"
-            : labels[result.state],
-        )}
+        {msg(labels[result.state])}
       </p>
     );
   const p = result.purchase;

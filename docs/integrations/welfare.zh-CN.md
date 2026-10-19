@@ -1,5 +1,9 @@
 # 军团福利
 
+## 旗舰购舰合同选择（2026-10-19）
+
+前端申请由手填 ID 改为本人本军团角色的合同选择；复用受保护 `/api/v1/eve/contracts/character/{id}`，固定 `type=item_exchange&status=finished`，按 `q` 搜索与 `before` 翻页。仅列本人接取、正价格、零 reward 的个人购买候选，不读取他人或军团合同。ID/标题/物品名称/交易方沿用现有搜索语义，切换角色或修改搜索清除选中合同。选中后仍调用 capital/check，提交 commands 的 detail 仍只有 contract_id；服务端舰船、资格和事务复核不变。无 API/权限/迁移变更，可独立更新前端，与已发布 capital-flow 后端兼容。
+
 ## 旗舰补贴申请核验与紧凑详情（2026-10-19）
 
 新增受保护 GET `/api/v1/welfare/capital/check`，参数 `corporation_id`、`kind`（supercarrier/titan）与可选 `contract_id`。只检查当前登录账号在目标军团的有效绑定角色，不允许传入其他账号；当前军团业务范围仍先行鉴权。读取当前配置、账号级领取历史、跨军团同类在途/完成记录和合同占用。状态为 closed、unbound、claimed、pending、contract_required、contract_invalid、contract_used 或 ready；本人已有申请可返回 case_id，其他账号占用仅返回状态，不暴露单据或身份。

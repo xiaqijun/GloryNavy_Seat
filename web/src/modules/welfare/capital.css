@@ -125,6 +125,93 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+.welfare-capital-picker {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-capital-picker p {
+  margin: 0;
+}
+.welfare-capital-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 44px;
+  gap: 8px;
+}
+.welfare-capital-search input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  font: inherit;
+  padding: 10px 44px 10px 12px;
+}
+.welfare-capital-search input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-capital-contracts {
+  max-height: 280px;
+  overflow-y: auto;
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: 8px;
+  padding: 3px;
+}
+.welfare-capital-contract {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: start;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.welfare-capital-contract input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0;
+  accent-color: var(--primary);
+}
+.welfare-capital-contract > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-capital-contract > span > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.welfare-capital-contract > b {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.welfare-capital-contract:hover {
+  background: var(--secondary);
+}
+.welfare-capital-contract.is-selected {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+.welfare-capital-contract:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.welfare-capital-contract:has(input:disabled) {
+  cursor: default;
+  opacity: 0.6;
+}
+@media (max-width: 540px) {
+  .welfare-capital-contract {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+  .welfare-capital-contract > b {
+    grid-column: 2;
+  }
+}
 @media (max-width: 540px) {
   .welfare-capital-overview {
     gap: 10px 12px;

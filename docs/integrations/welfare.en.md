@@ -1,5 +1,9 @@
 # Corporation welfare
 
+## Capital purchase contract selection (2026-10-19)
+
+Applications now select a contract for the caller's bound character in the selected corporation instead of typing an ID. The existing protected `/api/v1/eve/contracts/character/{id}` endpoint uses `type=item_exchange&status=finished`, `q` search and `before` pagination. Candidates must be personal purchases accepted by that character with a positive price and zero reward; other members and corporation contracts are not queried. Existing ID/title/item/party search semantics remain. Changing character or search clears the selection. Selecting a contract still calls capital/check and commands still submits only contract_id in detail; ship, entitlement and transactional verification are unchanged. No API, permission or migration change; the frontend can deploy independently against the published capital-flow backend.
+
 ## Capital subsidy preview and compact details (2026-10-19)
 
 Protected GET `/api/v1/welfare/capital/check` accepts `corporation_id`, `kind` (supercarrier/titan) and optional `contract_id`. It checks the signed-in account's currently bound characters in the authorized corporation, never an arbitrary target account. Current policy, account-wide historical claims, active/completed applications across corporations and purchase use are checked. States: closed, unbound, claimed, pending, contract_required, contract_invalid, contract_used, ready. An existing application ID is returned only for the caller; another account's contract use exposes neither its record nor identity.

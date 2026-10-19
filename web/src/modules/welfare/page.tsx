@@ -1,4 +1,5 @@
 import { CapitalOverview, CapitalPreview, CapitalCaseContent, useCapitalCheck } from "./capital";
+import { CapitalContractPicker } from "./capital-contract-picker";
 import { capitalAmount, capitalMoney } from "./capital-api";
 import { LossQuotaConfirmation, useLossQuotaReview } from "./loss-quota-review";
 import { applicationDays, lossApplicationExpired, useLossApplicationExpired } from "./loss-application-window";
@@ -894,12 +895,13 @@ export function Apply({
             {msg("该项目尚未开放，请联系管理员。")}
           </p>
         )}
-        <Field
-          label={msg("购舰合同 ID")}
+        <CapitalContractPicker
+          key={`${corp}:${kind}:${character}`}
+          characters={chars}
+          character={character}
+          onCharacterChange={setCharacter}
           value={contract}
           onChange={setContract}
-          required
-          wide
         />
         <CapitalPreview check={capital} kind={kind} />
       </Editor>
