@@ -14,9 +14,13 @@
 - 原首页 20 项回归通过：公开 API 白名单、匿名门禁、登录 POST、会话故障、未知/过期数据、双语、导航、触摸、键盘、复制及离页恢复。
 - 1440/768/375/320px × 中英文共 8 项逐屏布局检查通过，检查页面宽度、锚点避让、桌面一屏高度及折叠要求展开后末项可达。目视复核后修正窄屏英文统计标签两行高度，使读数基线一致；最终构建复跑 8 项均通过。
 - 最终截图：[桌面活动](../ui/reviews/public-home-ux-20261020/1440-zh-CN-fleet.png)、[介绍与统计](../ui/reviews/public-home-ux-20261020/1440-zh-CN-strength.png)、[手机招募](../ui/reviews/public-home-ux-20261020/375-zh-CN-join.png)、[窄屏英文统计](../ui/reviews/public-home-ux-20261020/320-en-strength.png)。其中统计为测试夹具，不是生产军团数据。
-- GitNexus 全量差异与 compare/main 检查为 MEDIUM，4 条首页语言/样式流程，范围符合预期；最终暂存检查另在提交前执行。
+- GitNexus 最终暂存与 compare/main 检查均为 MEDIUM：13 个文件、8 个变更条目、4 条首页语言/样式流程，范围符合预期；暂存差异检查和受影响文档链接检查通过。
 - 本轮线上浏览器读取超时；后续本地截图只用于本地视觉验证，不能冒充生产客户端验收。
 
-## 发布
+## 发布（北京时间 2026-10-20 00:32:46）
 
-尚未发布；生产仍为 `v0.1.0-public-home-pages-20261019`。计划只切换静态前端，保留上一版目录，不改后端或数据库。
+- 前端 `v0.1.0-public-home-ux-20261020`，来源干净且推送的 main `653c59b6680a777d618dd0716754f982577cfde1`；145 个构建文件与测试冻结清单逐一匹配，线上完整 SHA-256 清单通过。
+- 通过既有静态发布脚本切换；上一版 `v0.1.0-public-home-pages-20261019` 目录保留。只更换前端，没有后端重启、迁移、配置或业务数据写入。
+- 线上 `/`、`/login`、`/workspace` 均 200，匿名 modules、eve/status、approval/context、wallet/summary 均 401，OpenResty 配置检查通过。
+- 公网 HTML、主 JS、首页 JS/CSS 与测试产物字节一致。HTML SHA-256 `fdb507ae5083281be247aae2eff149acf1346e35699752ad2a73b4229d94bead`；主包 `index-Pb1rymQe.js`、首页 `landing-page-CfMQDmtQ.js` / `landing-page-DQm6UYmf.css`。
+- 本轮本地视觉矩阵通过，线上完整浏览器目视矩阵仍在 WEB-01，不把资源字节核对当作实际客户端验收。忽略目录 `.local/home-ux/` 保存构建清单、原始截图和发布辅助脚本。
