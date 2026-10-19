@@ -1,3 +1,5 @@
+import { CapitalOverview, CapitalPreview, CapitalCaseContent, useCapitalCheck } from "./capital";
+import { capitalAmount, capitalMoney } from "./capital-api";
 import { LossQuotaConfirmation, useLossQuotaReview } from "./loss-quota-review";
 import { applicationDays, lossApplicationExpired, useLossApplicationExpired } from "./loss-application-window";
 import { FulfillmentSummary } from "./fulfillment-summary";
@@ -326,6 +328,7 @@ function Board({
       )}
       {c.isError && <p role="alert">{c.error.message}</p>}
       {group === "loss" && c.data && <LossQuotaCard quotas={c.data.loss_quotas || []} />}
+      {group === "capital" && c.data && <CapitalOverview key={`${corp}:${kind}`} corp={corp} kind={kind} policy={currentPolicy} open={setItem} />}
       {group === "growth" && (
         <div className="welfare-growth-projects">
           {growthPolicies.map((policy) => (
@@ -399,7 +402,7 @@ function Board({
             <div className="welfare-row welfare-columns" aria-hidden="true">
               <span>{msg("项目 / 角色")}</span>
               <span>{msg("状态")}</span>
-              {group !== "growth" && group !== "activity" && <span>{msg("核准金额")}</span>}
+              {group !== "growth" && group !== "activity" && <span>{msg(group === "capital" ? "补贴金额" : "核准金额")}</span>}
               <span>{msg("提交时间")}</span>
               <span />
             </div>
@@ -433,10 +436,10 @@ function Board({
                 </span>
                 {group !== "growth" && group !== "activity" && (
                   <span className="welfare-amount">
-                    {v.award_minor ? api.money(v.award_minor) : "—"}
-                    {v.award_minor > 0 && (
+                    {group === "capital" ? (capitalAmount(v) ? capitalMoney(capitalAmount(v)) : "—") : v.award_minor ? api.money(v.award_minor) : "—"}
+                    {(v.award_minor > 0 || group === "capital" && capitalAmount(v) > 0) && (
                       <small>
-                        {v.kind === "grant" ? msg("果壳币") : "ISK"}
+                        {v.kind === "grant" ? msg("果壳币") : group === "capital" && !v.award_minor ? msg("预计 · ISK") : "ISK"}
                       </small>
                     )}
                   </span>
@@ -858,6 +861,7 @@ export function Apply({
   const loss = ["srp", "alliance", "solo"].includes(kind);
   const growth = kind.startsWith("growth_");
   const status = useGrowthStatus(corp, character, kind, policy?.version);
+  const capital = useCapitalCheck(corp, kind, contract, policy?.version);
   const manual = loss && !initialLoss;
   const lossDate = linkedLoss?.occurred_at || (at ? new Date(at).toISOString() : "");
   const lossDays = policy?.config.loss_application_days ?? 30;
@@ -875,13 +879,14 @@ export function Apply({
         csrf={csrf}
         close={close}
         done={done}
-        disabled={!ready || !/^[1-9]\d*$/.test(contract)}
+        disabled={!ready || !capital.ready}
+        onFailure={() => void capital.refetch()}
         label={msg("提交申请")}
         command={() => ({
           action: "apply",
           corporation_id: corp,
           kind,
-          detail: { contract_id: contract },
+          detail: { contract_id: contract.trim() },
         })}
       >
         {!ready && (
@@ -896,12 +901,7 @@ export function Apply({
           required
           wide
         />
-        <p className="wide">
-          {msg(
-            "按购舰合同价格的 {0}% 补贴 ISK，通过合同发放。",
-            api.capitalRate(kind, policy?.config),
-          )}
-        </p>
+        <CapitalPreview check={capital} kind={kind} />
       </Editor>
     );
   return (
@@ -1909,6 +1909,8 @@ export function CaseView({
       history={q.data?.history || []}
       error={q.isError ? q.error.message : undefined}
     />
+  ) : capitalSubsidy ? (
+    <CapitalCaseContent item={v} user={user} manage={manage} history={q.data?.history || []} error={q.isError ? q.error.message : undefined} />
   ) : (
     <div className="welfare-details">
       <div className="welfare-detail-head">
@@ -1939,37 +1941,6 @@ export function CaseView({
       <RewardSummary rewards={v.detail.rewards} />
       {v.kind.startsWith("activity_") && (v.detail.image_count || 0) > 0 && <div className="welfare-activity-images">{Array.from({ length: v.detail.image_count || 0 }, (_, i) => <a key={i} href={`/api/v1/welfare/cases/${v.id}/images/${i + 1}`} target="_blank" rel="noreferrer"><img src={`/api/v1/welfare/cases/${v.id}/images/${i + 1}`} alt={msg("活动截图 {0}", i + 1)} loading="lazy" /></a>)}</div>}
       {v.kind.startsWith("activity_") && v.detail.supporting_contract_id && v.detail.supporting_contract_id !== "0" && <p className="welfare-proof">{msg("合同材料 #")}{v.detail.supporting_contract_id}</p>}
-      {capitalSubsidy && (
-        <div className="welfare-detail-values">
-          <span>
-            {msg("购舰合同 ID")}
-            <strong>{v.detail.contract_id}</strong>
-          </span>
-          <span>
-            {msg("合同价格")}
-            <strong>{api.money(v.detail.base_minor)} ISK</strong>
-          </span>
-          <span>
-            {msg("补贴金额")}
-            <strong>
-              {api.awardPreview(
-                v.kind,
-                String(v.detail.base_minor / 100),
-                false,
-                v.detail.rule,
-              )}{" "}
-              ISK
-            </strong>
-          </span>
-        </div>
-      )}
-      {capitalSubsidy &&
-        !v.detail.purchase &&
-        ["submitted", "information", "external"].includes(v.state) && (
-          <p className="welfare-warning">
-            {msg("旧申请缺少购舰合同核验证据，请撤回后重新申请。")}
-          </p>
-        )}
       {v.kind === "solo" && (
         <ValuationView
           key={v.id + ":" + v.version}

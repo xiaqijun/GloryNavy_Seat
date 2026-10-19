@@ -1,5 +1,13 @@
 # Corporation welfare
 
+## Capital subsidy preview and compact details (2026-10-19)
+
+Protected GET `/api/v1/welfare/capital/check` accepts `corporation_id`, `kind` (supercarrier/titan) and optional `contract_id`. It checks the signed-in account's currently bound characters in the authorized corporation, never an arbitrary target account. Current policy, account-wide historical claims, active/completed applications across corporations and purchase use are checked. States: closed, unbound, claimed, pending, contract_required, contract_invalid, contract_used, ready. An existing application ID is returned only for the caller; another account's contract use exposes neither its record nor identity.
+
+A ready preview contains the verified purchaser, hull, price, completion time, policy version and integer-calculated estimated subsidy. It reuses existing purchase validation and award calculation and writes no application, claim, payment or audit. Missing/invalid cached evidence asks the user to check the completed personal contract, ship class and synchronization. Editing the ID, loading, errors or occupied entitlement disables submission; errors offer retry. Preview is advisory and reserves nothing. Actual application and approval retain transaction checks for identity, policy, fingerprint and duplicates. Applications freeze the policy and later rate edits do not reprice approval.
+
+The list shows claim status and an existing-application shortcut; unapproved amounts are explicitly estimated. Personal and approval-center details share a compact capital summary and submitted/approved/contract-linked/paid progress. Cancelled/rejected states do not imply payment. Purchase evidence and audit history are collapsed; existing fulfillment status and recipient/amount/settlement-ID copying remain. Ordinary capitals stay closed to new applications. Rates, permissions, one-time claims and real-game verification boundaries are unchanged. No migration; deploy frontend/backend together. See [project status](../project-status.md).
+
 ## Rolling reimbursement application window (2026-10-19)
 
 This supersedes the fixed earliest-loss timestamp below. A month means 30 × 24 hours. Each corporation and srp/solo policy may set integer `loss_application_days` from 1 to 3650; omitted values, including existing policies, default to 30. Zero/blank does not disable the window. The settings field is “Application window (days)”.

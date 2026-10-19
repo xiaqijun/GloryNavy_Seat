@@ -22,6 +22,7 @@ type Handler struct {
 
 func (h Handler) Module() module.Definition {
 	routes := []module.Route{}
+	routes = append(routes, module.Route{Method: "GET", Path: "/capital/check", Permission: "welfare.self", Handler: http.HandlerFunc(h.capitalCheck)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/cases/{id}/loss-quota", Permission: "welfare.self", Handler: http.HandlerFunc(h.lossQuotaReview)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/cases/{id}/battle-report", Permission: "welfare.self", Handler: http.HandlerFunc(h.battleReport)})
 	routes = append(routes, module.Route{Method: "GET", Path: "/losses/battle-report", Permission: "welfare.self", Handler: http.HandlerFunc(h.battleReport)})

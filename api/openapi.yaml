@@ -6,6 +6,51 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/welfare/capital/check:
+    get:
+      summary: Preview the current account's capital subsidy eligibility and purchase
+      description: Read-only; requires welfare.self and current corporation access. Only currently bound own characters are checked. Reuses purchase validation and integer award calculation. No claims or payments are written. Execute revalidates all conditions; preview is not a reservation. Foreign contract occupancy exposes no account or case ID.
+      parameters:
+        - { in: query, name: corporation_id, required: true, schema: { type: string, pattern: '^[1-9][0-9]*$' } }
+        - { in: query, name: kind, required: true, schema: { type: string, enum: [supercarrier, titan] } }
+        - { in: query, name: contract_id, required: false, schema: { type: string, pattern: '^[1-9][0-9]*$' } }
+      responses:
+        '200':
+          description: Eligibility and optional verified purchase preview
+          content:
+            application/json:
+              example:
+                {"data":{"state":"ready","policy_version":"1","rate_bps":1000,"purchase":{"contract_id":"901","character_id":"123","character_name":"Example Pilot","ship_type_id":"23919","ship_name":"Aeon","price_minor":1000000000000,"award_minor":100000000000,"completed_at":"2026-10-19T00:00:00Z"}}}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [state, policy_version, rate_bps]
+                    properties:
+                      state: { type: string, enum: [closed, unbound, claimed, pending, contract_required, contract_invalid, contract_used, ready] }
+                      policy_version: { type: string }
+                      rate_bps: { type: integer }
+                      case_id: { type: string, description: Existing application owned by the current account only }
+                      purchase:
+                        type: object
+                        required: [contract_id, character_id, character_name, ship_type_id, ship_name, price_minor, award_minor, completed_at]
+                        properties:
+                          contract_id: { type: string }
+                          character_id: { type: string }
+                          character_name: { type: string }
+                          ship_type_id: { type: string }
+                          ship_name: { type: string }
+                          price_minor: { type: integer }
+                          award_minor: { type: integer }
+                          completed_at: { type: string, format: date-time }
+        '400': { description: Invalid corporation, kind or contract ID }
+        '401': { description: Authentication required }
+        '403': { description: Permission denied }
+        '404': { description: Corporation outside current scope }
+        '409': { description: Invalid policy or award }
+        '500': { description: Read failure }
+
   /api/v1/welfare/cases/{id}/loss-quota:
     {"get":{"summary":"Review claimant reimbursement quota excluding this application","description":"Current scoped reimbursement manager, non-applicant, srp/solo only. No-store consistent read; approval rechecks under lock.","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","pattern":"^[1-9][0-9]*$"}}],"responses":{"200":{"description":"Quota snapshot","content":{"application/json":{"schema":{"type":"object","properties":{"data":{"$ref":"#/components/schemas/WelfareLossQuotaReview"},"request_id":{"type":"string"}}}}}},"401":{"description":"Unauthenticated"},"404":{"description":"Missing or out of scope"},"400":{"description":"Invalid case ID"},"403":{"description":"Permission denied"},"409":{"description":"Ownership changed during review"},"503":{"description":"Quota service unavailable"}},"operationId":"getWelfareCaseLossQuota","security":[{"SessionCookie":[]}]}}
   /api/v1/welfare/losses/battle-report:

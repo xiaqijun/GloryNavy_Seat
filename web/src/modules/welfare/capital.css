@@ -1,0 +1,140 @@
+.welfare-capital-overview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+.welfare-capital-overview > svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.welfare-capital-overview > span {
+  font-size: 13px;
+}
+.welfare-capital-overview > [role="status"] {
+  margin-left: auto;
+}
+.welfare-capital-overview p,
+.welfare-capital-error {
+  overflow-wrap: anywhere;
+}
+.welfare-capital-preview,
+.welfare-capital-detail {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.welfare-capital-preview {
+  padding-top: 6px;
+}
+.welfare-capital-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.welfare-capital-heading > .eve-image {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+.welfare-capital-heading > div {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.welfare-capital-heading > div > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.welfare-capital-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #15803d;
+  font-size: 13px;
+}
+.welfare-capital-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+.welfare-capital-facts > div {
+  min-width: 0;
+}
+.welfare-capital-facts dt {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.welfare-capital-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.welfare-capital-facts .is-award dd {
+  color: var(--primary);
+  font-size: 20px;
+}
+.welfare-capital-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 14px 0;
+  margin: 0;
+  border-block: 1px solid var(--border);
+}
+.welfare-capital-progress li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.welfare-capital-progress li > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.welfare-capital-progress .is-done {
+  color: var(--primary);
+}
+.welfare-capital-progress .is-done > span {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.welfare-capital-error {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 540px) {
+  .welfare-capital-overview {
+    gap: 10px 12px;
+    padding: 12px;
+  }
+  .welfare-capital-overview > [role="status"] {
+    margin-left: 0;
+  }
+  .welfare-capital-progress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
