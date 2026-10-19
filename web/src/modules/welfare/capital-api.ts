@@ -3,6 +3,7 @@ import { getData } from "@/lib/http";
 import type { Case } from "./api";
 
 export type CapitalCheck = {
+  reason?: string;
   state:
     | "closed"
     | "unbound"
@@ -42,6 +43,7 @@ export function isCapitalCheck(v: unknown): v is CapitalCheck {
       "ready",
     ].includes(String(v.state)) ||
     typeof v.policy_version !== "string" ||
+    (v.reason !== undefined && typeof v.reason !== "string") ||
     !Number.isSafeInteger(v.rate_bps) ||
     (v.case_id !== undefined && typeof v.case_id !== "string")
   )

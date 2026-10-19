@@ -1,5 +1,9 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "已加载 {0} 份合同": "{0} contracts loaded",
+  "该合同没有舰船，不能用于旗舰补贴。": "This contract contains no ship and cannot be used for a capital subsidy.",
+  "该合同的舰船不是{0}。": "The ship in this contract is not a {0}.",
+  "合同物品尚未同步，请先同步该角色的合同。": "Contract items have not synced yet. Sync this character's contracts first.",
   "购舰合同": "Purchase contract",
   "购舰角色": "Purchasing character",
   "搜索购舰合同": "Search purchase contracts",

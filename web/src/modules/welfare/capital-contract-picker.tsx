@@ -11,9 +11,9 @@ import {
   amount,
   contractDate,
   entityName,
-  getContracts,
   title,
 } from "@/modules/eve/contracts-api";
+import { capitalContracts } from "./capital-contracts";
 import { capitalMoney } from "./capital-api";
 import type { Character } from "./api";
 
@@ -44,34 +44,16 @@ export function CapitalContractPicker({
     initialPageParam: "",
     enabled: !!owner,
     queryFn: ({ pageParam, signal }) =>
-      getContracts(
+      capitalContracts(
         { kind: "character", id: character, name: owner!.name },
-        new URLSearchParams({
-          type: "item_exchange",
-          status: "finished",
-          q: search,
-          before: pageParam,
-        }),
+        search,
+        pageParam,
         signal,
       ),
     getNextPageParam: (page) => page.next_cursor || undefined,
     retry: false,
   });
-  const candidates = (
-    list.data?.pages.flatMap((page) => page.items) ?? []
-  ).filter(
-    (c) =>
-      c.type === "item_exchange" &&
-      c.status === "finished" &&
-      !c.for_corporation &&
-      c.acceptor.id === character &&
-      c.issuer.id !== character &&
-      c.issuer.id !== "0" &&
-      (c.assignee.id === "0" || c.assignee.id === character) &&
-      Number(c.price) > 0 &&
-      c.reward !== null &&
-      Number(c.reward) === 0,
-  );
+  const candidates = list.data?.pages.flatMap((page) => page.items) ?? [];
   const applySearch = () => {
     onChange("");
     setSearch(normalizeSearch(draft));
@@ -152,6 +134,7 @@ export function CapitalContractPicker({
           {list.isSuccess && !candidates.length && (
             <p role="status">{msg("当前没有可选合同")}</p>
           )}
+          {candidates.length > 0 && <p role="status">{msg("已加载 {0} 份合同", candidates.length)}</p>}
           {candidates.length > 0 && (
             <div
               className="welfare-capital-contracts"

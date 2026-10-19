@@ -29,6 +29,7 @@ paths:
                     required: [state, policy_version, rate_bps]
                     properties:
                       state: { type: string, enum: [closed, unbound, claimed, pending, contract_required, contract_invalid, contract_used, ready] }
+                      reason: { type: string, enum: [ship_missing, ship_type, items_pending], description: Optional contract_invalid detail for an otherwise identifiable personal purchase. Unknown or absent reasons use the generic message. }
                       policy_version: { type: string }
                       rate_bps: { type: integer }
                       case_id: { type: string, description: Existing application owned by the current account only }

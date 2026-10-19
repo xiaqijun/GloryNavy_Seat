@@ -12,6 +12,7 @@ import (
 
 type CapitalCheck struct {
 	State         string                  `json:"state"`
+	Reason        string                  `json:"reason,omitempty"`
 	PolicyVersion int64                   `json:"policy_version,string"`
 	RateBPS       int64                   `json:"rate_bps"`
 	CaseID        int64                   `json:"case_id,string,omitempty"`
@@ -101,6 +102,10 @@ func (s *Service) CapitalCheck(ctx context.Context, actor string, corp int64, ki
 	ch, purchase, hull, price, err := s.findCapitalPurchase(ctx, actor, corp, kind, contract, own)
 	if errors.Is(err, ErrCapitalPurchase) {
 		out.State = "contract_invalid"
+		var issue capitalPurchaseIssue
+		if errors.As(err, &issue) {
+			out.Reason = string(issue)
+		}
 		return out, nil
 	}
 	if err != nil {

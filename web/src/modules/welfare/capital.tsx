@@ -170,10 +170,16 @@ export function CapitalPreview({
   const result = check.data;
   if (!result) return null;
   if (result.state === "contract_required") return null;
+  const reasons: Record<string, string> = {
+    ship_missing: msg("该合同没有舰船，不能用于旗舰补贴。"),
+    ship_type: msg("该合同的舰船不是{0}。", api.kinds[kind]),
+    items_pending: msg("合同物品尚未同步，请先同步该角色的合同。"),
+  };
+  const reason = result.state === "contract_invalid" ? reasons[result.reason || ""] : "";
   if (!result.purchase || result.state !== "ready")
     return (
       <p className="wide welfare-warning" role="status">
-        {msg(labels[result.state])}
+        {reason || msg(labels[result.state])}
       </p>
     );
   const p = result.purchase;

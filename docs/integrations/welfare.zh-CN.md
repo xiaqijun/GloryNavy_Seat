@@ -2,7 +2,7 @@
 
 ## 旗舰购舰合同选择（2026-10-19）
 
-前端申请由手填 ID 改为本人本军团角色的合同选择；复用受保护 `/api/v1/eve/contracts/character/{id}`，固定 `type=item_exchange&status=finished`，按 `q` 搜索与 `before` 翻页。仅列本人接取、正价格、零 reward 的个人购买候选，不读取他人或军团合同。ID/标题/物品名称/交易方沿用现有搜索语义，切换角色或修改搜索清除选中合同。选中后仍调用 capital/check，提交 commands 的 detail 仍只有 contract_id；服务端舰船、资格和事务复核不变。无 API/权限/迁移变更，可独立更新前端，与已发布 capital-flow 后端兼容。
+前端申请由手填 ID 改为本人本军团角色的合同选择；复用受保护 `/api/v1/eve/contracts/character/{id}`，固定 `type=item_exchange&status=finished`，按 `q` 搜索与 `before` 翻页。仅列本人接取、正价格、零 reward 的个人购买候选，不读取他人或军团归属的缓存。军团作为卖方的个人购买合同不能因 `for_corporation=true` 被排除：该字段描述发起者代表其军团，参见 [ESI 官方 schema](https://esi.evetech.net/meta/openapi.json)。每批自动扫描最多 5 页原始完成合同，累计至少 25 个购买候选或末页即停止；保留原始 `next_cursor` 供继续加载，遇到后续页失败整批报错并可重试。ID/标题/物品名称/交易方沿用现有搜索语义，切换角色或修改搜索清除选中合同。选中后仍调用 capital/check，提交 commands 的 detail 仍只有 contract_id；服务端舰船、资格和事务复核不变。筛选与分页不改变权限或存储。`capital/check` 的 `contract_invalid` 新增可选 `reason`：`ship_missing`（没有舰船）、`ship_type`（非所选类别）、`items_pending`（物品尚未同步），仅在当前本人购买对象核对后返回；缺少或未知原因沿用通用提示。实际申请继续返回原错误语义并保持全部校验。无迁移；本轮前后端一起部署，旧前端忽略该字段，旧后端仍兼容通用提示。
 
 ## 旗舰补贴申请核验与紧凑详情（2026-10-19）
 

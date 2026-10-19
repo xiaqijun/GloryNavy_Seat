@@ -13,6 +13,12 @@ import (
 
 var ErrCapitalPurchase = errors.New("verified capital purchase contract required")
 
+// Advisory reasons retain the existing error identity for command/transaction guards.
+type capitalPurchaseIssue string
+
+func (e capitalPurchaseIssue) Error() string { return string(e) }
+func (e capitalPurchaseIssue) Unwrap() error { return ErrCapitalPurchase }
+
 // Missing rates in historical snapshots retain the original category rate.
 func capitalAward(kind string, base int64, rule Config) (int64, error) {
 	if !isSuper(kind) || base <= 0 || base > 100000000000000 {
@@ -39,8 +45,11 @@ func isSuper(kind string) bool { return kind == "supercarrier" || kind == "titan
 
 // Validate a single purchased hull; other included fittings are part of its price.
 func (s *Service) capitalPurchase(kind string, character int64, c eve.DeliveryContract) (int64, int64, error) {
-	if c.ID <= 0 || c.OwnerKind != "character" || c.OwnerID != character || c.Type != "item_exchange" || c.Status != "finished" || !c.ItemsReady || c.AcceptorID != character || c.IssuerID <= 0 || c.IssuerID == character || c.AssigneeID != 0 && c.AssigneeID != character || s.IsShip == nil || s.ShipGroup == nil {
+	if c.ID <= 0 || c.OwnerKind != "character" || c.OwnerID != character || c.Type != "item_exchange" || c.Status != "finished" || c.AcceptorID != character || c.IssuerID <= 0 || c.IssuerID == character || c.AssigneeID != 0 && c.AssigneeID != character || s.IsShip == nil || s.ShipGroup == nil {
 		return 0, 0, ErrCapitalPurchase
+	}
+	if !c.ItemsReady {
+		return 0, 0, capitalPurchaseIssue("items_pending")
 	}
 	completed, err := time.Parse(time.RFC3339, c.Completed)
 	if err != nil || c.Issued.IsZero() || completed.Before(c.Issued) || completed.After(time.Now()) {
@@ -63,8 +72,11 @@ func (s *Service) capitalPurchase(kind string, character int64, c eve.DeliveryCo
 		}
 	}
 	group := s.ShipGroup(hull)
-	if hull == 0 || kind == "supercarrier" && group != "超级航母" || kind == "titan" && group != "泰坦" {
-		return 0, 0, ErrCapitalPurchase
+	if hull == 0 {
+		return 0, 0, capitalPurchaseIssue("ship_missing")
+	}
+	if kind == "supercarrier" && group != "超级航母" || kind == "titan" && group != "泰坦" {
+		return 0, 0, capitalPurchaseIssue("ship_type")
 	}
 	price, ok := minorPrice(c.Price)
 	if !ok {
@@ -77,6 +89,7 @@ func (s *Service) findCapitalPurchase(ctx context.Context, actor string, corp in
 	if id <= 0 || s.PurchaseContract == nil {
 		return Character{}, eve.DeliveryContract{}, 0, 0, ErrCapitalPurchase
 	}
+	failure := ErrCapitalPurchase
 	for _, ch := range characters {
 		if ch.CorporationID != corp {
 			continue
@@ -95,8 +108,12 @@ func (s *Service) findCapitalPurchase(ctx context.Context, actor string, corp in
 		if err == nil {
 			return ch, c, hull, price, nil
 		}
+		var issue capitalPurchaseIssue
+		if errors.As(err, &issue) {
+			failure = err
+		}
 	}
-	return Character{}, eve.DeliveryContract{}, 0, 0, ErrCapitalPurchase
+	return Character{}, eve.DeliveryContract{}, 0, 0, failure
 }
 
 // Recheck the authorized local snapshot in the publication transaction, never via ESI.

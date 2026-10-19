@@ -270,6 +270,7 @@ async function setup(
         policy_version: "2",
         rate_bps: 1250,
         ...(ready ? { purchase: preview } : {}),
+        ...(id === "902" ? { reason: "ship_missing" } : {}),
         ...(state === "pending" ? { case_id: "99" } : {}),
       };
     } else if (path === "/api/v1/welfare/cases")
@@ -421,14 +422,23 @@ for (const language of ["zh-CN", "en"]) {
       exact: true,
     });
     await expect(
-      dialog.getByRole("radio", { name: /Sold contract|Corporate contract/ }),
+      dialog.getByRole("radio", { name: /Sold contract/ }),
     ).toHaveCount(0);
-    await dialog
-      .getByRole("button", { name: en ? "Load more" : "加载更多", exact: true })
-      .click();
+    await expect(
+      dialog.getByRole("radio", {
+        name: "Corporate contract #904",
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(
       dialog.getByRole("radio", { name: "Earlier purchase #900", exact: true }),
     ).toBeVisible();
+    await expect(dialog).toContainText(
+      en ? "4 contracts loaded" : "已加载 4 份合同",
+    );
+    expect(
+      ctl.searches.some((q) => new URLSearchParams(q).get("before") === "900"),
+    ).toBe(true);
     const search = dialog.getByRole("textbox", {
       name: en ? "Search purchase contracts" : "搜索购舰合同",
     });
@@ -470,7 +480,7 @@ for (const language of ["zh-CN", "en"]) {
       .check();
     await expect(submit).toBeEnabled();
     await page.screenshot({
-      path: `../.local/capital-contract-picker/picker-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-fix/picker-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     expect(
@@ -549,7 +559,7 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toContainText("1.25B ISK");
     await page.screenshot({
-      path: `../.local/capital-contract-picker/preview-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-fix/preview-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     await page
@@ -559,8 +569,8 @@ for (const language of ["zh-CN", "en"]) {
     await expect(
       page.getByText(
         en
-          ? "Check that the completed personal purchase contract contains the correct ship class and has been synced."
-          : "请核对已完成的个人购舰合同及舰船类型，并确认合同已同步。",
+          ? "This contract contains no ship and cannot be used for a capital subsidy."
+          : "该合同没有舰船，不能用于旗舰补贴。",
         { exact: true },
       ),
     ).toBeVisible();
@@ -593,7 +603,7 @@ for (const language of ["zh-CN", "en"]) {
       await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth),
     ).toBe(true);
     await page.screenshot({
-      path: `../.local/capital-contract-picker/detail-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-fix/detail-${language}-${info.project.name}.png`,
       fullPage: true,
     });
     await expect(
@@ -645,7 +655,7 @@ for (const language of ["zh-CN", "en"]) {
       }),
     ).toHaveCount(0);
     await page.screenshot({
-      path: `../.local/capital-contract-picker/payout-${language}-${info.project.name}.png`,
+      path: `../.local/capital-contract-fix/payout-${language}-${info.project.name}.png`,
       fullPage: true,
     });
   });

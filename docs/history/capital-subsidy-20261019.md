@@ -40,3 +40,14 @@ GitNexus 对 Apply 的上游影响为 LOW：直接调用 Board 与损失 Records
 
 
 追加前端已从干净且推送的 main `20c7e0a337f6598a279e1c0727be8e6275ba612a` 发布 `v0.1.0-capital-contract-picker-20261019`，143 个文件与最终测试构建字节一致。后端保持 capital-flow、Goose 101，没有重启或迁移。页面 200、匿名福利/审批业务 401、完整发布清单和 OpenResty 检查正常；后端 active/running/ready 200、NRestarts=0。公开 HTML SHA256 `4602086a9dfd554cea779d0d06e9746ab80b729c68c11a42c05f54ff80922ca8`；`index-BrTi1ZTw.js` 为 `d0bf5a96e4865fd0a5a8a46e8420243ebbb90f050246d404b3d5f1d58b0fa534`，`page-teUuVAf2.js` 为 `5369cfbc957542b5694eec4ac6ba51985ac5b40c234341c7035cdc9c071fd416`，均与发布包一致。仅前端回退到 capital-flow 即恢复手填 ID，保留后端与数据。构建/验证材料在忽略目录 `.local/capital-contract-picker/`。
+
+
+## 追加：稀疏分页、军团卖方与无效原因
+
+生产只读排查确认反馈合同已完成、明细已同步，但仅含四件重型导弹发射器，没有舰船，因而不符合旗舰补贴。该角色 72 份已完成物品交换合同中有 8 份个人购买候选，旧前端误排除 3 份军团出售的合同，且原始分页后筛选导致每批仅显示少量结果。这些候选仍不等于可领取旗舰补贴。未执行真实申请、审批、支付或发送。
+
+候选批量扫描最多 5 个原始分页，达到至少 25 个候选或读完即停止；继续加载保留原始游标，后续页失败可整批重试。`for_corporation` 描述卖方代表其军团，不能用于排除本人购买。预览以可选 reason 区分没有舰船、舰船类别不符和明细未同步，实际命令沿用 ErrCapitalPurchase 错误身份及原规则。无数据库迁移。
+
+验证：类型/构建、10 项单测、48 项中英文 1280/375/320px 浏览器流程通过，覆盖稀疏分页自动补齐、边界继续加载、异常游标/分页失败、军团卖方、搜索/角色重置、错误提示与禁用提交。隔离 PostgreSQL 福利/统一交付/词表回归（race，226 秒）及宿主福利/权限回归（22 秒）通过；所有新增无效合同在真实 Execute 中仍被拒绝，纯预览不写申请。受影响 oxlint 无错误，仅既有 Capital hook 的 Fast Refresh 提示；曾误用不存在的 ESLint 入口，随后使用项目 oxlint 检查。
+
+已检查桌面与 320px 英文截图，长列表保持滚动与固定提交区：[桌面](../ui/reviews/welfare/capital-contract-fix-desktop.png)、[窄屏](../ui/reviews/welfare/capital-contract-fix-narrow.png)。截图使用模拟数据。GitNexus 预编辑影响为 LOW，capitalPurchase 的直接调用为 findCapitalPurchase/guardCapitalPurchase；索引落后 11 次提交，新增 CapitalCheck/前端符号未命中，补查调用链。go vet 通过；GitNexus 暂存与 main 比较均 LOW（19 文件、13 个已索引变更，无已索引受影响流程），新增符号及共享 Execute/HTTP 错误映射已人工补查。发布结果待补充。
