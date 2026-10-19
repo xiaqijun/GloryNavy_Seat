@@ -478,6 +478,7 @@ export const english: Record<string, string> = {
   "复制 QQ 群号": "Copy QQ group number",
   "加入 KOOK": "Join KOOK",
   "复制失败，请手动复制：674743797": "Copy failed. Please copy manually: 674743797",
+  "QQ 招募群": "QQ recruitment group",
   "QQ 招募群：674743797": "QQ recruitment group: 674743797",
   "GloryNavy · 在新伊甸，一起远航": "GloryNavy · Explore New Eden together",
   "军团介绍导航": "Corporation introduction",

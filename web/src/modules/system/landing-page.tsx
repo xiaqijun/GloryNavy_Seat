@@ -218,27 +218,27 @@ export default function LandingPage() {
         >
           <div className="landing-width landing-page-content">
             <div className="landing-introduction-grid">
-              <div>
+              <div className="landing-introduction-heading">
                 <h2 id="strength-title">{msg("军团介绍")}</h2>
                 <p className="landing-motto">{msg("荣耀海军，全员猛男！")}</p>
-                <dl className="landing-history">
-                  <div>
-                    <dt>2016</dt>
-                    <dd>{msg("晨曦启航，曾集结 80 余人的单军团舰队。")}</dd>
-                  </div>
-                  <div>
-                    <dt>2021.08</dt>
-                    <dd>{msg("宁静重建，专注 00 精英 PVP。")}</dd>
-                  </div>
-                </dl>
+                <img
+                  className="landing-emblem"
+                  src="/images/glory-navy-logo.png"
+                  width="128"
+                  height="128"
+                  alt=""
+                />
               </div>
-              <img
-                className="landing-emblem"
-                src="/images/glory-navy-logo.png"
-                width="128"
-                height="128"
-                alt=""
-              />
+              <dl className="landing-history">
+                <div>
+                  <dt>2016</dt>
+                  <dd>{msg("晨曦启航，曾集结 80 余人的单军团舰队。")}</dd>
+                </div>
+                <div>
+                  <dt>2021.08</dt>
+                  <dd>{msg("宁静重建，专注 00 精英 PVP。")}</dd>
+                </div>
+              </dl>
             </div>
             <PublicStrength />
           </div>
@@ -257,9 +257,10 @@ export default function LandingPage() {
                 <p>{msg("欢迎新老舰长。")}</p>
               </div>
               <div className="landing-join-action">
-                <span className="landing-group-number">
-                  {msg("QQ 招募群：674743797")}
-                </span>
+                <div className="landing-group-number">
+                  <span>{msg("QQ 招募群")}</span>
+                  <strong>674743797</strong>
+                </div>
                 <div className="landing-contact-buttons">
                   <button
                     className="landing-primary"

@@ -187,11 +187,18 @@ export function FleetChapters({
             },
           ]
             .slice(support ? 3 : 0, support ? 6 : 3)
-            .map(({ icon: Icon, title, text }) => (
-              <article className="landing-activity landing-reveal" key={title}>
-                <Icon size={32} aria-hidden="true" />
-                <h3>{msg(title)}</h3>
-                <p>{msg(text)}</p>
+            .map(({ icon: Icon, title, text }, index) => (
+              <article
+                className={`landing-activity${!support && index === 0 ? " landing-activity-featured" : ""}`}
+                key={title}
+              >
+                <span className="landing-activity-icon">
+                  <Icon size={28} aria-hidden="true" />
+                </span>
+                <div className="landing-activity-copy">
+                  <h3>{msg(title)}</h3>
+                  <p>{msg(text)}</p>
+                </div>
               </article>
             ))}
         </div>
