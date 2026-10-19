@@ -1,5 +1,13 @@
 # Linux 生产部署
 
+## 2026-10-19：补损逐级额度确认与申请起始时间
+
+前后端 `v0.1.0-quota-confirm-20261019` 来自干净且推送的 main 提交 `baffb8e64505e1855ff8abbc954eafbf4aa25fc4`，Goose 101 不变。备份 `/var/backups/glorynavy/before-v0.1.0-quota-confirm-20261019-20261019T040740Z.dump`（260662463 字节），同前缀环境及元数据文件保留；未做恢复演练。六个 Linux 程序从该提交构建，142 个前端文件与最终测试构建一致，10 个后端/翻译文件与隔离测试源码一致。未修改反馈专用代理。
+
+日不足确认周额度、周不足确认月额度，月不足拒绝；当前日完整计入，不借未来额度。新申请采用可选的最早损失时间，旧申请不追溯拦截；修复补损专员请求未带 kind 的前置权限误判。现有 srp 日 200M、周 1B、月 3B 与 solo 日 200M/自动周月保留，起始时间均未设置。新配置/确认快照生效后，旧程序会忽略日期或丢失新快照，优先向前修复。
+
+线上 active/running/ready、NRestarts=0；首页/福利/审批/损失页面 200，匿名额度预览及原业务接口 401。发布清单、主脚本和福利脚本与公网字节一致，HTML SHA256 `1cf0136ddb9042848a7e13798ecb74c845e43e2a76b1ad0f47e26640550d3cca`。日分配 0、solo approved 10/cancelled 3/completed 23/rejected 14/submitted 1，提醒 true/revision 4/原三类事件，发信授权 ready，发送/回执 0，QQ 关闭/绑定 0；未执行生产审批或发送。源码 `/root/glorynavy-quota-confirm-release-20261019`，验证材料 `.local/quota-confirm/`；隔离测试数据库及本地预览已清理。
+
 ## 2026-10-19：PVP 战报与紧凑详情
 
 前后端 `v0.1.0-pvp-report-20261019` 来自干净且推送的 main 提交 `712f65c7ac571a2b7ed764df7a37804ccd0c3050`，Goose 101 不变。备份 `/var/backups/glorynavy/before-v0.1.0-pvp-report-20261019-20261019T031533Z.dump`（260514379 字节），同前缀环境与元数据文件保留；未做恢复演练。六个 Linux 程序由该提交构建；142 个前端文件与最终测试构建一致，6 个后端/依赖文件与隔离测试源码一致。
