@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beijingInput, isQuotaReview, lossStartTimestamp, quotaLevel } from "./loss-quota-review";
+import { isQuotaReview, quotaLevel } from "./loss-quota-review";
 const p = (cap: number, remaining = cap) => ({used_minor:cap-remaining,reserved_minor:0,cap_minor:cap,remaining_minor:remaining});
 const q = {kind:"srp",daily:p(100),weekly:p(700),monthly:p(3000)};
 describe("quota review",()=>{
@@ -14,11 +14,5 @@ describe("quota review",()=>{
   expect(isQuotaReview({...v,quota:{...q,daily:{used_minor:0,reserved_minor:0,cap_minor:100}}})).toBe(false);
   expect(isQuotaReview({...v,quota:{...q,weekly:p(100,101)}})).toBe(false);
   expect(isQuotaReview({...v,policy_version:1})).toBe(false);
- });
- it("uses Beijing time regardless of the browser timezone",()=>{
-  expect(lossStartTimestamp("2026-10-01T00:00")).toBe("2026-09-30T16:00:00.000Z");
-  expect(beijingInput("2026-09-30T16:00:00Z")).toBe("2026-10-01T00:00");
-  expect(lossStartTimestamp("")).toBe("");
-  expect(beijingInput()).toBe("");
  });
 });

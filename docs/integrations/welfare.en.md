@@ -1,5 +1,14 @@
 # Corporation welfare
 
+## Rolling reimbursement application window (2026-10-19)
+
+This supersedes the fixed earliest-loss timestamp below. A month means 30 × 24 hours. Each corporation and srp/solo policy may set integer `loss_application_days` from 1 to 3650; omitted values, including existing policies, default to 30. Zero/blank does not disable the window. The settings field is “Application window (days)”.
+
+New applications read the current policy inside the existing publication lock and compare trusted KM time against server current time minus N × 24 hours. The exact boundary is eligible; earlier losses return 409 `welfare_loss_expired`. Forged request timestamps cannot override synchronized KM evidence, and administrator manual entries obey the same rule. The UI blocks expired applications, refreshes an open form at expiry and checks again on submission; the server remains authoritative.
+
+Deprecated `loss_occurred_after` remains only for historical JSON compatibility, is ignored for eligibility, and is cleared on settings saves. Effective rule snapshots include the window. Existing applications remain reviewable, amendable and cancellable, even after expiry or a policy change; fresh applications after cancellation use the current window. Calendar-month quotas are separate. No migration; deploy frontend/backend together and fix forward rather than rolling back to a backend that ignores this rule. See [project status](../project-status.md).
+
+
 ## Explicit quota escalation and earliest eligible loss (2026-10-19)
 
 This supersedes automatic daily overages and the weekly hard ceiling below. Apply rate/per-claim cap first. Insufficient monthly remaining capacity always rejects approval. Insufficient weekly capacity requires explicit `loss_quota_consent="monthly"`; otherwise insufficient daily capacity requires `"weekly"`. No consent is needed within all limits. These are cumulative totals, not additional pools. Missing weekly/monthly caps still derive from positive daily ×7/×30; without daily, omitted periods remain unlimited. New approvals consume today only, never future days.
@@ -8,9 +17,9 @@ Protected GET `/api/v1/welfare/cases/{id}/loss-quota` requires current scoped re
 
 Server-owned `detail.loss_quota_approval` freezes the actual tier (empty within limits), amount and quota review snapshot alongside reviewer, policy version, current-day allocation and audit in one transaction. Existing approval/delivery/cancellation/merge authorization stays intact; no new capability or migration.
 
-Optional per-corporation srp/solo setting `loss_occurred_after` is an inclusive RFC3339 earliest loss timestamp; empty means unrestricted. UI input is Beijing time. The application transaction checks the latest rule against the server's synced KM timestamp, or the administrator's manual evidence. Forged request timestamps cannot replace synced evidence. Older losses return HTTP 409 `welfare_loss_before_start`. Existing applications can still be reviewed, supplemented or cancelled; a fresh application after withdrawal uses the new cutoff. Other benefits' `effective_at` is unchanged. Only site administrators configure the cutoff.
+This release originally introduced the fixed cutoff `loss_occurred_after`; the rolling application window above now replaces it. The old cutoff no longer gates applications and does not reuse other benefits' `effective_at`.
 
-Deploy frontend/backend together, with Goose 101 unchanged. Existing cutoffs remain unset and historical approvals are not repriced. Once cutoffs or escalation snapshots exist, use forward fixes rather than older code that ignores the new rules or drops snapshots. Release evidence: [project status](../project-status.md).
+Deploy frontend/backend together, with Goose 101 unchanged. Historical approvals are not repriced. Once escalation snapshots exist, fix forward rather than running older code that ignores the rules or drops snapshots. For application-window recovery, follow the current section above. Release evidence: [project status](../project-status.md).
 
 ## Whole-battle PVP report (2026-10-19)
 

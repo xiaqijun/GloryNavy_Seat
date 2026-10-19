@@ -144,7 +144,7 @@ func TestWelfareClaimsAndWorkflow(t *testing.T) {
 		t.Fatal(e)
 	}
 	s.Losses = func(context.Context, string, int64, int64, int64, int64) ([]Loss, error) {
-		return []Loss{{ID: 987, CharacterID: 123, CorporationID: 10, ShipTypeID: 34, At: time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)}}, nil
+		return []Loss{{ID: 987, CharacterID: 123, CorporationID: 10, ShipTypeID: 34, At: time.Now().Add(-time.Hour)}}, nil
 	}
 	apply := Command{Action: "apply", CorporationID: 10, Kind: "srp", RequestKey: key(11), Detail: Detail{SyncedLoss: true, CharacterID: 123, ShipTypeID: 34, KillmailID: 987, OccurredAt: "2026-09-01T12:00:00Z", Description: "军团集结损失", Evidence: "KM 与合同证据"}}
 	data, e := s.Execute(ctx, userID, apply)

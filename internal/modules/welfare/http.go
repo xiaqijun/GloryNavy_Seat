@@ -154,7 +154,7 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 	case errors.Is(e, ErrLossMonthlyConfirmation):
 		httpapi.Failure(w, r, 409, "welfare_loss_monthly_confirmation", "周额度不足，请确认使用月额度")
 	case errors.Is(e, ErrLossBeforeStart):
-		httpapi.Failure(w, r, 409, "welfare_loss_before_start", "损失时间早于可申请起始时间")
+		httpapi.Failure(w, r, 409, "welfare_loss_expired", "已超过补损申请时限")
 	case errors.Is(e, ErrLossDailyQuota):
 		httpapi.Failure(w, r, 409, "welfare_loss_quota", "该成员今日补损额度不足，请核对额度设置")
 	case errors.Is(e, ErrLossWeeklyQuota):

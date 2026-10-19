@@ -1,7 +1,9 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
   "剩余额度": "Remaining quota",
-  "可申请起始时间（北京时间）": "Earliest eligible loss (Beijing time)",
+  "申请时限（天）": "Application window (days)",
+  "已超过 {0} 天补损申请时限": "The {0}-day reimbursement application deadline has passed.",
+  "请填写 1–3650 天的申请时限": "Enter an application window of 1–3650 whole days.",
   "确认使用月额度": "Confirm use of monthly quota",
   "确认使用周额度": "Confirm use of weekly quota",
   "本月剩余": "Monthly remaining",
@@ -13,7 +15,7 @@ export const english: Record<string, string> = {
   "日额度不足": "Daily quota insufficient",
   "申请或设置已更新，请关闭后重新打开审批": "The application or settings changed. Close and reopen this review.",
   "正在核对补损额度": "Checking reimbursement quota",
-  "损失时间早于可申请起始时间": "The loss occurred before the application start time.",
+  "已超过补损申请时限": "The reimbursement application deadline has passed.",
   "周额度不足，请确认使用月额度": "Weekly quota is insufficient. Confirm use of the monthly quota.",
   "日额度不足，请确认使用周额度": "Daily quota is insufficient. Confirm use of the weekly quota.",
   "战报摘要": "Battle summary",

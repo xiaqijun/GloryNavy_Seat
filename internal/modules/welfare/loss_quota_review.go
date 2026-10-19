@@ -13,7 +13,7 @@ import (
 
 var ErrLossWeeklyConfirmation = fmt.Errorf("weekly confirmation required: %w", ErrLossQuota)
 var ErrLossMonthlyConfirmation = fmt.Errorf("monthly confirmation required: %w", ErrLossQuota)
-var ErrLossBeforeStart = fmt.Errorf("loss predates application start: %w", ErrRule)
+var ErrLossBeforeStart = fmt.Errorf("loss predates rolling application window: %w", ErrRule)
 
 type LossQuotaReview struct {
 	PolicyVersion int64     `json:"policy_version,string"`
@@ -126,19 +126,19 @@ func (h Handler) lossQuotaReview(w http.ResponseWriter, r *http.Request) {
 	respond(w, r, v, err)
 }
 
-func checkLossStart(cfg Config, occurred string) error {
-	if cfg.LossOccurredAfter == "" {
-		return nil
+func checkLossStart(cfg Config, occurred string, now time.Time) error {
+	days := int64(30)
+	if cfg.LossApplicationDays != nil {
+		days = *cfg.LossApplicationDays
 	}
-	start, err := time.Parse(time.RFC3339, cfg.LossOccurredAfter)
-	if err != nil {
+	if days < 1 || days > 3650 {
 		return ErrRule
 	}
 	at, err := time.Parse(time.RFC3339, occurred)
-	if err != nil {
+	if err != nil || at.After(now) {
 		return ErrRule
 	}
-	if at.Before(start) {
+	if at.Before(now.Add(-time.Duration(days) * 24 * time.Hour)) {
 		return ErrLossBeforeStart
 	}
 	return nil

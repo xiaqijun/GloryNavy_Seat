@@ -54,6 +54,3 @@ export function LossQuotaConfirmation({ review }: { review: ReturnType<typeof us
     {level !== "blocked" && <label><input type="checkbox" checked={review.confirmed} onChange={e => review.confirm(e.target.checked)} />{level === "weekly" ? msg("确认使用周额度") : msg("确认使用月额度")}</label>}
   </section>;
 }
-
-export function beijingInput(value?: string) { return value && Number.isFinite(Date.parse(value)) ? new Date(Date.parse(value) + 8 * 3600_000).toISOString().slice(0, 16) : ""; }
-export function lossStartTimestamp(value: string) { return value ? new Date(`${value}:00+08:00`).toISOString() : ""; }

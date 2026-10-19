@@ -6,12 +6,13 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"testing"
+	"time"
 )
 
 func TestWelfareSRPRequiresConfirmedAttendance(t *testing.T) {
 	s, _ := fixture(t)
 	ctx := context.Background()
-	c := Command{Action: "apply", CorporationID: 10, Kind: "srp", RequestKey: key(500), Detail: Detail{CharacterID: 123, ShipTypeID: 17715, KillmailID: 900, EventID: 999, OccurredAt: "2026-09-01T01:00:00Z", Description: "军团损失", Evidence: "KM"}}
+	c := Command{Action: "apply", CorporationID: 10, Kind: "srp", RequestKey: key(500), Detail: Detail{CharacterID: 123, ShipTypeID: 17715, KillmailID: 900, EventID: 999, OccurredAt: time.Now().Add(-time.Hour).Format(time.RFC3339), Description: "军团损失", Evidence: "KM"}}
 	s.GuardAttendanceLoss = func(context.Context, pgx.Tx, string, int64, int64, int64) (int64, error) { return 0, pgx.ErrNoRows }
 	if _, err := s.Execute(ctx, adminID, c); !errors.Is(err, ErrAttendanceRequired) {
 		t.Fatalf("manual/forged event bypass: %v", err)

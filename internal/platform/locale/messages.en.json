@@ -281,5 +281,5 @@
   "首行应为 [舰船名称, 方案名称]": "First line must be [Ship name, Fitting name]",
   "日额度不足，请确认使用周额度": "Daily quota is insufficient. Confirm use of the weekly quota.",
   "周额度不足，请确认使用月额度": "Weekly quota is insufficient. Confirm use of the monthly quota.",
-  "损失时间早于可申请起始时间": "The loss occurred before the application start time."
+  "已超过补损申请时限": "The reimbursement application deadline has passed."
 }

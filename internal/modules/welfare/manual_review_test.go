@@ -25,7 +25,7 @@ func TestWelfareManualReviewWithoutRulesOrVerification(t *testing.T) {
 	ctx := context.Background()
 	// The loss predates the current corporation and no policy/profile exists.
 	s.Losses = func(_ context.Context, _ string, _ int64, char, _, id int64) ([]Loss, error) {
-		return []Loss{{ID: id, CharacterID: char, CorporationID: 20, ShipTypeID: 17715, At: time.Date(2019, 1, 1, 1, 0, 0, 0, time.UTC)}}, nil
+		return []Loss{{ID: id, CharacterID: char, CorporationID: 20, ShipTypeID: 17715, At: time.Now().Add(-24 * time.Hour)}}, nil
 	}
 	for i, kind := range []string{"srp", "solo", "solo"} {
 		c := Command{Action: "apply", CorporationID: 10, Kind: kind, RequestKey: key(400 + i), Detail: Detail{CharacterID: 123, KillmailID: int64(800 + i), SyncedLoss: true, Description: "交人工审核", Evidence: "ESI 证据", Alliance: "unknown"}}

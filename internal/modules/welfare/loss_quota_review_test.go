@@ -151,23 +151,12 @@ func TestLossQuotaLevelsAndErrors(t *testing.T) {
 	for _, tc := range []struct {
 		err  error
 		code string
-	}{{ErrLossWeeklyConfirmation, "welfare_loss_weekly_confirmation"}, {ErrLossMonthlyConfirmation, "welfare_loss_monthly_confirmation"}, {ErrLossBeforeStart, "welfare_loss_before_start"}} {
+	}{{ErrLossWeeklyConfirmation, "welfare_loss_weekly_confirmation"}, {ErrLossMonthlyConfirmation, "welfare_loss_monthly_confirmation"}, {ErrLossBeforeStart, "welfare_loss_expired"}} {
 		w := httptest.NewRecorder()
 		respond(w, httptest.NewRequest("POST", "/", nil), nil, tc.err)
 		if w.Code != 409 || !strings.Contains(w.Body.String(), tc.code) {
 			t.Fatal(w.Code, w.Body.String())
 		}
-	}
-	if checkLossStart(Config{LossOccurredAfter: "2026-10-01T00:00:00+08:00"}, "2026-09-30T16:00:00Z") != nil {
-		t.Fatal("timezone equality")
-	}
-	for _, cfg := range []Config{{LossOccurredAfter: "invalid"}, {LossOccurredAfter: "2026-10-01"}} {
-		if validateConfig("srp", cfg) == nil {
-			t.Fatal("invalid date", cfg)
-		}
-	}
-	if validateConfig("growth_gila", Config{LossOccurredAfter: "2026-10-01T00:00:00Z"}) == nil {
-		t.Fatal("non loss date")
 	}
 }
 
@@ -176,8 +165,9 @@ func TestLossApplicationStartVerifiedTimestamp(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			s, _ := fixture(t)
 			ctx := context.Background()
-			start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
-			cfg := Config{LossOccurredAfter: start.Format(time.RFC3339)}
+			start := time.Now().Add(-30 * 24 * time.Hour).Truncate(time.Second)
+			days := int64(30)
+			cfg := Config{LossApplicationDays: &days}
 			if _, err := s.Execute(ctx, adminID, Command{Action: "configure", CorporationID: 10, Kind: kind, Config: cfg, RequestKey: key(9300 + i)}); err != nil {
 				t.Fatal(err)
 			}
@@ -187,14 +177,14 @@ func TestLossApplicationStartVerifiedTimestamp(t *testing.T) {
 			if _, err := s.Execute(ctx, userID, cmd); !errors.Is(err, ErrLossBeforeStart) {
 				t.Fatal("forged timestamp", err)
 			}
-			loss.At = start
+			loss.At = start.Add(time.Hour)
 			out, err := s.Execute(ctx, userID, cmd)
 			if err != nil {
-				t.Fatal("inclusive boundary", err)
+				t.Fatal("recent loss", err)
 			}
 			var v Case
 			json.Unmarshal(out, &v)
-			cfg.LossOccurredAfter = start.Add(time.Hour).Format(time.RFC3339)
+			days = 1
 			if _, err = s.Execute(ctx, adminID, Command{Action: "configure", CorporationID: 10, Kind: kind, Config: cfg, Version: 1, RequestKey: key(9320 + i)}); err != nil {
 				t.Fatal(err)
 			}
@@ -205,7 +195,7 @@ func TestLossApplicationStartVerifiedTimestamp(t *testing.T) {
 			if _, err = s.Execute(ctx, adminID, approval); err != nil {
 				t.Fatal("existing application should survive", err)
 			}
-			// Manual administrator entry is subject to the same start time.
+			// Manual administrator entry is subject to the same rolling window.
 			s.Losses = nil
 			cmd.RequestKey = key(9340 + i)
 			cmd.Detail.SyncedLoss = false

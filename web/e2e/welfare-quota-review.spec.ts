@@ -138,7 +138,8 @@ async function setup(page:Page, language:string, review:boolean, status="ready")
  const commands:Record<string,any>[]=[];
  let quotaLevel=status;
  let fail=false;
- let cutoff="";
+ const days:Record<string,number|undefined>={};
+ await page.clock.setFixedTime(new Date("2026-10-22T00:23:01Z"));
   let reportStatus='ready';
  await page.addInitScript(l=>localStorage.setItem('glorynavy.locale',l),language);
  await page.route('https://images.evetech.net/**',r=>r.abort());
@@ -149,7 +150,7 @@ async function setup(page:Page, language:string, review:boolean, status="ready")
   if(p==='/api/v1/modules') data=['system','identity','eve','access','exchange','welfare',...(review?['approval']:[])].map(id=>({id,api_version:1,version:'0.1.0'}));
   else if(p==='/api/v1/identity/session') data={authenticated:true,session:{user_id:review?admin:member,character:{id:'123',name:'Loss Pilot'},csrf_token:'csrf',expires_at:'2099-01-01T00:00:00Z'}};
   else if(p==='/api/v1/access/me') data={administrator:review,can_manage:review,can_manage_sync:false,site_roles:[],characters:[]};
-  else if(p==='/api/v1/welfare/context') data={administrator:review,corporations:[{id:'10',name:'Glory Navy',can_manage:review,can_compensate:review}],characters:[{id:'123',name:'Loss Pilot',account_id:review?admin:member,corporation_id:'10'}],policies:[{corporation_id:'10',kind:'solo',version:'1',config:{...rule,project_name:'',loss_daily_cap_minor:1000000000,loss_weekly_cap_minor:10000000000,loss_monthly_cap_minor:30000000000,loss_occurred_after:cutoff}}]};
+  else if(p==='/api/v1/welfare/context') data={administrator:review,corporations:[{id:'10',name:'Glory Navy',can_manage:review,can_compensate:review}],characters:[{id:'123',name:'Loss Pilot',account_id:review?admin:member,corporation_id:'10'}],policies:['srp','solo'].map(kind=>({corporation_id:'10',kind,version:'1',config:{...rule,project_name:'',loss_daily_cap_minor:1000000000,loss_weekly_cap_minor:10000000000,loss_monthly_cap_minor:30000000000,loss_application_days:days[kind]}}))};
   else if(p==='/api/v1/approval/context') data={allowed:true,sources:['welfare'],corporations:[{id:'10',name:'Glory Navy'}],people:[{id:member,name:'Loss Pilot'}],unavailable:[]};
   else if(p==='/api/v1/approval/items') data={items:[lossRow],counts:{pending:1,fulfillment:0,exceptions:0,history:0},next_cursor:'',unavailable:[]};
   else if(p==='/api/v1/approval/items/welfare/9') data=lossRow;
@@ -161,7 +162,7 @@ async function setup(page:Page, language:string, review:boolean, status="ready")
   else if(p==='/api/v1/welfare/commands') {
    const cmd=r.request().postDataJSON();commands.push(cmd);
    if(fail){fail=false;quotaLevel='monthly';return r.fulfill({status:409,json:{error:{message:'周额度不足，请确认使用月额度'}}});}
-   if(cmd.action==='configure')cutoff=cmd.config.loss_occurred_after;
+   if(cmd.action==='configure')days[cmd.kind]=cmd.config.loss_application_days;
    data={ok:true};
   }
   else if(p.endsWith('/battle-report')) data=reportStatus==='ready'?report:{status:reportStatus};
@@ -172,7 +173,7 @@ async function setup(page:Page, language:string, review:boolean, status="ready")
   return r.fulfill({json:{data}});
  });
  await page.goto(review?'/approvals?source=welfare&id=9':'/welfare');
- return {reads,commands,setQuota:(s:string)=>{quotaLevel=s;},failNext:()=>{fail=true;},setCutoff:(s:string)=>{cutoff=s;}};
+ return {reads,commands,setQuota:(s:string)=>{quotaLevel=s;},failNext:()=>{fail=true;},setDays:(s:number)=>{days.srp=s;days.solo=s;}};
 }
 for(const language of ['zh-CN','en']) {
  const en=language==='en';
@@ -214,22 +215,39 @@ for(const language of ['zh-CN','en']) {
   await expect(page.getByText(en?'Monthly quota insufficient. Approval unavailable.':'月额度不足，无法批准',{exact:true})).toBeVisible();
   await expect(submit).toBeDisabled();expect(ctl.commands).toHaveLength(0);
  });
- test(`${language} start time setting persists in Beijing time`,async({page},info)=>{
+ test(`${language} rolling application window defaults to 30 and persists`,async({page},info)=>{
   const ctl=await setup(page,language,true,'weekly');await page.goto('/welfare');
   await page.getByRole('button',{name:en?'Reimbursement settings':'补损设置',exact:true}).click();
-  const start=page.getByLabel(en?'Earliest eligible loss (Beijing time)':'可申请起始时间（北京时间）');
-  await start.fill('2026-10-01T00:00');
+  const start=page.getByLabel(en?'Application window (days)':'申请时限（天）');
+  await expect(start).toHaveValue('30');
+  await start.fill('14');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.screenshot({path:`../.local/quota-confirm/settings-${language}-${info.project.name}.png`,fullPage:true});
+  await page.screenshot({path:`../.local/loss-age/settings-${language}-${info.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:en?'Save':'保存',exact:true}).click();
   await expect.poll(()=>ctl.commands.length).toBe(1);
-  expect(ctl.commands[0].config.loss_occurred_after).toBe('2026-09-30T16:00:00.000Z');
+  expect(ctl.commands[0].config.loss_application_days).toBe(14);
+  expect(ctl.commands[0].config.loss_occurred_after).toBe('');
+  await page.getByRole('button',{name:en?'Reimbursement settings':'补损设置',exact:true}).click();
+  await expect(start).toHaveValue('14');
  });
  test(`${language} older loss cannot be submitted`,async({page})=>{
-  const ctl=await setup(page,language,false,'weekly');ctl.setCutoff('2026-10-01T00:00:00+08:00');
+  const ctl=await setup(page,language,false,'weekly');
   await page.goto('/losses');await page.locator('.welfare-loss-row').click();
   await page.getByRole('button',{name:en?'Apply for SRP':'申请补损',exact:true}).click();
-  await expect(page.getByText(en?'The loss occurred before the application start time.':'损失时间早于可申请起始时间',{exact:false})).toBeVisible();
+  await expect(page.getByText(en?'The 30-day reimbursement application deadline has passed.':'已超过 30 天补损申请时限',{exact:false})).toBeVisible();
+  await expect(page.getByRole('button',{name:en?'Submit application':'提交申请',exact:true})).toBeDisabled();
+  expect(ctl.commands).toHaveLength(0);
+ });
+ test(`${language} recent loss remains eligible and custom days apply`,async({page})=>{
+  const ctl=await setup(page,language,false,'weekly');
+  await page.clock.setFixedTime(new Date('2026-10-20T00:23:00Z'));
+  await page.goto('/losses');await page.locator('.welfare-loss-row').click();
+  await page.getByRole('button',{name:en?'Apply for SRP':'申请补损',exact:true}).click();
+  await expect(page.getByRole('button',{name:en?'Submit application':'提交申请',exact:true})).toBeEnabled();
+  ctl.setDays(14);
+  await page.reload();await page.locator('.welfare-loss-row').click();
+  await page.getByRole('button',{name:en?'Apply for SRP':'申请补损',exact:true}).click();
+  await expect(page.getByText(en?'The 14-day reimbursement application deadline has passed.':'已超过 14 天补损申请时限',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:en?'Submit application':'提交申请',exact:true})).toBeDisabled();
   expect(ctl.commands).toHaveLength(0);
  });

@@ -578,6 +578,8 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 		if !validKind(c.Kind) || c.Kind == "grant" {
 			return nil, ErrInvalid
 		}
+		// The former fixed cutoff is no longer an active setting.
+		c.Config.LossOccurredAfter = ""
 		if e = validateConfig(c.Kind, c.Config); e != nil {
 			return nil, e
 		}
@@ -645,7 +647,7 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 			if err != nil {
 				return nil, err
 			}
-			if err = checkLossStart(cfg, d.OccurredAt); err != nil {
+			if err = checkLossStart(cfg, d.OccurredAt, time.Now()); err != nil {
 				return nil, err
 			}
 			d.Rule, d.PolicyVersion = cfg, p.Version

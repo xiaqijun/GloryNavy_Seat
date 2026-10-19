@@ -12,6 +12,11 @@ func cashLoss(kind string) bool { return kind == "srp" || kind == "solo" }
 // Zero/omitted period caps follow the daily allowance. Keep the stored zero
 // so later daily edits also update automatic caps; explicit caps stay fixed.
 func effectiveLossConfig(c Config) Config {
+	c.LossOccurredAfter = ""
+	if c.LossApplicationDays == nil {
+		days := int64(30)
+		c.LossApplicationDays = &days
+	}
 	day := quotaCap(c.LossDailyCapMinor)
 	if day <= 0 || day > 100000000000000 {
 		return c
@@ -150,7 +155,7 @@ func (s *Service) lossPolicy(ctx context.Context, db store.DB, corp int64, kind 
 			return p, effectiveLossConfig(cfg), err
 		}
 	}
-	return Policy{}, Config{}, nil
+	return Policy{}, effectiveLossConfig(Config{}), nil
 }
 
 // Caller holds the welfare publication lock. Consent cannot bypass the monthly

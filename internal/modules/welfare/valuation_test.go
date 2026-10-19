@@ -20,7 +20,7 @@ func sameJSON(a, b []byte) bool {
 }
 
 func valuationLoss() Loss {
-	return Loss{ID: 987, CharacterID: 123, CorporationID: 10, ShipTypeID: 17715, ShipName: "毒蜥级", At: time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC), Items: []eve.BattleItem{
+	return Loss{ID: 987, CharacterID: 123, CorporationID: 10, ShipTypeID: 17715, ShipName: "毒蜥级", At: time.Now().Add(-time.Hour).Truncate(time.Second), Items: []eve.BattleItem{
 		{TypeID: 34, Name: "三钛合金", Slot: "5", Quantity: 5, Destroyed: 2, Dropped: 3},
 		{TypeID: 35, Name: "嵌套货物", Slot: "5/5", Quantity: 7, Destroyed: 7},
 	}}

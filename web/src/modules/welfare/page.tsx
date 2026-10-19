@@ -1,4 +1,5 @@
-import { LossQuotaConfirmation, useLossQuotaReview, beijingInput, lossStartTimestamp } from "./loss-quota-review";
+import { LossQuotaConfirmation, useLossQuotaReview } from "./loss-quota-review";
+import { applicationDays, lossApplicationExpired, useLossApplicationExpired } from "./loss-application-window";
 import { FulfillmentSummary } from "./fulfillment-summary";
 import { msg, getLocale } from "@/lib/i18n";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -859,7 +860,9 @@ export function Apply({
   const status = useGrowthStatus(corp, character, kind, policy?.version);
   const manual = loss && !initialLoss;
   const lossDate = linkedLoss?.occurred_at || (at ? new Date(at).toISOString() : "");
-  const beforeStart = !!policy?.config.loss_occurred_after && !!lossDate && Date.parse(lossDate) < Date.parse(policy.config.loss_occurred_after);
+  const lossDays = policy?.config.loss_application_days ?? 30;
+  const expired = useLossApplicationExpired(lossDate, lossDays);
+  const beforeStart = ["srp", "solo"].includes(kind) && expired;
   const ready =
     loss ||
     (policy?.config.enabled &&
@@ -920,7 +923,11 @@ export function Apply({
         (manual && !context.administrator)
       }
       label={manual ? msg("提交录入") : msg("提交申请")}
-      command={() => ({
+      command={() => {
+        if (["srp", "solo"].includes(kind) && lossApplicationExpired(lossDate, lossDays)) {
+          throw new Error(msg("已超过 {0} 天补损申请时限", lossDays));
+        }
+        return {
         action: "apply",
         corporation_id: corp,
         kind,
@@ -940,9 +947,10 @@ export function Apply({
               evidence,
               alliance,
             },
-      })}
+        };
+      }}
     >
-      {beforeStart && <p className="welfare-warning wide" role="alert">{msg("损失时间早于可申请起始时间")} · {beijingInput(policy?.config.loss_occurred_after).replace("T", " ")} {msg("北京时间")}</p>}
+      {beforeStart && <p className="welfare-warning wide" role="alert">{msg("已超过 {0} 天补损申请时限", lossDays)}</p>}
       {!ready && (
         <p className="welfare-warning">
           {msg("该项目规则尚未生效，请联系管理员。")}
@@ -1685,7 +1693,7 @@ function LossPolicyEditor({
   const [dailyCap, setDailyCap] = useState(capValue(policy?.config.loss_daily_cap_minor));
   const [weeklyCap, setWeeklyCap] = useState(capValue(policy?.config.loss_weekly_cap_minor));
   const [monthlyCap, setMonthlyCap] = useState(capValue(policy?.config.loss_monthly_cap_minor));
-  const [occurredAfter, setOccurredAfter] = useState(beijingInput(policy?.config.loss_occurred_after));
+  const [days, setDays] = useState(String(policy?.config.loss_application_days ?? 30));
   let automatic = api.lossPeriodCaps();
   try {
     automatic = api.lossPeriodCaps({ loss_daily_cap_minor: optionalMinor(dailyCap) });
@@ -1725,7 +1733,8 @@ function LossPolicyEditor({
             loss_daily_cap_minor: daily,
             loss_weekly_cap_minor: weekly,
             loss_monthly_cap_minor: monthly,
-            loss_occurred_after: lossStartTimestamp(occurredAfter),
+            loss_occurred_after: "",
+            loss_application_days: applicationDays(days),
           },
         };
       }}
@@ -1743,7 +1752,7 @@ function LossPolicyEditor({
         onChange={setCap}
         type="number"
       />
-      <Field label={msg("可申请起始时间（北京时间）")} value={occurredAfter} onChange={setOccurredAfter} type="datetime-local" wide />
+      <Field label={msg("申请时限（天）")} value={days} onChange={setDays} type="number" required wide />
       <div className="welfare-period-caps wide">
         <Field label={msg("每人每日额度 / ISK")} value={dailyCap} onChange={setDailyCap} type="number" />
         <Field label={msg("每人每周上限 / ISK")} value={weeklyCap || capValue(automatic.weekly)} onChange={v => setWeeklyCap(v === "0" ? "" : v)} type="number" />

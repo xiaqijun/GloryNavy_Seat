@@ -60,6 +60,8 @@ type LossQuota struct {
 	FutureReservedMinor int64           `json:"future_reserved_minor"`
 }
 type Config struct {
+	LossApplicationDays *int64 `json:"loss_application_days,omitempty"`
+	// Deprecated: retained for historical snapshots; new applications use a rolling window.
 	LossOccurredAfter   string         `json:"loss_occurred_after,omitempty"`
 	LossRateBPS         *int64         `json:"loss_rate_bps,omitempty"`
 	LossCapMinor        *int64         `json:"loss_cap_minor,omitempty"`
@@ -180,10 +182,8 @@ func Calculate(kind string, base int64, discipline bool) (int64, error) {
 	return amount, nil
 }
 func validateConfig(k string, c Config) error {
-	if c.LossOccurredAfter != "" {
-		if _, err := time.Parse(time.RFC3339, c.LossOccurredAfter); err != nil || !cashLoss(k) {
-			return ErrInvalid
-		}
+	if c.LossApplicationDays != nil && (!cashLoss(k) || *c.LossApplicationDays < 1 || *c.LossApplicationDays > 3650) {
+		return ErrInvalid
 	}
 	if c.LossRateBPS != nil && (!cashLoss(k) || *c.LossRateBPS < 1 || *c.LossRateBPS > 10000) {
 		return ErrInvalid

@@ -17,7 +17,7 @@ func TestWelfareManualLossRequiresCurrentAdministrator(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		c := Command{Action: "apply", CorporationID: 10, Kind: kind, RequestKey: key(110 + i), Detail: Detail{CharacterID: 123, ShipTypeID: 17715, KillmailID: int64(100 + i), OccurredAt: "2026-09-01T01:00:00Z", Description: "历史损失录入", Evidence: "人工核对记录", Alliance: "unknown"}}
+		c := Command{Action: "apply", CorporationID: 10, Kind: kind, RequestKey: key(110 + i), Detail: Detail{CharacterID: 123, ShipTypeID: 17715, KillmailID: int64(100 + i), OccurredAt: time.Now().Add(-time.Hour).Format(time.RFC3339), Description: "损失录入", Evidence: "人工核对记录", Alliance: "unknown"}}
 		// A delegated manager still cannot create manual evidence.
 		s.Scope = func(context.Context, string, int64, bool) (bool, error) { return true, nil }
 		if _, err = s.Execute(ctx, userID, c); !errors.Is(err, pgx.ErrNoRows) {
@@ -53,7 +53,7 @@ func TestWelfareLossUsesServerSnapshot(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	loss := Loss{ID: 99, CharacterID: 123, CorporationID: 10, ShipTypeID: 17715, SolarSystemID: 30000142, SolarSystemName: "吉他", At: time.Date(2026, 9, 1, 1, 0, 0, 0, time.UTC), ObservedAt: time.Now()}
+	loss := Loss{ID: 99, CharacterID: 123, CorporationID: 10, ShipTypeID: 17715, SolarSystemID: 30000142, SolarSystemName: "吉他", At: time.Now().Add(-time.Hour).Truncate(time.Second), ObservedAt: time.Now()}
 	s.Losses = func(_ context.Context, actor string, corp, char, before, id int64) ([]Loss, error) {
 		if actor != userID || corp != 10 || char != 123 || id != 99 {
 			return nil, pgx.ErrNoRows
