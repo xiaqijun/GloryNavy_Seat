@@ -166,8 +166,17 @@ for (const language of ['zh-CN','en']) {
   const panel=page.getByRole('region',{name:language==='en'?'Battle summary':'战报摘要',exact:true});
   await expect(panel).toContainText('FRT+F.A.X+NC +6');
   await expect(panel).toContainText('INIT.');
-  await expect(panel).toContainText('3.67B ISK');
-  await expect(panel).toContainText('4.6B ISK');
+  await expect(panel).toContainText('3.67B');
+  await expect(panel).toContainText('4.6B');
+  await expect(panel.getByRole('row',{name:language==='en'?/Pilots/:/参战人数/})).toHaveCount(1);
+  expect(await panel.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  if(!review) {
+   const valuation=page.getByRole('dialog').locator('details').filter({has:page.locator('summary',{hasText:language==='en'?'Valuation details':'核价明细'})});
+   await expect(valuation).not.toHaveAttribute('open','');
+   await valuation.locator('summary').first().click();
+   await expect(valuation).toHaveAttribute('open','');
+   await valuation.locator('summary').first().click();
+  }
   await expect(panel).toContainText('80 KM');
   await expect(panel.getByText(language==='en'?'Your side':'本方',{exact:true})).toHaveCount(1);
   await expect(panel.getByRole('link')).toHaveAttribute('href','https://br.scers.cn/q?mode=expand&km=139267042');
@@ -196,5 +205,6 @@ for (const language of ['zh-CN','en']) {
   expect(control.reads.some(p=>p.startsWith('/api/v1/welfare/losses/battle-report?')&&p.includes('killmail_id=139267042'))).toBe(true);
   control.setStatus('ready');
   await expect(panel).toContainText('80 KM',{timeout:10000});
+  await expect(page.getByRole('dialog').locator('details').filter({has:page.locator('summary',{hasText:'KM #139267042'})})).not.toHaveAttribute('open','');
  });
 }

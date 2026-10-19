@@ -54,16 +54,21 @@ export function BattleReportPanel({ killmailID, caseID, corporationID, character
         <time dateTime={summary.start}>{date(summary.start)} — {date(summary.end)}</time>
         <span>{summary.kill_count} KM · {isk(summary.total_isk)} ISK</span>
       </div>
-      <div className="welfare-battle-teams">
-        {summary.teams.map(team => <div className="welfare-battle-team" data-own={team.own} key={team.id}>
-          <div className="welfare-battle-team-name"><strong>{team.name}</strong>{team.own && <span>{msg("本方")}</span>}</div>
-          <dl>
-            <div><dt>{msg("参战人数")}</dt><dd>{team.pilots.toLocaleString(getLocale())}</dd></div>
-            <div><dt>{msg("击毁")}</dt><dd>{team.kills.toLocaleString(getLocale())}</dd></div>
-            <div><dt>{msg("损失")}</dt><dd>{team.losses.toLocaleString(getLocale())}</dd></div>
-            <div><dt>{msg("损失金额")}</dt><dd title={`${team.losses_isk.toLocaleString(getLocale())} ISK`}>{isk(team.losses_isk)} ISK</dd></div>
-          </dl>
-        </div>)}
+      <div className="welfare-battle-comparisons">
+        {Array.from({ length: Math.ceil(summary.teams.length / 2) }, (_, index) => {
+          const teams = summary.teams.slice(index * 2, index * 2 + 2);
+          return <table key={index} aria-label={msg("战报摘要")}>
+            <thead>
+              <tr><th scope="col">{msg("阵营")}</th>{teams.map(team => <th scope="col" key={team.id}>{team.name}{team.own && <span className="welfare-battle-own">{msg("本方")}</span>}</th>)}</tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">{msg("参战人数")}</th>{teams.map(team => <td key={team.id}>{team.pilots.toLocaleString(getLocale())}</td>)}</tr>
+              <tr><th scope="row">{msg("击毁")}</th>{teams.map(team => <td key={team.id}>{team.kills.toLocaleString(getLocale())}</td>)}</tr>
+              <tr><th scope="row">{msg("损失")}</th>{teams.map(team => <td key={team.id}>{team.losses.toLocaleString(getLocale())}</td>)}</tr>
+              <tr><th scope="row">{msg("损失 / ISK")}</th>{teams.map(team => <td key={team.id} title={`${team.losses_isk.toLocaleString(getLocale())} ISK`}>{isk(team.losses_isk)}</td>)}</tr>
+            </tbody>
+          </table>;
+        })}
       </div>
     </> : <div className="welfare-battle-state" role="status">
       <span>{msg(loading ? "正在生成战报摘要" : "战报摘要暂不可用")}</span>

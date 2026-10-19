@@ -969,7 +969,10 @@ export function Apply({
       {linkedLoss && (
         <div className="wide">
           {kind === "solo" && <BattleReportPanel killmailID={linkedLoss.id} corporationID={corp} characterID={character} />}
-          <LossEvidence loss={linkedLoss} />
+          {kind === "solo" ? <details className="welfare-loss-evidence">
+            <summary>{linkedLoss.ship_name} · KM #{linkedLoss.id}</summary>
+            <LossEvidence loss={linkedLoss} showHeader={false} />
+          </details> : <LossEvidence loss={linkedLoss} />}
         </div>
       )}
       {!growth && !linkedLoss && (

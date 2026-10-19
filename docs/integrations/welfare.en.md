@@ -2,6 +2,8 @@
 
 ## Whole-battle PVP report (2026-10-19)
 
+Layout: compact comparison tables share metric labels, at most two sides per group. Assessed/approved value precedes the report. Ready valuation and application KM details are collapsed initially; abnormal valuation remains expanded, with errors and actions preserved.
+
 PVP (solo) applications with a selected synced loss, personal claim details and approval details show battle time/systems, total KMs/value, and each side's pilots, kills, losses and loss value. All source sides are retained. The seed KM victim's organization marks the claimant's side. Pilots are unique positive character IDs across victims and attackers in the report, excluding NPCs without character IDs. Values are public estimates displayed in M/B/T, with full loss value in the tooltip.
 
 Source: [SCTools Battle Report](https://br.scers.cn/). Links are generated on the fixed host as `https://br.scers.cn/q?mode=expand&km=<killmail_id>`. The server posts only the public KM ID and language to `https://scit.scers.cn:45161/api/public/battle_reports/expand`, then polls `/api/public/battle_reports/jobs/<job_id>` using a validated UUID. No account/session/EVE tokens, arbitrary URLs, redirects, embedded pages or copied site code. Require the seed KM in the result. The compact public projection is display-only and never changes valuation, caps, approval or delivery snapshots. No migration.

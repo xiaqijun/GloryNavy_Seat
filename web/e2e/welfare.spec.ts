@@ -710,7 +710,7 @@ async function setup(page: Page, admin = true) {
       };
     else if (p === "/api/v1/welfare/context")
       data = {
-        corporations: [{ id: "10", name: "荣耀海军", can_manage: admin }],
+        corporations: [{ id: "10", name: "荣耀海军", can_manage: admin, can_compensate: admin }],
         characters: [
           {
             id: "123",

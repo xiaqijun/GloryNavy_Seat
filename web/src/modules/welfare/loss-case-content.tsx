@@ -1,4 +1,5 @@
 import { msg } from "@/lib/i18n";
+import { useState } from "react";
 import { EveImage } from "@/components/eve-image";
 import { ChevronDown } from "lucide-react";
 import { FulfillmentSummary } from "./fulfillment-summary";
@@ -29,7 +30,6 @@ export function LossCaseContent({
   return (
     <div className="welfare-loss-detail">
       <LossIdentity item={v} />
-      {v.kind === "solo" && <BattleReportPanel killmailID={d.killmail_id} caseID={v.id} />}
       <div className="welfare-loss-total">
         <div>
           <span>{pending ? msg("核价金额") : msg("核准金额")}</span>
@@ -67,6 +67,7 @@ export function LossCaseContent({
           )}
         </div>
       )}
+      {v.kind === "solo" && <BattleReportPanel killmailID={d.killmail_id} caseID={v.id} />}
       <FulfillmentSummary item={v} user={user} manage={manage} />
       <LossCaseEvidence
         item={v}
@@ -122,7 +123,6 @@ export function LossReviewOverview({ item: v, onOpenEvidence }: { item: api.Case
   return (
     <section className="welfare-loss-review-overview" aria-label={msg("补损审查要点")}>
       <LossIdentity item={v} onOpenEvidence={onOpenEvidence} />
-      {v.kind === "solo" && <BattleReportPanel killmailID={v.detail.killmail_id} caseID={v.id} />}
       {v.kind === "solo" && (
         <div className="welfare-loss-review-quote">
           <span>
@@ -140,6 +140,7 @@ export function LossReviewOverview({ item: v, onOpenEvidence }: { item: api.Case
           )}
         </div>
       )}
+      {v.kind === "solo" && <BattleReportPanel killmailID={v.detail.killmail_id} caseID={v.id} />}
     </section>
   );
 }
@@ -161,6 +162,7 @@ export function LossCaseEvidence({
 }) {
   const d = v.detail;
   const pending = ["submitted", "information", "external"].includes(v.state);
+  const [valuationOpen, setValuationOpen] = useState(pending && d.valuation?.state !== "ready");
   return (
     <div className="welfare-loss-evidence-sections">
       {review && d.loss_evidence && <LossCombatAndItems loss={d.loss_evidence} />}
@@ -173,7 +175,7 @@ export function LossCaseEvidence({
         </details>
       )}
       {v.kind === "solo" && (
-        <details open={pending}>
+        <details open={valuationOpen} onToggle={event => setValuationOpen(event.currentTarget.open)}>
           <summary>{msg("核价明细")}</summary>
           <ValuationView item={v} csrf={csrf} refresh={refresh && pending} detailOnly={review} />
         </details>

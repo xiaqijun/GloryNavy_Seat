@@ -260,7 +260,7 @@ async function setup(
     else if (p === "/api/v1/welfare/context")
       data = {
         administrator: allowed,
-        corporations: [{ id: "10", name: "Glory Navy", can_manage: allowed }],
+        corporations: [{ id: "10", name: "Glory Navy", can_manage: allowed, can_compensate: allowed }],
         characters: [
           {
             id: "123",

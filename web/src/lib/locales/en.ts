@@ -1,6 +1,8 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
   "战报摘要": "Battle summary",
+  "阵营": "Side",
+  "损失 / ISK": "Loss / ISK",
   "查看战报": "View battle report",
   "本方": "Your side",
   "参战人数": "Pilots",
