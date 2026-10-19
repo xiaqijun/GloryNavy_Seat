@@ -374,7 +374,7 @@ test('wheel and keyboard page forward and backward; route cleanup',async({page})
  expect(await page.locator('html').evaluate(el=>el.style.getPropertyValue('--landing-header-height'))).toBe('');
  await page.goBack(); await expect(page.locator('#fleet')).toHaveAttribute('data-active','true');
 });
-test('legacy hash, short viewport, keyboard disclosure and copy',async({page,context})=>{
+test('legacy hash, short viewport, visible requirements and copy',async({page,context})=>{
  await setup(page,'anonymous'); await page.setViewportSize({width:320,height:568});
  await page.emulateMedia({reducedMotion:'reduce'}); await context.grantPermissions(['clipboard-read','clipboard-write']);
  await page.goto('/?view=public#about'); await expect(page).toHaveURL(/view=public#strength$/);
@@ -382,8 +382,9 @@ test('legacy hash, short viewport, keyboard disclosure and copy',async({page,con
  await page.locator('.landing-nav a[href="#join"]').click();
  await page.getByRole('button',{name:'复制 QQ 群号'}).click();
  expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe('674743797');
- const summary=page.locator('.landing-requirements summary'); await summary.focus(); await page.keyboard.press('Enter');
- await expect(page.locator('.landing-requirements')).toHaveAttribute('open');
+ await expect(page.locator('.landing-requirements li')).toHaveCount(5);
+ await expect(page.locator('.landing-requirements summary')).toHaveCount(0);
+ for (const requirement of await page.locator('.landing-requirements li').all()) await expect(requirement).toBeVisible();
  await page.locator('.landing-requirements li').last().scrollIntoViewIfNeeded();
  await expect(page.locator('.landing-requirements li').last()).toBeInViewport();
  await page.locator('.landing-brand').click(); await expect(page.locator('#home')).toHaveAttribute('data-active','true');
@@ -399,4 +400,31 @@ test('touch scrolling advances a page',async({browser})=>{
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  await expect(page.locator('#strength')).toHaveAttribute('data-active','true');
  await context.close();
+});
+
+test('cross-page scrolling stays readable and accepts a new destination', async ({ page }) => {
+  await setup(page, 'anonymous');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await expect(page.locator('#home')).toHaveAttribute('data-active', 'true');
+  const samples = await page.evaluate(async () => {
+    const readings: { y: number; opacity: number; shifted: boolean }[] = [];
+    document.querySelector<HTMLAnchorElement>('.landing-nav a[href="#join"]')!.click();
+    const started = performance.now();
+    while (performance.now() - started < 1600) {
+      await new Promise(requestAnimationFrame);
+      const content = document.querySelector('.landing-page[data-active="true"] > .landing-page-content')!;
+      const style = getComputedStyle(content);
+      readings.push({ y: scrollY, opacity: Number(style.opacity), shifted: style.transform !== 'none' });
+    }
+    return readings;
+  });
+  expect(new Set(samples.map(({ y }) => y)).size).toBeGreaterThan(8);
+  expect(samples.every(({ opacity, shifted }) => opacity === 1 && !shifted)).toBe(true);
+  await expect.poll(() => page.locator('#join').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBe(80);
+  await page.locator('.landing-brand').click();
+  await page.locator('.landing-nav a[href="#fleet"]').click();
+  await expect.poll(() => page.locator('#fleet').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBe(80);
+  await expect(page.locator('#fleet')).toHaveAttribute('data-active', 'true');
 });

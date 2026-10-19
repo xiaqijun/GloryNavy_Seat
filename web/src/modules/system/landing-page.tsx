@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpRight,
-  Check,
-  Copy,
-  ChevronDown,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Check, Copy } from "lucide-react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { useSession } from "@/modules/identity";
 import { EveSignInButton } from "@/modules/eve/login-components";
@@ -60,22 +53,45 @@ export default function LandingPage() {
       "--landing-header-height",
     );
     let frame = 0;
+    let layoutFrame = 0;
+    let headerHeight = 0;
+    let positions: { id: string; top: number }[] = [];
+    let active = "";
     const update = () => {
       frame = 0;
-      const headerHeight = header.getBoundingClientRect().height;
-      html.style.setProperty("--landing-header-height", `${headerHeight}px`);
-      const boundary = headerHeight + (window.innerHeight - headerHeight) * 0.4;
+      const boundary =
+        window.scrollY +
+        headerHeight +
+        (window.innerHeight - headerHeight) * 0.4;
       let current = "home";
-      for (const section of sections) {
-        if (section.getBoundingClientRect().top <= boundary)
-          current = section.id;
+      for (const position of positions) {
+        if (position.top <= boundary) current = position.id;
       }
+      if (current === active) return;
+      active = current;
       for (const section of sections)
         section.dataset.active = String(section.id === current);
       setActiveSection(current);
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
+    };
+    // Measure only when layout changes, not on every scroll frame.
+    const measure = () => {
+      layoutFrame = 0;
+      const nextHeight = header.getBoundingClientRect().height;
+      if (nextHeight !== headerHeight) {
+        headerHeight = nextHeight;
+        html.style.setProperty("--landing-header-height", `${headerHeight}px`);
+      }
+      positions = sections.map((section) => ({
+        id: section.id,
+        top: section.getBoundingClientRect().top + window.scrollY,
+      }));
+      schedule();
+    };
+    const scheduleMeasure = () => {
+      if (!layoutFrame) layoutFrame = requestAnimationFrame(measure);
     };
     const followHash = () => {
       // Keep old links after merging history and strength into one page.
@@ -95,20 +111,21 @@ export default function LandingPage() {
       schedule();
     };
     // This page is lazy-loaded; the initial hash can precede its DOM.
-    update();
+    measure();
     const initialFrame = requestAnimationFrame(followHash);
     window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    window.addEventListener("resize", scheduleMeasure);
     window.addEventListener("hashchange", schedule);
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver(scheduleMeasure);
     observer.observe(header);
     sections.forEach((section) => observer.observe(section));
     return () => {
       window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      window.removeEventListener("resize", scheduleMeasure);
       window.removeEventListener("hashchange", schedule);
       observer.disconnect();
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(layoutFrame);
       cancelAnimationFrame(initialFrame);
       if (previousHeight)
         html.style.setProperty("--landing-header-height", previousHeight);
@@ -298,11 +315,11 @@ export default function LandingPage() {
               </div>
             </div>
             <JoiningSteps />
-            <details className="landing-requirements">
-              <summary>
-                {msg("入团要求")}
-                <ChevronDown size={18} aria-hidden="true" />
-              </summary>
+            <section
+              className="landing-requirements"
+              aria-labelledby="requirements-title"
+            >
+              <h3 id="requirements-title">{msg("入团要求")}</h3>
               <ul>
                 <li>{msg("心智成熟、诚实守信，与军团成员友善相处。")}</li>
                 <li>{msg("热爱 PVP，不畏惧 00、战斗与舰船损失。")}</li>
@@ -316,7 +333,7 @@ export default function LandingPage() {
                   )}
                 </li>
               </ul>
-            </details>
+            </section>
             <footer className="landing-footer">
               <span>GloryNavy</span>
               <p>

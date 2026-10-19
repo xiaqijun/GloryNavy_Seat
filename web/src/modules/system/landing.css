@@ -16,10 +16,10 @@ html:has(.public-home) {
   width: min(1200px, calc(100% - 112px));
   margin-inline: auto;
 }
-.public-home :is(a, button, summary) {
+.public-home :is(a, button) {
   -webkit-tap-highlight-color: transparent;
 }
-.public-home :is(a, button, summary):focus-visible {
+.public-home :is(a, button):focus-visible {
   outline: 2px solid #80aaff;
   outline-offset: 5px;
 }
@@ -168,7 +168,7 @@ html:has(.public-home) {
   min-height: calc(100svh - var(--landing-header-height, 80px));
   box-sizing: border-box;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -176,19 +176,6 @@ html:has(.public-home) {
 }
 .landing-page-content {
   position: relative;
-}
-.landing-page[data-active="true"] > .landing-page-content {
-  animation: landing-page-enter 350ms ease-out;
-}
-@keyframes landing-page-enter {
-  from {
-    opacity: 0.45;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 .public-home .landing-page h2 {
   font-size: clamp(30px, 3.6vw, 48px);
@@ -583,20 +570,11 @@ html:has(.public-home) {
   margin-top: 32px;
   border-block: 1px solid #ffffff26;
 }
-.landing-requirements summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  min-height: 48px;
+.public-home .landing-requirements h3 {
+  padding-block: 16px 8px;
+  color: #fff;
   font-size: 15px;
-  list-style: none;
-}
-.landing-requirements summary::-webkit-details-marker {
-  display: none;
-}
-.landing-requirements[open] summary svg {
-  transform: rotate(180deg);
+  font-weight: 600;
 }
 .landing-requirements ul {
   display: grid;
