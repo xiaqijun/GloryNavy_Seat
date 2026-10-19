@@ -131,8 +131,8 @@ test("public home does not read private module or business data", async ({
     ),
   ).toBe(true);
   await expect(page.locator(".landing-stats")).toContainText("379");
-  await expect(page.locator(".landing-stat dt")).toHaveText(["军团角色", "在线角色", "本月击毁", "击毁价值"]);
-  await expect(page.locator(".landing-stat dd").nth(1)).toHaveText("8");
+  await expect(page.locator(".landing-stat dt")).toHaveText(["军团角色", "本月击毁", "击毁价值"]);
+  await expect(page.locator(".landing-stat dd")).toHaveText(["379", "105", "12.3B"]);
   await expect(page.locator(".landing-combat-chart")).toHaveCount(0);
   await expect(page.locator(".landing-stat dd[title], .landing-stat p")).toHaveCount(0);
 });
@@ -141,22 +141,9 @@ test("missing activity keeps unknown values and corporation data", async ({ page
   await setup(page, "anonymous");
   await page.route("**/api/v1/eve/public/activity", route => route.fulfill({json:{data:{corporation_id:98530802,combat:null,online:null}}}));
   await page.goto("/#strength");
-  await expect(page.locator(".landing-stat dd")).toHaveText(["379", "—", "—", "—"]);
+  await expect(page.locator(".landing-stat dd")).toHaveText(["379", "—", "—"]);
   await expect(page.locator(".landing-data-footer")).toContainText("公开战绩暂不可用");
   await expect(page.locator(".landing-combat-chart")).toHaveCount(0);
-});
-
-test("online values expire without waiting for another successful fetch", async ({ page }) => {
-  await setup(page, "anonymous");
-  let onlineExpiry = 0;
-  await page.route("**/api/v1/eve/public/activity", route => {
-    if (!onlineExpiry) onlineExpiry = Date.now() + 4000;
-    if (Date.now() >= onlineExpiry) return route.fulfill({status:503,json:{error:{message:"Unavailable"}}});
-    return route.fulfill({json:{data:{corporation_id:98530802,combat:null,online:{characters:2,covered_characters:3,bound_characters:4,updated_at:new Date().toISOString(),expires_at:new Date(onlineExpiry).toISOString()}}}});
-  });
-  await page.goto("/#strength");
-  await expect(page.locator(".landing-stat dd").nth(1)).toHaveText("2");
-  await expect(page.locator(".landing-stat dd").nth(1)).toHaveText("—", {timeout:8000});
 });
 
 test("signed-in visitors keep introduction with a workspace link", async ({

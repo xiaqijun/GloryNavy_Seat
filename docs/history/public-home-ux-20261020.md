@@ -24,3 +24,13 @@
 - 线上 `/`、`/login`、`/workspace` 均 200，匿名 modules、eve/status、approval/context、wallet/summary 均 401，OpenResty 配置检查通过。
 - 公网 HTML、主 JS、首页 JS/CSS 与测试产物字节一致。HTML SHA-256 `fdb507ae5083281be247aae2eff149acf1346e35699752ad2a73b4229d94bead`；主包 `index-Pb1rymQe.js`、首页 `landing-page-CfMQDmtQ.js` / `landing-page-DQm6UYmf.css`。
 - 本轮本地视觉矩阵通过，线上完整浏览器目视矩阵仍在 WEB-01，不把资源字节核对当作实际客户端验收。忽略目录 `.local/home-ux/` 保存构建清单、原始截图和发布辅助脚本。
+
+## 移除在线角色
+
+2026-10-20 用户追加要求：公开首页移除“在线角色”。只保留军团角色、本月击毁、击毁价值，桌面三列、600px 以下三行，手机读数右对齐。清理首页在线到期定时器和动态刷新周期，战绩维持 30 秒查询；后端接口和成员区在线采样不变。
+
+- GitNexus upstream：PublicStrength 仅由 LandingPage 调用，LOW，涉及首页语言与样式流程。索引落后两次首页布局/文档提交；当前函数源码已直接核对。
+- 更新原首页统计断言，移除不再适用的首页在线到期用例；未为纯排版添加实现镜像测试。
+- TypeScript、Vite 构建、受影响代码 lint 通过；19 项首页回归全部通过，包含匿名权限、未知数据、语言与各尺寸布局、登录和滚动行为。
+- 1440/375/320px × 中英文 6 项逐屏检查通过；已目视复核[桌面三项统计](../ui/reviews/public-home-stats-20261020/1440-zh-CN-strength.png)与[320px 英文三行](../ui/reviews/public-home-stats-20261020/320-en-strength.png)。截图为本地测试夹具，不是生产数据。
+- 待发布，生产仍为 `v0.1.0-public-home-ux-20261020`。

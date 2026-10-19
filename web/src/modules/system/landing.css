@@ -338,7 +338,7 @@ html:has(.public-home) {
 }
 .landing-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 8px 0 0;
 }
 .landing-stat {
@@ -822,23 +822,26 @@ html:has(.public-home) {
     padding: 8px 20px 24px;
   }
   .landing-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px 0;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
   .landing-stat,
   .landing-stat + .landing-stat {
-    padding: 0 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
     border: 0;
   }
-  .landing-stat:nth-child(even) {
-    border-left: 1px solid #d8dee7;
-    padding: 0 0 0 20px;
+  .landing-stat + .landing-stat {
+    border-top: 1px solid var(--landing-line);
   }
   .landing-stat dd {
-    font-size: clamp(28px, 8vw, 40px);
-  }
-  .public-home:lang(en) .landing-stat dt {
-    min-height: 3em;
+    flex-shrink: 0;
+    margin: 0;
+    font-size: clamp(28px, 8vw, 36px);
+    text-align: right;
   }
   .landing-activity-grid {
     grid-template-columns: 1fr;

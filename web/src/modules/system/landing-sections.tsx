@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowUpRight,
   RefreshCw,
@@ -27,33 +27,12 @@ export function PublicStrength() {
     queryKey: ["public", "corporation-activity"],
     queryFn: ({ signal }) => getPublicActivity(signal),
     staleTime: 15_000,
-    refetchInterval: (query) => {
-      const expires = query.state.data?.online?.expires_at;
-      return expires
-        ? Math.min(
-            30_000,
-            Math.max(1_000, Date.parse(expires) - Date.now() + 50),
-          )
-        : 30_000;
-    },
+    refetchInterval: 30_000,
     retry: 1,
   });
   const combat = activity.data?.combat;
-  const online = activity.data?.online;
-  const [clock, setClock] = useState(Date.now);
-  useEffect(() => {
-    if (!online) return;
-    const delay = Date.parse(online.expires_at) - Date.now();
-    if (delay <= 0) return;
-    const timer = setTimeout(
-      () => setClock(Date.now()),
-      Math.min(delay + 10, 2147483647),
-    );
-    return () => clearTimeout(timer);
-  }, [online]);
-  const now = Math.max(clock, activity.dataUpdatedAt);
-  const onlineFresh =
-    online && Date.parse(online.expires_at) > now && !activity.isError;
+  const [openedAt] = useState(Date.now);
+  const now = Math.max(openedAt, activity.dataUpdatedAt);
   const current = combat?.months.find(
     (m) => m.month === new Date(now).toISOString().slice(0, 7),
   );
@@ -66,12 +45,6 @@ export function PublicStrength() {
     [
       data ? data.member_count.toLocaleString(getLocale()) : "—",
       msg("军团角色"),
-    ],
-    [
-      onlineFresh && online.characters !== null
-        ? online.characters.toLocaleString(getLocale())
-        : "—",
-      msg("在线角色"),
     ],
     [current?.kills?.toLocaleString(getLocale()) ?? "—", msg("本月击毁")],
     [
