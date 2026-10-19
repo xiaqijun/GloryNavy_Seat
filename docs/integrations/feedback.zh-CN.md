@@ -12,7 +12,7 @@
 
 Goose 100 在 `feedback_images` 保存字节数并兼容旧 content，新增私有 `feedback_image_chunks`，每块最多 1 MiB，按图片/序号存储。新图片元数据、所有分块、正文/回复和 revision 在同一事务提交，失败全部回滚；SHA-256 比较仍覆盖原图全部字节和顺序。新旧图片都按父反馈当前归属/当前站点管理员鉴权；账号合并无需复制分块或新增参与方。详情只返回 `images: [{id,mime}]`，列表/提醒不含原图。
 
-`GET /api/v1/feedback/tickets/{id}/images/{image}` 逐块读取原图，返回正确 MIME/Content-Length、`private, no-store` 与 `nosniff`；无权、错父单或不存在均 404。前端缩略图链接到此接口。已有分块时禁止回退忽略分块的旧程序，Goose 100 Down 拒绝有分块的库。备份仍使用原数据库备份，含全部图片分块，无外部永久文件目录。
+`GET /api/v1/feedback/tickets/{id}/images/{image}` 逐块读取原图，返回正确 MIME/Content-Length、`private, no-store` 与 `nosniff`；无权、错父单或不存在均 404。前端缩略图链接到此接口。Goose 100 的 size_bytes 要求使旧程序图片写入不兼容，不能只切回旧后端；已有分块时禁止回退，Down 拒绝有分块的库。恢复旧程序须先审查数据与迁移，优先向前修复。备份仍使用原数据库备份，含全部图片分块，无外部永久文件目录。
 
 代理部署必须同步 `deploy/edge-api-proxy.conf` 中专用 `/api/v1/feedback/` 段：`client_max_body_size 0`、关闭请求/响应缓冲并放宽无数据超时。其他业务继续沿用原 8m 等限制。发布先后端、代理配置检查/重载、再前端；生产不提交测试反馈或发送通知。
 

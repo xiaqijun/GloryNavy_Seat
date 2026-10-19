@@ -1,5 +1,19 @@
 # Linux 生产部署
 
+## 2026-10-19 反馈截图取消大小限制
+
+前后端 `v0.1.0-feedback-unlimited-20261019` 来自干净且已推送 main 提交 `0bd2c5820e89bc720edf91d51ed8d13b9111d0f8`，Goose 100。去除文件/像素及新版 multipart 请求固定上限，使用 File/Blob 预览、私有暂存、1 MiB 数据库分块和逐块原图读取；保留每次 3 张 PNG/JPG、权限、正文、幂等与原子事务。兼容旧 JSON/base64 的 8 MiB 保护与旧 content 图片，新 UI 有图时使用 multipart。详见[反馈指南](integrations/feedback.zh-CN.md)。
+
+隔离 PostgreSQL 业务、宿主反馈/合并/底座/元数据回归（race）和 go vet 通过；验证三张各超过 12 MiB 的图片、20 MP PNG、旧图、第二分块失败回滚、断传/未知参数清理、CSRF/越权/错父单、原图逐字节读取。真实 TCP 测试将宿主总读写 deadline 设为 100ms，分段上传停顿 250ms 后仍完成，证明专用上传正确覆盖普通总 deadline。前端类型/构建、9 项单测、30 项中英文 1280/375/320px 浏览器测试通过，最终 Blob 预览释放调整后的 12 项截图流程再通过并检查窄屏截图；lint 无错误，只有已有混合导出 Fast Refresh 提示。GitNexus 刷新后暂存/main 比较 CRITICAL（24 文件、27 条反馈流程），已核对 SQL、路由、分块与代理边界。
+
+140 个前端文件与受测产物一致，12 个后端/查询/迁移/测试文件与隔离测试及发布源码按换行归一相同；同一 main 构建 6 个 Linux 程序。停服备份并激活后端，随后备份/校验/重载代理，再激活前端。数据库备份 `/var/backups/glorynavy/before-v0.1.0-feedback-unlimited-20261019-20261019T012406Z.dump`（260122243 bytes）及同前缀 `.env`/`.meta.json` 保留。本轮未演练恢复。
+
+仅 `/api/v1/feedback/` 使用 `client_max_body_size 0`、请求/响应缓冲关闭及 300 秒无数据超时；其他 API 保持原配置。代理文件 `/opt/1panel/www/sites/zz-glorynavy-seat/proxy/api.conf` 修改前 SHA256 为 `a6c9d534892754c126b592b0d29fe989974aa4c23e29d995fda63f39ba67b778`，备份 `/var/backups/glorynavy-edge/before-v0.1.0-feedback-unlimited-20261019-20261019T012526Z-api.conf`，新 SHA256 `d33cbb7f0a767c5af0420b1e2ab578ea483884bc3ff1c663f2ed40c155644703`。nginx -t、reload 及与发布包一致性通过；失败时脚本会恢复原配置。
+
+线上 active/running/ready、NRestarts=0、Goose 100，首页/反馈 200，匿名列表/详情/原图 401；只发送声明 12 MiB 的匿名请求头验证返回 401 而非旧 413，未上传文件或写反馈。HTML SHA256 `25752e11f20c76c9f08607f7eaa5b961e03cdf486c711f57463e3c1bdc200dc6`，完整发布清单与主包/反馈脚本字节一致。反馈/回复/图片/分块均 0；提醒 true/revision 4、exchange_result/loan_result/welfare_result、发件授权 ready、发送/回执 0，QQ false/绑定 0，未改通知设置。
+
+优先向前修复。Goose 100 要求图片元数据含 size_bytes，不能只切回旧后端，否则旧图片写入不兼容；存在分块时禁止回退，Down 会拒绝。恢复旧程序必须先核查是否已产生新数据并审查对应迁移，不能用旧备份覆盖新增反馈。旧代理备份仅供受控恢复，重新启用 8m 会限制新版大图。材料位于 `.local/feedback-unlimited/`，远程源码 `/root/glorynavy-feedback-unlimited-release-20261019`；隔离数据库与本地预览已清理。
+
 ## 2026-10-19 反馈截图
 
 前后端 `v0.1.0-feedback-images-20261019` 来自干净且已推送 main 提交 `0ef24896664bb4aab084fc179f41976eb4c48795`，Goose 99 新增私有 `feedback_images` 与父反馈/回复约束。每次 0–3 张 PNG/JPG、每张 2,000,000 bytes/1600 万像素，原子保存、SHA-256 重试比较、归属/当前站点管理员鉴权及合并跟随；详情只返回图片元数据。API JSON 上限 8 MiB，生产边缘原 8m 配置可容纳三张满额图片，无环境、角色或通知配置变更。具体行为见[反馈指南](integrations/feedback.zh-CN.md)。
