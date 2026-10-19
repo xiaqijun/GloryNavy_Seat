@@ -71,4 +71,14 @@ GitNexus 对 Apply 的上游影响为 LOW：直接调用 Board 与损失 Records
 
 线上只读确认当前一份待审超级航母申请已保存 finished 合同、items_ready=true、4 项物品，卖方名称未缓存。此轮展示修复直接使用既有证据，不要求重提；缺失卖方名称仍以角色/军团 ID 表示，不编造名称。生产没有测试申请、审批、付款或发送。
 
-类型/构建、11 项合同协议/金额/词表单测及受影响 oxlint 通过（仅既有 Capital hook Fast Refresh 提示）。首轮 60 项浏览器流程中 54 项通过、6 项因购舰凭证时间省略年份失败，改用已有含年份的合同日期格式并补上物品列表键盘焦点；最终 30 项中英文 1280/375/320px 受影响流程通过。已复核[桌面](../ui/reviews/welfare/capital-purchase-evidence-desktop.png)及[320px](../ui/reviews/welfare/capital-purchase-evidence-narrow.png)截图（模拟数据）。纯前端变更，不重复运行后端业务测试。GitNexus 查询定位到 ApprovalDetail/presentCases，较新 CapitalCaseContent/CapitalPurchaseEvidence 未收录；已手动核对 CaseView 到审批/个人详情的共享调用，以及读取已有 detail.purchase 的边界。GitNexus 暂存/main 比较均 LOW（15 文件、12 个已索引变更、无已索引受影响流程），索引空边已由上述源码调用检查补足。发布结果待补充。
+类型/构建、11 项合同协议/金额/词表单测及受影响 oxlint 通过（仅既有 Capital hook Fast Refresh 提示）。首轮 60 项浏览器流程中 54 项通过、6 项因购舰凭证时间省略年份失败，改用已有含年份的合同日期格式并补上物品列表键盘焦点；最终 30 项中英文 1280/375/320px 受影响流程通过。已复核[桌面](../ui/reviews/welfare/capital-purchase-evidence-desktop.png)及[320px](../ui/reviews/welfare/capital-purchase-evidence-narrow.png)截图（模拟数据）。纯前端变更，不重复运行后端业务测试。GitNexus 查询定位到 ApprovalDetail/presentCases，较新 CapitalCaseContent/CapitalPurchaseEvidence 未收录；已手动核对 CaseView 到审批/个人详情的共享调用，以及读取已有 detail.purchase 的边界。GitNexus 暂存/main 比较均 LOW（15 文件、12 个已索引变更、无已索引受影响流程），索引空边已由上述源码调用检查补足。前端已从干净且推送的 main `be524fa08bf092f8473595d25baa202eb1b131a6` 发布 `v0.1.0-purchase-evidence-20261019`，143 个文件与最终测试产物一致。后端保持 `v0.1.0-capital-contract-fix-20261019`、Goose 101；无迁移、重启或业务写入。公开页面 200、匿名福利/审批业务 401、完整发布清单及 HTML/主包/福利页字节校验通过，OpenResty 正常。
+
+
+撤回本次展示时，仅将前端切回 `v0.1.0-capital-contract-fix-20261019`；后端和数据库保持不变，不用历史备份覆盖业务数据。
+
+公开 HTML SHA256 `0cb403039c0db0a1eb812ccd384207de4a3f20c1180c5be996e2c3ee6d15a47c`。静态脚本核对：
+
+- `index-BdmY3-ZB.js`：`5b777b97d104e511fab2be0a44e0b88139ac700d7f66f37aa0391a53fe1aca3d`
+- `page-C-bTp39T.js`：`d4740ca150ae448bd200f3de9dd38ff44220576645cd0e4fc75aa2901258d9a0`
+
+本轮材料位于忽略目录 `.local/purchase-evidence/`；已执行的浏览器检查使用模拟数据，生产只读核对现有凭证，未执行真实审批。

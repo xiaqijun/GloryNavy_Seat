@@ -1,5 +1,11 @@
 # Linux 生产部署
 
+## 2026-10-19 旗舰审批购舰凭证明细（仅前端）
+
+前端已从干净且推送的 main `be524fa08bf092f8473595d25baa202eb1b131a6` 发布 `v0.1.0-purchase-evidence-20261019`，143 个文件与最终测试产物一致。后端保持 `v0.1.0-capital-contract-fix-20261019`、Goose 101；无迁移、重启或业务写入。公开页面 200、匿名福利/审批业务 401、完整发布清单及 HTML/主包/福利页字节校验通过，OpenResty 正常。 验证详见[交付记录](history/capital-subsidy-20261019.md)。
+
+撤回本次展示时，仅将前端切回 `v0.1.0-capital-contract-fix-20261019`；后端和数据库保持不变，不用历史备份覆盖业务数据。
+
 ## 2026-10-19 旗舰合同筛选与核验提示
 
 前后端已从干净且推送的 main `0ab8da3026d5c6a864b7e59e64b3c7b8706f552c` 发布 `v0.1.0-capital-contract-fix-20261019`，Goose 101 不变。143 个前端文件及 3 个后端/测试文件与测试产物/源码一致；服务 active/running/ready、NRestarts=0，页面 200、匿名业务 401、完整清单与公开 HTML/主包/福利脚本字节校验通过，OpenResty 正常。 无新环境配置或数据库迁移。备份 `/var/backups/glorynavy/before-v0.1.0-capital-contract-fix-20261019-20261019T074851Z.dump`（261477459 bytes），同前缀环境/元数据保留，未演练恢复。当前旗舰规则及补损状态未变；详情见[交付证据](history/capital-subsidy-20261019.md)。
