@@ -30,3 +30,9 @@ GitNexus 在编辑前分析 PublicStrength、FleetChapters，均为 LOW，唯一
 - 首页样式 `landing-page-C20eZorI.css`：`49c0f90dc7b35cc0210a2ab8cea66b26d62920b8cdfa77e28aae8caeabea2cfc`。
 - In-app browser 已在生产打开新版页面并读取真实公开统计，首屏截图见[线上实拍](../ui/reviews/public-home-impact-20261019/live.png)。未代用户登录或发送社群消息。
 - 仅前端发布，后端保持 `v0.1.0-exchange-withdraw-20261019`、Goose 103；无后端重启或业务写入。可切回前端 `v0.1.0-public-home-optimize-20261019`，不涉及数据库回退。
+
+## 撤回
+
+2026-10-19 用户反馈“更丑了”，已通过既有边缘发布脚本切回 `v0.1.0-public-home-optimize-20261019`。来源与完整清单校验通过，OpenResty 配置正常，首页 200。恢复首页三份源码及其回归用例，不回退其他业务改动，不修改数据库。二轮截图留作否决方案的历史证据；后续先展示构图预览，选择后再实现。
+
+恢复后再次验证：公开 `/`、`/login`、`/workspace` 为 200，匿名业务接口为 401，HTML 及主包、首页 JS/CSS 与旧版文件逐字节一致。源码与用例逐字节等于 `d76d31a`，没有重跑历史测试或将历史测试记作本轮通过。

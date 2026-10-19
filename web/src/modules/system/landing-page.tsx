@@ -71,7 +71,54 @@ export default function LandingPage() {
             });
           });
       });
-      // Public data can change the height of the hero after reveal triggers are built.
+      motion.add(
+        "(min-width: 1000px) and (min-height: 650px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          const panels = gsap.utils.toArray<HTMLElement>(
+            ".landing-chapter-panel",
+          );
+          const markers = gsap.utils.toArray<HTMLElement>(
+            ".landing-chapter-progress span",
+          );
+          gsap.set(".landing-chapter-panels", {
+            display: "grid",
+          });
+          gsap.set(panels, {
+            gridArea: "1 / 1",
+          });
+          gsap.set(panels.slice(1), {
+            autoAlpha: 0,
+            y: 60,
+          });
+          gsap.set(markers.slice(1), { opacity: 0.22 });
+          const story = gsap.timeline({
+            scrollTrigger: {
+              trigger: ".landing-chapters",
+              start: () =>
+                `top ${root.current?.querySelector(".landing-topbar")?.getBoundingClientRect().height ?? 80}px`,
+              end: "+=100%",
+              pin: true,
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
+          });
+          story.to(
+            ".landing-chapter-art",
+            { scale: 1.13, xPercent: 5, duration: 5, ease: "none" },
+            0,
+          );
+          panels.slice(1).forEach((panel, index) => {
+            const at = 1 + index * 2;
+            story
+              .to(panels[index], { autoAlpha: 0, y: -50, duration: 0.5 }, at)
+              .to(panel, { autoAlpha: 1, y: 0, duration: 0.6 }, at + 0.2)
+              .to(markers[index], { opacity: 0.22, duration: 0.4 }, at)
+              .to(markers[index + 1], { opacity: 1, duration: 0.4 }, at + 0.45);
+          });
+        },
+      );
+      // Public data arrives after the timeline is built. Re-measure downstream
+      // pin/reveal offsets when that section's layout changes.
       let refreshFrame = 0;
       const strength = root.current?.querySelector(".landing-strength");
       const observer =
@@ -154,7 +201,6 @@ export default function LandingPage() {
             className="landing-hero-body landing-width"
             aria-labelledby="landing-title"
           >
-            <div className="landing-orbit" aria-hidden="true" />
             <img
               className="landing-titan"
               src="/images/home-avatar.png"
@@ -191,8 +237,9 @@ export default function LandingPage() {
               <span>{msg("神使级 · 泰坦")}</span>
             </div>
           </section>
-          <PublicStrength />
         </div>
+
+        <PublicStrength />
 
         <section
           id="about"
