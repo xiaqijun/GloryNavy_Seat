@@ -37,3 +37,6 @@
 类型/构建、6 项合同协议及旗舰金额单测通过；中英文桌面 14、手机 28 项流程及 6 项加载/长名称/输入法流程通过。截图复核发现限高列表缩小隐式行高、金额越出行边界；补上按内容确定行高并增加几何边界检查后，18 项受影响流程复跑通过。已复核[桌面](../ui/reviews/welfare/capital-picker-desktop.png)及[320px 英文](../ui/reviews/welfare/capital-picker-narrow.png)。lint 无错误，原 capital hook 的 Fast Refresh 提示保留。没有生产测试申请、审批、付款或消息发送。
 
 GitNexus 对 Apply 的上游影响为 LOW：直接调用 Board 与损失 Records；只修改旗舰分支，其他入口保持。索引落后 9 次提交，CapitalPreview 和测试 setup 无索引结果，已人工核对调用和新增独立组件。提交前 staged/main 比较均为 LOW（14 文件含 2 张截图，12 个已索引变更）；无已索引受影响流程，索引空边已按前述实际调用补查。
+
+
+追加前端已从干净且推送的 main `20c7e0a337f6598a279e1c0727be8e6275ba612a` 发布 `v0.1.0-capital-contract-picker-20261019`，143 个文件与最终测试构建字节一致。后端保持 capital-flow、Goose 101，没有重启或迁移。页面 200、匿名福利/审批业务 401、完整发布清单和 OpenResty 检查正常；后端 active/running/ready 200、NRestarts=0。公开 HTML SHA256 `4602086a9dfd554cea779d0d06e9746ab80b729c68c11a42c05f54ff80922ca8`；`index-BrTi1ZTw.js` 为 `d0bf5a96e4865fd0a5a8a46e8420243ebbb90f050246d404b3d5f1d58b0fa534`，`page-teUuVAf2.js` 为 `5369cfbc957542b5694eec4ac6ba51985ac5b40c234341c7035cdc9c071fd416`，均与发布包一致。仅前端回退到 capital-flow 即恢复手填 ID，保留后端与数据。构建/验证材料在忽略目录 `.local/capital-contract-picker/`。
