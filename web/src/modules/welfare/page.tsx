@@ -1671,6 +1671,10 @@ function LossPolicyEditor({
   const [dailyCap, setDailyCap] = useState(capValue(policy?.config.loss_daily_cap_minor));
   const [weeklyCap, setWeeklyCap] = useState(capValue(policy?.config.loss_weekly_cap_minor));
   const [monthlyCap, setMonthlyCap] = useState(capValue(policy?.config.loss_monthly_cap_minor));
+  let automatic = api.lossPeriodCaps();
+  try {
+    automatic = api.lossPeriodCaps({ loss_daily_cap_minor: optionalMinor(dailyCap) });
+  } catch { /* Keep partially entered amounts editable; submit validates them. */ }
   return (
     <Editor
       title={msg("{0}设置", api.projectLabel(kind))}
@@ -1687,9 +1691,9 @@ function LossPolicyEditor({
           limit > 100000000000000 ||
           daily > 100000000000000 ||
           (daily > 0 && daily < 100) ||
-          weekly > 100000000000000 ||
+          weekly > 700000000000000 ||
           (weekly > 0 && weekly < 100) ||
-          monthly > 100000000000000 ||
+          monthly > 3000000000000000 ||
           (monthly > 0 && monthly < 100)
         )
           throw new Error(msg("请填写有效的补损上限"));
@@ -1725,11 +1729,11 @@ function LossPolicyEditor({
       />
       <div className="welfare-period-caps wide">
         <Field label={msg("每人每日额度 / ISK")} value={dailyCap} onChange={setDailyCap} type="number" />
-        <Field label={msg("每人每周上限 / ISK")} value={weeklyCap} onChange={setWeeklyCap} type="number" />
-        <Field label={msg("每人每月上限 / ISK")} value={monthlyCap} onChange={setMonthlyCap} type="number" />
+        <Field label={msg("每人每周上限 / ISK")} value={weeklyCap || capValue(automatic.weekly)} onChange={v => setWeeklyCap(v === "0" ? "" : v)} type="number" />
+        <Field label={msg("每人每月上限 / ISK")} value={monthlyCap || capValue(automatic.monthly)} onChange={v => setMonthlyCap(v === "0" ? "" : v)} type="number" />
       </div>
       <p className="wide">
-        {msg("日额度不足时按周/月上限审批；周/月未设置则顺延占用后续日额度。")}
+        {msg("周/月留空或填 0 时，按日额度 × 7 / × 30 自动计算。")}
       </p>
     </Editor>
   );
@@ -2186,9 +2190,9 @@ export function CaseView({
               : msg("不限制")}
           </span>
           {([
-            ["日额度", policy?.config.loss_daily_cap_minor],
-            ["周额度", policy?.config.loss_weekly_cap_minor],
-            ["月额度", policy?.config.loss_monthly_cap_minor],
+            ["日额度", api.lossPeriodCaps(policy?.config).daily],
+            ["周额度", api.lossPeriodCaps(policy?.config).weekly],
+            ["月额度", api.lossPeriodCaps(policy?.config).monthly],
           ] as const).map(([label, cap]) =>
             cap ? (
               <span key={label}>

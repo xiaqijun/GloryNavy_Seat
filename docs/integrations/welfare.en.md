@@ -1,5 +1,13 @@
 # Corporation welfare
 
+## Automatic reimbursement period caps (2026-10-19)
+
+This supersedes the older daily-only advance rule below. With a positive daily allowance, each missing/zero weekly cap becomes daily × 7 and each missing/zero monthly cap becomes daily × 30, fixed regardless of month length. Positive manual caps are preserved independently. Without a daily allowance, missing period caps remain unlimited. Existing settings work immediately without saving again.
+
+Stored zero/omitted caps retain automatic mode: changing daily updates automatic periods. API policies expose stored settings; loss_quotas exposes effective caps. Approval enforces and freezes the same effective configuration. A claim may exceed daily, but both weekly/monthly total ceilings include approved amounts and other same-period pending reservations. Beijing calendar days, Monday–Sunday weeks and calendar months remain; ×30 is an amount multiplier, not a rolling 30-day window. Daily/weekly/monthly maxima are 10^14 / 7×10^14 / 3×10^15 ISK hundredths; per-claim limits are unchanged.
+
+Daily is a calculation basis, not an approval ceiling. New approvals no longer create daily advances. Existing Goose 101 allocations retain dates, cancellation release and parent account ownership without rewriting or automatic approvals. No new migration; deploy frontend/backend together. Prefer forward fixes: rollback loses automatic ceilings and older code rejects the expanded period-cap range.
+
 ## Daily reimbursement advances (2026-10-19, Goose 101)
 
 This supersedes the older rule treating every period as a hard ceiling. Rates and per-claim caps still apply first. When a weekly or monthly cap is configured, approval may exceed the daily allowance, but the full award plus approved usage and other same-period pending reservations must satisfy every configured weekly/monthly cap. These caps are total ceilings, not additional pools; payment is not clipped to the daily allowance.

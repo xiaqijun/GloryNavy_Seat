@@ -183,8 +183,9 @@ func validateConfig(k string, c Config) error {
 	if c.LossCapMinor != nil && (!cashLoss(k) || *c.LossCapMinor < 0 || *c.LossCapMinor > 100000000000000) {
 		return ErrInvalid
 	}
-	for _, cap := range []*int64{c.LossDailyCapMinor, c.LossWeeklyCapMinor, c.LossMonthlyCapMinor} {
-		if cap != nil && (!cashLoss(k) || *cap < 0 || (*cap > 0 && *cap < 100) || *cap > 100000000000000) {
+	for i, cap := range []*int64{c.LossDailyCapMinor, c.LossWeeklyCapMinor, c.LossMonthlyCapMinor} {
+		maximum := [...]int64{100000000000000, 700000000000000, 3000000000000000}[i]
+		if cap != nil && (!cashLoss(k) || *cap < 0 || (*cap > 0 && *cap < 100) || *cap > maximum) {
 			return ErrInvalid
 		}
 	}

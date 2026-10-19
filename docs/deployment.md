@@ -1,5 +1,13 @@
 # Linux 生产部署
 
+## 2026-10-19：补损日额度顺延
+
+前后端 `v0.1.0-loss-quota-20261019` 来自干净且推送的 main 提交 `6af3fd22fdae336118e4f0bb1bed3e9a6dccb3da`，Goose 101。备份 `/var/backups/glorynavy/before-v0.1.0-loss-quota-20261019-20261019T015711Z.dump`（260254956 字节），同前缀环境和元数据文件保留；未做恢复演练。Linux 六个程序从该提交构建，140 个前端文件与测试构建一致；未更改反馈专用代理。
+
+线上 active/running/ready、NRestarts=0；首页、福利、审批页面 200，匿名福利上下文/详情和审批上下文 401，发布清单和资源字节一致。HTML SHA256 `da877a6be809efee273633f306b4f145594858a3dce6deeabdc2bc273ce800fd`。日分配 0，solo approved 10/cancelled 3/completed 23/rejected 14/submitted 1，提醒 true/revision 4/原三类事件、发信授权 ready、发送/回执 0、QQ 关闭/绑定 0；未执行真实审批或发送消息。源码 `/root/glorynavy-loss-quota-release-20261019`，验证材料 `.local/loss-quota/`。
+
+已有日分配时禁止回退旧程序或 Goose 101 Down，优先向前修复；不能用发布前备份覆盖后续业务数据。
+
 ## 2026-10-19 反馈截图取消大小限制
 
 前后端 `v0.1.0-feedback-unlimited-20261019` 来自干净且已推送 main 提交 `0bd2c5820e89bc720edf91d51ed8d13b9111d0f8`，Goose 100。去除文件/像素及新版 multipart 请求固定上限，使用 File/Blob 预览、私有暂存、1 MiB 数据库分块和逐块原图读取；保留每次 3 张 PNG/JPG、权限、正文、幂等与原子事务。兼容旧 JSON/base64 的 8 MiB 保护与旧 content 图片，新 UI 有图时使用 multipart。详见[反馈指南](integrations/feedback.zh-CN.md)。

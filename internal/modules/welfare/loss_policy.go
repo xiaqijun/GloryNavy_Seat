@@ -9,6 +9,24 @@ import (
 
 func cashLoss(kind string) bool { return kind == "srp" || kind == "solo" }
 
+// Zero/omitted period caps follow the daily allowance. Keep the stored zero
+// so later daily edits also update automatic caps; explicit caps stay fixed.
+func effectiveLossConfig(c Config) Config {
+	day := quotaCap(c.LossDailyCapMinor)
+	if day <= 0 || day > 100000000000000 {
+		return c
+	}
+	if quotaCap(c.LossWeeklyCapMinor) == 0 {
+		week := day * 7
+		c.LossWeeklyCapMinor = &week
+	}
+	if quotaCap(c.LossMonthlyCapMinor) == 0 {
+		month := day * 30
+		c.LossMonthlyCapMinor = &month
+	}
+	return c
+}
+
 func lossQuotaPeriods(now time.Time) (dayStart, dayEnd, weekStart, weekEnd, monthStart, monthEnd time.Time) {
 	zone := time.FixedZone("CST", 8*60*60)
 	local := now.In(zone)
@@ -65,7 +83,7 @@ func (s *Service) LossQuotas(ctx context.Context, actor string, corp int64, poli
 		if err := json.Unmarshal(p.Config, &c); err != nil {
 			return nil, err
 		}
-		configs[p.Kind] = c
+		configs[p.Kind] = effectiveLossConfig(c)
 	}
 	pending, err := store.PendingLosses(ctx, s.Pool, actor, corp)
 	if err != nil {
@@ -129,7 +147,7 @@ func (s *Service) lossPolicy(ctx context.Context, db store.DB, corp int64, kind 
 		if p.Kind == kind {
 			var cfg Config
 			err = json.Unmarshal(p.Config, &cfg)
-			return p, cfg, err
+			return p, effectiveLossConfig(cfg), err
 		}
 	}
 	return Policy{}, Config{}, nil
@@ -138,6 +156,7 @@ func (s *Service) lossPolicy(ctx context.Context, db store.DB, corp int64, kind 
 // Caller holds the welfare publication lock, then saves the allocation with
 // approval. Weekly/monthly totals remain hard ceilings; only daily can advance.
 func (s *Service) checkLossQuota(ctx context.Context, db store.DB, v Case, cfg Config) ([]store.LossQuotaSpan, error) {
+	cfg = effectiveLossConfig(cfg)
 	var now time.Time
 	if err := db.QueryRow(ctx, `SELECT now()`).Scan(&now); err != nil {
 		return nil, err

@@ -697,6 +697,15 @@ export function awardPreview(
   }
 }
 
+export function lossPeriodCaps(config?: Partial<Config>) {
+  const daily = config?.loss_daily_cap_minor || 0;
+  return {
+    daily,
+    weekly: config?.loss_weekly_cap_minor || daily * 7,
+    monthly: config?.loss_monthly_cap_minor || daily * 30,
+  };
+}
+
 export type GrowthStatus = {
   state: "met" | "missing" | "unknown" | "claimed" | "pending" | "closed";
   remaining_sp: number | null;

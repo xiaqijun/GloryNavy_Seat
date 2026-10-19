@@ -548,7 +548,7 @@ export const english: Record<string, string> = {
   "每人每日上限 / ISK": "Daily cap per account / ISK",
   "后续日额度": "Future daily allowance",
   "每人每日额度 / ISK": "Daily allowance per member / ISK",
-  "日额度不足时按周/月上限审批；周/月未设置则顺延占用后续日额度。": "Above the daily allowance, weekly/monthly caps apply. If neither is set, the excess uses future daily allowances.",
+  "周/月留空或填 0 时，按日额度 × 7 / × 30 自动计算。": "Leave weekly/monthly caps blank or enter 0 to use the daily allowance × 7 / × 30.",
   "每人每周上限 / ISK": "Weekly cap per account / ISK",
   "每人每月上限 / ISK": "Monthly cap per account / ISK",
   日额度: "Daily cap",

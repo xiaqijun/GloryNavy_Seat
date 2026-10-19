@@ -193,6 +193,29 @@ func TestLossQuotaConcurrentAdvanceReplayAndCancellation(t *testing.T) {
 		t.Fatal(err)
 	}
 	day := quotaDay(now)
+	// New daily-only policies now resolve to weekly/monthly ceilings.
+	current, err := store.LossQuotaDays(ctx, s.Pool, userID, 10, day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if used, future := dailyUsage(current, "srp", day); used != 60000 || future != 0 {
+		t.Fatal("automatic caps must not create new advances", used, future)
+	}
+	third := quotaPending(t, s, 8203)
+	if _, err := s.Execute(ctx, adminID, quotaApprove(third, 10001, 8203)); !errors.Is(err, ErrLossWeeklyQuota) {
+		t.Fatal("automatic weekly ceiling bypassed", err)
+	}
+	// Reconstruct already frozen allocations from the prior release. They
+	// must retain their dates through delivery, cancellation and account merge.
+	if _, err = s.Pool.Exec(ctx, `DELETE FROM welfare_loss_quota_days WHERE case_id IN ($1,$2)`, a.ID, b.ID); err != nil {
+		t.Fatal(err)
+	}
+	for i, v := range []Case{a, b} {
+		start := day + int64(i)*3
+		if err = store.SaveLossQuotaDays(ctx, s.Pool, v.ID, []store.LossQuotaSpan{{Start: start, End: start + 3, Amount: 10000}}); err != nil {
+			t.Fatal(err)
+		}
+	}
 	spans, err := store.LossQuotaDays(ctx, s.Pool, userID, 10, day)
 	if err != nil {
 		t.Fatal(err)
@@ -266,6 +289,19 @@ func TestLossQuotaSummaryPendingAndFrozenSettings(t *testing.T) {
 	if _, err := s.Execute(ctx, adminID, quotaApprove(first, 25000, 8301)); err != nil {
 		t.Fatal(err)
 	}
+	// Preserve a historical future allocation while new pending cases use
+	// the automatically derived period caps.
+	var now time.Time
+	if err := s.Pool.QueryRow(ctx, `SELECT now()`).Scan(&now); err != nil {
+		t.Fatal(err)
+	}
+	day := quotaDay(now)
+	if _, err := s.Pool.Exec(ctx, `DELETE FROM welfare_loss_quota_days WHERE case_id=$1`, first.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveLossQuotaDays(ctx, s.Pool, first.ID, []store.LossQuotaSpan{{Start: day, End: day + 2, Amount: 10000}, {Start: day + 2, End: day + 3, Amount: 5000}}); err != nil {
+		t.Fatal(err)
+	}
 	pending := quotaPending(t, s, 8302)
 	if _, err := s.Pool.Exec(ctx, `UPDATE welfare_cases SET detail=jsonb_set(detail,'{base_minor}','10000') WHERE id=$1`, pending.ID); err != nil {
 		t.Fatal(err)
@@ -276,7 +312,7 @@ func TestLossQuotaSummaryPendingAndFrozenSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	q := quotas[0]
-	if q.Daily.UsedMinor != 10000 || q.Daily.ReservedMinor != 0 || q.FutureUsedMinor != 15000 || q.FutureReservedMinor != 10000 || q.Weekly.UsedMinor != 25000 || q.Weekly.ReservedMinor != 10000 {
+	if q.Daily.UsedMinor != 10000 || q.Daily.ReservedMinor != 10000 || q.FutureUsedMinor != 15000 || q.FutureReservedMinor != 0 || q.Weekly.UsedMinor != 25000 || q.Weekly.ReservedMinor != 10000 || quotaCap(q.Weekly.CapMinor) != 70000 || quotaCap(q.Monthly.CapMinor) != 300000 {
 		t.Fatalf("%+v", q)
 	}
 	// Changing the daily setting does not rewrite already frozen future dates.
@@ -287,7 +323,7 @@ func TestLossQuotaSummaryPendingAndFrozenSettings(t *testing.T) {
 		t.Fatal(err)
 	}
 	q = quotas[0]
-	if q.FutureUsedMinor != 15000 || q.Daily.UsedMinor != 10000 || q.Daily.ReservedMinor != 10000 {
+	if q.FutureUsedMinor != 15000 || q.Daily.UsedMinor != 10000 || q.Daily.ReservedMinor != 10000 || quotaCap(q.Weekly.CapMinor) != 140000 || quotaCap(q.Monthly.CapMinor) != 600000 {
 		t.Fatalf("%+v", q)
 	}
 	if b, err := json.Marshal(q); err != nil || len(b) == 0 {
