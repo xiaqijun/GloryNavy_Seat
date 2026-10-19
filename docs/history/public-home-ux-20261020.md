@@ -53,4 +53,6 @@
 - 使用相同本地正常动效采样方法复测：134 帧中透明度低于 0.99 的帧数为 0，页面最终定位正确；不是不同设备的帧率保证。145 个测试构建文件已冻结 SHA-256，材料保存在忽略目录 `.local/home-motion/`。
 - 首次 GitNexus 增量刷新出现 Property 全文索引 Invalid UTF-8，随后变更检查中 LandingPage 的符号标识为空并错误关联数百条无关流程，报告 CRITICAL；已提示用户并暂停发布。使用 `analyze --force --index-only` 完整重建图和全文索引后恢复，最终 staged 和 compare/main 均 MEDIUM：9 个文件、11 个变更条目、4 条首页语言/样式流程，无截断或部分结果。另核对动态路由与实际差异。保留原协作规则，不提交工具自动重写的 AGENTS/CLAUDE 文件。
 
-发布结果将在实际完成后补充。
+- 北京时间 2026-10-20 01:05:29 发布前端 `v0.1.0-public-home-motion-20261020`，来源干净且推送的 main `4f2a878b7ea47bc50c7546d4e3f8725dda0596b2`；145 个文件与冻结测试清单一致，生产完整清单通过。上一版 `public-home-stats` 保留，无后端、权限或数据变更。
+- 线上 `/`、`/login`、`/workspace` 均 200，四个受保护接口匿名仍为 401，OpenResty 配置正常；公网 HTML、主包及首页 JS/CSS 与发布产物字节一致。HTML SHA-256 `92d35ba46f273c62a63ec47afb12ed9e8d21b38408ad9fb2ba078c2a78413c50`；首页资源 `landing-page-BQVd91Za.js` / `landing-page-qxsGuR3O.css`。
+- 使用无登录态的 Edge/Playwright 经临时本地 SOCKS 访问真实生产公开页，1440×900 菜单跳转、常驻五项要求、无重复入场和 375×812 深链重载、末项可达、无横向溢出检查通过，已目视复核两尺寸截图；未模拟生产 API。该定向核验不代替 WEB-01 全站/多设备完整矩阵，原始截图留在 `.local/home-motion/live-*.png`。
