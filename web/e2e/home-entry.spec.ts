@@ -8,7 +8,7 @@ test("language switching reloads anchored pages in both directions", async ({ pa
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await page.getByRole("button", {name:"切换为英文"}).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("heading", {name:"Our strength"})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"About us"})).toBeVisible();
   await expect(page).toHaveURL(/\?view=public#strength$/);
   await page.getByRole("button", {name:"Switch to Chinese"}).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
@@ -290,7 +290,7 @@ for (const width of [320, 375, 768, 1440]) {
         page.getByRole("heading", { name: "GloryNavy", exact: true }),
       ).toHaveCSS("opacity", "1");
       // Navigation remains reachable, with every target below the sticky header.
-      for (const id of ["strength", "about", "fleet", "join"]) {
+      for (const id of ["strength", "fleet", "support", "join"]) {
         await page.locator(`.landing-nav a[href="#${id}"]`).click();
     await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", `#${id}`);
         const topbar = await page.locator(".landing-topbar").boundingBox();
@@ -319,15 +319,15 @@ test("activities remain readable through navigation and leaving the page", async
     await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", `#${id}`);
     await expect(page.locator(`#${id}`)).toBeInViewport();
     if (id === "fleet") {
-      for (const activity of await page.locator(".landing-activity").all()) {
+      for (const activity of await page.locator("#fleet .landing-activity").all()) {
         await expect(activity).toBeInViewport();
         await expect(activity).toHaveCSS("opacity", "1");
       }
     }
     await expect(page.locator(".pin-spacer")).toHaveCount(0);
   }
-  await page.evaluate(() => document.querySelector("#about")!.scrollIntoView({ behavior: "instant", block: "start" }));
-  await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", "#about");
+  await page.evaluate(() => document.querySelector("#support")!.scrollIntoView({ behavior: "instant", block: "start" }));
+  await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", "#support");
   await page.setViewportSize({ width: 1440, height: 1400 });
   await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
   await expect(page.locator('.landing-nav a[aria-current="location"]')).toHaveAttribute("href", "#join");
@@ -363,4 +363,53 @@ test("unavailable public data never displays fabricated zero counts", async ({
     "href",
     "https://kook.vip/h9CYhU",
   );
+});
+
+
+test('wheel and keyboard page forward and backward; route cleanup',async({page})=>{
+ await setup(page,'signed-in'); await page.setViewportSize({width:1440,height:900});
+ await page.emulateMedia({reducedMotion:'no-preference'}); await page.goto('/');
+ await expect(page.locator('#home')).toHaveAttribute('data-active','true');
+ await page.mouse.move(700,450); await page.mouse.wheel(0,450);
+ await expect(page.locator('#strength')).toHaveAttribute('data-active','true');
+ await expect.poll(()=>page.locator('#strength').evaluate(el=>Math.round(el.getBoundingClientRect().top))).toBe(80);
+ await page.keyboard.press('PageDown');
+ await expect(page.locator('#fleet')).toHaveAttribute('data-active','true');
+ await expect.poll(()=>page.locator('#fleet').evaluate(el=>Math.round(el.getBoundingClientRect().top))).toBe(80);
+ await page.mouse.wheel(0,-450);
+ await expect(page.locator('#strength')).toHaveAttribute('data-active','true');
+ await expect.poll(()=>page.locator('#strength').evaluate(el=>Math.round(el.getBoundingClientRect().top))).toBe(80);
+ await page.locator('.landing-pager a[href="#fleet"]').click();
+ await expect(page.locator('#fleet')).toHaveAttribute('data-active','true');
+ await page.getByRole('link',{name:'进入工作台'}).click();
+ await expect(page).toHaveURL(/workspace$/);
+ await expect(page.locator('html')).toHaveCSS('scroll-snap-type','none');
+ expect(await page.locator('html').evaluate(el=>el.style.getPropertyValue('--landing-header-height'))).toBe('');
+ await page.goBack(); await expect(page.locator('#fleet')).toHaveAttribute('data-active','true');
+});
+test('legacy hash, short viewport, keyboard disclosure and copy',async({page,context})=>{
+ await setup(page,'anonymous'); await page.setViewportSize({width:320,height:568});
+ await page.emulateMedia({reducedMotion:'reduce'}); await context.grantPermissions(['clipboard-read','clipboard-write']);
+ await page.goto('/?view=public#about'); await expect(page).toHaveURL(/view=public#strength$/);
+ await expect(page.locator('#strength')).toHaveAttribute('data-active','true');
+ await page.locator('.landing-nav a[href="#join"]').click();
+ await page.getByRole('button',{name:'复制 QQ 群号'}).click();
+ expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe('674743797');
+ const summary=page.locator('.landing-requirements summary'); await summary.focus(); await page.keyboard.press('Enter');
+ await expect(page.locator('.landing-requirements')).toHaveAttribute('open');
+ await page.locator('.landing-requirements li').last().scrollIntoViewIfNeeded();
+ await expect(page.locator('.landing-requirements li').last()).toBeInViewport();
+ await page.locator('.landing-brand').click(); await expect(page.locator('#home')).toHaveAttribute('data-active','true');
+ await page.goto('/?error=cancelled'); await expect(page.getByRole('alert')).toHaveText('已取消登录，可以重新尝试。');
+});
+test('touch scrolling advances a page',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
+ const page=await context.newPage(); await setup(page,'anonymous'); await page.goto('/');
+ await expect(page.locator('#home')).toHaveAttribute('data-active','true');
+ const cdp=await context.newCDPSession(page);
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:180,y:700}]});
+ for(let y=650;y>=220;y-=50) await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:180,y}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await expect(page.locator('#strength')).toHaveAttribute('data-active','true');
+ await context.close();
 });
