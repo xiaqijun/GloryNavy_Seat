@@ -1,5 +1,7 @@
 # 项目文档
 
+最新交付：[旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。
+
 - 意见反馈：[中文指南](integrations/feedback.zh-CN.md)、[English](integrations/feedback.en.md)、[页面布局](ui/feedback.md)。
 
 - [快递服务](integrations/courier.zh-CN.md) / [English](integrations/courier.en.md) / [页面](ui/courier.md)：HA Logistics 路线、估价与合同复制。
