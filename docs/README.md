@@ -1,6 +1,6 @@
 # 项目文档
 
-最新交付：[同一奖励多份兑换（2026-10-19）](history/exchange-quantity-20261019.md) / [旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。
+最新交付：[公开首页优化（2026-10-19）](history/public-home-20261019.md) / [同一奖励多份兑换（2026-10-19）](history/exchange-quantity-20261019.md) / [旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。
 
 - 意见反馈：[中文指南](integrations/feedback.zh-CN.md)、[English](integrations/feedback.en.md)、[页面布局](ui/feedback.md)。
 

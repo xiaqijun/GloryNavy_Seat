@@ -44,14 +44,15 @@ export default function LandingPage() {
           ease: "power2.out",
         });
         gsap.to(".landing-titan", {
-          y: 100,
-          scale: 1.07,
+          y: () => (window.innerWidth <= 760 ? 24 : 80),
+          scale: 1.04,
           ease: "none",
           scrollTrigger: {
             trigger: ".landing-hero",
             start: "top top",
             end: "bottom top",
             scrub: true,
+            invalidateOnRefresh: true,
           },
         });
         gsap.utils
@@ -93,8 +94,9 @@ export default function LandingPage() {
           const story = gsap.timeline({
             scrollTrigger: {
               trigger: ".landing-chapters",
-              start: "top top",
-              end: "+=170%",
+              start: () =>
+                `top ${root.current?.querySelector(".landing-topbar")?.getBoundingClientRect().height ?? 80}px`,
+              end: "+=100%",
               pin: true,
               scrub: 0.6,
               invalidateOnRefresh: true,
@@ -124,7 +126,9 @@ export default function LandingPage() {
           ? undefined
           : new ResizeObserver(() => {
               cancelAnimationFrame(refreshFrame);
-              refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
+              refreshFrame = requestAnimationFrame(() =>
+                ScrollTrigger.refresh(),
+              );
             });
       if (strength && observer) observer.observe(strength);
       return () => {
@@ -150,7 +154,7 @@ export default function LandingPage() {
       <a className="skip-link" href="#main">
         {msg("跳转到主要内容")}
       </a>
-      <div className="landing-hero">
+      <div className="landing-topbar">
         <header className="landing-header landing-width">
           <Link
             to="/"
@@ -166,18 +170,13 @@ export default function LandingPage() {
             <span>GloryNavy</span>
           </Link>
           <nav className="landing-nav" aria-label={msg("军团介绍导航")}>
-            <a href="#about">{msg("关于我们")}</a>
             <a href="#strength">{msg("军团实力")}</a>
+            <a href="#about">{msg("关于我们")}</a>
             <a href="#fleet">{msg("舰队生活")}</a>
             <a href="#join">{msg("加入我们")}</a>
           </nav>
           <div className="landing-account">
             <LanguageSwitch />
-            {loginError && (
-              <p className="landing-login-error" role="alert">
-                {loginError}
-              </p>
-            )}
             {session.data?.session ? (
               <Link className="landing-login" to="/workspace">
                 {msg("进入工作台")}
@@ -188,7 +187,16 @@ export default function LandingPage() {
             )}
           </div>
         </header>
-        <main id="main" tabIndex={-1}>
+      </div>
+      <main id="main" tabIndex={-1}>
+        <div className="landing-hero">
+          {loginError && (
+            <div className="landing-width landing-error-wrap">
+              <p className="landing-login-error" role="alert">
+                {loginError}
+              </p>
+            </div>
+          )}
           <section
             className="landing-hero-body landing-width"
             aria-labelledby="landing-title"
@@ -210,120 +218,111 @@ export default function LandingPage() {
               <p className="landing-intro">
                 {msg("从第一次跃迁，到并肩出征。下一段故事，与你一起。")}
               </p>
-              <a className="landing-primary" href="#join">
-                {msg("加入我们")}
-                <ArrowUpRight size={19} aria-hidden="true" />
-              </a>
+              <div className="landing-hero-actions">
+                <a className="landing-primary" href="#join">
+                  {msg("加入我们")}
+                  <ArrowUpRight size={19} aria-hidden="true" />
+                </a>
+                <a className="landing-secondary" href="#strength">
+                  {msg("军团实力")}
+                  <ArrowDown size={16} aria-hidden="true" />
+                </a>
+              </div>
             </div>
             <div className="landing-hero-bottom">
-              <a href="#about">
+              <a href="#strength">
                 <ArrowDown size={16} aria-hidden="true" />
                 {msg("探索军团")}
               </a>
               <span>{msg("神使级 · 泰坦")}</span>
             </div>
           </section>
-        </main>
-      </div>
-
-      <section
-        id="about"
-        className="landing-about landing-width"
-        aria-labelledby="about-title"
-      >
-        <div className="landing-about-heading landing-reveal">
-          <p className="landing-kicker">01 / {msg("关于我们")}</p>
-          <h2 id="about-title">
-            {msg("星海很大，")}
-            <br />
-            {msg("一起走得更远。")}
-          </h2>
-          <p>
-            {msg(
-              "Glory Navy 是 EVE Online 国际服军团。我们因新伊甸相遇，在舰队中找到伙伴，也为每一次出发做好准备。",
-            )}
-          </p>
-          <div id="life" className="landing-life">
-            {[
-              [
-                "01",
-                "并肩出征",
-                "从集结到交战，与伙伴协作，在新伊甸留下属于我们的航迹。",
-              ],
-              [
-                "02",
-                "共同成长",
-                "交流配装，规划技能。在探索自己的飞行方式时，也有人与你同行。",
-              ],
-            ].map(([number, title, description]) => (
-              <article
-                className="landing-life-item landing-reveal"
-                key={number}
-              >
-                <span className="landing-number" aria-hidden="true">
-                  {number}
-                </span>
-                <div>
-                  <h3>{msg(title)}</h3>
-                  <p>{msg(description)}</p>
-                </div>
-              </article>
-            ))}
-          </div>
         </div>
-        <div className="landing-about-art landing-reveal" aria-hidden="true">
-          <img
-            src="/images/home-avatar.png"
-            alt=""
-            width="1400"
-            height="980"
-            loading="lazy"
-          />
-        </div>
-      </section>
 
-      <PublicStrength />
-      <FleetChapters />
-      <JoiningSteps />
-      <section id="join" className="landing-join" aria-labelledby="join-title">
-        <div className="landing-width landing-join-inner landing-reveal">
-          <div>
-            <p className="landing-kicker">05 / {msg("加入我们")}</p>
-            <h2 id="join-title">{msg("下一次跃迁，一起。")}</h2>
-            <p>{msg("加入招募群，认识下一次并肩出征的伙伴。")}</p>
+        <PublicStrength />
+
+        <section
+          id="about"
+          className="landing-about landing-width"
+          aria-labelledby="about-title"
+        >
+          <div className="landing-about-heading landing-reveal">
+            <p className="landing-kicker">{msg("关于我们")}</p>
+            <h2 id="about-title">
+              {msg("星海很大，")}
+              <br />
+              {msg("一起走得更远。")}
+            </h2>
           </div>
-          <div className="landing-join-action">
-            <div className="landing-contact-buttons">
-              <button
-                className="landing-primary"
-                onClick={() => void copyRecruitmentGroup()}
-              >
-                {copyState === "copied" ? (
-                  <Check size={18} aria-hidden="true" />
-                ) : (
-                  <Copy size={18} aria-hidden="true" />
-                )}
-                {copyState === "copied"
-                  ? msg("已复制群号")
-                  : msg("复制 QQ 群号")}
-              </button>
-              <a
-                className="landing-secondary"
-                href="https://kook.vip/h9CYhU"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {msg("加入 KOOK")}
-                <ArrowUpRight size={18} aria-hidden="true" />
-              </a>
+          <div className="landing-about-copy landing-reveal">
+            <p>
+              {msg(
+                "Glory Navy 是 EVE Online 国际服军团。我们因新伊甸相遇，在舰队中找到伙伴，也为每一次出发做好准备。",
+              )}
+            </p>
+            <a className="landing-text-link" href="#fleet">
+              {msg("舰队生活")}
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+
+        <FleetChapters />
+        <section
+          id="join"
+          className="landing-join"
+          aria-labelledby="join-title"
+        >
+          <div className="landing-width landing-join-inner landing-reveal">
+            <div>
+              <p className="landing-kicker">{msg("加入我们")}</p>
+              <h2 id="join-title">{msg("下一次跃迁，一起。")}</h2>
+              <p>{msg("加入招募群，认识下一次并肩出征的伙伴。")}</p>
             </div>
-            <span className="landing-copy-status" role="status">
-              {copyState === "failed"
-                ? msg("复制失败，请手动复制：674743797")
-                : msg("QQ 招募群：674743797")}
-            </span>
+            <div className="landing-join-action">
+              <span className="landing-group-number">
+                {msg("QQ 招募群：674743797")}
+              </span>
+              <div className="landing-contact-buttons">
+                <button
+                  className="landing-primary"
+                  onClick={() => void copyRecruitmentGroup()}
+                >
+                  {copyState === "copied" ? (
+                    <Check size={18} aria-hidden="true" />
+                  ) : (
+                    <Copy size={18} aria-hidden="true" />
+                  )}
+                  {copyState === "copied"
+                    ? msg("已复制群号")
+                    : msg("复制 QQ 群号")}
+                </button>
+                <a
+                  className="landing-secondary"
+                  href="https://kook.vip/h9CYhU"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {msg("加入 KOOK")}
+                  <ArrowUpRight size={18} aria-hidden="true" />
+                </a>
+              </div>
+              <span
+                className={`landing-copy-status${copyState === "failed" ? "" : " sr-only"}`}
+                role="status"
+              >
+                {copyState === "failed"
+                  ? msg("复制失败，请手动复制：674743797")
+                  : copyState === "copied"
+                    ? msg("已复制群号")
+                    : ""}
+              </span>
+            </div>
           </div>
-        </div>
+          <JoiningSteps />
+        </section>
+      </main>
+      <div className="landing-site-footer">
         <footer className="landing-footer landing-width">
           <span>GloryNavy</span>
           <p>{msg("EVE Online 玩家军团网站。EVE 及舰船素材归 CCP 所有。")}</p>
@@ -332,7 +331,7 @@ export default function LandingPage() {
             Tranquility
           </span>
         </footer>
-      </section>
+      </div>
     </div>
   );
 }

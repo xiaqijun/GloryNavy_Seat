@@ -18,9 +18,14 @@ export function PublicStrength() {
     queryKey: ["public", "corporation-activity"],
     queryFn: ({ signal }) => getPublicActivity(signal),
     staleTime: 15_000,
-    refetchInterval: query => {
+    refetchInterval: (query) => {
       const expires = query.state.data?.online?.expires_at;
-      return expires ? Math.min(30_000, Math.max(1_000, Date.parse(expires) - Date.now() + 50)) : 30_000;
+      return expires
+        ? Math.min(
+            30_000,
+            Math.max(1_000, Date.parse(expires) - Date.now() + 50),
+          )
+        : 30_000;
     },
     retry: 1,
   });
@@ -31,20 +36,32 @@ export function PublicStrength() {
     if (!online) return;
     const delay = Date.parse(online.expires_at) - Date.now();
     if (delay <= 0) return;
-    const timer = setTimeout(() => setClock(Date.now()), Math.min(delay + 10, 2147483647));
+    const timer = setTimeout(
+      () => setClock(Date.now()),
+      Math.min(delay + 10, 2147483647),
+    );
     return () => clearTimeout(timer);
   }, [online]);
   const now = Math.max(clock, activity.dataUpdatedAt);
-  const onlineFresh = online && Date.parse(online.expires_at) > now && !activity.isError;
-  const current = combat?.months.find(m => m.month === new Date(now).toISOString().slice(0, 7));
-  const shortNumber = (value: number) => value.toLocaleString(getLocale(), { notation: "compact", maximumFractionDigits: 1 });
+  const onlineFresh =
+    online && Date.parse(online.expires_at) > now && !activity.isError;
+  const current = combat?.months.find(
+    (m) => m.month === new Date(now).toISOString().slice(0, 7),
+  );
+  const shortNumber = (value: number) =>
+    value.toLocaleString("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
   const stats = [
     [
       data ? data.member_count.toLocaleString(getLocale()) : "—",
       msg("军团角色"),
     ],
     [
-      onlineFresh && online.characters !== null ? online.characters.toLocaleString(getLocale()) : "—",
+      onlineFresh && online.characters !== null
+        ? online.characters.toLocaleString(getLocale())
+        : "—",
       msg("在线角色"),
     ],
     [current?.kills?.toLocaleString(getLocale()) ?? "—", msg("本月击毁")],
@@ -61,12 +78,21 @@ export function PublicStrength() {
     >
       <div className="landing-width">
         <div className="landing-strength-heading landing-reveal">
-          <div>
-            <p className="landing-kicker">02 / {msg("军团实力")}</p>
-            <h2 id="strength-title">{msg("不止一艘舰船。")}</h2>
-          </div>
+          <h2 id="strength-title">{msg("军团实力")}</h2>
+          <a
+            className="landing-text-link"
+            href="https://zkillboard.com/corporation/98530802/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {msg("查看公开战绩")}
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </a>
         </div>
-        <dl className="landing-stats" aria-busy={query.isPending || activity.isPending}>
+        <dl
+          className="landing-stats"
+          aria-busy={query.isPending || activity.isPending}
+        >
           {stats.map(([value, label]) => (
             <div key={label} className="landing-stat landing-reveal">
               <dt>{label}</dt>
@@ -75,10 +101,24 @@ export function PublicStrength() {
           ))}
         </dl>
         <div className="landing-data-footer">
-          {query.isError && <span role="status">{msg("公开资料暂不可用")}</span>}
-          {!activity.isPending && !combat && <span role="status">{msg("公开战绩暂不可用")}</span>}
-          {(data?.stale || combat?.stale || (activity.isError && combat)) && <span role="status">{msg("最近可用快照")}</span>}
-          {(activity.isError || (!activity.isPending && !combat)) && <button className="landing-data-retry" onClick={() => void activity.refetch()}><RefreshCw size={14} aria-hidden="true" />{msg("重试")}</button>}
+          {query.isError && (
+            <span role="status">{msg("公开资料暂不可用")}</span>
+          )}
+          {!activity.isPending && !combat && (
+            <span role="status">{msg("公开战绩暂不可用")}</span>
+          )}
+          {(data?.stale || combat?.stale || (activity.isError && combat)) && (
+            <span role="status">{msg("最近可用快照")}</span>
+          )}
+          {(activity.isError || (!activity.isPending && !combat)) && (
+            <button
+              className="landing-data-retry"
+              onClick={() => void activity.refetch()}
+            >
+              <RefreshCw size={14} aria-hidden="true" />
+              {msg("重试")}
+            </button>
+          )}
           {query.isError ? (
             <button
               className="landing-data-retry"
@@ -88,14 +128,6 @@ export function PublicStrength() {
               {msg("重试")}
             </button>
           ) : null}
-          <a
-            href="https://zkillboard.com/corporation/98530802/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {msg("查看公开战绩")}
-            <ArrowUpRight size={15} aria-hidden="true" />
-          </a>
         </div>
       </div>
     </section>
@@ -120,7 +152,7 @@ export function FleetChapters() {
           />
         </div>
         <div className="landing-chapter-content">
-          <p className="landing-kicker">03 / {msg("舰队生活")}</p>
+          <p className="landing-kicker">{msg("舰队生活")}</p>
           <h2 id="fleet-title" className="sr-only">
             {msg("从集结，到下一次出发")}
           </h2>
@@ -156,7 +188,7 @@ export function FleetChapters() {
                   {number}
                 </span>
                 <h3>{msg(title)}</h3>
-                <h4>{msg(sub)}</h4>
+                <p className="landing-chapter-subtitle">{msg(sub)}</p>
                 <p>{msg(text)}</p>
                 <div className="landing-chapter-tags">
                   <span>{msg(a)}</span>
@@ -182,10 +214,9 @@ export function JoiningSteps() {
       className="landing-steps landing-width"
       aria-labelledby="steps-title"
     >
-      <div className="landing-reveal">
-        <p className="landing-kicker">04 / {msg("你的下一步")}</p>
-        <h2 id="steps-title">{msg("从认识彼此开始。")}</h2>
-      </div>
+      <h2 id="steps-title" className="sr-only">
+        {msg("你的下一步")}
+      </h2>
       <ol>
         {[
           [

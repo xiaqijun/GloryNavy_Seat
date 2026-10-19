@@ -8,7 +8,7 @@ test("language switching reloads anchored pages in both directions", async ({ pa
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await page.getByRole("button", {name:"切换为英文"}).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("heading", {name:"More than a single ship."})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"Our strength"})).toBeVisible();
   await expect(page).toHaveURL(/\?view=public#strength$/);
   await page.getByRole("button", {name:"Switch to Chinese"}).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
@@ -245,7 +245,7 @@ test("public login uses existing POST flow", async ({ page }) => {
   });
   await page.goto("/");
   await page.getByRole("button", { name: "使用 EVE Online 登录" }).click();
-  await expect(page).toHaveURL(/\/\?error=cancelled$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("alert")).toHaveText("已取消登录，可以重新尝试。");
 });
 
@@ -281,7 +281,7 @@ for (const width of [320, 375, 768, 1440]) {
       const box = await page.locator(".landing-login").boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-      await expect(page.locator("#join h2")).toHaveCSS("opacity", "1");
+      await expect(page.locator("#join-title")).toHaveCSS("opacity", "1");
       await expect(page.locator(".pin-spacer")).toHaveCount(0);
       for (const panel of await page.locator(".landing-chapter-panel").all()) {
         await expect(panel).toBeVisible();
@@ -289,6 +289,20 @@ for (const width of [320, 375, 768, 1440]) {
       await expect(
         page.getByRole("heading", { name: "GloryNavy", exact: true }),
       ).toHaveCSS("opacity", "1");
+      // Navigation remains reachable, with every target below the sticky header.
+      for (const id of ["strength", "about", "fleet", "join"]) {
+        await page.locator(`.landing-nav a[href="#${id}"]`).click();
+        const topbar = await page.locator(".landing-topbar").boundingBox();
+        const target = await page.locator(`#${id}`).boundingBox();
+        expect(target!.y).toBeGreaterThanOrEqual(topbar!.height - 1);
+        // The final section can stop lower when the document has reached its end.
+        if (target!.y > 240) {
+          expect(await page.evaluate(() =>
+            document.documentElement.scrollHeight - scrollY - innerHeight,
+          )).toBeLessThanOrEqual(1);
+        }
+      }
+      await expect(page.locator("main #join .landing-steps li")).toHaveCount(3);
     }
   });
 }
@@ -304,9 +318,10 @@ test("desktop chapters remain visible through forward and reverse scrolling and 
   const scrollChapter = async (progress: number) => {
     await page.evaluate((p) => {
       const spacer = document.querySelector(".pin-spacer")!;
-      const start = spacer.getBoundingClientRect().top + scrollY;
+      const bar = document.querySelector(".landing-topbar")!.getBoundingClientRect().height;
+      const start = spacer.getBoundingClientRect().top + scrollY - bar;
       window.scrollTo({
-        top: start + innerHeight * 1.7 * p,
+        top: start + innerHeight * p,
         behavior: "instant",
       });
     }, progress);
@@ -328,7 +343,8 @@ test("desktop chapters remain visible through forward and reverse scrolling and 
       )
       .toBeGreaterThan(0.5);
     expect(
-      Math.abs((await page.locator(".landing-chapters").boundingBox())!.y),
+      Math.abs((await page.locator(".landing-chapters").boundingBox())!.y -
+        (await page.locator(".landing-topbar").boundingBox())!.height),
     ).toBeLessThan(2);
   }
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
