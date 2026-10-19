@@ -20,4 +20,13 @@ GitNexus 在编辑前分析 PublicStrength、FleetChapters，均为 LOW，唯一
 
 ## 发布
 
-待发布。计划仅发布前端；后端保持 v0.1.0-exchange-withdraw-20261019、Goose 103。可切回前端 v0.1.0-public-home-optimize-20261019，不涉及数据库回退。
+- 前端 `v0.1.0-public-home-impact-20261019`，干净且推送的 main `9869df5fae80afaacb21476c5dfe07e56e876bfd`，143 个文件与最终测试构建逐一匹配。
+- 提交前 GitNexus 暂存与 main 比较均为 MEDIUM：14 个文件、10 个符号、4 条 LandingPage 流程，范围符合预期。
+- 首次执行上传的暂存脚本因 CRLF 在第一行退出，未切换生产；转换 LF 后暂存、清单校验与激活成功。
+- 全量 SHA256SUMS、公开 `/`、`/login`、`/workspace` 均通过；匿名 modules、eve/status、approval/context、wallet/summary 均为 401。OpenResty 配置正常。
+- 线上 HTML SHA-256：`2c019506568c013f25f74aa6486c5e25d7b60b1b363bc3959f916ac1c1a9736f`。
+- 主脚本 `index-BqbeqoDC.js`：`b481f3902b98b539d129fd27caee27293fbe808eaca721f850548b6eeb7ac10f`。
+- 首页脚本 `landing-page-BjcEV2eg.js`：`54ae93030515f7384882188057a6cdd441a4a2ecec2ba1bded0f3edfc3a976c4`。
+- 首页样式 `landing-page-C20eZorI.css`：`49c0f90dc7b35cc0210a2ab8cea66b26d62920b8cdfa77e28aae8caeabea2cfc`。
+- In-app browser 已在生产打开新版页面并读取真实公开统计，首屏截图见[线上实拍](../ui/reviews/public-home-impact-20261019/live.png)。未代用户登录或发送社群消息。
+- 仅前端发布，后端保持 `v0.1.0-exchange-withdraw-20261019`、Goose 103；无后端重启或业务写入。可切回前端 `v0.1.0-public-home-optimize-20261019`，不涉及数据库回退。
