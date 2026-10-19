@@ -152,12 +152,6 @@ export function RewardsPanel({
           </Card>
         ))}
       </div>
-      {shop.available_minor < 0 && (
-        <p role="alert">
-          {msg("果壳币欠额")} {coin(-shop.available_minor)}
-          {msg("，补足前暂不可兑换。")}{" "}
-        </p>
-      )}
       {claim && (
         <ClaimForm
           csrf={csrf}
