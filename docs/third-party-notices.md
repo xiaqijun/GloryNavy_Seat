@@ -16,7 +16,7 @@ PVP 整场战报通过用户指定的 [SCTools Battle Report](https://br.scers.c
 
 ## Login visual assets
 
-The login page uses the Glory Navy corporation logo from CCP's image service and the official EVE SSO button served by CCP. Their use does not make them part of the shadcn/ui MIT license. Source URLs, corporation identification and the separate AI-generated cruiser artwork are recorded in [the asset notes](../web/public/images/README.md). The generated artwork is decorative, not an official EVE screenshot or ship identification.
+The login page uses the Glory Navy corporation logo from CCP's image service and the official EVE SSO button served by CCP. The shared browser-tab icon and member navigation reuse the same unmodified corporation logo. Their use does not make them part of the shadcn/ui MIT license. Source URLs, corporation identification and the separate AI-generated cruiser artwork are recorded in [the asset notes](../web/public/images/README.md). The generated artwork is decorative, not an official EVE screenshot or ship identification.
 
 Official login button source: [CCP EVE SSO button](https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-black-large.png).
 

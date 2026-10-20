@@ -1,7 +1,7 @@
 import { msg } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useRef } from "react";
-import { House, Shield, Globe2, RefreshCw } from "lucide-react";
+import { House, Globe2, RefreshCw } from "lucide-react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { IconAction } from "@/components/ui/icon-action";
 import { getModuleCatalog } from "@/app/catalog";
@@ -117,9 +117,13 @@ export default function MemberApp() {
       {!standalone && (
         <aside className="sidebar">
           <Link to="/" className="brand" aria-label={msg("GloryNavy 首页")}>
-            <span className="brand-mark">
-              <Shield size={23} aria-hidden="true" />
-            </span>
+            <img
+              className="brand-mark"
+              src="/images/glory-navy-logo.png"
+              width={40}
+              height={40}
+              alt=""
+            />
             <span>
               GloryNavy<small>{msg("军团管理平台")}</small>
             </span>

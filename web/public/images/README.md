@@ -4,7 +4,7 @@
 
 2026-10-20: the shared HTML entry also uses `glory-navy-logo.png` as the 128×128 PNG browser-tab icon across the site. The original image remains unchanged.
 
-`glory-navy-logo.png` is the unmodified 128px logo from [CCP's image service](https://images.evetech.net/corporations/98530802/logo?size=128&tenant=tranquility), retrieved on 2026-09-14. ESI resolved and confirmed the Tranquility corporation as **Glory Navy**, ticker **G.N.V**, ID **98530802**. The login page displays this local copy at 48px; retain its original colors. It is separate from the generated artwork below.
+`glory-navy-logo.png` is the unmodified 128px logo from [CCP's image service](https://images.evetech.net/corporations/98530802/logo?size=128&tenant=tranquility), retrieved on 2026-09-14. ESI resolved and confirmed the Tranquility corporation as **Glory Navy**, ticker **G.N.V**, ID **98530802**. The login page displays this local copy at 48px; member navigation uses the complete image at 40px on desktop and mobile. Retain its original colors. It is separate from the generated artwork below.
 
 ## Decorative artwork
 
