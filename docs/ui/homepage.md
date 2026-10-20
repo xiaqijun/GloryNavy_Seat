@@ -1,5 +1,17 @@
 # 军团介绍首页
 
+## 2026-10-20 SEO 与生成式搜索可读性（已实现，待发布）
+
+- 保留五屏布局，将介绍屏的口号替换为一句清楚的军团身份说明；不添加关键词堆砌、隐藏营销正文、固定福利承诺或额外 FAQ 屏。
+- `npm run build` 在 Vite 构建后执行 `tooling/build-public-home.mjs`，用同一 App/首页组件生成完整中文 HTML；整个过程禁止网络获取，查询缓存为空。历史、活动、保障、招募与入团要求直接存在于初始文档，实时人数和战绩仍由浏览器读取，构建不会保存账号或业务数据。
+- 公开首页进入首包、样式随 HTML 提前加载；普通中文首次访问使用 hydration，英文偏好和 OAuth 错误响应重新挂载，成员应用仍延迟加载。保留原生 EVE 登录表单和原鉴权边界。
+- `lib/public-site.ts` 同时供构建和客户端管理标题、description、canonical、Open Graph、Twitter 卡片及 Organization/WebSite/WebPage JSON-LD；品牌、游戏环境、活动与招募方式均来自可见内容。图像沿用现有官方神使级素材，组织 logo 使用现有军团标志，不虚构拥有舰船、固定奖励、创始日期或当前人数。
+- 只将 `https://seat.glorynavy.com/` 作为可索引主文档；语言切换与片段共用该 canonical，目前不声明独立英文 URL 或 hreflang。`sitemap.xml` 仅列首页，不把四个锚点、成员页面或构建时间伪装成独立内容/更新时间。
+- `robots.txt` 使用统一公开路径白名单，标准搜索与遵守该协议的 AI 搜索可读首页、样式、图片和公开发现文件；其余路径禁爬。成员壳 `app.html` 自带 noindex/nofollow，边缘层为成员路径增加 X-Robots-Tag，客户端离开首页时移除公开 canonical/分享/JSON-LD。robots 不替代实际鉴权。
+- `llms.txt` 仅提供公开事实摘要和来源锚点，作为可选阅读入口，不声明为 Google 或 AI 搜索的必需协议，也不保证被收录或引用。没有提交站长平台、伪造验证文件或添加第三方统计。
+
+构建产物必须与 `deploy/edge-https.conf` 同步应用；恢复旧前端时同时恢复旧路由，否则成员路径会引用不存在的 `app.html`。实现验证及上线状态见[本轮记录](../history/public-home-seo-20261020.md)。
+
 ## 2026-10-20 首屏副标题精简（已发布 `v0.1.0-home-tagline-20261020`）
 
 按用户要求移除首屏副标题中的“· 00 精英 PVP 军团”，仅保留“荣耀海军”，英文为“Glory Navy”。沿用现有字号和间距，不改介绍屏历史文案、菜单或翻页行为。发布与验证见[交付记录](../history/public-home-ux-20261020.md#首屏副标题精简)。

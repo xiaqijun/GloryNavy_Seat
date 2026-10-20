@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node tooling/build-public-home.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "preview:local": "vite preview --host 127.0.0.1 --port 5173 --strictPort",

@@ -34,14 +34,6 @@ export default function LandingPage() {
   );
 
   useEffect(() => {
-    const title = document.title;
-    document.title = msg("GloryNavy · 在新伊甸，一起远航");
-    return () => {
-      document.title = title;
-    };
-  }, []);
-
-  useEffect(() => {
     const element = root.current;
     if (!element) return;
     const sections = Array.from(
@@ -235,7 +227,7 @@ export default function LandingPage() {
             <div className="landing-introduction-grid">
               <div className="landing-introduction-heading">
                 <h2 id="strength-title">{msg("军团介绍")}</h2>
-                <p className="landing-motto">{msg("荣耀海军，全员猛男！")}</p>
+                <p className="landing-motto">{msg("荣耀海军（Glory Navy），EVE Online 宁静服玩家军团。")}</p>
                 <img
                   className="landing-emblem"
                   src="/images/glory-navy-logo.png"

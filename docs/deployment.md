@@ -1,5 +1,11 @@
 # Linux 生产部署
 
+## 首页 SEO 产物与边缘路由
+
+新前端包含预渲染 `index.html` 和 noindex 的 `app.html`。必须同步应用 `deploy/edge-https.conf`：首页只读前者，成员路径回退后者并携带 `X-Robots-Tag: noindex, nofollow`；`/index.html` 跳转正式首页，robots/sitemap/llms 使用独立静态文件与正确 MIME。验证配置后切换静态产物并平滑 reload；公开 API 与登录代理保持原规则。
+
+切换前保存当前静态链接、主站配置和产物清单；恢复必须同时恢复配置与前端，避免旧发布缺少 `app.html`。无需迁移、重启后端或修改 EVE 回调。验收覆盖原始 HTML、无 JS 阅读、真实发现文件、私有路由 noindex、旧域名跳转及匿名 API 拒绝，见[本轮记录](history/public-home-seo-20261020.md)。
+
 ## 香港 PAP 采集（2026-10-20）
 
 独立采集器已迁到香港，本站通过 ZeroTier 私网读取；原应用主机的采集服务已停用。前后端版本不变，Goose 103，无数据迁移。服务模板、私网绑定、授权文件、验证及恢复步骤见 [WinterCo PAP 接入](integrations/winterco-pap.zh-CN.md#独立采集主机迁移)，本次真实采集及正式任务成功证据见[迁移记录](history/pap-collector-hk-20261020.md)。

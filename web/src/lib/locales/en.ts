@@ -1,5 +1,12 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "荣耀海军 Glory Navy｜EVE Online 军团招募与成员服务":
+    "Glory Navy | EVE Online corporation recruitment & member services",
+  "荣耀海军（Glory Navy）是 EVE Online 宁静服玩家军团。了解 PVP 舰队、PVE 教学、工业生产、新人帮助、成员福利与入团要求，加入 QQ 招募群 674743797。":
+    "Glory Navy is an EVE Online player corporation on Tranquility. Explore PVP fleets, PVE training, industry, new-player support, member benefits and recruitment. QQ group: 674743797.",
+  "荣耀海军（Glory Navy），EVE Online 宁静服玩家军团。":
+    "Glory Navy, an EVE Online player corporation on Tranquility.",
+  "GloryNavy · 军团管理平台": "GloryNavy · Corporation management",
   搜索结果: "Search results",
   入门: "Getting started",
   日常使用: "Everyday use",
