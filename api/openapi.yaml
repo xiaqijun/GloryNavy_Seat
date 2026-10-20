@@ -11173,7 +11173,7 @@ components:
         "properties":
           {
             "user_id": { "type": "string", "format": "uuid" },
-            "name": { "type": "string" },
+            "name": { "type": "string", "description": "Current account nickname, falling back to the main character name when unset. Character detail rows retain their original game names." },
             "points": { "type": "number", "minimum": 0 },
             "achieved": { "type": "boolean" },
             "characters":

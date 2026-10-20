@@ -1,5 +1,7 @@
 # 项目文档
 
+联盟 PAP：[成员昵称修复与验收](history/alliance-pap-nickname-20261020.md)。
+
 成员操作：[站内使用帮助](https://seat.glorynavy.com/help) · [完整中文指南](user-guide.zh-CN.md) · [帮助页面与内容维护](ui/help.md)。域名配置见[正式域名迁移](history/domain-migration-20261020.md)，实际发布状态见[项目状态](project-status.md)。
 
 最新交付：[公开首页层级优化（2026-10-20）](history/public-home-ux-20261020.md) / [公开首页分屏翻页（2026-10-19）](history/public-home-pages-20261019.md) / [公开首页招募内容整理（2026-10-19）](history/public-home-content-20261019.md) / [公开首页视觉强化（二轮，2026-10-19）](history/public-home-impact-20261019.md) / [公开首页优化（2026-10-19）](history/public-home-20261019.md) / [同一奖励多份兑换（2026-10-19）](history/exchange-quantity-20261019.md) / [旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。

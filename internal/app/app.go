@@ -157,7 +157,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		return corpDTO(a), err
 	})
 	structureHandler := structuresHandler(identityService, accessService, syncService, staticData)
-	attendanceModule := attendanceHandler(pool, identityService, accessService, reader)
+	attendanceModule := attendanceHandler(pool, identityService, accessService, reader, communityService.Nicknames)
 	attendanceModule.Service.AlliancePAP = attendance.AlliancePAPConfig{URL: auth.WinterCoPAPURL, AuthFile: auth.WinterCoPAPAuthFile}
 	attendanceModule.Service.Battle = reader
 	attendanceModule.Service.Names = staticData

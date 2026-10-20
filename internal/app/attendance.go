@@ -14,11 +14,27 @@ import (
 	"glorynavy.local/seat/internal/platform/locale"
 	"net/http"
 	"slices"
+	"strings"
 )
 
-func attendanceHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *access.Service, reader *eve.AuthorizationService) attendance.Handler {
+func attendanceHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *access.Service, reader *eve.AuthorizationService, accountNicknames func(context.Context, []string) (map[string]string, error)) attendance.Handler {
 	s := &attendance.Service{Pool: pool, EVE: reader, Administrator: policy.IsAdministrator}
-	s.AlliancePAPMemberNames = accounts.MainCharacterNames
+	s.AlliancePAPMemberNames = func(ctx context.Context, accountIDs []string) (map[string]string, error) {
+		names, err := accounts.MainCharacterNames(ctx, accountIDs)
+		if err != nil {
+			return nil, err
+		}
+		nicknames, err := accountNicknames(ctx, accountIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, accountID := range accountIDs {
+			if nickname := strings.TrimSpace(nicknames[accountID]); nickname != "" {
+				names[accountID] = nickname
+			}
+		}
+		return names, nil
+	}
 	s.Bindings = func(ctx context.Context, tx pgx.Tx, ids []int64) ([]attendance.Binding, error) {
 		rows, err := accounts.Bindings(ctx, tx, ids)
 		if err != nil {
