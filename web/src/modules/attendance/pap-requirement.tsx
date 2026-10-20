@@ -54,10 +54,17 @@ export function PAPRequirement({
     enabled: alliance.data?.can_manage === true,
     refetchInterval: 30000,
   });
-  const effectiveMemberMonth = memberMonth || memberMonths.data?.months[0] || "";
+  const effectiveMemberMonth =
+    memberMonth || memberMonths.data?.months[0] || "";
   const members = useQuery({
-    queryKey: ["attendance", "alliance-pap-members", user, effectiveMemberMonth],
-    queryFn: ({ signal }) => getAlliancePAPMembers(effectiveMemberMonth, signal),
+    queryKey: [
+      "attendance",
+      "alliance-pap-members",
+      user,
+      effectiveMemberMonth,
+    ],
+    queryFn: ({ signal }) =>
+      getAlliancePAPMembers(effectiveMemberMonth, signal),
     enabled: alliance.data?.can_manage === true && !!effectiveMemberMonth,
     refetchInterval: 30000,
   });
@@ -76,6 +83,11 @@ export function PAPRequirement({
       });
     },
   });
+  const boundCharacters =
+    alliance.data?.bound_characters ?? alliance.data?.characters ?? [];
+  const achieved =
+    !!alliance.data?.available &&
+    alliance.data.points >= (q.data?.monthly_points ?? 3);
   return (
     <>
       <Card
@@ -155,56 +167,68 @@ export function PAPRequirement({
                 )}
               </div>
               <span
-                className={`pap-status-pill ${alliance.data?.available && alliance.data.complete ? "is-complete" : ""}`}
+                className={`pap-status-pill ${achieved ? "is-complete" : ""}`}
               >
-                {alliance.data?.available && alliance.data.complete ? (
+                {achieved ? (
                   <>
                     <Check size={14} />
                     {msg("达标")}
                   </>
+                ) : alliance.data?.available ? (
+                  msg("未达标")
                 ) : alliance.data?.state === "syncing" ? (
                   msg("联盟 PAP 同步中")
                 ) : (
                   msg("联盟 PAP 暂无可用数据")
                 )}
               </span>
+              {alliance.data?.state === "error" && (
+                <span className="pap-status" role="status">
+                  {alliance.data.available
+                    ? msg("同步失败，显示上次成功数据")
+                    : msg("联盟 PAP 同步失败")}
+                </span>
+              )}
             </div>
             <div className="pap-alliance-details">
               <div className="pap-alliance-details-heading">
                 <strong>{msg("联盟 PAP 明细")}</strong>
                 <small>
-                  {alliance.data?.characters.length ?? 0} {msg("个角色")}
+                  {boundCharacters.length} {msg("个角色")}
                   {alliance.data?.last_synced_at
                     ? ` · ${msg("同步于")} ${formatDate(alliance.data.last_synced_at)}`
                     : ""}
                 </small>
               </div>
-              {!alliance.data?.available ||
-              alliance.data.characters.length === 0 ? (
+              {!alliance.data?.available || boundCharacters.length === 0 ? (
                 <span className="pap-alliance-empty">
                   {msg("暂无已绑定联盟 PAP")}
                 </span>
               ) : (
                 <div className="pap-alliance-character-list">
-                  {alliance.data.characters.map((character) => (
-                    <div
-                      className="pap-alliance-character"
-                      key={character.character_id}
-                    >
-                      <EveImage
-                        kind="character"
-                        id={String(character.character_id)}
-                        className="pap-alliance-avatar"
-                      />
-                      <span>{character.character_name}</span>
-                      <strong>
-                        {character.pap.toLocaleString(getLocale(), {
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        {msg("PAP")}
-                      </strong>
-                    </div>
-                  ))}
+                  {boundCharacters.map((character) => {
+                    const record = alliance.data.characters.find(
+                      (row) => row.character_id === character.character_id,
+                    );
+                    return (
+                      <div
+                        className="pap-alliance-character"
+                        key={character.character_id}
+                      >
+                        <EveImage
+                          kind="character"
+                          id={String(character.character_id)}
+                          className="pap-alliance-avatar"
+                        />
+                        <span>{character.character_name}</span>
+                        <strong>
+                          {record
+                            ? `${record.pap.toLocaleString(getLocale(), { maximumFractionDigits: 2 })} ${msg("PAP")}`
+                            : msg("暂无记录")}
+                        </strong>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {alliance.data?.can_manage && (
@@ -222,7 +246,10 @@ export function PAPRequirement({
                   months={memberMonths.data?.months ?? []}
                   month={effectiveMemberMonth}
                   onMonthChange={setMemberMonth}
-                  retry={() => { void memberMonths.refetch(); void members.refetch(); }}
+                  retry={() => {
+                    void memberMonths.refetch();
+                    void members.refetch();
+                  }}
                 />
               )}
             </div>

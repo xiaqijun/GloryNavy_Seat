@@ -58,7 +58,7 @@ export function AlliancePAPMembers({
             <div className="pap-alliance-member" key={member.user_id}>
               <div className="pap-alliance-member-name">
                 <strong>{member.name || member.user_id}</strong>
-                <small>{msg("{0} 个角色", member.characters.length)}</small>
+                <small>{msg("{0} 个角色", (member.bound_characters ?? member.characters).length)}</small>
               </div>
               <span className="pap-alliance-member-points">
                 {member.points.toLocaleString(getLocale(), { maximumFractionDigits: 2 })} {msg("PAP")}

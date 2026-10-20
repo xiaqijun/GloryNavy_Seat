@@ -32,7 +32,13 @@ func TestAlliancePAPMembersReportAdminScopeAndBindingRecheck(t *testing.T) {
 	}
 
 	s := &Service{
-		Pool:          pool,
+		Pool: pool,
+		Own: func(_ context.Context, user string) ([]Binding, error) {
+			if user == first {
+				return []Binding{{ID: 101, UserID: first, Name: "First Alt"}, {ID: 102, UserID: first, Name: "First Main"}}, nil
+			}
+			return []Binding{{ID: 103, UserID: second, Name: "Second Main"}}, nil
+		},
 		Administrator: func(_ context.Context, user string) (bool, error) { return user == admin, nil },
 		Bindings: func(_ context.Context, _ pgx.Tx, ids []int64) ([]Binding, error) {
 			return []Binding{{ID: ids[0], UserID: first}, {ID: 102, UserID: first}, {ID: 103, UserID: second}}, nil

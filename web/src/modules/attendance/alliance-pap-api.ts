@@ -26,7 +26,16 @@ export const getPAPRequirement = (signal?: AbortSignal) =>
     signal,
   );
 
+export type AlliancePAPBinding = { character_id: number; character_name: string };
+
+const isPAPBindings = (value: unknown): value is AlliancePAPBinding[] =>
+  Array.isArray(value) && value.every((item) =>
+    !!item && Number.isSafeInteger(item.character_id) && item.character_id > 0 &&
+    typeof item.character_name === "string" && item.character_name.length > 0,
+  );
+
 export type AllianceReport = {
+  bound_characters?: AlliancePAPBinding[];
   source: "alliance";
   month: string;
   points: number;
@@ -62,6 +71,7 @@ export const isAllianceReport = (v: unknown): v is AllianceReport => {
     typeof r.version === "string" &&
     /^[1-9]\d*$/.test(r.version) &&
     typeof r.can_manage === "boolean" &&
+    (r.bound_characters === undefined || isPAPBindings(r.bound_characters)) &&
     Array.isArray(r.characters) &&
     r.characters.every(
       (c) =>
@@ -80,6 +90,7 @@ export const getAlliancePAP = (signal?: AbortSignal) =>
   getData("/api/v1/attendance/alliance-pap", isAllianceReport, signal);
 
 export type AlliancePAPMember = {
+  bound_characters?: AlliancePAPBinding[];
   user_id: string;
   name: string;
   points: number;
@@ -124,6 +135,7 @@ export const isAlliancePAPMembersReport = (v: unknown): v is AlliancePAPMembersR
       typeof member.name === "string" &&
       Number.isFinite(member.points) && member.points >= 0 &&
       typeof member.achieved === "boolean" &&
+      (member.bound_characters === undefined || isPAPBindings(member.bound_characters)) &&
       Array.isArray(member.characters) && member.characters.every((character) =>
         !!character && Number.isSafeInteger(character.character_id) && character.character_id > 0 &&
         typeof character.character_name === "string" && character.character_name.length > 0 &&

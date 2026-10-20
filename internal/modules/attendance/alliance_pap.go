@@ -43,17 +43,18 @@ type alliancePAPResponse struct {
 }
 
 type AlliancePAPReport struct {
-	Source       string                 `json:"source"`
-	Month        string                 `json:"month"`
-	Points       float64                `json:"points"`
-	Available    bool                   `json:"available"`
-	Complete     bool                   `json:"complete"`
-	State        string                 `json:"state"`
-	RecordsTotal int32                  `json:"records_total"`
-	LastSyncedAt *time.Time             `json:"last_synced_at"`
-	Characters   []AlliancePAPCharacter `json:"characters"`
-	Version      int64                  `json:"version,string"`
-	CanManage    bool                   `json:"can_manage"`
+	Source          string                 `json:"source"`
+	Month           string                 `json:"month"`
+	Points          float64                `json:"points"`
+	Available       bool                   `json:"available"`
+	Complete        bool                   `json:"complete"`
+	State           string                 `json:"state"`
+	RecordsTotal    int32                  `json:"records_total"`
+	LastSyncedAt    *time.Time             `json:"last_synced_at"`
+	Characters      []AlliancePAPCharacter `json:"characters"`
+	BoundCharacters []AlliancePAPBinding   `json:"bound_characters"`
+	Version         int64                  `json:"version,string"`
+	CanManage       bool                   `json:"can_manage"`
 }
 
 // AlliancePAPFulfillmentReport is the administrator-only aggregate used by
@@ -124,11 +125,17 @@ func (s *Service) AlliancePAPMemberMonths(ctx context.Context, user string) ([]s
 }
 
 type AlliancePAPMember struct {
-	UserID     string                 `json:"user_id"`
-	Name       string                 `json:"name"`
-	Points     float64                `json:"points"`
-	Achieved   bool                   `json:"achieved"`
-	Characters []AlliancePAPCharacter `json:"characters"`
+	UserID          string                 `json:"user_id"`
+	Name            string                 `json:"name"`
+	Points          float64                `json:"points"`
+	Achieved        bool                   `json:"achieved"`
+	Characters      []AlliancePAPCharacter `json:"characters"`
+	BoundCharacters []AlliancePAPBinding   `json:"bound_characters"`
+}
+
+type AlliancePAPBinding struct {
+	CharacterID   int64  `json:"character_id"`
+	CharacterName string `json:"character_name"`
 }
 
 type AlliancePAPCharacter struct {
@@ -400,32 +407,45 @@ func (s *Service) SyncAlliancePAP(ctx context.Context) error {
 }
 
 func (s *Service) AlliancePAPReport(ctx context.Context, user string) (AlliancePAPReport, error) {
-	out := AlliancePAPReport{Source: "alliance", Characters: []AlliancePAPCharacter{}}
+	out := AlliancePAPReport{Source: "alliance", Characters: []AlliancePAPCharacter{}, BoundCharacters: []AlliancePAPBinding{}}
 	if _, err := uuid(user); err != nil {
 		return out, ErrInvalid
 	}
-	r, err := store.New(s.Pool).AlliancePAPAccount(ctx, user)
+	if s.Own == nil || s.Pool == nil {
+		return out, pgx.ErrNoRows
+	}
+	// Read metadata and rows from the same publication, including at month rollover.
+	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return out, err
 	}
-	if r.Month.Year() > 1 {
-		out.Month = r.Month.Format("2006-01")
-	}
-	out.Complete, out.State, out.RecordsTotal = r.Complete, r.State, r.RecordsTotal
-	out.Version = r.Version
-	if s.Administrator != nil {
-		out.CanManage, _ = s.Administrator(ctx, user)
-	}
-	out.Available = r.State == "ready" && r.Complete && out.Month != ""
-	if out.Month != time.Now().UTC().Format("2006-01") {
-		out.Month = time.Now().UTC().Format("2006-01")
-		out.Available = false
-	}
-	if out.Points, err = strconv.ParseFloat(r.Points, 64); err != nil {
+	defer tx.Rollback(context.Background())
+	q := store.New(tx)
+	r, err := q.AlliancePAPSync(ctx)
+	if err != nil {
 		return out, err
 	}
+	month := allianceMonth(time.Now().UTC())
+	out.Month = month.Format("2006-01")
+	out.Complete, out.State, out.RecordsTotal = r.Complete, r.State, r.RecordsTotal
+	out.Version = r.Version
+	out.Available = r.Month.Equal(month) && r.State == "ready" && r.Complete
+	if r.Month.Equal(month) && r.State == "error" {
+		histories, historyErr := q.AlliancePAPSyncHistories(ctx)
+		if historyErr != nil {
+			return out, historyErr
+		}
+		for _, history := range histories {
+			if history.Month.Equal(month) {
+				out.Available = true
+				r.LastSyncedAt = history.LastSyncedAt
+				out.RecordsTotal = history.RecordsTotal
+				break
+			}
+		}
+	}
 	if out.Available {
-		rows, rowErr := store.New(s.Pool).AlliancePAPCharacters(ctx, user)
+		rows, rowErr := q.AlliancePAPAccountMonthCharacters(ctx, user, month)
 		if rowErr != nil {
 			return out, rowErr
 		}
@@ -442,7 +462,43 @@ func (s *Service) AlliancePAPReport(ctx context.Context, user string) (AllianceP
 		t := r.LastSyncedAt.Time
 		out.LastSyncedAt = &t
 	}
+	if err = tx.Commit(ctx); err != nil {
+		return out, err
+	}
+	// Release the snapshot connection before host callbacks (also works with a
+	// one-connection pool). Recheck current bindings before exposing any PAP.
+	bindings, err := s.Own(ctx, user)
+	if err != nil {
+		return out, err
+	}
+	out.Characters, out.BoundCharacters, out.Points = alliancePAPBoundRows(user, out.Characters, bindings)
+	if s.Administrator != nil {
+		out.CanManage, _ = s.Administrator(ctx, user)
+	}
 	return out, nil
+}
+
+// Keep identity inventory separate from source observations: an absent PAP row
+// is not a newly invented zero-point snapshot or a new conversion entitlement.
+func alliancePAPBoundRows(user string, rows []AlliancePAPCharacter, bindings []Binding) ([]AlliancePAPCharacter, []AlliancePAPBinding, float64) {
+	bound := make(map[int64]bool, len(bindings))
+	inventory := []AlliancePAPBinding{}
+	for _, binding := range bindings {
+		if binding.UserID != user || bound[binding.ID] {
+			continue
+		}
+		bound[binding.ID] = true
+		inventory = append(inventory, AlliancePAPBinding{CharacterID: binding.ID, CharacterName: binding.Name})
+	}
+	visible := []AlliancePAPCharacter{}
+	var points float64
+	for _, row := range rows {
+		if bound[row.CharacterID] {
+			visible = append(visible, row)
+			points += row.PAP
+		}
+	}
+	return visible, inventory, points
 }
 
 // AlliancePAPFulfillmentReport returns the current-month aggregate for site
@@ -507,7 +563,7 @@ func (s *Service) AlliancePAPMembersReport(ctx context.Context, user, monthValue
 	if _, err := uuid(user); err != nil {
 		return out, ErrInvalid
 	}
-	if s.Administrator == nil || s.Bindings == nil || s.Pool == nil {
+	if s.Administrator == nil || s.Bindings == nil || s.Own == nil || s.Pool == nil {
 		return out, pgx.ErrNoRows
 	}
 	ok, err := s.Administrator(ctx, user)
@@ -610,6 +666,11 @@ func (s *Service) AlliancePAPMembersReport(ctx context.Context, user, monthValue
 		}
 	}
 	for i := range out.Members {
+		bindings, ownErr := s.Own(ctx, out.Members[i].UserID)
+		if ownErr != nil {
+			return out, ownErr
+		}
+		out.Members[i].Characters, out.Members[i].BoundCharacters, out.Members[i].Points = alliancePAPBoundRows(out.Members[i].UserID, out.Members[i].Characters, bindings)
 		out.Members[i].Achieved = out.Members[i].Points >= float64(out.Target)
 	}
 	return out, nil
