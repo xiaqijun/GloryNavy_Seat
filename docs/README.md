@@ -1,5 +1,7 @@
 # 项目文档
 
+联盟 PAP 绑定数量与失败快照修复：[2026-10-20 发布记录](history/alliance-pap-bindings-20261020.md)。
+
 联盟 PAP：[成员昵称修复与验收](history/alliance-pap-nickname-20261020.md)。
 
 成员操作：[站内使用帮助](https://seat.glorynavy.com/help) · [完整中文指南](user-guide.zh-CN.md) · [帮助页面与内容维护](ui/help.md)。域名配置见[正式域名迁移](history/domain-migration-20261020.md)，实际发布状态见[项目状态](project-status.md)。
