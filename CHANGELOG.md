@@ -2,9 +2,12 @@
 
 ## 未发布
 
-- 首页增加同组件静态预渲染、搜索摘要、canonical、分享元信息、品牌 JSON-LD、robots/sitemap 和公开内容摘要；成员壳与路由 noindex，保留原登录与业务权限。仅前端与边缘配置，验证及发布状态见[记录](docs/history/public-home-seo-20261020.md)。
-
 - 根据用户反馈撤回公开首页二轮视觉方案；生产已切回 `v0.1.0-public-home-optimize-20261019`，源码与用例同步恢复。此前 `public-home-impact` 的发布记录保留历史，不再作为当前外观。
+
+## v0.1.0-public-home-seo-20261020 — 2026-10-20
+
+- 首页增加同组件静态预渲染、搜索摘要、canonical、分享元信息、品牌 JSON-LD、robots/sitemap 和公开内容摘要；成员壳与路由 noindex，保留原登录与业务权限。
+- 前端与边缘配置从 main `a9d8e7c` 同步发布。线上抓取、文件哈希、跳转、安全头、匿名拒绝与桌面/手机浏览器检查通过；保留既有滚动测试失败及实际收录验收，见[记录](docs/history/public-home-seo-20261020.md)。
 
 ## 2026-10-20 运维配置：香港 PAP 采集
 

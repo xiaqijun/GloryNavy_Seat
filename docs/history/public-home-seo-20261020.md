@@ -1,6 +1,6 @@
 # 公开首页 SEO 与 GEO
 
-2026-10-20 用户要求优化首页 SEO/GEO。当前已实现并完成本地验证，尚未发布；正式结果在本文追加。仅前端和边缘路由，后端及 Goose 103 保持不变。
+2026-10-20 用户要求优化首页 SEO/GEO。已从干净且推送的 main `a9d8e7c2fb83553dcba89e158fda4e12741a889f` 发布前端 `v0.1.0-public-home-seo-20261020` 与边缘路由。后端仍为 `v0.1.0-alliance-pap-bindings-20261020`，Goose 103 保持不变。
 
 ## 问题与实现
 
@@ -25,7 +25,15 @@ llms.txt 是与公开正文一致的简短导航摘要，属于可选阅读入�
 
 前端必须来自干净且已推送的 main，产物与测试清单逐文件一致。保存旧静态链接及主站配置；同步切换预渲染产物与 edge-https.conf，执行 nginx -t 后平滑 reload。失败恢复二者，不能只回退到缺少 app.html 的旧前端。只更新该主站配置，不改其他虚拟主机、证书或 API 代理。
 
-线上需确认首页原文、发现文件 MIME、canonical/分享图、私有页面 noindex、安全头、旧域名重定向及匿名业务拒绝。实际索引、搜索排名、AI 引用和站长平台提交未验收；不得写成已被搜索引擎收录。
+2026-10-20 北京时间 17:06 已完成联合切换及 nginx 配置检查、平滑重载。最终构建的 JS/CSS/图片与原测试产物一致；整理换行后的两份 HTML 由 6 项 SEO 检查复跑通过，再冻结全部 138 个文件并核对打包产物。线上核验：
+
+- 首页 200，正文与部署文件逐字节相同；唯一 canonical、主标题及三类 JSON-LD 正常，无 noindex。
+- robots/llms 为 `text/plain; charset=utf-8`，sitemap 为 `text/xml; charset=utf-8`，均 200 且与产物一致；首页初始 JS/CSS、预加载资源和分享图匹配。
+- `/workspace`、`/account`、`/login`、未知成员路径与 `/app.html` 返回独立成员壳，HTML 和 X-Robots-Tag 均为 noindex/nofollow；nosniff、同源 referrer 和 DENY frame 安全头保留。
+- `/index.html?lang=en` 301 到 `/?lang=en`；旧域名首页与 robots 均 301 到新域名；匿名联盟 PAP 列表仍 401，应用内网 readiness 为 200。
+- 真实公开站点匿名 Edge 浏览器在 1440×1000 与 375×812 下完成 hydration、元信息、招募要求及无横向溢出检查，无页面异常；两份线上截图已目视核对。没有提交登录或业务操作。
+
+旧前端为 `v0.1.0-alliance-pap-bindings-20261020`，恢复资料位于边缘主机 `/var/backups/glorynavy/public-home-seo-20261020T090620Z`，保存原 current 链接和主站配置；其他虚拟主机与后端服务未改。实际索引、搜索排名、AI 引用和站长平台提交未验收；不得写成已被搜索引擎收录。
 
 ## 采用的官方资料
 
