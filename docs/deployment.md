@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 香港 PAP 采集（2026-10-20）
+
+独立采集器已迁到香港，本站通过 ZeroTier 私网读取；原应用主机的采集服务已停用。前后端版本不变，Goose 103，无数据迁移。服务模板、私网绑定、授权文件、验证及恢复步骤见 [WinterCo PAP 接入](integrations/winterco-pap.zh-CN.md#独立采集主机迁移)，本次真实采集及正式任务成功证据见[迁移记录](history/pap-collector-hk-20261020.md)。
+
 ## 当前域名与 1Panel（2026-10-20）
 
 正式入口调整为 `https://seat.glorynavy.com`，旧 `seat.kisectool.com` 仅保留重定向。当前执行状态见[迁移记录](history/domain-migration-20261020.md)与[项目状态](project-status.md)，下方旧发布记录中的域名保留当时事实。

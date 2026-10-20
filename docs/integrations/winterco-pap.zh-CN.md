@@ -22,7 +22,7 @@
 
 ## 生产数据路径
 
-独立 seat-pap 服务 → 后端内网 HTTP → attendance River 队列 → 本站 PostgreSQL → 联盟 PAP 页面 / 工作台。前端不直连上游，不携带 Token 或 WinterCo Cookie；本机 DOM 工具不是生产数据源。
+香港独立 seat-pap 服务 → ZeroTier 内网 HTTP → attendance River 队列 → 本站 PostgreSQL → 联盟 PAP 页面 / 工作台。前端不直连上游，不携带 Token 或 WinterCo Cookie；本机 DOM 工具不是生产数据源。2026-10-20 已完成迁移并恢复正式同步，见[验证记录](../history/pap-collector-hk-20261020.md)。
 
 - 独立服务工作目录 `/root/seat_pap`，监听端口 `18770`。服务端负责上游会话和完整当前月快照；本站只读取已授权 API。
 - 本站配置 `WINTERCO_PAP_URL` 和 `WINTERCO_PAP_AUTH_FILE`。同机示例 URL 为 `http://127.0.0.1:18770`；认证文件优先取受限 `read_token`，兼容 `api_token` 回退。实际文件只部署到受保护目录，不提交内容。
@@ -36,7 +36,7 @@
 
 先在目标主机单次运行原有 `CLIENT.monthly()`，只输出月份、完整性、行数、总分和耗时；不能以首页可达或健康响应代替完整 PAP 验证。目标服务启动后，还需从应用主机携带已有受限令牌请求 `/api/pap/monthly`，确认完整响应能在本站 25 秒预算内返回，并验证匿名访问被拒绝。`GET /api/pap/monthly` 会即时采集上游，不只是读取磁盘快照；后台定时采集和接口请求共用串行锁。
 
-验证通过后备份应用环境文件，停用旧 `seat-pap.service`，只将 `WINTERCO_PAP_URL` 改为 `http://<HK_PRIVATE_IP>:18770`；保持原 `WINTERCO_PAP_AUTH_FILE` 与既有令牌，重启当前应用版本加载配置。让正式 River 任务完成同步并检查数据库成功时间、完整月份及成员投影；不得使用缺少宿主兑币回调的临时程序导入。两台采集器只在迁移验证时短暂并存，切换后旧实例必须停止并取消开机启动。
+验证通过后备份应用环境文件，停用旧 `seat-pap.service`，只将 `WINTERCO_PAP_URL` 改为 `http://<HK_PRIVATE_IP>:18770`；保持原 `WINTERCO_PAP_AUTH_FILE` 与既有令牌，重启当前应用版本加载配置。让正式 River 任务完成同步并检查数据库成功时间、完整月份及成员投影；若既有任务因失败退避，可在核对 kind、队列和状态后用 River `JobRetryTx` 重试该任务，保留错误历史，不新增绕过唯一约束的作业。不得使用缺少宿主兑币回调的临时程序导入。两台采集器只在迁移验证时短暂并存，切换后旧实例必须停止并取消开机启动。
 
 失败时先停止目标实例，将其最新 Cookie 经受信 SSH 回传到原服务的受保护数据目录，再恢复环境备份、原采集器和应用服务；保留两端完整快照和原程序作为恢复证据，不清空 PAP 或币账。迁移后的跨时段稳定性、自动续期和月界仍需继续验证。
 

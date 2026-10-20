@@ -1,5 +1,7 @@
 # 本地开发与验证
 
+联盟 PAP 可由独立香港主机采集，本站经私网读取；本地仍可使用同机示例地址。配置、完整采集验证和恢复步骤见 [WinterCo PAP 接入](integrations/winterco-pap.zh-CN.md#独立采集主机迁移)，常驻服务模板为 `deploy/seat-pap.service`。
+
 意见反馈：备份后迁移至 Goose 96/River 当前版本，在原 MODULES 清单追加 feedback（保留 identity/access 及依赖），同步发布前后端，入口 /feedback。无新密钥/ESI scope；已有记录后保留 schema 和合并参与方，不能直接回退旧程序。见[指南](integrations/feedback.zh-CN.md)。
 
 快递服务在原 MODULES 清单追加 courier（依赖 identity/access，保留其依赖），同步部署前后端后访问 /courier。无额外数据库迁移、密钥或 EVE scope；报价调用固定 https://hallogistics.space。停用移除 courier 并重启，不删数据。见[快递指南](integrations/courier.zh-CN.md)。
