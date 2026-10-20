@@ -20,4 +20,4 @@
 
 监控奖励读取 `GET /api/v1/integrations/seat/monitor-contributions`，每个星系只有主节点贡献有效在线时长。同一账号选择多个预警星系时，各星系独立计量并合并到账号级果壳币流水。
 
-服务令牌只保存在两端服务端环境中，不进入浏览器或文档；生产入口仍为 `https://seat.kisectool.com`。
+服务令牌只保存在两端服务端环境中，不进入浏览器或文档；当前生产入口为 `https://seat.glorynavy.com`。域名迁移时同步 `SENTRY_INTEGRATION_URL`，避免服务 POST 经过旧站重定向。

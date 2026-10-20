@@ -20,4 +20,4 @@ New charges read only Sentry's `GET /api/v1/integrations/seat/client-usage`. Eac
 
 Monitoring rewards read `GET /api/v1/integrations/seat/monitor-contributions`. Only the primary node of each system contributes valid online time. Multiple alert systems are metered independently and merged into the account-level coin ledger.
 
-Service tokens remain server-side only and never enter the browser or documentation. The production origin remains `https://seat.kisectool.com`.
+Service tokens remain server-side only and never enter the browser or documentation. The current production origin is `https://seat.glorynavy.com`. Update `SENTRY_INTEGRATION_URL` when changing domains so service POST requests do not pass through the legacy redirect.

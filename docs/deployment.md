@@ -1,5 +1,15 @@
 # Linux 生产部署
 
+## 当前域名与 1Panel（2026-10-20）
+
+正式入口调整为 `https://seat.glorynavy.com`，旧 `seat.kisectool.com` 仅保留重定向。当前执行状态见[迁移记录](history/domain-migration-20261020.md)与[项目状态](project-status.md)，下方旧发布记录中的域名保留当时事实。
+
+现有站点代号仍为 `zz-glorynavy-seat`，发布目录仍为 `/opt/1panel/www/sites/seat.kisectool.com`，不因域名变更移动业务文件。主配置和 API 规则分别对应 `deploy/edge-https.conf`、`deploy/edge-api-proxy.conf`；旧域名规则 `deploy/edge-legacy-redirect.conf` 安装为 `conf.d/zzz-glorynavy-seat-legacy.conf`，加载在定义安全日志格式的主配置之后。
+
+新证书由 1Panel 已配置的 DNS 验证与自动续期管理；旧证书继续由 Certbot 管理。`deploy/renew-seat-certificate.sh` 只更新旧域名的 `tls/`，不得再覆盖面板主站 `ssl/`。保留旧域名 DNS 与 HTTP challenge，先 `nginx -t` 再平滑 reload。主站部署探测必须校验证书并访问新域名，不能以旧域名 301 代替首页 200。
+
+后端统一配置 `PUBLIC_ORIGIN=https://seat.glorynavy.com`、新域名 ESI 联系地址及 `SENTRY_INTEGRATION_URL=https://seat.glorynavy.com`，重启既有 `glorynavy.service`；保持所有密钥、令牌和数据库连接不变。EVE 应用回调必须登记 `https://seat.glorynavy.com/api/v1/eve/callback`。CNAME 不会改变浏览器 Origin；不通过代理伪造 Origin 或关闭 CSRF。Cookie 不跨域共享，旧域名未完成的授权应从新登录页重新开始。
+
 兑换直接撤销已随 `v0.1.0-exchange-withdraw-20261019` 发布（Goose 103）；部署边界：备份后同步发布 API、任务和前端。已有合同证据/合并结算回填开始标记，不自动退款。出现开始记录或撤销审计后禁止回退旧程序/Down，优先前向修复。验收与发布证据见[本轮记录](history/exchange-withdrawal-20261019.md)。
 
 ## 2026-10-19：同一奖励多份兑换

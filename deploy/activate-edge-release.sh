@@ -28,7 +28,7 @@ ln -sfn "releases/$version" "$site/current.next"
 mv -Tf "$site/current.next" "$site/current"
 docker exec "$openresty_container" test -f /www/sites/zz-glorynavy-seat/index/index.html
 docker exec "$openresty_container" nginx -t >/dev/null
-code=$(curl -ksS -o /dev/null -w '%{http_code}' https://seat.kisectool.com/)
+code=$(curl -fsS -o /dev/null -w '%{http_code}' https://seat.glorynavy.com/)
 test "$code" = 200
 echo "EDGE_RELEASE_READY:$version"
 echo "PUBLIC_HOME:$code"

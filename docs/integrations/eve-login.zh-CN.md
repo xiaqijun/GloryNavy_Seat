@@ -20,7 +20,7 @@ http://127.0.0.1:5173/api/v1/eve/callback
 
 与应用配置严格一致，不把 `localhost` 和 `127.0.0.1` 混用，不使用 API 内部端口 8080 作为前端入口。生产为 `https://你的域名/api/v1/eve/callback`，需要单独配置对应环境的应用。
 
-当前生产部署目标回调为 `https://seat.kisectool.com/api/v1/eve/callback`，`PUBLIC_ORIGIN=https://seat.kisectool.com`。凭据仅在应用服务器配置；上线复用已有开发者应用时必须先修改其回调，原本地回调可能不再可用。开发和生产长期并行应使用各自的应用。域名、证书及具体部署验收见[生产部署](../deployment.md)与[项目状态](../project-status.md)。
+当前生产部署目标回调为 `https://seat.glorynavy.com/api/v1/eve/callback`，`PUBLIC_ORIGIN=https://seat.glorynavy.com`。凭据仅在应用服务器配置；上线复用已有开发者应用时必须先修改其回调，原本地回调可能不再可用。开发和生产长期并行应使用各自的应用。旧域名只跳转到新站；未完成的旧回调必须重新登录，不能转发 code/state 或跨域共享 Cookie。域名、证书及具体部署验收见[生产部署](../deployment.md)与[项目状态](../project-status.md)。
 
 当前已配置独立生产应用，开发环境继续保留原应用。生产凭据保存在应用服务器 `/etc/glorynavy/seat.env`，替换后重启 `glorynavy.service`；不得顺带重置 `EVE_TOKEN_KEY`。配置存在和跳转参数正确不代表 Client Secret 已通过真实换码验证。
 
