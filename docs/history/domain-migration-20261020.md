@@ -19,4 +19,18 @@
 
 ## 验证与执行
 
-仓库配置已准备，尚未应用。待核对 nginx 配置、新旧域名跳转、实际浏览器登录 Origin/303/PKCE/Cookie、匿名权限、旧/恶意 Origin 拒绝、上游健康和旧证书续期隔离。EVE 新回调预检查可到达官方登录表单；实际用户授权换码仍需真实登录确认。
+配置来自干净且已推送的 main `e0aca9fa9e383b3c54fcb2f0a105ef5402e3b595`，于 2026-10-20 03:56 UTC 应用。GitNexus 暂存与相对 main 检查均 LOW，无受影响业务流程；本次只修改部署配置及说明，不修改鉴权函数。
+
+- 应用环境备份：`/var/backups/glorynavy/domain-20261020T035644Z/seat.env`；边缘配置、旧证书和 1Panel 数据库快照：`/root/glorynavy-deploy/domain-20261020T035650Z/`。均在服务器受保护目录，没有导出到仓库。
+- 1Panel 站点主域名已改为新域名，代号与证书关联保持一致。应用 `active/running`、`NRestarts=0`；后端保持 `v0.1.0-exchange-withdraw-20261019`，前端保持 `v0.1.0-workspace-logo-20261020`，公网 HTML 与既有发布产物字节一致。
+- 新站 `/`、`/login`、`/workspace`、`/help` 为 200；HTTP 跳转 HTTPS。旧域名 HTTP/HTTPS 均通过证书验证并将普通路径及查询 301 到新站；旧 POST 和旧回调返回 303 新登录页，未携带旧 code/state。
+- 未模拟生产 API 的实际 Edge 浏览器点击登录返回 303，Origin 与新站一致；SSO 回调为新域名、PKCE 为 S256，流程 Cookie 为 Secure/HttpOnly/SameSite=Lax 且仅限新主机。浏览器到达真实 EVE 登录表单，没有提交玩家凭据。
+- `null`、旧域名、不可信域名 Origin 及 cross-site 登录请求仍为 403；模块、系统状态、EVE 状态、审批和钱包匿名请求仍为 401。
+- 新域名下 Sentry 的两个服务端认证只读接口 `client-usage` 与 `monitor-contributions` 均为 200；未创建/轮换密钥、修改计费或发送消息。
+- 实际执行旧证书部署钩子后，新证书 SHA-256 保持 `8b585bc3fa694b36427e2298a155118d4ffd08dbf258276204d16ecae814b436`；新旧 TLS 分别覆盖对应主机。旧站 HTTP/HTTPS ACME challenge 临时文件均 200，随后清理；OpenResty 配置校验通过。未进行证书重新签发。
+
+实际玩家完成 EVE 授权并返回本站的换码环节未代为执行，成员需从新站重新登录。以上登录启动与配置核验不等同于完整授权验收。检查脚本和无敏感值结果保存在忽略目录 `.local/domain-migration/`。
+
+## 恢复边界
+
+优先修正新域名配置。若确需恢复旧域名，必须一起恢复应用来源、对应代理与 HTTPS 站点以及 EVE 开发者应用回调，先核对当前证书覆盖范围；不能只把 `PUBLIC_ORIGIN` 改回去。恢复 1Panel 元数据时只按审计恢复对应字段，不覆盖整个运行中数据库。保留发布目录、所有授权、数据库和新旧证书，不用配置备份覆盖业务数据。
