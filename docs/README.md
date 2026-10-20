@@ -12,7 +12,7 @@
 
 角色定期清理：[中文](integrations/corporation-cleanup.zh-CN.md) / [English](integrations/corporation-cleanup.en.md)，由成员页管理员配置，默认关闭。
 
-接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，密钥、监控奖励和收费配置已生产，真实证据与实账验收待完成）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，2026-10-06 已进入本地首期实现，尚未生产发布）。
+接入方案与阶段状态：[EVE Sentry 本站接入](plans/eve-sentry-integration.zh-CN.md)（SENTRY-01，已部署；[2026-10-20 收费核查](history/sentry-billing-audit-20261020.md)发现消费写入失败与分段取整偏高，待修复）；[军团贷款与个人贷款](plans/loans.zh-CN.md)（LOAN-01，2026-10-06 已进入本地首期实现，尚未生产发布）。
 
 GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台。更新：2026-09-23。
 
