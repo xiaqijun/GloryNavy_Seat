@@ -4,6 +4,8 @@
 
 ## 已确认需求与验收缺口
 
+WEB-01 补充（2026-10-20）：当前 Windows/Edge 环境的跨屏采样断言在首屏改字版和未修改的 `v0.1.0-seat-help-20261020` 构建均只采到 1 个滚动位置（预期多于 8 个），其余 19 项首页回归通过。后续核查浏览器动画环境与采样条件，不能将该项计为通过；本次纯文案发布没有更改动效。证据见[首屏副标题精简](history/public-home-ux-20261020.md#首屏副标题精简)。
+
 回归基线修复（TEST-01 / 中，2026-10-17）：未修改 `1081d98` 基线复现 `TestSyncRunRetentionMigrationRoundTrip`、`TestSlidingMigrationPreservesOutstandingBudget` 在 Goose 73 Down 的 dollar-quoted SQL 解析错误，以及 `TestSyncTransactionalDispatchAndDuplicateScanners` 预期 2 个作业但实际 3 个。修复迁移解析/断言与当前派发规则的一致性，并在合理超时预算下完成 EVE 全量回归；本轮 EVE 全量触发默认 10 分钟上限，不能计为通过。证据在本地 `.local/corporation-cleanup/backend.log`、`extra.log`；不属于本轮角色清理产生的失败。
 
 角色清理真实验收（CLEANUP-01）：Goose 90 与每周规则已随 `v0.1.0-corporation-cleanup-20261017` 发布，默认关闭；生产需管理员选择军团名单、核对预览并启用，首轮执行后核对逐角色审计、主角色替换/无角色会话撤销和历史记录保留。默认关闭期间不视为已完成真实清理。实现/发布状态见[项目状态](project-status.md)。

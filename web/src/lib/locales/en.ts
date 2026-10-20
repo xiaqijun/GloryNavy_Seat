@@ -332,7 +332,7 @@ export const english: Record<string, string> = {
   "下一屏": "Next page",
   "当前章节：{0}": "Current section: {0}",
   "军团活动": "Activities",
-  "荣耀海军 · 00 精英 PVP 军团": "Glory Navy · Nullsec PvP",
+  "荣耀海军": "Glory Navy",
   "从晨曦到宁静，欢迎热爱战斗的新老舰长。": "From Serenity to Tranquility. Welcoming new and veteran pilots who love combat.",
   "荣耀海军，": "Glory Navy.",
   "全员猛男！": "Fearless together.",

@@ -212,9 +212,7 @@ export default function LandingPage() {
             <div className="landing-hero-copy">
               <p className="landing-eyebrow">EVE ONLINE · TRANQUILITY</p>
               <h1 id="landing-title">GloryNavy</h1>
-              <p className="landing-tagline">
-                {msg("荣耀海军 · 00 精英 PVP 军团")}
-              </p>
+              <p className="landing-tagline">{msg("荣耀海军")}</p>
               <div className="landing-hero-actions">
                 <a className="landing-primary" href="#join">
                   {msg("加入我们")}
