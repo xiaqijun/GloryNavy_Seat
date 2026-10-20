@@ -1,0 +1,24 @@
+[Unit]
+Description=WinterCo PAP collector (private network, token auth)
+Wants=network-online.target zerotier-one.service
+After=network-online.target zerotier-one.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/seat_pap
+ExecStart=/usr/bin/python3 -B /root/seat_pap/seat_pap_service.py serve
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/root/seat_pap/data
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

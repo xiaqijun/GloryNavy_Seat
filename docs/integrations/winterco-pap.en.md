@@ -30,6 +30,16 @@ Standalone seat-pap service → private backend HTTP → attendance River queue 
 - The upstream service has its own 30-minute capture clock. The two schedules/caches do not guarantee a game change appears within 30 minutes. Use actual synchronization timestamps.
 - Source rows contain decimal monthly cumulative PAP per character, not individual activity IDs/dates. The application supports 0.01 PAP precision and maps valid character bindings to accounts; reports retain object authorization.
 
+## Moving the standalone collector
+
+The existing collector can run on a Hong Kong host, reached by the backend over the private ZeroTier network. Use [seat-pap.service](../../deploy/seat-pap.service); set `bind` in `config.json` to that host's private address and keep port `18770`. Do not add a public reverse proxy. Transfer the unchanged program, `web/`, configuration, credentials and complete `data/` directly through trusted SSH. Restrict directories to root; never place tokens or cookies in Git, output or command arguments. This move does not change parsing, month selection, conversion mode or ledger rules.
+
+First run the existing `CLIENT.monthly()` once on the target, printing only month, completeness, row count, total points and duration. Public-home connectivity and health responses are not full PAP validation. After starting the target service, call `/api/pap/monthly` from the application host with its existing restricted token. Verify a complete response within the application's 25-second budget and rejection of anonymous requests. This GET performs a fresh upstream capture rather than merely reading a saved snapshot; background capture and API requests share a serial lock.
+
+After verification, back up the application environment, stop and disable the old `seat-pap.service`, change only `WINTERCO_PAP_URL` to `http://<HK_PRIVATE_IP>:18770`, retain `WINTERCO_PAP_AUTH_FILE` and its existing token, and restart the current application release. Let the real River worker synchronize, then verify database success time, complete-month metadata and member projections. Never import using a temporary service without the host's conversion callbacks. Collector overlap is limited to migration verification; disable the old instance after cutover.
+
+To roll back, stop the target, transfer its latest cookies back through trusted SSH into the original protected data directory, restore the environment backup and restart the original collector and application. Keep complete snapshots and original programs as recovery evidence; do not clear PAP or ledger data. Stability across time, automatic renewal and month transitions still require observation.
+
 ## Reports and conversion
 
 `/attendance?view=alliance-pap` shows the current month, default target of 3 PAP per person, a progress ring, mapped character details and synchronization state. Administrators can open “Convert alliance PAP” below the details, select a retained month with an unconverted balance and settle it from that complete snapshot. The workspace reads the same report. Corporation PAP comes from local roll calls, has no monthly threshold, and cannot satisfy the alliance requirement.
