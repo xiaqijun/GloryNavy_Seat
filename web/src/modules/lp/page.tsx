@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import { Coins, RefreshCw, Search } from "lucide-react";
+import { Coins, RefreshCw, Search, Flag, MapPin, Percent, ArrowLeftRight } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { getLocale, msg } from "@/lib/i18n";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
+import { EveImage } from "@/components/eve-image";
 import * as api from "./api";
 import "./lp.css";
 
@@ -68,11 +69,11 @@ function QueryPage({user}:{user:string}) {
   return <div className="lp-page">
     <header className="lp-heading"><Coins aria-hidden="true"/><h1>{msg("LP 兑换查询")}</h1><IconAction label={msg("刷新数据")} disabled={pending} onClick={refresh}><RefreshCw aria-hidden="true"/></IconAction></header>
     <section className="lp-panel lp-filters" aria-label={msg("查询条件")}>
-      <label><span>{msg("NPC 阵营")}</span><Select label={msg("NPC 阵营")} value={faction} options={[{value:"",label:msg("全部阵营")},...(catalog.data?.factions||[]).map(f=>({value:String(f.id),label:displayName(f)}))]} onValueChange={v=>{setFaction(v);setCorpQuery("");if(v && !catalog.data?.corporations.some(c=>String(c.id)===corp && String(c.faction_id)===v)){chooseCorp(String(catalog.data?.corporations.find(c=>String(c.faction_id)===v)?.id || ""));}}}/></label>
-      <div className="lp-corporation"><label htmlFor="lp-corp-search">{msg("NPC 军团")}</label><input id="lp-corp-search" aria-label={msg("搜索 NPC 军团")} value={corpQuery} onChange={e=>setCorpQuery(e.target.value)} placeholder={msg("搜索名称或 ID")}/><Select label={msg("NPC 军团")} value={corp} options={corporations.map(c=>({value:String(c.id),label:displayName(c)}))} disabled={!corporations.length} onValueChange={chooseCorp}/>{!catalog.isPending && !catalog.isError && !corporations.length && <span role="status">{msg("没有匹配的军团")}</span>}</div>
-      <label><span>{msg("市场")}</span><Select label={msg("市场")} value={region} options={markets.map(([value,label])=>({value,label:msg(label)}))} onValueChange={v=>{setRegion(v);setPage(1);}}/></label>
-      <label><span>{msg("售价依据")}</span><Select label={msg("售价依据")} value={mode} options={[{value:"sell",label:msg("最低卖单")},{value:"buy",label:msg("最高买单")}]} onValueChange={v=>{setMode(v as "sell"|"buy");setPage(1);}}/></label>
-      <label><span>{msg("税费 / %")}</span><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={tax} aria-invalid={!taxValid} onChange={e=>setTax(e.target.value)}/></label>
+      <label><span className="lp-filter-label"><Flag size={16} aria-hidden="true"/>{msg("NPC 阵营")}</span><Select label={msg("NPC 阵营")} value={faction} options={[{value:"",label:msg("全部阵营")},...(catalog.data?.factions||[]).map(f=>({value:String(f.id),label:displayName(f)}))]} onValueChange={v=>{setFaction(v);setCorpQuery("");if(v && !catalog.data?.corporations.some(c=>String(c.id)===corp && String(c.faction_id)===v)){chooseCorp(String(catalog.data?.corporations.find(c=>String(c.faction_id)===v)?.id || ""));}}}/></label>
+      <div className="lp-corporation"><label htmlFor="lp-corp-search">{msg("NPC 军团")}</label><input id="lp-corp-search" aria-label={msg("搜索 NPC 军团")} value={corpQuery} onChange={e=>setCorpQuery(e.target.value)} placeholder={msg("搜索名称或 ID")}/><Select label={msg("NPC 军团")} value={corp} options={corporations.map(c=>({value:String(c.id),label:displayName(c),leading:<EveImage id={String(c.id)} kind="corporation" className="lp-corporation-icon"/>}))} disabled={!corporations.length} onValueChange={chooseCorp}/>{!catalog.isPending && !catalog.isError && !corporations.length && <span role="status">{msg("没有匹配的军团")}</span>}</div>
+      <label><span className="lp-filter-label"><MapPin size={16} aria-hidden="true"/>{msg("市场")}</span><Select label={msg("市场")} value={region} options={markets.map(([value,label])=>({value,label:msg(label)}))} onValueChange={v=>{setRegion(v);setPage(1);}}/></label>
+      <label><span className="lp-filter-label"><ArrowLeftRight size={16} aria-hidden="true"/>{msg("售价依据")}</span><Select label={msg("售价依据")} value={mode} options={[{value:"sell",label:msg("最低卖单")},{value:"buy",label:msg("最高买单")}]} onValueChange={v=>{setMode(v as "sell"|"buy");setPage(1);}}/></label>
+      <label><span className="lp-filter-label"><Percent size={16} aria-hidden="true"/>{msg("税费 / %")}</span><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={tax} aria-invalid={!taxValid} onChange={e=>setTax(e.target.value)}/></label>
     </section>
     {!taxValid && <p role="alert">{msg("税费须为 0 至 100")}</p>}
     {error && <div className="lp-error" role="alert"><span>{error.message}</span><Button variant="outline" disabled={pending} onClick={refresh}>{msg("重试")}</Button></div>}
@@ -81,8 +82,8 @@ function QueryPage({user}:{user:string}) {
       {pending && <p role="status" className="lp-state">{catalog.isFetching || offers.isFetching ? msg("正在读取 LP 商店…") : msg("正在查询市场价格…")}</p>}
       {!pending && !offers.isError && offers.data && rows.length===0 && <p className="lp-state" role="status">{query ? msg("没有匹配的兑换项目") : msg("该军团暂无兑换项目")}</p>}
       {rows.length>0 && <table><thead><tr>{columns.map(c=><th scope="col" key={c}>{c}</th>)}</tr></thead><tbody>{rows.slice((current-1)*25,current*25).map(row=> <tr key={row.offer.offer_id}>
-        <td data-label={columns[0]}><strong>{typeName(row.offer.type_id)}</strong><span className="lp-quantity">{row.offer.blueprint ? msg("{0} 流程",row.offer.quantity) : `× ${num(row.offer.quantity)}`}</span>{row.offer.blueprint && <div>{msg("产出")} {typeName(row.product.type_id)} × {num(row.product.quantity)}</div>}
-          <details><summary>{msg("材料明细")}</summary><div className="lp-materials"><p>{msg("商店 ISK")}：{money(row.offer.isk_cost)}</p>{row.offer.required_items.map((m,i)=><p key={`r${i}`}>{typeName(m.type_id)} × {num(m.quantity)}</p>)}{row.offer.blueprint && <><p><b>{msg("制造材料（ME 0）")}</b></p>{row.offer.blueprint.materials.map((m,i)=><p key={`b${i}`}>{typeName(m.type_id)} × {num(m.quantity*row.offer.quantity)}</p>)}</>}{!row.materials.length && <p>{msg("无需材料")}</p>}</div></details>
+        <td data-label={columns[0]}><div className="lp-item-heading"><EveImage id={String(row.offer.type_id)} kind="type" className="lp-offer-icon"/><div><strong>{typeName(row.offer.type_id)}</strong><span className="lp-quantity">{row.offer.blueprint ? msg("{0} 流程",row.offer.quantity) : `× ${num(row.offer.quantity)}`}</span></div></div>{row.offer.blueprint && <div className="lp-material-line"><EveImage id={String(row.product.type_id)} kind="type" className="lp-material-icon"/><span>{msg("产出")} {typeName(row.product.type_id)} × {num(row.product.quantity)}</span></div>}
+          <details><summary>{msg("材料明细")}</summary><div className="lp-materials"><p className="lp-material-line"><Coins size={20} aria-hidden="true"/><span>{msg("商店 ISK")}：{money(row.offer.isk_cost)}</span></p>{row.offer.required_items.map((m,i)=><p className="lp-material-line" key={`r${i}`}><EveImage id={String(m.type_id)} kind="type" className="lp-material-icon"/><span>{typeName(m.type_id)} × {num(m.quantity)}</span></p>)}{row.offer.blueprint && <><p><b>{msg("制造材料（ME 0）")}</b></p>{row.offer.blueprint.materials.map((m,i)=><p className="lp-material-line" key={`b${i}`}><EveImage id={String(m.type_id)} kind="type" className="lp-material-icon"/><span>{typeName(m.type_id)} × {num(m.quantity*row.offer.quantity)}</span></p>)}</>}{!row.materials.length && <p>{msg("无需材料")}</p>}</div></details>
         </td>
         <td data-label={columns[1]}>{num(row.offer.lp_cost)} LP{row.offer.ak_cost>0 && <div>{num(row.offer.ak_cost)} AK</div>}</td>
         <td data-label={columns[2]} title={row.cost===null ? undefined : `${num(row.cost)} ISK`}>{money(row.cost)}</td>
