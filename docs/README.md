@@ -1,5 +1,7 @@
 # 项目文档
 
+兑换在审批中心不可见：[2026-10-21 原因、修复与验证](history/exchange-approval-visibility-20261021.md)。
+
 公开首页 SEO/GEO：[实现、验证与发布记录](history/public-home-seo-20261020.md)；[页面与抓取边界](ui/homepage.md)。
 
 联盟 PAP 采集已迁到香港：[2026-10-20 迁移与恢复记录](history/pap-collector-hk-20261020.md)。

@@ -16,9 +16,11 @@ import (
 var ErrUnavailable = errors.New("approval index unavailable")
 
 type Scope struct {
-	Source           string    `json:"source"`
-	All              bool      `json:"all,omitempty"`
-	Corporation      string    `json:"corporation,omitempty"`
+	Source string `json:"source"`
+	All    bool   `json:"all,omitempty"`
+	// Empty identifies sources without a corporation; SQL compares it with ''.
+	// Omitting it produces NULL and rejects even an authorized binding match.
+	Corporation      string    `json:"corporation"`
 	Accounts         []string  `json:"accounts,omitempty"`
 	RestrictAccounts bool      `json:"restrict_accounts,omitempty"`
 	Bindings         []Binding `json:"bindings,omitempty"`

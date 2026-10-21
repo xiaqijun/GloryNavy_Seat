@@ -4,6 +4,8 @@
 
 ## 已确认需求与验收缺口
 
+APPROVAL-DETAIL-01（2026-10-21，待修复）：隔离 PostgreSQL 回归发现 `approval/internal/store.Index.Get` 的通用索引详情 SQL 缺少闭合括号，返回 SQLSTATE 42601。兑换使用来源专用 `ApprovalDetail`，本轮兑换列表修复不走该回退路径；没有顺带修改其他来源详情。需补齐真实 SQL 详情回归并修复通用回退路径，覆盖授权、角色解绑和管理权限撤销。证据见[兑换可见性记录](history/exchange-approval-visibility-20261021.md)。
+
 WEB-01 / SEO 补充（2026-10-20）：首页 SEO/GEO 已随 `v0.1.0-public-home-seo-20261020` 发布，线上抓取文件、成员禁止收录、跳转、安全头、匿名权限及桌面/手机浏览器检查通过，见[本轮记录](history/public-home-seo-20261020.md)。搜索引擎实际收录、AI 引用、站长平台域名验证与收录提交未完成，不将技术配置等同于排名承诺。原滚动测试本轮在新旧产物均复现末次锚点定位 123px、预期 80px，继续保留动作连贯性验收。
 
 PAP-03 补充（2026-10-20）：绑定数量和个人失败快照展示已随 `v0.1.0-alliance-pap-bindings-20261020` 发布，真实数据只读投影确认 5 个绑定角色、9.5 PAP。采集器已迁到香港，16:15 正式同步恢复 ready/complete，44 个角色、434.50 PAP；完整获取约 2–5 秒。保留跨时段采集/续期/月界稳定性和真实登录浏览器验收，见[显示修复](history/alliance-pap-bindings-20261020.md)及[香港迁移证据](history/pap-collector-hk-20261020.md)。

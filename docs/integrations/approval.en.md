@@ -1,5 +1,7 @@
 # Approval center
 
+2026-10-21: Fixed redemptions missing from the unified index. Authorization scopes for sources without a corporation must serialize an explicit empty `corporation`; omitting it makes the SQL comparison evaluate to NULL and excludes valid bindings. Current administrator and account/recipient checks remain required. Normal redemptions stay in Fulfillment, cancellation requests in Pending, and terminal records in History. No migration, order rebuild, accounting, contract, or approval-rule change is required. See the [verification and release record](../history/exchange-approval-visibility-20261021.md).
+
 2026-10-19: Exchange projections and source details include pack `units` and full order totals. Cancellation displays pack count; approval does not recalculate stock or coins. See [exchange](exchange.en.md).
 
 
