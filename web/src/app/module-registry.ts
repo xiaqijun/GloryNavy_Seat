@@ -15,7 +15,7 @@ export interface PageDefinition {
   navigation?: boolean;
   administratorOnly?: boolean;
   navigationGroup?:
-    "corporation" | "operations" | "finance" | "benefits" | "administration";
+    "corporation" | "operations" | "finance" | "benefits" | "tools" | "administration";
   navigationOrder?: number;
   navigationFooter?: boolean;
   permission?:

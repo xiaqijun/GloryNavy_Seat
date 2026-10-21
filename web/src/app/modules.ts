@@ -4,6 +4,7 @@ import { walletModule } from "@/modules/wallet";
 import { marketModule } from "@/modules/market";
 import { feedbackModule } from "@/modules/feedback";
 import { courierModule } from "@/modules/courier";
+import { lpModule } from "@/modules/lp";
 import { welfareModule } from "@/modules/welfare";
 import { exchangeModule } from "@/modules/exchange";
 import { fittingsModule } from "@/modules/fittings";
@@ -30,6 +31,7 @@ export const frontendModules = registerModules([
   walletModule,
   marketModule,
   courierModule,
+  lpModule,
   feedbackModule,
   eveModule,
   communityModule,

@@ -9,6 +9,7 @@ import {
   Settings2,
   Menu,
   UsersRound,
+  Wrench,
 } from "lucide-react";
 import type { RegisteredModule } from "./module-registry";
 import "./sidebar-navigation.css";
@@ -19,6 +20,7 @@ const groups = [
   { id: "operations", label: msg("作战训练"), icon: Crosshair },
   { id: "finance", label: msg("资产服务"), icon: Landmark },
   { id: "benefits", label: msg("福利兑换"), icon: Gift },
+  { id: "tools", label: msg("工具"), icon: Wrench },
   { id: "administration", label: msg("系统管理"), icon: Settings2 },
 ] as const;
 export function SidebarNavigation({

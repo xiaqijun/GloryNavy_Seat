@@ -22,6 +22,7 @@ import (
 	"glorynavy.local/seat/internal/modules/fittings"
 	"glorynavy.local/seat/internal/modules/identity"
 	"glorynavy.local/seat/internal/modules/loan"
+	"glorynavy.local/seat/internal/modules/lp"
 	"glorynavy.local/seat/internal/modules/market"
 	"glorynavy.local/seat/internal/modules/reminder"
 	"glorynavy.local/seat/internal/modules/sentry"
@@ -317,7 +318,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "community.group.manage" || permission == "reminder.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
+		if permission == "lp.self" || permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
 		}
 		if permission == "sentry.manage" {
@@ -879,7 +880,13 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		reminderModule.Service.Sources["pap_requirement"] = attendanceModule.Service.RequirementReminderKeys
 		reminderModule.Service.Details["pap_requirement"] = attendanceModule.Service.RequirementReminderDetails
 	}
-	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module(), feedbackHandler.Module(), (courier.Handler{Service: courier.NewService()}).Module()}, enabled, authorize)
+	lpData := &eve.LPDataService{Names: staticData}
+	lpService := &lp.Service{Reference: lpData.Reference, Names: staticData.TypeNames, Market: lp.NewMarketClient()}
+	if syncService != nil {
+		lpService.Request = syncService.ESI().Request
+		lpService.Market.Request = syncService.ESI().Request
+	}
+	registry, err := module.New([]module.Definition{system.Module(status), identityHandler.Module(), eveHandler.Module(), accessHandler.Module(), communityHandler.Module(), attendanceModule.Module(), exchangeModule.Module(), fittingModule.Module(), skillModule.Module(), welfareModule.Module(), walletModule.Module(), marketModule.Module(), sentryHandler.Module(), structureHandler.Module(), loanHandler.Module(), approvalModule.Module(), reminderModule.Module(), feedbackHandler.Module(), (courier.Handler{Service: courier.NewService()}).Module(), (lp.Handler{Service: lpService}).Module()}, enabled, authorize)
 	if err != nil {
 		return nil, err
 	}

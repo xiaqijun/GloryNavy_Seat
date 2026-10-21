@@ -1,5 +1,7 @@
 # 新增模块开发约定
 
+只读工具示例 `lp`：会话／资料门禁的 `lp.self`，无可委派管理权限。共享 ESI 经宿主注入，参考数据按活动 SDE 版本读取；前端声明 `navigationGroup: "tools"`。见 [LP 查询](integrations/lp.zh-CN.md)。
+
 提醒多来源（Goose 98）通过宿主注册只读 `ReminderKeys`/授权适配器；SQL 归 welfare/exchange/loan/attendance/eve/sentry/feedback 自身私有 store，建筑复用既有已授权快照服务。提醒只保存类型、哈希引用、起点与发送回执，不复制业务状态；来源随模块启用注册，发送前重新核对。新增提醒须具备账号/对象权限、稳定事件键和历史窗口，详见[提醒指南](integrations/reminder.zh-CN.md)。
 
 Goose 97 的福利单据换号审计只由显式运维修复写入，迁移不改历史单号；自动交付与取消查询必须同时使用本单当前号和审计旧号，游戏合同证据保持原文。已有审计后不可回退旧匹配逻辑，见[福利指南](integrations/welfare.zh-CN.md)。

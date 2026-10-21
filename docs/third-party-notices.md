@@ -1,5 +1,7 @@
 # Third-party source notices
 
+LP 查询同样参考 glory-navy 955c2ded 的业务行为并独立实现，不复制其源码或资源。NPC、阵营和蓝图直接来自本站已校验的 CCP 官方 SDE ZIP，商店来自 ESI，行情来自 [Fuzzwork](https://market.fuzzwork.co.uk/api/) 或 ESI；不包含参考项目的静态 JSON 资产。
+
 PVP 整场战报通过用户指定的 [SCTools Battle Report](https://br.scers.cn/) 公开服务获取（2026-10-19 核对，示例 KM 139267042）。本项目独立实现固定端点客户端，仅显示公开统计并链接回原站；未复制、打包或再分发其前端代码/资源，也不推定其源码许可证。原始 EVE 数据及权利仍遵循下方 CCP 说明。接口与展示边界见[福利指南](integrations/welfare.zh-CN.md)。
 
 快递功能的业务规则参考用户指定的 [dearosmanthus/glory-navy](https://github.com/dearosmanthus/glory-navy/tree/955c2dedb346312d14982f12b3201ff8f22c5828) 中 courier 功能（2026-10-18 查阅）。该仓库未选择开源许可证；本项目独立实现适配，未复制其源码或资源，不将其声明为 MIT 等许可。实时路线与估价来自 [Heavy Assets Logistics](https://hallogistics.space/)，估价详情仅接受 Janice 的 HTTPS 链接。CCP 游戏数据权利沿用本文现有说明。
