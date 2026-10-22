@@ -17,4 +17,8 @@ GitNexus Workspace upstream 影响 LOW，仅直接调用者 CourierPage，无额
 
 ## 发布
 
-前端发布待完成，后端保持 v0.1.0-courier-appraisal-cache-20261023、Goose 103。
+前端 `v0.1.0-courier-destination-20261023` 已从干净且已推送的 main `d30d36deabcc3a7c809aef47232056983017d7a3` 发布；打包文件 SHA-256 与最终浏览器测试构建逐文件一致。提交前 detect_changes 覆盖预期 6 个文件及 Workspace → Translate 一条显示流程，MEDIUM；未修改共享组件或翻译函数。
+
+线上完整文件清单、OpenResty 配置检查通过；首页、快递、LP 和账户页面 200 且与发布文件字节一致，快递 JS 分块哈希一致。快递线路、LP 和审批 API 匿名均 401。后端保持 `v0.1.0-courier-appraisal-cache-20261023`、Goose 103，没有迁移或配置变动。真实登录浏览器未复测，不把资源核验当作登录态页面验收。
+
+前版前端 `v0.1.0-lp-icons-20261022` 保留可供回退，无需数据库恢复。
