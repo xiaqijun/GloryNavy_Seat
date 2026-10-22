@@ -11,9 +11,15 @@
 ## API 与边界
 
 - GET `/api/v1/courier/routes`：有效会话及资料门禁，返回 routes、location_categories、fetched_at。固定 HTTPS 来源，服务端缓存 300 秒，过期拉取失败返回 503，不将旧价当新价。
-- POST `/api/v1/courier/appraisal`：同上且要求 Origin/CSRF，JSON appraisal_text，最多 100000 个字符、5000 行，HTTP 上限 1 MiB。仅向固定 HA Logistics `/api/appraisal` 转发清单；每次独立获取服务方 XSRF 会话，不转发本站 Cookie、EVE token 或用户身份。
+- POST `/api/v1/courier/appraisal`：同上且要求 Origin/CSRF，JSON appraisal_text，最多 100000 个字符、5000 行，HTTP 上限 1 MiB。仅向固定 HA Logistics `/api/appraisal` 转发清单；独立于本站的匿名服务方 XSRF 会话最多复用 5 分钟（不超过 Cookie 有效期），不转发本站 Cookie、EVE token 或用户身份。
 - 只返回经过验证的 buy_price/sell_price/volume、未识别项目和可选 Janice HTTPS 详情；错误不透出服务方正文。请求超时、响应大小与全局两路估价并发限制；繁忙返回 429，Retry-After 5 秒。JSON 无效/过长 400，匿名 401，资料或 CSRF 拒绝 403，上游不可用 503。
 - courier.self 仅为登录入口，不是可委派管理权限；没有成员/军团私有数据读取。不开列到 ManageableCatalog，没有 store、迁移、River 任务或账号合并参与方。
+
+## 估价性能（2026-10-23）
+
+清单仅去除首尾空白后以 SHA-256 为键，成功且没有未识别物品的结果在内存复用最多 60 秒，上限 128 项；不保存原始清单、不落库，修改数量／内容立即使用另一键。`from_cache=true` 包含本站或服务方缓存命中。过期、失败和未识别结果不复用；不使用陈旧报价掩盖上游故障。
+
+同一清单的同时请求合并一次上游调用，独立清单仍最多两路；客户端离开不取消其他读者，共享调用仍有 28 秒上限。匿名上游 XSRF 会话短时复用；收到明确 403 时失效，下次查询重新取会话，不自动重放 POST 或未知结果。图片／首页正文不参与估价；只取响应头中的 Cookie。首次查询及缓存到期后的查询仍受 HA Logistics / Janice 响应速度影响。
 
 ## 启用、验证与来源
 

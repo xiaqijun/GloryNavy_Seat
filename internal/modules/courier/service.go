@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -64,6 +66,11 @@ type Service struct {
 	cached     Routes
 	expires    time.Time
 	appraisals chan struct{}
+	sessionMu  sync.Mutex
+	session    upstreamSession
+	quoteMu    sync.Mutex
+	quotes     map[[32]byte]cachedAppraisal
+	quoteGroup singleflight.Group
 }
 
 func NewService() *Service {
@@ -168,6 +175,10 @@ func (s *Service) Appraise(ctx context.Context, text string) (AppraisalResult, e
 	if text == "" || utf8.RuneCountInString(text) > 100000 || strings.Count(text, "\n") >= 5000 {
 		return AppraisalResult{}, ErrInput
 	}
+	return s.cachedAppraise(ctx, text)
+}
+
+func (s *Service) appraiseUpstream(ctx context.Context, text string) (AppraisalResult, error) {
 	select {
 	case s.appraisals <- struct{}{}:
 		defer func() { <-s.appraisals }()
@@ -176,27 +187,8 @@ func (s *Service) Appraise(ctx context.Context, text string) (AppraisalResult, e
 	}
 	ctx, cancel := context.WithTimeout(ctx, 28*time.Second)
 	defer cancel()
-	landingCtx, landingCancel := context.WithTimeout(ctx, 8*time.Second)
-	landing, err := s.request(landingCtx, "GET", "/", nil)
+	session, err := s.appraisalSession(ctx)
 	if err != nil {
-		landingCancel()
-		return AppraisalResult{}, ErrUnavailable
-	}
-	var cookie *http.Cookie
-	for _, c := range landing.Cookies() {
-		if c.Name == "_xsrf" {
-			cookie = c
-			break
-		}
-	}
-	status := landing.StatusCode
-	landing.Body.Close()
-	landingCancel()
-	if status != 200 || cookie == nil || len(cookie.Value) > 4096 {
-		return AppraisalResult{}, ErrUnavailable
-	}
-	token, err := url.QueryUnescape(cookie.Value)
-	if err != nil || token == "" {
 		return AppraisalResult{}, ErrUnavailable
 	}
 	body, _ := json.Marshal(map[string]string{"appraisal_text": text})
@@ -209,11 +201,18 @@ func (s *Service) Appraise(ctx context.Context, text string) (AppraisalResult, e
 	r.Header.Set("User-Agent", "GloryNavy-SeAT/1.0 (+https://seat.kisectool.com)")
 	r.Header.Set("Origin", s.base)
 	r.Header.Set("Referer", s.base+"/")
-	r.Header.Set("X-XSRFToken", token)
-	r.AddCookie(cookie)
+	r.Header.Set("X-XSRFToken", session.token)
+	r.AddCookie(&session.cookie)
 	response, err := s.client.Do(r)
 	if err != nil {
 		return AppraisalResult{}, ErrUnavailable
+	}
+	if response.StatusCode == http.StatusForbidden {
+		s.sessionMu.Lock()
+		if s.session.token == session.token {
+			s.session = upstreamSession{}
+		}
+		s.sessionMu.Unlock()
 	}
 	var payload struct {
 		Success   bool      `json:"success"`
