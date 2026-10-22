@@ -75,7 +75,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
         </div>
         {(!Number.isFinite(totalVolume) || !Number.isFinite(totalCollateral) || totalVolume < 0 || totalCollateral < 0) && <p role="alert">{msg("请输入有效的非负数字")}</p>}
         <div className="courier-location"><span>{msg("起点")}</span><Select label={msg("起点")} value={origin} disabled={!available.length} options={origins.map(x => ({ value: x, label: x, group: categories[x]?.category_name || "" }))} onValueChange={v => { setOrigin(v); const matches = available.filter(r => r.start === v); setRouteID(matches.length === 1 ? String(matches[0].id) : ""); resetCopy(); }} /></div>
-        <div className="courier-location"><span>{msg("终点")}</span><Select label={msg("终点")} value={routeID} disabled={!destinations.length} options={destinations.map(r => ({ value: String(r.id), label: `${r.end} · ${r.transport_type}`, group: categories[r.end]?.category_name || "" }))} onValueChange={v => { setRouteID(v); resetCopy(); }} /></div>
+        <div className="courier-location"><span>{msg("终点")}</span><Select label={msg("终点")} value={routeID} disabled={!destinations.length} options={destinations.map(r => ({ value: String(r.id), label: r.end, group: categories[r.end]?.category_name || "" }))} onValueChange={v => { setRouteID(v); resetCopy(); }} /></div>
       </div>
       <section className="courier-card courier-result" aria-label={msg("快递合同")}>
         <h2>{msg("快递合同")}</h2>

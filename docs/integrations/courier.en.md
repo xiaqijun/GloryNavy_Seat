@@ -1,5 +1,7 @@
 # Courier service
 
+Destination options display the provider's location name only, without appending a transport type or adding a transport-type selector. Quotes and contract parameters remain tied to the selected route ID.
+
 The /courier page implements the HA Logistics workflow requested from glory-navy revision 955c2ded. Live routes provide origin, destination, transport type, rates, minimum reward, volume limit, expiration and completion days. Paused routes are unavailable; no example rates become production defaults.
 
 Paste items for HA Logistics appraisal (volume and sell value as collateral), optionally add cargo, or enter all volume and collateral manually. Editing the list invalidates its previous appraisal. Unrecognized items, invalid numbers, unavailable data and oversized cargo prevent contract copying.
