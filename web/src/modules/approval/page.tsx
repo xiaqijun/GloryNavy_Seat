@@ -27,6 +27,7 @@ import type { Order } from "@/modules/exchange/rewards-api";
 import type { PhysicalContent } from "@/modules/exchange/catalog-api";
 import * as loan from "@/modules/loan/api";
 import { getContext, getQueue, getItem, lossQueueAmount, type QueueItem } from "./api";
+import { capitalAmount } from "@/modules/welfare/capital-api";
 import { settlementContractTitle } from "@/modules/welfare/contract-title";
 import * as settlement from "@/modules/welfare/settlement-api";
 import { useToast } from "@/components/ui/toast-context";
@@ -1235,6 +1236,13 @@ function ApprovalValue({ item }: { item: QueueItem }) {
   const welfarePayload = item.source === "welfare"
     ? item.payload as welfare.Case
     : null;
+  const estimatedAward = (welfarePayload as (welfare.Case & { estimated_award_minor?: number }) | null)?.estimated_award_minor ??
+    (welfarePayload?.detail?.purchase && welfarePayload.detail.rule ? capitalAmount(welfarePayload) : undefined);
+  const capitalEstimate = Number.isSafeInteger(estimatedAward) && (estimatedAward ?? 0) > 0 &&
+    ["supercarrier", "titan"].includes(item.kind) &&
+    ["submitted", "information", "external"].includes(item.state)
+      ? estimatedAward
+      : null;
   const welfareRewards = order || lossAmount
     ? undefined
     : welfarePayload?.detail?.rewards;
@@ -1251,7 +1259,7 @@ function ApprovalValue({ item }: { item: QueueItem }) {
       : undefined);
   const cash =
     item.unit.toLowerCase() === "isk"
-      ? (lossAmount?.amount ?? item.amount_minor)
+      ? (capitalEstimate ?? lossAmount?.amount ?? item.amount_minor)
       : (content?.isk_minor ?? 0);
   const coins =
     item.unit === "coin"
@@ -1272,6 +1280,7 @@ function ApprovalValue({ item }: { item: QueueItem }) {
       {cash > 0 && (
         <strong>
           {lossAmount?.label === "quote" ? `${msg("核价金额")} · ` : ""}
+          {capitalEstimate !== null ? `${msg("预计补贴")} · ` : ""}
           {formatMinor(cash)} ISK
         </strong>
       )}

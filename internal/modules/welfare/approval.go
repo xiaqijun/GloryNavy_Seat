@@ -113,7 +113,14 @@ func approvalSummary(c Case, d Detail) json.RawMessage {
 	compact.ReviewNote = ""
 	c.Detail = rawJSON(compact)
 	c.Keys = nil
-	return rawJSON(c)
+	var estimate int64
+	if isSuper(c.Kind) && d.Purchase != nil && (c.State == "submitted" || c.State == "information" || c.State == "external") {
+		estimate, _ = capitalAward(c.Kind, d.BaseMinor, d.Rule)
+	}
+	return rawJSON(struct {
+		Case
+		EstimatedAward int64 `json:"estimated_award_minor,omitempty"`
+	}{Case: c, EstimatedAward: estimate})
 }
 
 // ApprovalDecorate restores only actor-specific presentation and actions

@@ -194,6 +194,34 @@ const rows = [
     payload: order,
   },
 ];
+
+for (const language of ["zh-CN", "en"]) {
+  test(`capital subsidy list amounts ${language}`, async ({ page }, info) => {
+    await setup(page, { language });
+    const cases = [
+      { kind: "supercarrier", state: "submitted", base: 12345678901, rate: 1250, award: 0, purchase: true, expected: "15,432,098.62 ISK", estimate: true },
+      { kind: "titan", state: "information", base: 100000000000, rate: undefined, award: 0, purchase: true, expected: "50,000,000 ISK", estimate: true },
+      { kind: "supercarrier", state: "approved", base: 12345678901, rate: 1250, award: 222222222, purchase: true, expected: "2,222,222.22 ISK", estimate: false },
+      { kind: "supercarrier", state: "submitted", base: 100000000000, rate: 1000, award: 0, purchase: false, expected: "—", estimate: false },
+    ];
+    const capitals = cases.map((c, i) => ({
+      ...rows[0], id: String(125 + i), kind: c.kind, state: c.state, unit: "ISK", amount_minor: c.award,
+      payload: { ...item, kind: c.kind, state: c.state, award_minor: c.award,
+        estimated_award_minor: c.estimate ? (i === 0 ? 1543209862 : 5000000000) : undefined,
+        detail: { ...item.detail, rewards: undefined, base_minor: c.base,
+          rule: { project_name: rule.project_name }, purchase: undefined } },
+    }));
+    await page.route("**/api/v1/approval/items?**", route => route.fulfill({ json: { data: { items: capitals, counts: { pending: 4, fulfillment: 0, exceptions: 0, history: 0 }, next_cursor: "", unavailable: [] } } }));
+    await page.goto("/approvals?view=pending");
+    const values = page.locator(".approval-value");
+    await expect(values).toHaveCount(4, { timeout: 30000 });
+    for (const [i, c] of cases.entries()) {
+      await expect(values.nth(i)).toHaveText(c.estimate ? `${language === "en" ? "Estimated subsidy" : "预计补贴"} · ${c.expected}` : c.expected);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath(`capital-amount-${language}.png`), fullPage: true });
+  });
+}
 async function setup(
   page: Page,
   { allowed = true, language = "zh-CN", partial = false, loss = false, manyAttackers = false } = {},
