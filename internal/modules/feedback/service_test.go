@@ -143,7 +143,7 @@ func TestConcurrentRepliesOnlyOneRevisionWins(t *testing.T) {
 	for i := 2; i <= 3; i++ {
 		key := input(i).RequestKey
 		wg.Go(func() {
-			_, e := s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: key, Revision: 1, Status: "resolved"})
+			_, e := s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: key, Revision: 1, Status: "accepted"})
 			results <- e
 		})
 	}
