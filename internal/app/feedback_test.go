@@ -75,7 +75,7 @@ func TestFeedbackHostAuthorizationAndCSRF(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	p.Exec(ctx, "DELETE FROM access_administrators WHERE user_id=$1", s.UserID)
-	if w = call("POST", "tickets/"+response.Data.Tickets[0].ID+"/messages", `{"request_key":"00000000-0000-4000-8000-000000000002","revision":1,"body":"","status":"resolved"}`, true, true); w.Code != 403 {
+	if w = call("POST", "tickets/"+response.Data.Tickets[0].ID+"/messages", `{"request_key":"00000000-0000-4000-8000-000000000002","revision":1,"body":"","status":"accepted"}`, true, true); w.Code != 403 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	off, e := New(p, slog.New(slog.NewTextHandler(io.Discard, nil)), "test", []string{"system"}, AuthConfig{})

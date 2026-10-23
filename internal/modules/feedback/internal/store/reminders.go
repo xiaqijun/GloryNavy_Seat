@@ -14,7 +14,10 @@ func ReminderKeys(ctx context.Context, db *pgxpool.Pool, account, kind string, s
 	case "feedback_update":
 		query = `SELECT m.id::text FROM feedback_messages m JOIN feedback_tickets t ON t.id=m.ticket_id WHERE t.account_id=$1 AND m.actor<>$1 AND m.created_at >= $2`
 	case "feedback_pending":
-		query = `SELECT id::text FROM feedback_tickets WHERE status IN ('submitted','in_progress') AND account_id<>$1 AND $2::timestamptz IS NOT NULL`
+		query = `SELECT CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed') THEN 'returned:'||m.id::text ELSE t.id::text END
+ FROM feedback_tickets t LEFT JOIN LATERAL (
+ SELECT id,lag(status) OVER(ORDER BY id) previous_status FROM feedback_messages WHERE ticket_id=t.id AND status<>'' ORDER BY id DESC LIMIT 1
+ ) m ON true WHERE t.status IN ('submitted','in_progress') AND t.account_id<>$1 AND $2::timestamptz IS NOT NULL`
 	default:
 		return nil, errors.New("unsupported reminder source")
 	}

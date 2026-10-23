@@ -1,14 +1,22 @@
 # Member feedback
 
+## Complete workflow (Goose 105)
+
+Submit → administrator accepts or declines → start handling → submit completion → submitter confirms. A non-owner site administrator can accept/decline submitted feedback, start accepted work, and submit a result from in_progress to awaiting_confirmation. Only the current owning account can confirm to resolved, or provide a reason and return it to in_progress. The owner may reopen resolved work or resubmit a closed ticket with a reason. Administrators cannot confirm for the owner or process their own ticket as staff.
+
+Declining/closing, completion results, returning, reopening and resubmitting require a body. Normal replies leave state unchanged. Role, locked current state, revision and idempotency are enforced in the messages transaction. Acceptance still credits the fixed reward once; subsequent cycles and merges never repeat it. Historical resolved tickets are not backfilled into confirmation. Historical in_progress tickets without adoption can submit completion, or be explicitly accepted; no upgrade-time payment occurs.
+
+The detail shows a progress indicator and permitted action buttons above the reply history, instead of an arbitrary status dropdown. Existing feedback updates notify the owner. A return from awaiting_confirmation creates a stable `returned:<status message ID>` administrator pending reference; comments do not change it. No reminder type is newly enabled. Retain the new state/history in both frontend and backend; Down rejects confirmation history and old code cannot safely read or process it.
+
 ## Adoption rewards (Goose 104)
 
 Site administrators configure a fixed Goose Coin reward per accepted ticket; zero disables payment and is the default. Only a current site administrator can accept another account's ticket. First acceptance freezes amount, operator and time, atomically with history and the ledger. Credit failure rolls back acceptance. Each ticket can receive one reward for its lifetime, including concurrent retries, reopening and account merges. Zero also freezes the decision; configuration changes never backfill tickets. Resolving or closing a ticket does not accept it or reverse a reward.
 
 GET/POST `/api/v1/feedback/reward-settings` require current site administrator access; POST also requires CSRF, version, UUID request_key and amount_minor (0–10^12, 0.01 coin units). Messages accept the new `accepted` status, never a client-selected amount. Ticket responses optionally include accepted_at and reward_minor. The host injects exchange.FeedbackGrantTx with the fixed `feedback_reward:<ticket ID>` source. Frozen adoption data follows the parent ticket on merge, while exchange merges ledger ownership. Configuration has its own audit and idempotency records. Retain schema, status handling and merge participants after adoption; Down or rollback to code ignoring reward claims is unsafe. No new ESI scope or worker; existing feedback and coin-change reminders apply.
 
-The authenticated `/feedback` page accepts bug reports and feature requests. Members see only their own tickets and can add follow-up details. Current site administrators can select All feedback, reply, change status or reopen tickets. Corporation administrators, specialist roles and `access.manage` do not grant this access.
+The authenticated `/feedback` page accepts bug reports and feature requests. Members see their own tickets, reply and confirm or return completion. Site administrators can select All feedback and handle other members' tickets through the workflow above. Corporation administrators, specialist roles and `access.manage` do not grant this access.
 
-Statuses are `submitted`, `in_progress`, `accepted`, `resolved`, and `closed`. Original submissions and message history cannot be edited or deleted. Author names, staff markers and timestamps are saved with each event. Content renders as plain text. Lists support kind/status filters and stable ID-descending pagination of 30 rows; protected detail links use `?ticket=<id>`. Screenshots are private; there is no public board. Feedback update/pending reminders follow the separately configured reminder module.
+Statuses are submitted, accepted, in_progress, awaiting_confirmation, resolved and closed. Original submissions and append-only history retain authors, staff flags and times. Content is plain text, private to the owner and administrators. Kind/status filters, 30-row ID-descending pages and protected detail links remain available.
 
 ## Screenshots (Goose 99/100)
 

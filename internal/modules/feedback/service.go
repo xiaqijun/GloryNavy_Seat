@@ -91,7 +91,7 @@ func uuid(s string) pgtype.UUID { var v pgtype.UUID; _ = v.Scan(s); return v }
 func validKey(s string) bool    { v := uuid(s); return v.Valid && v.Bytes != [16]byte{} }
 func kindOK(s string) bool      { return s == "bug" || s == "feature" }
 func statusOK(s string) bool {
-	return s == "submitted" || s == "in_progress" || s == "accepted" || s == "resolved" || s == "closed"
+	return s == "submitted" || s == "in_progress" || s == "accepted" || s == "awaiting_confirmation" || s == "resolved" || s == "closed"
 }
 func clean(s string, max int) bool {
 	return utf8.ValidString(s) && !strings.ContainsRune(s, 0) && utf8.RuneCountInString(s) <= max
@@ -243,9 +243,6 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 	if err != nil {
 		return Ticket{}, err
 	}
-	if in.Status != "" && !observed.Administrator {
-		return Ticket{}, forbidden
-	}
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return Ticket{}, err
@@ -275,9 +272,6 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 	if t.AccountID != actor.ID && !admin {
 		return Ticket{}, missing
 	}
-	if in.Status != "" && !admin {
-		return Ticket{}, forbidden
-	}
 	old, err := q.FindMessage(ctx, store.FindMessageParams{Actor: uuid(actor.ID), RequestKey: uuid(in.RequestKey)})
 	if err == nil {
 		if old.TicketID != id || old.Body != in.Body || old.Status != in.Status {
@@ -293,6 +287,9 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 	}
 	if t.Revision != in.Revision {
 		return Ticket{}, changed
+	}
+	if err = validateTransition(t, actor.ID, admin, in); err != nil {
+		return Ticket{}, err
 	}
 	n, err := q.RecentMessages(ctx, uuid(actor.ID))
 	if err != nil {

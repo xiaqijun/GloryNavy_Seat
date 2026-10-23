@@ -20,9 +20,8 @@ for(const language of ["zh-CN","en"]){
   await amount.fill("123.45");await page.screenshot({path:info.outputPath(`settings-${language}.png`),fullPage:true});
   await dialog.getByRole("button",{name:en?"Save":"保存",exact:true}).click();await expect(dialog).toHaveCount(0);
   await page.getByRole("button",{name:/合同页面无法提交申请/}).click();
-  await dialog.getByRole("combobox",{name:en?"Status":"处理状态",exact:true}).click();
-  await page.getByRole("option",{name:en?"Accepted":"已采纳",exact:true}).click();
-  await dialog.getByRole("button",{name:en?"Save response":"保存处理",exact:true}).click();
+  await dialog.getByRole("button",{name:en?"Accept feedback":"采纳反馈",exact:true}).click();
+  await dialog.getByRole("button",{name:en?"Confirm action":"确认操作",exact:true}).click();
   await expect(dialog.getByText(/123\.45/)).toBeVisible();
   await page.screenshot({path:info.outputPath(`adopted-${language}.png`),fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -69,7 +68,7 @@ async function setup(
       data = {
         authenticated: true,
         session: {
-          user_id: account,
+          user_id: admin ? "00000000-0000-4000-8000-000000000003" : account,
           character: { id: "123", name: "Pilot" },
           csrf_token: "csrf",
           expires_at: "2099-01-01T00:00:00Z",
@@ -211,23 +210,16 @@ for (const language of ["zh-CN", "en"]) {
     await expect(
       dialog.getByText(/<script>alert\(1\)<\/script>/),
     ).toBeVisible();
-    await dialog
-      .getByRole("combobox", { name: t("处理状态", "Status"), exact: true })
-      .click();
-    await page
-      .getByRole("option", { name: t("已解决", "Resolved"), exact: true })
-      .click();
-    await dialog
-      .getByLabel(t("处理回复", "Response"), { exact: true })
-      .fill("已修复，请刷新后重试。");
-    await dialog
-      .getByRole("button", { name: t("保存处理", "Save response") })
-      .click();
+    for (const label of [t("采纳反馈","Accept feedback"),t("开始处理","Start handling"),t("提交完成","Submit completion")]) {
+      await dialog.getByRole("button",{name:label,exact:true}).click();
+      if(label===t("提交完成","Submit completion"))await dialog.getByLabel(t("处理结果或原因","Result or reason")).fill("已修复，请刷新后重试。");
+      await dialog.getByRole("button",{name:t("确认操作","Confirm action"),exact:true}).click();
+    }
     await expect(
       dialog.getByText("已修复，请刷新后重试。", { exact: true }),
     ).toBeVisible();
     await expect(
-      dialog.getByText(t("状态变更为 已解决", "Status changed to Resolved")),
+      dialog.getByText(t("状态变更为 待确认", "Status changed to Pending confirmation")),
     ).toBeVisible();
     await page.screenshot({
       path: info.outputPath(`admin-${language}.png`),

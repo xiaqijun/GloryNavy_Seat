@@ -45,7 +45,7 @@ func TestFeedbackPaidRewardMergeOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err = s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: input(404).RequestKey, Revision: d.Ticket.Revision, Status: "accepted"})
+	v, err = s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: input(404).RequestKey, Revision: d.Ticket.Revision, Status: "in_progress"})
 	if err != nil || v.RewardMinor == nil || *v.RewardMinor != 750 {
 		t.Fatal(v, err)
 	}

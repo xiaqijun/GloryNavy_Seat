@@ -19,6 +19,29 @@
 .feedback-heading h1 {
   margin: 0;
 }
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.feedback-processing-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.feedback-workflow {display: grid; gap: 16px; border-block: 1px solid var(--border); padding-block: 16px; min-width: 0;}
+.feedback-workflow-actions {display: flex; flex-wrap: wrap; gap: 8px;}
+.feedback-progress {display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; font-size: 13px;}
+.feedback-progress li {padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted-foreground);}
+.feedback-progress li[aria-current="step"] {border-color: var(--primary); color: var(--primary); font-weight: 600;}
+@media (max-width: 480px) {
+  .feedback-actions {
+    flex-basis: 100%;
+  }
+}
 .feedback-filters > .ui-select-trigger {
   width: 180px;
   max-width: 100%;

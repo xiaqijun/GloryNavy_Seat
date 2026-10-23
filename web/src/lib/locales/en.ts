@@ -1,5 +1,23 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "处理反馈": "Handle feedback",
+  "采纳反馈": "Accept feedback",
+  "不采纳": "Decline",
+  "开始处理": "Start handling",
+  "提交完成": "Submit completion",
+  "确认完成": "Confirm completion",
+  "退回处理": "Return for handling",
+  "重新打开": "Reopen",
+  "重新提交": "Resubmit",
+  "关闭反馈": "Close feedback",
+  "办理进度": "Workflow progress",
+  "等待提交人确认": "Awaiting submitter confirmation",
+  "处理结果或原因": "Result or reason",
+  "补充说明（选填）": "Additional notes (optional)",
+  "确认操作": "Confirm action",
+  "当前状态不能执行此操作，请刷新反馈": "This action is unavailable in the current state. Refresh the feedback.",
+  "请填写处理结果或原因": "Enter the result or reason",
+
   "反馈奖励设置": "Feedback reward settings",
   "奖励设置": "Reward settings",
   "采纳奖励 / 果壳币": "Adoption reward / Goose Coin",

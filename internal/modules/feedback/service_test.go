@@ -60,7 +60,7 @@ func TestPrivacyReplyAndOptimisticHandling(t *testing.T) {
 	r := feedback.Reply{RequestKey: input(2).RequestKey, Revision: 1, Body: "补充操作步骤"}
 	_, e = s.Reply(ctx, a[1], id, r)
 	check(t, e, 404)
-	r.Status = "resolved"
+	r.Status = "accepted"
 	_, e = s.Reply(ctx, a[0], id, r)
 	check(t, e, 403)
 	r.Status = ""
@@ -73,19 +73,19 @@ func TestPrivacyReplyAndOptimisticHandling(t *testing.T) {
 		t.Fatal(again, e)
 	}
 	r.RequestKey = input(3).RequestKey
-	r.Status = "in_progress"
+	r.Status = "accepted"
 	_, e = s.Reply(ctx, a[2], id, r)
 	check(t, e, 409)
 	r.Revision = 2
 	v, e = s.Reply(ctx, a[2], id, r)
-	if e != nil || v.Status != "in_progress" {
+	if e != nil || v.Status != "accepted" {
 		t.Fatal(v, e)
 	}
 	d, e := s.Detail(ctx, a[0].ID, id)
 	if e != nil || len(d.Messages) != 2 || d.Messages[0].Staff || !d.Messages[1].Staff {
 		t.Fatal(d, e)
 	}
-	l, e = s.List(ctx, a[2].ID, true, "bug", "in_progress", 0)
+	l, e = s.List(ctx, a[2].ID, true, "bug", "accepted", 0)
 	if e != nil || len(l.Tickets) != 1 || l.Tickets[0].Body != "" {
 		t.Fatal(l, e)
 	}

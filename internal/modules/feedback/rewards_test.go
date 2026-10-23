@@ -85,7 +85,8 @@ func TestRewardAdoptionAtomicOnceAndConfiguration(t *testing.T) {
 	}
 	r.RequestKey = input(206).RequestKey
 	r.Revision = v.Revision
-	r.Status = "accepted"
+	r.Status = "awaiting_confirmation"
+	r.Body = "已完成处理，请确认"
 	v, err = s.Reply(ctx, a[2], id, r)
 	if err != nil || *v.RewardMinor != 12345 {
 		t.Fatal(v, err)
@@ -142,7 +143,7 @@ func TestDisabledRewardDoesNotBackfillAndMergeRetainsClaim(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err = s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: input(304).RequestKey, Revision: d.Ticket.Revision, Status: "accepted"})
+	v, err = s.Reply(ctx, a[2], id, feedback.Reply{RequestKey: input(304).RequestKey, Revision: d.Ticket.Revision, Status: "in_progress"})
 	if err != nil || v.RewardMinor == nil || *v.RewardMinor != 0 || v.AccountID != a[1].ID {
 		t.Fatal(v, err)
 	}

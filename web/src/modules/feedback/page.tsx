@@ -17,13 +17,15 @@ import {
 import "./feedback.css";
 import { RewardSettings } from "./rewards";
 import { money } from "@/modules/welfare/api";
+import { FeedbackWorkflow } from "./workflow";
 
 const kinds = { bug: msg("BUG 反馈"), feature: msg("功能需求") };
 const statuses = {
   submitted: msg("待处理"),
   in_progress: msg("处理中"),
   accepted: msg("已采纳"),
-  resolved: msg("已解决"),
+  awaiting_confirmation: msg("待确认"),
+  resolved: msg("已完成"),
   closed: msg("已关闭"),
 };
 const options = (values: Record<string, string>) =>
@@ -71,11 +73,13 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     <section className="feedback-page">
       <header className="feedback-heading">
         <h1>{msg("意见反馈")}</h1>
-        {q.data?.administrator && <Button variant="outline" onClick={()=>setRewardSettings(true)}>{msg("奖励设置")}</Button>}
-        <Button onClick={() => setCompose(true)}>
-          <Plus />
-          {msg("提交反馈")}
-        </Button>
+        <div className="feedback-actions">
+          <Button onClick={() => setCompose(true)}>
+            <Plus />
+            {msg("提交反馈")}
+          </Button>
+          {q.data?.administrator && <Button variant="outline" onClick={()=>setRewardSettings(true)}>{msg("奖励设置")}</Button>}
+        </div>
       </header>
       <div className="feedback-filters">
         {q.data?.administrator && (
@@ -360,7 +364,6 @@ function Thread({
   updated: () => Promise<unknown>;
 }) {
   const [body, setBody] = useState(""),
-    [status, setStatus] = useState<api.Status | "">(""),
     [key, setKey] = useState(() => crypto.randomUUID());
   const t = data.ticket;
   const mutation = useMutation({
@@ -369,12 +372,11 @@ function Thread({
         request_key: key,
         revision: t.revision,
         body,
-        status,
+        status: "",
         images: screenshots.images,
       }),
     onSuccess: async () => {
       setBody("");
-      setStatus("");
       screenshots.clear();
       setKey(crypto.randomUUID());
       await updated();
@@ -400,6 +402,7 @@ function Thread({
       </p>
       <p className="feedback-content">{t.body}</p>
       <ScreenshotGallery ticket={t.id} images={t.images} />
+      <FeedbackWorkflow ticket={t} user={user} administrator={data.administrator} csrf={csrf} updated={updated}/>
       {data.messages.length > 0 && (
         <ol className="feedback-messages">
           {data.messages.map((m) => (
@@ -427,24 +430,6 @@ function Thread({
             if (!mutation.isPending && !screenshots.busy) mutation.mutate();
           }}
         >
-          {data.administrator && (
-            <label>
-              {msg("处理状态")}
-              <Select
-                label={msg("处理状态")}
-                value={status}
-                onValueChange={(v) => {
-                  setStatus(v as api.Status | "");
-                  edit();
-                }}
-                disabled={mutation.isPending}
-                options={[
-                  { value: "", label: msg("保持当前状态") },
-                  ...options(statuses).filter(o=>o.value!=="accepted"||t.account_id!==user),
-                ]}
-              />
-            </label>
-          )}
           <label>
             {data.administrator ? msg("处理回复") : msg("补充说明")}
             <textarea
@@ -480,14 +465,12 @@ function Thread({
             disabled={
               mutation.isPending ||
               screenshots.busy ||
-              (!body.trim() && !status)
+              !body.trim()
             }
           >
             {mutation.isPending
               ? msg("正在提交")
-              : data.administrator
-                ? msg("保存处理")
-                : msg("发送回复")}
+              : msg("发送回复")}
           </Button>
         </form>
       )}

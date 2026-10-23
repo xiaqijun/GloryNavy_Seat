@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+Goose 105 的反馈确认流程仍归 feedback：状态/历史在原私有表，锁内验证当前拥有者、管理员、版本与跳转。普通回复不推进流程，管理员提交完成、当前拥有者确认或退回；奖励沿用首次采纳的同事务接口。待办提醒以状态消息 ID 区分退回/重开事件，账号合并不改事件身份，不增加跨模块 store 或自动启用提醒。见[反馈流程](integrations/feedback.zh-CN.md)。
+
 Goose 104：feedback 私有配置/配置审计及父反馈上的采纳人、时间和冻结币额；宿主注入 exchange.FeedbackGrantTx，以反馈 ID 为唯一来源同事务入币。反馈参与方沿用父记录合并，exchange 参与方合并币账归属，不跨模块访问 store。详见[反馈](integrations/feedback.zh-CN.md)。
 
 LP 查询为只读 `lp` 模块，宿主注入共享 ESI Request 和 StaticDataService；LPDataService 读取活动 SDE ZIP 的 NPC/阵营/蓝图参考，不改名称导入生命周期。行情固定 Fuzzwork 空间站与共享 ESI 备用，缓存限额；无业务 store、订单、审批、币账或合并参与方。见 [LP 查询](integrations/lp.zh-CN.md)。
