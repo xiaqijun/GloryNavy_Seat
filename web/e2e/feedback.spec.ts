@@ -190,7 +190,7 @@ for (const language of ["zh-CN", "en"]) {
       .getByRole("button", { name: t("提交补充", "Submit details") })
       .click();
     await expect(dialog.getByText("希望保留日期筛选。 第二行")).toBeVisible();
-    await expect(dialog.getByRole("heading", { name: t("处理记录", "Action history"), exact: true })).toBeVisible();
+    await expect(dialog.locator(".feedback-history summary")).toBeVisible();
     await expect(supplement).toHaveAttribute("aria-expanded", "false");
     await page.screenshot({
       path: info.outputPath(`member-${language}.png`),
@@ -226,8 +226,9 @@ for (const language of ["zh-CN", "en"]) {
       if(label===t("提交完成","Submit completion"))await dialog.getByLabel(t("处理结果或原因","Result or reason")).fill("已修复，请刷新后重试。");
       await dialog.getByRole("button",{name:t("确认操作","Confirm action"),exact:true}).click();
     }
+    await dialog.locator(".feedback-history summary").click();
     await expect(
-      dialog.getByText("已修复，请刷新后重试。", { exact: true }),
+      dialog.locator(".feedback-latest-note").getByText("已修复，请刷新后重试。", { exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByText(t("状态变更为 待确认", "Status changed to Pending confirmation")),

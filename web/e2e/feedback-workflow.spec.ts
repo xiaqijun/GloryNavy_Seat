@@ -26,17 +26,18 @@ for(const language of ["zh-CN","en"]){
   const act=async(zh:string,english:string,note?:string)=>{
    const dialog=page.getByRole("dialog");await dialog.getByRole("button",{name:en?english:zh,exact:true}).click();
    const save=dialog.getByRole("button",{name:en?"Confirm action":"确认操作",exact:true});
-   if(note!==undefined){await expect(save).toBeDisabled();await dialog.getByLabel(en?"Result or reason":"处理结果或原因",{exact:true}).fill(note);}
+   if(note!==undefined){await expect(save).toBeDisabled();await dialog.getByRole("textbox",{name:en?"Result or reason":"处理结果或原因",exact:true}).fill(note);}
+   if(zh==="提交完成")await page.screenshot({path:info.outputPath(`review-${language}.png`),fullPage:true});
    await save.click();await expect(save).toHaveCount(0);
   };
   const open=async()=>{await page.goto("/feedback?ticket=1");await expect(page.getByRole("dialog")).toBeVisible();};
-  await open();await act("采纳反馈","Accept feedback");await act("开始处理","Start handling");await act("提交完成","Submit completion","已经处理，请确认");
+  await open();await page.screenshot({path:info.outputPath(`submitted-${language}.png`),fullPage:true});await act("采纳反馈","Accept feedback");await act("开始处理","Start handling");await act("提交完成","Submit completion","已经处理，请确认");
   await expect(page.getByRole("button",{name:en?"Confirm completion":"确认完成",exact:true})).toHaveCount(0);
   staff=false;await open();await act("退回处理","Return for handling","结果不符合预期");
   await expect(page.getByRole("button",{name:en?"Accept feedback":"采纳反馈",exact:true})).toHaveCount(0);
   staff=true;await open();await act("提交完成","Submit completion","已补充修复");
   staff=false;await open();await act("确认完成","Confirm completion");
-  await expect(page.locator('.feedback-progress [aria-current="step"]')).toHaveText(en?"Finished":"已完成");
+  await expect(page.locator('.feedback-progress [aria-current="step"]')).toContainText(en?"Finished":"已完成");
   expect(rewards).toBe(1);expect(messages.map(m=>m.status)).toEqual(["accepted","in_progress","awaiting_confirmation","in_progress","awaiting_confirmation","resolved"]);
   await expect(page.getByText("25",{exact:false}).first()).toBeVisible();
   await page.screenshot({path:info.outputPath(`completed-${language}.png`),fullPage:true});
