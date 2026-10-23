@@ -364,7 +364,8 @@ function Thread({
   updated: () => Promise<unknown>;
 }) {
   const [body, setBody] = useState(""),
-    [key, setKey] = useState(() => crypto.randomUUID());
+    [key, setKey] = useState(() => crypto.randomUUID()),
+    [supplement, setSupplement] = useState(false);
   const t = data.ticket;
   const mutation = useMutation({
     mutationFn: () =>
@@ -378,6 +379,7 @@ function Thread({
     onSuccess: async () => {
       setBody("");
       screenshots.clear();
+      setSupplement(false);
       setKey(crypto.randomUUID());
       await updated();
     },
@@ -396,83 +398,112 @@ function Thread({
         </span>
       </div>
       <h2>{t.title}</h2>
-      {(t.reward_minor ?? 0)>0 && <p>{msg("采纳奖励")} · {money(t.reward_minor!)} {msg("果壳币")}</p>}
+      {(t.reward_minor ?? 0) > 0 && (
+        <p>
+          {msg("采纳奖励")} · {money(t.reward_minor!)} {msg("果壳币")}
+        </p>
+      )}
       <p className="feedback-meta">
         {t.author_name} · {time(t.created_at)}
       </p>
       <p className="feedback-content">{t.body}</p>
       <ScreenshotGallery ticket={t.id} images={t.images} />
-      <FeedbackWorkflow ticket={t} user={user} administrator={data.administrator} csrf={csrf} updated={updated}/>
+      <FeedbackWorkflow
+        ticket={t}
+        user={user}
+        administrator={data.administrator}
+        csrf={csrf}
+        updated={updated}
+      />
       {data.messages.length > 0 && (
-        <ol className="feedback-messages">
-          {data.messages.map((m) => (
-            <li key={m.id}>
-              <div className="feedback-message-meta">
-                <strong>{m.author_name}</strong>
-                {m.staff && <span>{msg("管理员")}</span>}
-                <time>{time(m.created_at)}</time>
-              </div>
-              {m.status && <p>{msg("状态变更为 {0}", statuses[m.status])}</p>}
-              {m.body && <p className="feedback-content">{m.body}</p>}
-              <ScreenshotGallery ticket={t.id} images={m.images} />
-            </li>
-          ))}
-        </ol>
+        <section className="feedback-history" aria-label={msg("处理记录")}>
+          <h3 className="feedback-processing-title">{msg("处理记录")}</h3>
+          <ol className="feedback-messages">
+            {data.messages.map((m) => (
+              <li key={m.id}>
+                <div className="feedback-message-meta">
+                  <strong>{m.author_name}</strong>
+                  {m.staff && <span>{msg("管理员")}</span>}
+                  <time>{time(m.created_at)}</time>
+                </div>
+                {m.status && <p>{msg("状态变更为 {0}", statuses[m.status])}</p>}
+                {m.body && <p className="feedback-content">{m.body}</p>}
+                <ScreenshotGallery ticket={t.id} images={m.images} />
+              </li>
+            ))}
+          </ol>
+        </section>
       )}
       {data.messages.length >= 100 ? (
         <p>{msg("此反馈的回复已达上限，请提交新的反馈")}</p>
       ) : (
-        <form
-          className="feedback-form feedback-reply"
-          onPaste={screenshots.paste}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!mutation.isPending && !screenshots.busy) mutation.mutate();
-          }}
-        >
-          <label>
-            {data.administrator ? msg("处理回复") : msg("补充说明")}
-            <textarea
-              maxLength={2000}
-              rows={3}
-              value={body}
-              onChange={(e) => {
-                setBody(e.target.value);
-                edit();
-              }}
-              disabled={mutation.isPending}
-            />
-          </label>
-          <ScreenshotPicker value={screenshots} disabled={mutation.isPending} />
-          {mutation.isError && (
-            <div className="feedback-error" role="alert">
-              {mutation.error.message}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  await updated();
-                  setKey(crypto.randomUUID());
-                  mutation.reset();
-                }}
-              >
-                {msg("刷新")}
-              </Button>
-            </div>
-          )}
+        <>
           <Button
-            type="submit"
-            disabled={
-              mutation.isPending ||
-              screenshots.busy ||
-              !body.trim()
-            }
+            className="feedback-supplement-toggle"
+            variant="outline"
+            aria-expanded={supplement}
+            aria-controls={`feedback-supplement-${t.id}`}
+            disabled={mutation.isPending || screenshots.busy}
+            onClick={() => setSupplement((open) => !open)}
           >
-            {mutation.isPending
-              ? msg("正在提交")
-              : msg("发送回复")}
+            <Plus size={16} aria-hidden="true" />
+            {msg("补充说明")}
           </Button>
-        </form>
+          {supplement && (
+            <form
+              id={`feedback-supplement-${t.id}`}
+              className="feedback-form feedback-reply"
+              onPaste={screenshots.paste}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!mutation.isPending && !screenshots.busy) mutation.mutate();
+              }}
+            >
+              <label>
+                {msg("补充说明")}
+                <textarea
+                  autoFocus
+                  maxLength={2000}
+                  rows={3}
+                  value={body}
+                  onChange={(e) => {
+                    setBody(e.target.value);
+                    edit();
+                  }}
+                  disabled={mutation.isPending}
+                />
+              </label>
+              <ScreenshotPicker
+                value={screenshots}
+                disabled={mutation.isPending}
+              />
+              {mutation.isError && (
+                <div className="feedback-error" role="alert">
+                  {mutation.error.message}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      await updated();
+                      setKey(crypto.randomUUID());
+                      mutation.reset();
+                    }}
+                  >
+                    {msg("刷新")}
+                  </Button>
+                </div>
+              )}
+              <Button
+                type="submit"
+                disabled={
+                  mutation.isPending || screenshots.busy || !body.trim()
+                }
+              >
+                {mutation.isPending ? msg("正在提交") : msg("提交补充")}
+              </Button>
+            </form>
+          )}
+        </>
       )}
     </div>
   );

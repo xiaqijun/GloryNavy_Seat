@@ -1,5 +1,6 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "提交补充": "Submit details",
   "处理反馈": "Handle feedback",
   "采纳反馈": "Accept feedback",
   "不采纳": "Decline",

@@ -174,13 +174,24 @@ for (const language of ["zh-CN", "en"]) {
       page.getByRole("heading", { name: "增加合同筛选", exact: true }),
     ).toBeVisible();
     await expect(dialog.getByRole("combobox")).toHaveCount(0);
+    await expect(dialog.getByLabel(t("补充说明", "Additional details"))).toHaveCount(0);
+    await dialog.getByRole("button", { name: t("补充说明", "Additional details"), exact: true }).click();
     await dialog
       .getByLabel(t("补充说明", "Additional details"))
       .fill("希望保留日期筛选。\n第二行");
+    const supplement = dialog.getByRole("button", { name: t("补充说明", "Additional details"), exact: true });
+    await expect(supplement).toHaveAttribute("aria-expanded", "true");
+    await supplement.focus();
+    await page.keyboard.press("Enter");
+    await expect(supplement).toHaveAttribute("aria-expanded", "false");
+    await page.keyboard.press("Enter");
+    await expect(dialog.getByLabel(t("补充说明", "Additional details"))).toHaveValue("希望保留日期筛选。\n第二行");
     await dialog
-      .getByRole("button", { name: t("发送回复", "Send reply") })
+      .getByRole("button", { name: t("提交补充", "Submit details") })
       .click();
     await expect(dialog.getByText("希望保留日期筛选。 第二行")).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: t("处理记录", "Action history"), exact: true })).toBeVisible();
+    await expect(supplement).toHaveAttribute("aria-expanded", "false");
     await page.screenshot({
       path: info.outputPath(`member-${language}.png`),
       fullPage: true,
@@ -234,11 +245,13 @@ for (const language of ["zh-CN", "en"]) {
     await setup(page, language, false, true);
     await page.goto("/feedback?ticket=1");
     const dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel(t("补充说明", "Additional details"))).toHaveCount(0);
+    await dialog.getByRole("button", { name: t("补充说明", "Additional details"), exact: true }).click();
     await dialog
       .getByLabel(t("补充说明", "Additional details"))
       .fill("不能丢失的补充内容");
     await dialog
-      .getByRole("button", { name: t("发送回复", "Send reply") })
+      .getByRole("button", { name: t("提交补充", "Submit details") })
       .click();
     await expect(dialog.getByRole("alert")).toBeVisible();
     await expect(
@@ -249,7 +262,7 @@ for (const language of ["zh-CN", "en"]) {
       .click();
     await expect(dialog.getByRole("alert")).toHaveCount(0);
     await dialog
-      .getByRole("button", { name: t("发送回复", "Send reply") })
+      .getByRole("button", { name: t("提交补充", "Submit details") })
       .click();
     await expect(
       dialog.getByText("不能丢失的补充内容", { exact: true }),

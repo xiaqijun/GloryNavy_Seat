@@ -171,6 +171,14 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+.feedback-history {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.feedback-supplement-toggle {
+  justify-self: start;
+}
 .feedback-thread p {
   margin: 0;
   overflow-wrap: anywhere;
