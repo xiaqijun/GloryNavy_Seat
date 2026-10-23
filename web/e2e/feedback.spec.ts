@@ -1,5 +1,33 @@
 import { test, expect, type Page } from "@playwright/test";
 const account = "00000000-0000-4000-8000-000000000001";
+
+for(const language of ["zh-CN","en"]){
+ test(`feedback fixed reward configuration and acceptance ${language}`,async({page},info)=>{
+  await setup(page,language,true);
+  const en=language==="en";
+  const ticket={...seed,account_id:"00000000-0000-4000-8000-000000000002",accepted_at:undefined as string|undefined,reward_minor:undefined as number|undefined};
+  let cfg={amount_minor:0,version:1};
+  await page.route("**/api/v1/feedback/reward-settings",async r=>{
+   if(r.request().method()==="POST"){const v=r.request().postDataJSON();expect(v.amount_minor).toBe(12345);expect(r.request().headers()["x-csrf-token"]).toBe("csrf");cfg={amount_minor:v.amount_minor,version:2};}
+   await r.fulfill({json:{data:cfg}});
+  });
+  await page.route("**/api/v1/feedback/tickets/1",r=>r.fulfill({json:{data:{ticket,messages:[],administrator:true}}}));
+  await page.route("**/api/v1/feedback/tickets/1/messages",async r=>{const v=r.request().postDataJSON();expect(v.status).toBe("accepted");expect(v).not.toHaveProperty("amount_minor");Object.assign(ticket,{status:"accepted",revision:2,accepted_at:"2026-10-23T00:00:00Z",reward_minor:12345});await r.fulfill({json:{data:ticket}});});
+  await page.goto("/feedback");
+  await page.getByRole("button",{name:en?"Reward settings":"奖励设置",exact:true}).click();
+  const dialog=page.getByRole("dialog");const amount=dialog.getByLabel(en?"Adoption reward / Goose Coin":"采纳奖励 / 果壳币");
+  await amount.fill("123.456");await expect(dialog.getByRole("button",{name:en?"Save":"保存",exact:true})).toBeDisabled();
+  await amount.fill("123.45");await page.screenshot({path:info.outputPath(`settings-${language}.png`),fullPage:true});
+  await dialog.getByRole("button",{name:en?"Save":"保存",exact:true}).click();await expect(dialog).toHaveCount(0);
+  await page.getByRole("button",{name:/合同页面无法提交申请/}).click();
+  await dialog.getByRole("combobox",{name:en?"Status":"处理状态",exact:true}).click();
+  await page.getByRole("option",{name:en?"Accepted":"已采纳",exact:true}).click();
+  await dialog.getByRole("button",{name:en?"Save response":"保存处理",exact:true}).click();
+  await expect(dialog.getByText(/123\.45/)).toBeVisible();
+  await page.screenshot({path:info.outputPath(`adopted-${language}.png`),fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ });
+}
 const seed = {
   id: "1",
   account_id: account,

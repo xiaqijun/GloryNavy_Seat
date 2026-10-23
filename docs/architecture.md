@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+Goose 104：feedback 私有配置/配置审计及父反馈上的采纳人、时间和冻结币额；宿主注入 exchange.FeedbackGrantTx，以反馈 ID 为唯一来源同事务入币。反馈参与方沿用父记录合并，exchange 参与方合并币账归属，不跨模块访问 store。详见[反馈](integrations/feedback.zh-CN.md)。
+
 LP 查询为只读 `lp` 模块，宿主注入共享 ESI Request 和 StaticDataService；LPDataService 读取活动 SDE ZIP 的 NPC/阵营/蓝图参考，不改名称导入生命周期。行情固定 Fuzzwork 空间站与共享 ESI 备用，缓存限额；无业务 store、订单、审批、币账或合并参与方。见 [LP 查询](integrations/lp.zh-CN.md)。
 
 兑换发放准备边界（Goose 103）：exchange 私有交付表保存开始操作者/时间；宿主向 welfare 注入 `ExchangeSettlementStartTx`，合并结算在自身事务中经 exchange 业务方法锁定兑换单并开始发放。直接撤销与单笔/批次准备使用相同账号及订单锁，模块不互读私有 store。详见[兑换约定](integrations/exchange.zh-CN.md)。

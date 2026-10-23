@@ -1,8 +1,14 @@
 # Member feedback
 
+## Adoption rewards (Goose 104)
+
+Site administrators configure a fixed Goose Coin reward per accepted ticket; zero disables payment and is the default. Only a current site administrator can accept another account's ticket. First acceptance freezes amount, operator and time, atomically with history and the ledger. Credit failure rolls back acceptance. Each ticket can receive one reward for its lifetime, including concurrent retries, reopening and account merges. Zero also freezes the decision; configuration changes never backfill tickets. Resolving or closing a ticket does not accept it or reverse a reward.
+
+GET/POST `/api/v1/feedback/reward-settings` require current site administrator access; POST also requires CSRF, version, UUID request_key and amount_minor (0–10^12, 0.01 coin units). Messages accept the new `accepted` status, never a client-selected amount. Ticket responses optionally include accepted_at and reward_minor. The host injects exchange.FeedbackGrantTx with the fixed `feedback_reward:<ticket ID>` source. Frozen adoption data follows the parent ticket on merge, while exchange merges ledger ownership. Configuration has its own audit and idempotency records. Retain schema, status handling and merge participants after adoption; Down or rollback to code ignoring reward claims is unsafe. No new ESI scope or worker; existing feedback and coin-change reminders apply.
+
 The authenticated `/feedback` page accepts bug reports and feature requests. Members see only their own tickets and can add follow-up details. Current site administrators can select All feedback, reply, change status or reopen tickets. Corporation administrators, specialist roles and `access.manage` do not grant this access.
 
-Statuses are `submitted`, `in_progress`, `resolved`, and `closed`. Original submissions and message history cannot be edited or deleted. Author names, staff markers and timestamps are saved with each event. Content renders as plain text. Lists support kind/status filters and stable ID-descending pagination of 30 rows; protected detail links use `?ticket=<id>`. Screenshots are private; there is no public board. Feedback update/pending reminders follow the separately configured reminder module.
+Statuses are `submitted`, `in_progress`, `accepted`, `resolved`, and `closed`. Original submissions and message history cannot be edited or deleted. Author names, staff markers and timestamps are saved with each event. Content renders as plain text. Lists support kind/status filters and stable ID-descending pagination of 30 rows; protected detail links use `?ticket=<id>`. Screenshots are private; there is no public board. Feedback update/pending reminders follow the separately configured reminder module.
 
 ## Screenshots (Goose 99/100)
 

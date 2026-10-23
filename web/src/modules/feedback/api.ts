@@ -1,10 +1,12 @@
 import { apiFetch, APIError, getData } from "@/lib/http";
 import { msg } from "@/lib/i18n";
 export type Kind = "bug" | "feature";
-export type Status = "submitted" | "in_progress" | "resolved" | "closed";
+export type Status = "submitted" | "in_progress" | "accepted" | "resolved" | "closed";
 export type Screenshot = { id: string; mime: "image/png" | "image/jpeg" };
 export type ImageUpload = File;
 export type Ticket = {
+  accepted_at?: string;
+  reward_minor?: number;
   images?: Screenshot[];
   id: string;
   account_id: string;
@@ -56,7 +58,7 @@ const date = (v: unknown) =>
   typeof v === "string" && Number.isFinite(Date.parse(v));
 const id = (v: unknown) => typeof v === "string" && /^[1-9]\d*$/.test(v);
 const status = (v: unknown) =>
-  ["submitted", "in_progress", "resolved", "closed"].includes(String(v));
+  ["submitted", "in_progress", "accepted", "resolved", "closed"].includes(String(v));
 const images = (v: unknown) =>
   v === undefined ||
   (Array.isArray(v) &&
@@ -69,6 +71,8 @@ const images = (v: unknown) =>
     ));
 export const isTicket = (v: unknown): v is Ticket =>
   object(v) &&
+  (v.accepted_at === undefined || date(v.accepted_at)) &&
+  (v.reward_minor === undefined || (Number.isSafeInteger(v.reward_minor) && Number(v.reward_minor) >= 0)) &&
   images(v.images) &&
   id(v.id) &&
   typeof v.account_id === "string" &&

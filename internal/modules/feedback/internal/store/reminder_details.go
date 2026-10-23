@@ -53,12 +53,12 @@ func ReminderDetails(ctx context.Context, db *pgxpool.Pool, kind string, keys []
 func reminderDetailMessage(kind, key string, r reminderDetail) remindermessage.Item {
 
 	category := remindermessage.Label(r.Kind, map[string]string{"bug": "BUG", "feature": "功能需求"})
-	state := remindermessage.Label(r.State, map[string]string{"submitted": "待处理", "in_progress": "处理中", "resolved": "已解决", "closed": "已关闭"})
+	state := remindermessage.Label(r.State, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "resolved": "已解决", "closed": "已关闭"})
 	item := remindermessage.Item{Key: key, Title: category + " #" + r.Ref + " · " + r.Name, Fields: []remindermessage.Field{remindermessage.Text("当前状态", state)}}
 	if kind == "feedback_update" {
 		item.Fields = append(item.Fields, remindermessage.Text("回复人", r.Author), remindermessage.Text("回复", r.Reason), remindermessage.Text("回复时间", remindermessage.Date(r.Time)))
 		if r.EventState != "" {
-			item.Fields = append(item.Fields, remindermessage.Text("本次变更", remindermessage.Label(r.EventState, map[string]string{"submitted": "待处理", "in_progress": "处理中", "resolved": "已解决", "closed": "已关闭"})))
+			item.Fields = append(item.Fields, remindermessage.Text("本次变更", remindermessage.Label(r.EventState, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "resolved": "已解决", "closed": "已关闭"})))
 		}
 		item.Action = "请查看完整回复与处理进度。"
 	} else {

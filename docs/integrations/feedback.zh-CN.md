@@ -1,8 +1,16 @@
 # 意见反馈
 
+## 采纳奖励（Goose 104）
+
+管理员在“奖励设置”配置每条反馈固定果壳币奖励，0 表示不发币，默认 0。状态新增“已采纳”：当前站点管理员首次采纳他人的反馈时，冻结当时金额与采纳人/时间，并与状态历史、币账同事务提交。本人不能采纳自己的反馈；发币服务不可用或币账失败时全部回滚。每条反馈终身最多一次奖励，重复请求、并发、重新打开后再采纳均不重复发币；0 金额也保存首次采纳，不在调整配置后补发。历史已解决记录不自动视为采纳，改其他状态不冲正奖励。
+
+GET/POST `/api/v1/feedback/reward-settings` 仅当前站点管理员，POST 使用 CSRF、当前 version、UUID request_key 和 amount_minor（0–10^12，0.01 果壳币单位）。配置有独立审计和防重。状态变更仍走原 messages API，客户端不能指定奖励金额。详情返回可选 accepted_at/reward_minor，已发奖励保留在详情和币流水。
+
+宿主注入 exchange.FeedbackGrantTx，固定来源 `feedback_reward:<反馈ID>`；反馈不访问 exchange 私有 store。采纳字段随父反馈归属合并，原采纳人和冻结金额不改；币账及来源记录随 exchange 参与方合并。产生采纳记录后禁止 Down 或回退忽略防重字段的旧程序，保留状态识别与合并参与方。无新 ESI scope 或后台任务，沿用反馈更新和币变动提醒配置。
+
 登录后从导航“意见反馈”（`/feedback`）提交 BUG 或功能需求，填写标题和详细描述。用户可以查看自己的反馈、处理状态和回复，并补充说明。当前站点管理员切换“全部反馈”处理所有成员的反馈，可以回复、修改状态和重新打开；军团管理员、专员或 `access.manage` 不代替站点管理员身份。
 
-状态为“待处理、处理中、已解决、已关闭”。提交内容与历史回复不可修改或删除，处理历史保存当时作者名称、管理员身份与时间。用户内容按纯文本显示。支持类型/状态筛选、每页 30 条、稳定 ID 倒序分页，以及 `?ticket=<id>` 的受保护详情链接。截图保持私有，没有公开反馈广场；反馈进度和待处理提醒按独立提醒模块配置。
+状态为“待处理、处理中、已采纳、已解决、已关闭”。提交内容与历史回复不可修改或删除，处理历史保存当时作者名称、管理员身份与时间。用户内容按纯文本显示。支持类型/状态筛选、每页 30 条、稳定 ID 倒序分页，以及 `?ticket=<id>` 的受保护详情链接。截图保持私有，没有公开反馈广场；反馈进度和待处理提醒按独立提醒模块配置。
 
 ## 截图（Goose 99/100）
 
@@ -18,7 +26,7 @@ Goose 100 在 `feedback_images` 保存字节数并兼容旧 content，新增私�
 
 ## 接口与权限
 
-- `GET /api/v1/feedback/tickets`：默认 `scope=mine`；`scope=all` 仅当前站点管理员；可选 `kind=bug|feature`、`status=submitted|in_progress|resolved|closed`、十进制 `before`。返回 `tickets`、`next_before` 和 `administrator`，列表不含正文。
+- `GET /api/v1/feedback/tickets`：默认 `scope=mine`；`scope=all` 仅当前站点管理员；可选 `kind=bug|feature`、`status=submitted|in_progress|accepted|resolved|closed`、十进制 `before`。返回 `tickets`、`next_before` 和 `administrator`，列表不含正文。
 - `POST /api/v1/feedback/tickets`：`request_key` 为非零 UUID，`kind`、`title`、`body` 必填；标题最多 120 字符、正文最多 6000 字符，去除首尾空白。返回已保存反馈。
 - `GET /api/v1/feedback/tickets/{id}`：返回 `ticket`、`messages` 和 `administrator`。仅归属账号或当前站点管理员可读，其他账号与不存在对象均返回 404。
 - `POST /api/v1/feedback/tickets/{id}/messages`：`request_key`、原 `revision`、`body`、`status`；正文最多 2000 字符，状态可空表示保持不变，仅管理员可提交非空状态。纯状态操作允许空正文。版本冲突返回 409，刷新后保留草稿再提交。

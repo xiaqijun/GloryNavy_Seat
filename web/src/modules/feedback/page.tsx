@@ -15,11 +15,14 @@ import {
   useScreenshots,
 } from "./screenshots";
 import "./feedback.css";
+import { RewardSettings } from "./rewards";
+import { money } from "@/modules/welfare/api";
 
 const kinds = { bug: msg("BUG 反馈"), feature: msg("功能需求") };
 const statuses = {
   submitted: msg("待处理"),
   in_progress: msg("处理中"),
+  accepted: msg("已采纳"),
   resolved: msg("已解决"),
   closed: msg("已关闭"),
 };
@@ -44,6 +47,7 @@ export default function FeedbackPage() {
   );
 }
 function Workspace({ user, csrf }: { user: string; csrf: string }) {
+  const [rewardSettings, setRewardSettings] = useState(false);
   const [scope, setScope] = useState("mine"),
     [kind, setKind] = useState(""),
     [status, setStatus] = useState(""),
@@ -67,6 +71,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     <section className="feedback-page">
       <header className="feedback-heading">
         <h1>{msg("意见反馈")}</h1>
+        {q.data?.administrator && <Button variant="outline" onClick={()=>setRewardSettings(true)}>{msg("奖励设置")}</Button>}
         <Button onClick={() => setCompose(true)}>
           <Plus />
           {msg("提交反馈")}
@@ -169,6 +174,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           )}
         </>
       )}
+      {rewardSettings && <RewardSettings csrf={csrf} close={()=>setRewardSettings(false)}/>}
       {compose && (
         <Compose
           csrf={csrf}
@@ -337,17 +343,19 @@ function Details({
       ) : !q.data ? (
         <p role="status">{msg("正在读取")}</p>
       ) : (
-        <Thread data={q.data} csrf={csrf} updated={updated} />
+        <Thread data={q.data} user={user} csrf={csrf} updated={updated} />
       )}
     </Modal>
   );
 }
 function Thread({
   data,
+  user,
   csrf,
   updated,
 }: {
   data: api.Detail;
+  user: string;
   csrf: string;
   updated: () => Promise<unknown>;
 }) {
@@ -386,6 +394,7 @@ function Thread({
         </span>
       </div>
       <h2>{t.title}</h2>
+      {(t.reward_minor ?? 0)>0 && <p>{msg("采纳奖励")} · {money(t.reward_minor!)} {msg("果壳币")}</p>}
       <p className="feedback-meta">
         {t.author_name} · {time(t.created_at)}
       </p>
@@ -431,7 +440,7 @@ function Thread({
                 disabled={mutation.isPending}
                 options={[
                   { value: "", label: msg("保持当前状态") },
-                  ...options(statuses),
+                  ...options(statuses).filter(o=>o.value!=="accepted"||t.account_id!==user),
                 ]}
               />
             </label>

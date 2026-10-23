@@ -20,6 +20,8 @@ type Handler struct {
 func (h Handler) Module() module.Definition {
 	return module.Definition{Manifest: module.Manifest{ID: "feedback", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}, {ID: "access", APIVersion: 1}}}, Permissions: []string{"feedback.self"}, Routes: []module.Route{
 		{Method: "GET", Path: "/tickets", Permission: "feedback.self", Handler: http.HandlerFunc(h.list)},
+		{Method: "GET", Path: "/reward-settings", Permission: "feedback.self", Handler: http.HandlerFunc(h.rewardSettings)},
+		{Method: "POST", Path: "/reward-settings", Permission: "feedback.self", Handler: http.HandlerFunc(h.configureReward)},
 		{Method: "POST", Path: "/tickets", Permission: "feedback.self", Handler: http.HandlerFunc(h.create)},
 		{Method: "GET", Path: "/tickets/{id}", Permission: "feedback.self", Handler: http.HandlerFunc(h.detail)},
 		{Method: "GET", Path: "/tickets/{id}/images/{image}", Permission: "feedback.self", Handler: http.HandlerFunc(h.image)},

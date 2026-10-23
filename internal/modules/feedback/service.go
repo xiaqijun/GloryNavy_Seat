@@ -20,20 +20,23 @@ type Service struct {
 	Pool          *pgxpool.Pool
 	Administrator func(context.Context, string) (bool, error)
 	LockAccounts  func(context.Context, pgx.Tx, []string) error
+	Credit        func(context.Context, pgx.Tx, string, string, int64, int64) error
 }
 type Actor struct{ ID, Name string }
 type Ticket struct {
-	Images     []Image   `json:"images,omitempty"`
-	ID         string    `json:"id"`
-	AccountID  string    `json:"account_id"`
-	AuthorName string    `json:"author_name"`
-	Kind       string    `json:"kind"`
-	Title      string    `json:"title"`
-	Body       string    `json:"body,omitempty"`
-	Status     string    `json:"status"`
-	Revision   int32     `json:"revision"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	AcceptedAt  *time.Time `json:"accepted_at,omitempty"`
+	RewardMinor *int64     `json:"reward_minor,omitempty"`
+	Images      []Image    `json:"images,omitempty"`
+	ID          string     `json:"id"`
+	AccountID   string     `json:"account_id"`
+	AuthorName  string     `json:"author_name"`
+	Kind        string     `json:"kind"`
+	Title       string     `json:"title"`
+	Body        string     `json:"body,omitempty"`
+	Status      string     `json:"status"`
+	Revision    int32      `json:"revision"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 type Message struct {
 	Images     []Image   `json:"images,omitempty"`
@@ -88,7 +91,7 @@ func uuid(s string) pgtype.UUID { var v pgtype.UUID; _ = v.Scan(s); return v }
 func validKey(s string) bool    { v := uuid(s); return v.Valid && v.Bytes != [16]byte{} }
 func kindOK(s string) bool      { return s == "bug" || s == "feature" }
 func statusOK(s string) bool {
-	return s == "submitted" || s == "in_progress" || s == "resolved" || s == "closed"
+	return s == "submitted" || s == "in_progress" || s == "accepted" || s == "resolved" || s == "closed"
 }
 func clean(s string, max int) bool {
 	return utf8.ValidString(s) && !strings.ContainsRune(s, 0) && utf8.RuneCountInString(s) <= max
@@ -304,6 +307,11 @@ func (s *Service) Reply(ctx context.Context, actor Actor, id int64, in Reply) (T
 	}
 	if n >= 100 {
 		return Ticket{}, full
+	}
+	if in.Status == "accepted" {
+		if err = s.adoptReward(ctx, tx, actor.ID, id, t); err != nil {
+			return Ticket{}, err
+		}
 	}
 	messageID, err := q.InsertMessage(ctx, store.InsertMessageParams{TicketID: id, Actor: uuid(actor.ID), AuthorName: actor.Name, Staff: admin, RequestKey: uuid(in.RequestKey), Body: in.Body, Status: in.Status})
 	if err != nil {

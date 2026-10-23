@@ -1,5 +1,12 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "反馈奖励设置": "Feedback reward settings",
+  "奖励设置": "Reward settings",
+  "采纳奖励 / 果壳币": "Adoption reward / Goose Coin",
+  "设为 0 不发放奖励": "Set to 0 to disable rewards",
+  "采纳奖励": "Adoption reward",
+  "已采纳": "Accepted",
+  "不能采纳自己的反馈": "You cannot accept your own feedback",
   "NPC 阵营": "NPC faction",
   "刷新数据": "Refresh data",
   "查询条件": "Query filters",

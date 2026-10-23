@@ -859,7 +859,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			approvalModule.Service.UseIndex = true
 		}
 	}
-	feedbackService := &feedback.Service{Pool: pool, Administrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts}
+	feedbackService := &feedback.Service{Pool: pool, Administrator: accessService.IsAdministrator, LockAccounts: identityService.LockActiveAccounts, Credit: exchangeService.FeedbackGrantTx}
 	identityService.MergeParticipants["feedback"] = feedbackService.MergeAccountTx
 	feedbackHandler := feedback.Handler{Service: feedbackService, Actor: func(r *http.Request) feedback.Actor {
 		s := identity.Principal(r.Context())
