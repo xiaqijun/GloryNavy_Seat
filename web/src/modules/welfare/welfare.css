@@ -279,7 +279,7 @@
   font-variant-numeric: tabular-nums;
 }
 .welfare-km-item-dropped {
-  background: #ecfdf5;
+  background: var(--success-tint);
 }
 .welfare-km-item-name {
   display: flex;
@@ -304,7 +304,7 @@
   white-space: nowrap;
 }
 .welfare-km-item-dropped .welfare-km-item-name small {
-  color: #15803d;
+  color: var(--success);
 }
 .welfare-km-item-nested .welfare-km-item-name {
   padding-left: 14px;
@@ -669,7 +669,7 @@
 }
 .welfare-quota-legend i.is-reserved,
 .welfare-quota-bar span.is-reserved {
-  background: var(--color-warning, #f59e0b);
+  background: var(--color-warning, var(--warning-marker));
 }
 .welfare-quota-periods {
   display: grid;
@@ -749,7 +749,7 @@
   content: "";
 }
 .welfare-quota-metrics .is-reserved::before {
-  background: var(--color-warning, #f59e0b);
+  background: var(--color-warning, var(--warning-marker));
 }
 .welfare-quota-metrics .is-available::before {
   background: var(--primary);
@@ -817,24 +817,24 @@
   width: fit-content;
 }
 .state-completed {
-  background: #ecfdf5;
-  color: #047857;
+  background: var(--success-tint);
+  color: var(--success-teal);
 }
 .state-cancel_requested,
 .state-approved,
 .state-executing {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--info-surface);
+  color: var(--primary-hover);
 }
 .state-information,
 .state-external {
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--warning-surface);
+  color: var(--warning-text);
 }
 .state-rejected,
 .state-reversed {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 .welfare-amount {
   font-variant-numeric: tabular-nums;
@@ -929,8 +929,8 @@
 }
 .welfare-warning {
   font-size: 14px;
-  color: #92400e;
-  background: #fffbeb;
+  color: var(--warning-text);
+  background: var(--warning-surface);
   border-radius: 8px;
   padding: 12px;
 }
@@ -1185,16 +1185,16 @@
   color: var(--muted);
 }
 .loss-completed {
-  color: #15803d;
-  background: #f0fdf4;
+  color: var(--success);
+  background: var(--success-surface);
 }
 .loss-processing {
-  color: #b45309;
-  background: #fffbeb;
+  color: var(--warning);
+  background: var(--warning-surface);
 }
 .loss-available {
   color: var(--primary);
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .welfare-loss-evidence {
   display: grid;
@@ -1597,7 +1597,7 @@
 .welfare-character-option.is-selected { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
 .welfare-character-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .welfare-character-option input:focus-visible + .welfare-character-option-mark { outline: 2px solid var(--primary); outline-offset: 2px; }
-.welfare-character-option-mark { display: grid; place-items: center; width: 18px; height: 18px; color: white; border: 1px solid var(--border); border-radius: 5px; background: var(--card); }
+.welfare-character-option-mark { display: grid; place-items: center; width: 18px; height: 18px; color: var(--primary-foreground); border: 1px solid var(--border); border-radius: 5px; background: var(--card); }
 .welfare-character-option.is-selected .welfare-character-option-mark { border-color: var(--primary); background: var(--primary); }
 .welfare-character-option-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .welfare-character-option small { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted-foreground); font-size: 11px; }

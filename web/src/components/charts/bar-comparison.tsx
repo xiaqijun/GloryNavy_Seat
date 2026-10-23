@@ -1,4 +1,5 @@
 import { msg } from "@/lib/i18n";
+import { useResolvedTheme } from "@/lib/theme";
 import { useEffect, useRef, useState } from "react";
 import { init, use as registerCharts } from "echarts/core";
 import { BarChart } from "echarts/charts";
@@ -18,6 +19,7 @@ export default function BarComparison({
   vertical?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const theme = useResolvedTheme();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     const element = ref.current;
@@ -46,7 +48,7 @@ export default function BarComparison({
       motion.removeEventListener("change", draw);
       chart.dispose();
     };
-  }, [data, vertical]);
+  }, [data, vertical, theme]);
   return (
     <>
       <div

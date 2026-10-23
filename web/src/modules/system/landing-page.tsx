@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowUp, ArrowUpRight, Check, Copy } from "lucide-react";
 import { LanguageSwitch } from "@/components/language-switch";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { useSession } from "@/modules/identity";
 import { EveSignInButton } from "@/modules/eve/login-components";
 import { useLoginError } from "@/modules/eve/use-login-error";
@@ -167,6 +168,7 @@ export default function LandingPage() {
             ))}
           </nav>
           <div className="landing-account">
+            <ThemeSwitch />
             <LanguageSwitch />
             {session.data?.session ? (
               <Link className="landing-login" to="/workspace">

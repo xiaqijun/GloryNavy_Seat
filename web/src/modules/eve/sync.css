@@ -101,7 +101,7 @@
   flex-shrink: 0;
 }
 .sync-state.is-fresh {
-  color: var(--success, #15803d);
+  color: var(--success);
 }
 .sync-state.is-error {
   color: var(--color-destructive);

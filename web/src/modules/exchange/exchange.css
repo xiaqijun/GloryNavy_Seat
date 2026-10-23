@@ -408,12 +408,12 @@
   overflow-wrap: anywhere;
 }
 .exchange-record-state[data-state="pending"] { background: var(--color-accent); color: var(--primary-hover); }
-.exchange-record-state[data-state="fulfilled"] { background: var(--success-soft, #eaf7ef); color: var(--success, #1f7a46); }
-.exchange-record-state[data-state="cancel_requested"] { background: var(--warning-soft, #fffbeb); color: var(--warning, #92400e); }
+.exchange-record-state[data-state="fulfilled"] { background: var(--success-soft, var(--success-subtle)); color: var(--success, var(--success-label)); }
+.exchange-record-state[data-state="cancel_requested"] { background: var(--warning-soft, var(--warning-surface)); color: var(--warning, var(--warning-text)); }
 .exchange-record-tools { display: flex; align-items: start; justify-content: space-between; gap: 4px 12px; flex-wrap: wrap; }
 .exchange-record-tools > button { padding-inline: 8px; color: var(--primary); }
 .exchange-record-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.exchange-record-notice { margin: 0; color: var(--warning, #92400e); font-size: 13px; overflow-wrap: anywhere; }
+.exchange-record-notice { margin: 0; color: var(--warning, var(--warning-text)); font-size: 13px; overflow-wrap: anywhere; }
 .exchange-record-details:not([hidden]) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

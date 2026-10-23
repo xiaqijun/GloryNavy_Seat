@@ -81,7 +81,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #15803d;
+  color: var(--success);
   font-size: 13px;
 }
 .welfare-capital-facts {
@@ -139,7 +139,7 @@
 }
 .welfare-capital-progress .is-done > span {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-foreground);
   border-color: var(--primary);
 }
 .welfare-capital-error {

@@ -80,7 +80,7 @@
 .feedback-progress li[aria-current="step"] > span {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--color-primary-foreground, #fff);
+  color: var(--color-primary-foreground, var(--card));
 }
 @media (max-width: 540px) {
   .feedback-progress {
@@ -171,8 +171,8 @@
   color: var(--primary);
 }
 .feedback-status[data-status="resolved"] {
-  background: #ecfdf5;
-  color: #166534;
+  background: var(--success-tint);
+  color: var(--success-strong);
 }
 .feedback-empty {
   padding: 40px 24px;

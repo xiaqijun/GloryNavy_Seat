@@ -97,7 +97,7 @@
   color: var(--muted);
 }
 .member-feedback[role="alert"] {
-  color: #b91c1c;
+  color: var(--danger-text);
 }
 .member-pager {
   display: flex;
@@ -140,7 +140,7 @@
 }
 .member-characters button[aria-pressed="true"] {
   border-color: var(--primary);
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .member-detail-grid {
   display: grid;
@@ -175,14 +175,14 @@
   padding: 3px 7px;
   line-height: 1.5;
   font-size: 12px;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--surface-muted);
   border-radius: 6px;
   overflow-wrap: anywhere;
 }
 .member-badge.is-ready {
-  color: #166534;
-  background: #f0fdf4;
+  color: var(--success-strong);
+  background: var(--success-surface);
 }
 .member-corporation > .member-badge {
   flex-shrink: 0;
@@ -257,7 +257,7 @@
   padding: 8px 12px;
 }
 .member-link:hover {
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .member-sync {
   border-top: 1px solid var(--border);

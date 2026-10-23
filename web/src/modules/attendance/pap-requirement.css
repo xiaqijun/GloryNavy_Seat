@@ -19,7 +19,7 @@
 .pap-summary-main > div:first-child { display: grid; gap: 7px; }
 .pap-summary-target { line-height: 1.45; }
 .pap-status-pill { width: fit-content; gap: 5px; min-height: 28px; padding: 4px 9px; color: var(--muted); background: var(--color-muted); border-radius: 999px; font-size: 12px; font-weight: 600; }
-.pap-status-pill.is-complete { color: var(--color-success, #15803d); background: color-mix(in srgb, var(--color-success, #16a34a) 12%, transparent); }
+.pap-status-pill.is-complete { color: var(--color-success, var(--success)); background: color-mix(in srgb, var(--color-success, var(--success-accent)) 12%, transparent); }
 .pap-alliance-details { display: grid; align-content: start; gap: 12px; min-width: 0; }
 .pap-alliance-details-heading { justify-content: space-between; gap: 12px; }
 .pap-alliance-details-heading strong { font-size: 14px; font-weight: 650; }
@@ -41,7 +41,7 @@
 .pap-alliance-member-name small { color: var(--muted); font-size: 12px; }
 .pap-alliance-member-points { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
 .pap-alliance-member-status { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 56px; color: var(--muted); font-size: 12px; font-weight: 600; }
-.pap-alliance-member-status.is-complete { color: var(--color-success, #15803d); }
+.pap-alliance-member-status.is-complete { color: var(--color-success, var(--success)); }
 .pap-status { min-height: 44px; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .pap-status-error { align-items: flex-start; color: var(--color-destructive); }
 .pap-status button { flex: 0 0 auto; }

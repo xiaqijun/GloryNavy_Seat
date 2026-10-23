@@ -185,11 +185,11 @@ a.operations-metric:hover {
 
 .queue-fulfillment,
 .queue-information {
-  background: var(--warning, #d97706);
+  background: var(--warning, var(--warning-accent));
 }
 
 .queue-exceptions {
-  background: var(--destructive, #dc2626);
+  background: var(--destructive, var(--danger));
 }
 
 .queue-track {
@@ -197,7 +197,7 @@ a.operations-metric:hover {
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: var(--muted-background, #f1f5f9);
+  background: var(--muted-background, var(--surface-muted));
 }
 
 .queue-track span {
@@ -357,14 +357,14 @@ a.operations-metric:hover {
 .operations-badge {
   padding: 3px 8px;
   border-radius: 999px;
-  background: var(--muted-background, #f1f5f9);
+  background: var(--muted-background, var(--surface-muted));
   color: var(--muted);
   font-size: 12px;
 }
 
 .operations-badge.is-live {
-  background: color-mix(in srgb, var(--success, #16a34a) 12%, var(--card));
-  color: var(--success, #15803d);
+  background: color-mix(in srgb, var(--success, var(--success-accent)) 12%, var(--card));
+  color: var(--success);
 }
 
 .operations-report-kicker {

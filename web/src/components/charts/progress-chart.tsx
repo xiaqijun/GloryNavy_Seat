@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useResolvedTheme } from "@/lib/theme";
 import { init, use as registerCharts } from "echarts/core";
 import { BarChart } from "echarts/charts";
 import { GridComponent } from "echarts/components";
@@ -17,6 +18,7 @@ export default function ProgressChart({
   label: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const theme = useResolvedTheme();
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -35,7 +37,7 @@ export default function ProgressChart({
       motion.removeEventListener("change", draw);
       chart.dispose();
     };
-  }, [value, target]);
+  }, [value, target, theme]);
   return (
     <div
       ref={ref}

@@ -18,8 +18,8 @@
   place-items: center;
   padding: 10px;
   border-radius: 10px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--info-surface);
+  color: var(--primary);
 }
 .approval-tabs {
   display: flex;
@@ -112,15 +112,15 @@
   font-size: 13px;
 }
 .approval-batch-row strong { color: var(--foreground); }
-.approval-batch-row code { color: var(--foreground); font-size: 12px; background: var(--surface-muted, #f3f6fb); padding: 3px 6px; border-radius: 5px; }
+.approval-batch-row code { color: var(--foreground); font-size: 12px; background: var(--surface-muted, var(--surface-subtle)); padding: 3px 6px; border-radius: 5px; }
 .approval-batch-row span { white-space: nowrap; }
 .approval-batch-row small { margin-left: auto; }
 .approval-batch-row button { min-height: 30px; }
 .approval-batch-table-row td {
-  background: #f8fbff;
+  background: var(--info-subtle);
 }
 .approval-batch-table-row:hover td {
-  background: #f1f7ff;
+  background: var(--info-muted);
 }
 .approval-batch-glyph {
   display: inline-grid;
@@ -129,7 +129,7 @@
   height: 28px;
   border-radius: 7px;
   color: var(--primary);
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .approval-settlement-detail {
   display: grid;
@@ -238,12 +238,12 @@
   font-size: 12px;
 }
 .approval-filter-error {
-  color: var(--destructive, #b91c1c);
+  color: var(--destructive, var(--danger-text));
 }
 .approval-sync-status {
-  color: var(--warning-foreground, #8a5a00);
-  background: var(--warning-muted, #fff7e6);
-  border: 1px solid var(--warning-border, #f2cc8f);
+  color: var(--warning-foreground, var(--warning-contrast));
+  background: var(--warning-muted, var(--warning-tint));
+  border: 1px solid var(--warning-border, var(--warning-line));
   border-radius: 8px;
   padding: 10px 12px;
   display: flex;
@@ -308,7 +308,7 @@
   accent-color: var(--primary);
 }
 .approval-table tr:hover td {
-  background: #f8fafc;
+  background: var(--background);
 }
 .approval-table strong {
   font-weight: 600;
@@ -365,14 +365,14 @@
 .approval-status {
   display: inline-block;
   font-size: 12px;
-  color: #1d4ed8;
-  background: #eff6ff;
+  color: var(--primary-hover);
+  background: var(--info-surface);
   padding: 4px 7px;
   border-radius: 6px;
 }
 .approval-status.exception {
-  color: #b45309;
-  background: #fffbeb;
+  color: var(--warning);
+  background: var(--warning-surface);
 }
 .approval-empty {
   display: grid;

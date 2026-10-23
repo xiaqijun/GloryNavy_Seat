@@ -12,6 +12,7 @@ import { PageBoundary } from "@/app/page-boundary";
 import { AccountEntry, useSession } from "@/modules/identity";
 import { useManagementAccess } from "@/modules/access";
 import { LanguageSwitch } from "@/components/language-switch";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { getContext as getApprovalContext } from "@/modules/approval/api";
 import { warmNavigationPages } from "@/app/navigation-warmup";
 import { queryClient } from "@/lib/query";
@@ -138,6 +139,7 @@ export default function MemberApp() {
       <div className={standalone ? "auth-main-shell" : "main-shell"}>
         {standalone && (
           <div className="auth-language">
+            <ThemeSwitch />
             <LanguageSwitch />
           </div>
         )}
@@ -148,6 +150,7 @@ export default function MemberApp() {
               {msg("国际服 · Tranquility")}{" "}
             </span>
             <div className="topbar-actions">
+              <ThemeSwitch />
               <LanguageSwitch />
               {pages.some((page) => page.id === "eve.account") && (
                 <AccountEntry />

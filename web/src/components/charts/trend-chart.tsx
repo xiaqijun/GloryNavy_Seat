@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useResolvedTheme } from "@/lib/theme";
 import { init, use as registerCharts } from "echarts/core";
 import { LineChart } from "echarts/charts";
 import { GridComponent, TooltipComponent } from "echarts/components";
@@ -28,6 +29,7 @@ export default function TrendChart({ label, points, unit = "" }: {
   unit?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const theme = useResolvedTheme();
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -76,7 +78,7 @@ export default function TrendChart({ label, points, unit = "" }: {
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
     motion.addEventListener("change", draw);
     return () => { observer.disconnect(); motion.removeEventListener("change", draw); chart.dispose(); };
-  }, [label, points, unit]);
+  }, [label, points, unit, theme]);
   return <div ref={ref} style={{ width: "100%", minWidth: 0, height: 200 }} role="img"
     aria-label={`${label}: ${points.map(point => `${point.label}: ${chartValue(point.value, unit)}`).join("; ")}`} />;
 }

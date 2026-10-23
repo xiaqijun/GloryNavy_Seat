@@ -251,7 +251,7 @@
   flex-shrink: 0;
 }
 .wallet-in {
-  color: var(--success, #15803d);
+  color: var(--success);
 }
 .wallet-out {
   color: var(--color-destructive);

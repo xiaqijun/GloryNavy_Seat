@@ -81,6 +81,8 @@ GloryNavy 是面向 EVE Online 国际服 Tranquility 的自研军团管理平台
 
 ## UI 与来源
 
+- [界面主题](ui/theme.md)：跟随系统、浅色与暗色，浏览器偏好及模块适配。
+
 - [主导航](ui/navigation.md)：业务分组、入口顺序、权限过滤和手机交互。
 - [通用设计规则](ui-design-rules.md)：Corporate Clean 强制提示词的项目适配；具体排版在页面说明中维护。
 - [中英文界面](ui/language.md) / [English](ui/language.en.md)：固定文案、日期与数据名称边界。

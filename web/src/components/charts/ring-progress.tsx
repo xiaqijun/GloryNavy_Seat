@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useResolvedTheme } from "@/lib/theme";
 import { init, use as registerCharts } from "echarts/core";
 import { PieChart } from "echarts/charts";
 import { SVGRenderer } from "echarts/renderers";
@@ -18,6 +19,7 @@ export default function RingProgress({
   label: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const theme = useResolvedTheme();
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -60,7 +62,7 @@ export default function RingProgress({
       observer.disconnect();
       chart.dispose();
     };
-  }, [target, value]);
+  }, [target, value, theme]);
   return (
     <div
       className="ring-progress-shell"

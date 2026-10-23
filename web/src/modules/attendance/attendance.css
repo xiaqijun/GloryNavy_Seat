@@ -776,8 +776,8 @@
   font-size: 12px;
 }
 .attendance-pap-batch-row input { width: 112px; }
-.attendance-pap-batch-row .is-success { color: var(--success, #15803d); }
-.attendance-pap-batch-row .is-error { color: var(--destructive, #b91c1c); }
+.attendance-pap-batch-row .is-success { color: var(--success); }
+.attendance-pap-batch-row .is-error { color: var(--destructive, var(--danger-text)); }
 @media (max-width: 560px) {
   .attendance-pap-batch-row { align-items: flex-start; flex-wrap: wrap; }
   .attendance-pap-batch-row label { margin-left: 32px; }

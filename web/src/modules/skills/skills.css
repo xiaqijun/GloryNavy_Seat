@@ -215,7 +215,7 @@
 }
 .current .queue-number {
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
 }
 .queue-main {
   flex: 1;
@@ -305,10 +305,10 @@
   font-size: 12px;
 }
 .skill-result.met {
-  color: #15803d;
+  color: var(--success);
 }
 .skill-result.missing {
-  color: #b45309;
+  color: var(--warning);
 }
 .skill-result.unknown {
   color: var(--muted);
@@ -420,7 +420,7 @@
 }
 .skills-page [role="alert"],
 .skills-dialog [role="alert"] {
-  color: #b91c1c;
+  color: var(--danger-text);
   font-size: 14px;
 }
 @media (max-width: 1000px) {

@@ -6,8 +6,8 @@ html:has(.public-home) {
 .public-home {
   --landing-dark: #0b0d11;
   --landing-muted: #b6bcc7;
-  --landing-copy: #536174;
-  --landing-line: #d8dee7;
+  --landing-copy: var(--text-secondary);
+  --landing-line: var(--border);
   background: var(--card);
   color: var(--foreground);
   overflow-x: clip;
@@ -113,6 +113,15 @@ html:has(.public-home) {
 .landing-account .language-switch:hover {
   background: #ffffff14;
 }
+.landing-topbar,
+.landing-hero,
+.landing-join,
+.landing-activity-featured {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+}
+.landing-account .theme-switch { color: #fff; }
+.landing-account .theme-switch:hover { background: #ffffff14; }
 .landing-login,
 .landing-primary,
 .landing-secondary {
@@ -255,7 +264,7 @@ html:has(.public-home) {
   pointer-events: none;
 }
 .landing-introduction {
-  background: #f4f6f9;
+  background: var(--background);
 }
 .landing-introduction-grid {
   display: grid;
@@ -277,7 +286,7 @@ html:has(.public-home) {
 }
 .public-home .landing-motto {
   margin-top: 16px;
-  color: #536174;
+  color: var(--landing-copy);
   font-size: 20px;
 }
 .landing-history {
@@ -295,7 +304,7 @@ html:has(.public-home) {
 }
 .landing-history dd {
   margin: 8px 0 0;
-  color: #536174;
+  color: var(--landing-copy);
   font-size: 15px;
   line-height: 1.8;
   max-width: 28em;
@@ -304,7 +313,7 @@ html:has(.public-home) {
   margin-top: 48px;
   border: 1px solid var(--landing-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--card);
   padding: 16px 32px 32px;
 }
 .landing-strength-heading {
@@ -334,10 +343,10 @@ html:has(.public-home) {
 }
 .landing-stat + .landing-stat {
   padding-left: 32px;
-  border-left: 1px solid #d8dee7;
+  border-left: 1px solid var(--landing-line);
 }
 .landing-stat dt {
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -355,7 +364,7 @@ html:has(.public-home) {
   gap: 8px 16px;
   align-items: center;
   flex-wrap: wrap;
-  color: #64748b;
+  color: var(--muted);
   font-size: 12px;
 }
 .landing-data-footer:not(:empty) {
@@ -373,10 +382,10 @@ html:has(.public-home) {
   cursor: pointer;
 }
 .landing-activities {
-  background: #fff;
+  background: var(--card);
 }
 .landing-support {
-  background: #f1f4f8;
+  background: var(--background);
 }
 .landing-activity-grid {
   display: grid;
@@ -391,7 +400,7 @@ html:has(.public-home) {
   padding: 32px;
   border: 1px solid var(--landing-line);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--background);
 }
 .landing-activity-icon {
   display: inline-flex;
@@ -401,7 +410,7 @@ html:has(.public-home) {
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  background: #e9effc;
+  background: var(--info-surface);
   color: var(--primary);
 }
 .landing-activity-copy {
@@ -414,7 +423,7 @@ html:has(.public-home) {
   margin-bottom: 10px;
 }
 .public-home .landing-activity p {
-  color: #536174;
+  color: var(--landing-copy);
   font-size: 16px;
   line-height: 1.8;
   max-width: 30em;
@@ -455,7 +464,7 @@ html:has(.public-home) {
   gap: 0;
   border: 1px solid var(--landing-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--card);
 }
 .landing-support .landing-activity {
   border: 0;

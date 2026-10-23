@@ -347,7 +347,7 @@
 }
 .fit-alert {
   font-size: 14px;
-  color: var(--color-destructive, #b91c1c);
+  color: var(--color-destructive, var(--danger-text));
   overflow-wrap: anywhere;
   line-height: 1.6;
 }
@@ -637,10 +637,10 @@
   display: none;
 }
 .fit-meter.is-over progress::-webkit-progress-value {
-  background: var(--color-destructive, #b91c1c);
+  background: var(--color-destructive, var(--danger-text));
 }
 .fit-meter.is-over progress::-moz-progress-bar {
-  background: var(--color-destructive, #b91c1c);
+  background: var(--color-destructive, var(--danger-text));
 }
 .fit-mobile-nav {
   display: none;

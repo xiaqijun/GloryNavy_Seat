@@ -8,8 +8,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/query";
 import { getLocale, initializeLocale } from "./lib/i18n";
 import { ToastProvider } from "./components/ui/toast";
+import { initializeTheme } from "./lib/theme";
 
 initializeLocale();
+const stopTheme = initializeTheme();
+import.meta.hot?.dispose(stopTheme);
 
 if (import.meta.env.DEV) {
   let disposed = false;

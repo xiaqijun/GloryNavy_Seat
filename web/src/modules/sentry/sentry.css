@@ -6,7 +6,7 @@
 .sentry-brand { width: 44px; height: 44px; }
 .sentry-usage-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .sentry-charging-indicator { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 2px; }
-.sentry-charging-indicator.is-on { color: var(--success, #15803d); }
+.sentry-charging-indicator.is-on { color: var(--success); }
 .sentry-charging-indicator.is-off { color: var(--muted); }
 .sentry-key-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .sentry-key-actions .button-motion { flex: 0 0 auto; }
@@ -29,11 +29,11 @@
 .sentry-consumption-main > div:first-child, .sentry-consumption-amount { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; }
 .sentry-consumption-main span { color: var(--muted); font-size: 13px; }
 .sentry-consumption-amount strong { white-space: nowrap; }
-.sentry-consumption-amount strong.is-returned { color: var(--success, #15803d); }
+.sentry-consumption-amount strong.is-returned { color: var(--success); }
 .sentry-consumption-state { padding: 3px 8px; border-radius: 999px; font-size: 12px; }
-.sentry-consumption-state.is-reserved { color: var(--warning, #b45309); background: color-mix(in srgb, var(--warning, #d97706) 13%, transparent); }
+.sentry-consumption-state.is-reserved { color: var(--warning); background: color-mix(in srgb, var(--warning, var(--warning-accent)) 13%, transparent); }
 .sentry-consumption-state.is-settled { color: var(--primary); background: var(--color-accent); }
-.sentry-consumption-state.is-released, .sentry-consumption-state.is-refunded { color: var(--success, #15803d); background: color-mix(in srgb, var(--success, #16a34a) 13%, transparent); }
+.sentry-consumption-state.is-released, .sentry-consumption-state.is-refunded { color: var(--success); background: color-mix(in srgb, var(--success, var(--success-accent)) 13%, transparent); }
 .sentry-usage-pagination { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .sentry-pricing-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .sentry-pricing-form label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }

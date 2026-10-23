@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./theme.css";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* Service messages may contain an unbroken reference or URL. Preserve the
    message without letting it expand the page or its flex/grid container. */
@@ -13,17 +15,17 @@
   --color-card-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
-  --color-primary-foreground: #fff;
-  --color-secondary: #eff6ff;
-  --color-secondary-foreground: #1d4ed8;
-  --color-muted: #f1f5f9;
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--info-surface);
+  --color-secondary-foreground: var(--primary-hover);
+  --color-muted: var(--surface-muted);
   --color-muted-foreground: var(--muted);
-  --color-accent: #eff6ff;
-  --color-accent-foreground: #1d4ed8;
+  --color-accent: var(--info-surface);
+  --color-accent-foreground: var(--primary-hover);
   --color-border: var(--border);
   --color-input: var(--border);
   --color-ring: var(--primary);
-  --color-destructive: #b91c1c;
+  --color-destructive: var(--danger-solid);
 }
 :root {
   font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
@@ -159,7 +161,7 @@ h2 {
   gap: 12px;
   padding: 12px;
   border-radius: 8px;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   transition:
@@ -171,7 +173,7 @@ h2 {
 }
 :where(.sidebar) nav a.active {
   color: var(--primary-hover);
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .main-shell {
   flex: 1;
@@ -242,7 +244,7 @@ main {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #eff6ff;
+  background: var(--info-surface);
   color: var(--primary);
   flex-shrink: 0;
   transition:
@@ -252,7 +254,7 @@ main {
 }
 .status-card:hover .icon-box {
   background: var(--primary);
-  color: #fff;
+  color: var(--primary-foreground);
   transform: scale(1.05);
 }
 .status-value {
@@ -279,14 +281,14 @@ main {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--text-subtle);
   flex-shrink: 0;
 }
 .status-dot.success {
-  background: #15803d;
+  background: var(--success);
 }
 .status-dot.error {
-  background: #b91c1c;
+  background: var(--danger-text);
 }
 .details {
   margin-top: 8px;
@@ -335,11 +337,11 @@ main {
   margin: 8px 0 24px;
 }
 .error-panel {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
   border-radius: 12px;
-  background: #fef2f2;
+  background: var(--danger-surface);
   padding: 16px 24px;
-  color: #991b1b;
+  color: var(--danger-strong);
   margin-bottom: 24px;
   font-size: 14px;
 }
@@ -369,7 +371,7 @@ main {
   top: 8px;
   left: 8px;
   z-index: 10;
-  background: white;
+  background: var(--card);
   padding: 12px;
   border-radius: 8px;
   transform: translateY(-150%);
@@ -665,10 +667,10 @@ main {
   max-width: 100%;
 }
 .authorization-notice {
-  color: #92400e;
+  color: var(--warning-text);
 }
 .login-error {
-  color: #b91c1c;
+  color: var(--danger-text);
   font-size: 14px;
 }
 .account-page {
@@ -764,13 +766,13 @@ main {
   min-height: 24px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--surface-muted);
   color: var(--muted);
   font-size: 12px;
 }
 .qq-bot-secret-field .status-chip.success {
-  background: var(--success-soft, #eaf7ef);
-  color: var(--success, #1f7a46);
+  background: var(--success-soft, var(--success-subtle));
+  color: var(--success, var(--success-label));
 }
 @container (max-width: 520px) {
   .qq-bot-settings-grid {
@@ -923,7 +925,7 @@ main {
 }
 .community-confirmation.is-confirmed,
 .community-saved {
-  color: #15803d;
+  color: var(--success);
 }
 .community-bot-bind {
   display: flex;
@@ -932,8 +934,8 @@ main {
   flex-wrap: wrap;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
-  color: var(--text-secondary, #64748b);
+  border-top: 1px solid var(--border-subtle, var(--border));
+  color: var(--text-secondary, var(--muted));
   font-size: 12px;
 }
 .community-qq-binding {
@@ -966,8 +968,8 @@ main {
 .community-bot-bind code {
   padding: 2px 6px;
   border-radius: 6px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--info-surface);
+  color: var(--primary-hover);
   font-weight: 700;
   letter-spacing: .08em;
 }
@@ -978,7 +980,7 @@ main {
   font-size: 14px;
 }
 .community-warning {
-  color: #92400e;
+  color: var(--warning-text);
 }
 .community-form-error {
   display: grid;
@@ -1375,10 +1377,10 @@ main {
   flex-shrink: 0;
 }
 .account-sync-status.is-ready {
-  color: #15803d;
+  color: var(--success);
 }
 .account-sync-status.is-attention {
-  color: #92400e;
+  color: var(--warning-text);
 }
 .account-sync-time {
   display: flex;
@@ -1492,7 +1494,7 @@ main {
   border-radius: 8px;
   overflow: hidden;
   background: #111;
-  color: white;
+  color: #fff;
 }
 .eve-login-button img {
   display: block;

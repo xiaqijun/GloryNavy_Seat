@@ -83,10 +83,10 @@
   line-height: 1.55;
 }
 .help-topic-group a:hover {
-  background: #eff6ff;
+  background: var(--info-surface);
 }
 .help-topic-group a[aria-current="page"] {
-  background: #eff6ff;
+  background: var(--info-surface);
   color: var(--primary);
   box-shadow: inset 3px 0 var(--primary);
   font-weight: 600;
@@ -285,7 +285,7 @@
 }
 @media print {
   body:has(.help-page) {
-    background: white;
+    background: var(--card);
   }
   body:has(.help-page) .sidebar,
   body:has(.help-page) .topbar,

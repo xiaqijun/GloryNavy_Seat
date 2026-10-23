@@ -270,7 +270,7 @@
 }
 .fitting-library [role="alert"],
 .library-dialog [role="alert"] {
-  color: #b91c1c;
+  color: var(--danger-text);
   font-size: 14px;
 }
 .library-dialog input:focus-visible,

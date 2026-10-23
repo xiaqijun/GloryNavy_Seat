@@ -546,7 +546,7 @@
   color: var(--muted);
 }
 .desk-pap-status.is-complete {
-  color: var(--success, #15803d);
+  color: var(--success);
 }
 .desk-pap-number {
   font-size: 36px;
