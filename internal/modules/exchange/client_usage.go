@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,7 +34,10 @@ func cumulativeAlertCost(seconds, price, unit, credit int64) (cost, nextCredit i
 
 // SettleClientUsage commits one immutable remote usage ID and the cumulative
 // rounding credit together. The legacy prepaid allowance methods remain intact.
-func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest, interval AlertTimeIntervalRequest, settleKey string) error {
+func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest, interval AlertTimeIntervalRequest, settleKey string, guards ...func(context.Context, pgx.Tx, bool) (bool, error)) error {
+	if len(guards) > 1 || (len(guards) == 1 && guards[0] == nil) {
+		return ErrInvalid
+	}
 	if err := s.alertEnabled(); err != nil {
 		return err
 	}
@@ -94,6 +98,16 @@ func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest
 		} else if !errors.Is(e, pgx.ErrNoRows) {
 			return e
 		}
+		if len(guards) == 1 {
+			if excluded, err := guards[0](ctx, tx, false); err != nil {
+				return err
+			} else if excluded {
+				return tx.Commit(ctx)
+			}
+		}
+		if !validClientUsageSystemID(c.SystemID) {
+			return ErrInvalid
+		}
 		if err = s.ReserveAlertIntervalTx(ctx, tx, interval); err != nil {
 			return err
 		}
@@ -104,6 +118,15 @@ func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest
 	} else if !errors.Is(e, pgx.ErrNoRows) {
 		return e
 	}
+	// An exclusion's immutable payload must also be checked before a later
+	// legacy coverage match could hide drift in a replayed raw usage ID.
+	if len(guards) == 1 {
+		if excluded, err := guards[0](ctx, tx, true); err != nil {
+			return err
+		} else if excluded {
+			return tx.Commit(ctx)
+		}
+	}
 	covered, overlaps, err := q.LegacyAlertUsageCoverage(ctx, account, c.SystemID, interval.StartedAt, interval.EndedAt)
 	if err != nil {
 		return err
@@ -113,6 +136,16 @@ func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest
 	}
 	if overlaps {
 		return ErrConflict
+	}
+	if len(guards) == 1 {
+		if excluded, err := guards[0](ctx, tx, false); err != nil {
+			return err
+		} else if excluded {
+			return tx.Commit(ctx)
+		}
+	}
+	if !validClientUsageSystemID(c.SystemID) {
+		return ErrInvalid
 	}
 	credit, err := q.AlertRoundingCredit(ctx, account, c.SystemID, c.PriceVersion, c.UnitSeconds, c.UnitPriceMinor)
 	if err != nil {
@@ -162,4 +195,9 @@ func (s *Service) SettleClientUsage(ctx context.Context, c AlertTimeGrantRequest
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func validClientUsageSystemID(value string) bool {
+	id, err := strconv.ParseInt(value, 10, 64)
+	return err == nil && id > 0 && strconv.FormatInt(id, 10) == value
 }

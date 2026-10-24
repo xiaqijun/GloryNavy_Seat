@@ -13,6 +13,12 @@ import (
 )
 
 func clientUsageRequest(n int, seconds int64, system, version string) (AlertTimeGrantRequest, AlertTimeIntervalRequest, string) {
+	// Named fixture systems use stable IDs, matching production attribution.
+	if system == "A" {
+		system = "30000142"
+	} else if system == "B" {
+		system = "30002813"
+	}
 	start := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC).Add(time.Duration(n) * time.Hour)
 	g := AlertTimeGrantRequest{ID: rewardKey(10000 + n*3), AccountID: manager, SystemID: system, RequestKey: rewardKey(10001 + n*3), PriceVersion: version, UnitSeconds: 3600, UnitPriceMinor: 200, ReservedSeconds: seconds, ExpiresAt: start.Add(100 * 24 * time.Hour)}
 	i := AlertTimeIntervalRequest{GrantID: g.ID, IntervalID: fmt.Sprintf("raw-usage-%d", n), RequestKey: rewardKey(10002 + n*3), StartedAt: start, EndedAt: start.Add(time.Duration(seconds) * time.Second)}

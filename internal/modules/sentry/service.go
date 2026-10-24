@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
+	"glorynavy.local/seat/internal/modules/sentry/internal/store"
 	"glorynavy.local/seat/internal/platform/jobs"
 )
 
@@ -728,6 +729,10 @@ func (s *Service) Revoke(ctx context.Context, account, id string) error {
 }
 
 func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target string, apply bool) (json.RawMessage, error) {
+	excluded, exclusionFingerprint, err := store.UsageExclusionMergeSummary(ctx, tx, source, target)
+	if err != nil {
+		return nil, err
+	}
 	var keys int64
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM sentry_keys WHERE account_id=$1`, source).Scan(&keys); err != nil {
 		return nil, err
@@ -737,7 +742,7 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 		return nil, err
 	}
 	if !apply {
-		return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards})
+		return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards, "excluded_usage": excluded, "exclusion_fingerprint": exclusionFingerprint})
 	}
 	if _, err := tx.Exec(ctx, `UPDATE sentry_keys SET account_id=$2,updated_at=now() WHERE account_id=$1`, source, target); err != nil {
 		return nil, err
@@ -754,5 +759,8 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if _, err := tx.Exec(ctx, `DELETE FROM sentry_monitor_remainders WHERE account_id=$1`, source); err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards})
+	if err := store.MergeUsageExclusions(ctx, tx, source, target); err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]any{"keys": keys, "monitor_rewards": monitorRewards, "excluded_usage": excluded, "exclusion_fingerprint": exclusionFingerprint})
 }
