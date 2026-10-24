@@ -149,7 +149,7 @@ const isConsumption = (v: unknown): v is AlertConsumption =>
   Number.isSafeInteger(v.duration_seconds) &&
   Number(v.duration_seconds) > 0 &&
   Number.isSafeInteger(v.coins_minor) &&
-  Number(v.coins_minor) > 0 &&
+  Number(v.coins_minor) >= 0 &&
   ["reserved", "settled", "released", "refunded"].includes(String(v.state)) &&
   Number.isSafeInteger(v.unit_seconds) &&
   Number(v.unit_seconds) > 0 &&

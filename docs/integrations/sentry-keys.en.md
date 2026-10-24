@@ -18,6 +18,10 @@ Saving the switch synchronizes `PUT /api/v1/integrations/seat/alert-consumption`
 
 ## Billing rules
 
+From Goose 106, new client usage keeps persistent ceiling credit per account, solar system, frozen price version, and frozen rate. Each interval pays only the increase in the rounded cumulative total: sixty one-second intervals at 2 coins/hour cost 0.04 coins in total. A zero-minor interval still has settled evidence but no zero-value coin entry. Stable raw `usage_id` keys survive page changes and retries; grants, charges, coin entries, and rounding credit commit in one transaction. Insufficient funds or any write failure rolls everything back.
+
+The credit table starts empty. Price changes use separate buckets; historical charges and balances are never recalculated, refunded, or backfilled. Raw evidence fully covered by a legacy settled batch is skipped on replay; partial overlaps are rejected. Explicit account merges transfer and sum credit with merge fingerprint protection; the combined credit offsets future usage rather than issuing an immediate refund. See [migration, verification, and rollback boundaries](../history/sentry-billing-rounding-20261024.md).
+
 New charges read only Sentry's `GET /api/v1/integrations/seat/client-usage`. Each row is a server-confirmed interval between adjacent valid authenticated heartbeats; Seat settles seconds multiplied by the hourly price idempotently. Event counts, deliveries, remote prepaid grants, releases, and refunds are not billing inputs; their compatibility endpoints and historical tables were removed. Seat retains only the atomic ledger reference needed to settle each interval.
 
 Monitoring rewards read `GET /api/v1/integrations/seat/monitor-contributions`. Only the primary node of each system contributes valid online time. Multiple alert systems are metered independently and merged into the account-level coin ledger.

@@ -70,7 +70,11 @@ func (w *clientUsageWorker) Work(ctx context.Context, _ *river.Job[clientUsageRe
 	if err != nil {
 		return err
 	}
-	for _, usage := range mergeContinuousClientUsage(page.Usage, policy.MaxGrantSeconds) {
+	usages := page.Usage
+	if _, cumulative := s.AlertSettlement.(CumulativeAlertSettlement); !cumulative {
+		usages = mergeContinuousClientUsage(usages, policy.MaxGrantSeconds)
+	}
+	for _, usage := range usages {
 		if err := s.settleClientUsage(ctx, usage); err != nil {
 			return err
 		}
@@ -166,6 +170,14 @@ func (s *Service) settleClientUsage(ctx context.Context, usage ClientUsage) erro
 	expiresAt := time.Now().UTC().Add(policy.GrantTTL)
 	if candidate := ended.UTC().Add(policy.GrantTTL); candidate.After(expiresAt) {
 		expiresAt = candidate
+	}
+	if settlement, ok := s.AlertSettlement.(CumulativeAlertSettlement); ok {
+		return settlement.SettleClientUsage(ctx, ClientUsageSettlement{
+			UsageID: usage.UsageID, GrantID: grantID, AccountID: usage.AccountID, SystemID: systemIDValue(usage.SystemID),
+			ReserveKey: reserveKey, IntervalKey: stableUUID("sentry-client-interval:" + usage.UsageID), SettleKey: stableUUID("sentry-client-settle:" + usage.UsageID),
+			PriceVersion: policy.PriceVersion, UnitSeconds: policy.UnitSeconds, UnitPriceMinor: policy.UnitPriceMinor,
+			DurationSeconds: usage.DurationSeconds, StartedAt: started, EndedAt: ended, ExpiresAt: expiresAt,
+		})
 	}
 	var reserveErr error
 	if systemID := systemIDValue(usage.SystemID); systemID != "" {

@@ -9018,7 +9018,7 @@ components:
         started_at: {type: string, format: date-time}
         ended_at: {type: string, format: date-time}
         duration_seconds: {type: integer, format: int64, minimum: 1}
-        coins_minor: {type: integer, format: int64, minimum: 1}
+        coins_minor: {type: integer, format: int64, minimum: 0, description: Cumulative rounded charge for this interval; zero when prior rounding credit covers its cost.}
         state: {type: string, enum: [reserved, settled, released, refunded]}
         unit_seconds: {type: integer, format: int64, minimum: 1}
         unit_price_minor: {type: integer, format: int64, minimum: 1}

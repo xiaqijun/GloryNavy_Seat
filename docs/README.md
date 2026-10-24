@@ -1,5 +1,7 @@
 # 项目文档
 
+预警计费：[2026-10-24 累计取整修复与迁移边界](history/sentry-billing-rounding-20261024.md)（待发布；不修改历史余额）。
+
 LP 工具：[使用与接口](integrations/lp.zh-CN.md) / [English](integrations/lp.en.md) / [页面布局](ui/lp.md)。
 
 兑换在审批中心不可见：[2026-10-21 原因、修复与验证](history/exchange-approval-visibility-20261021.md)。

@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 待发布：预警累计取整（Goose 106）
+
+先发布兼容 0 分消费的前端，再按正常备份／停服务／迁移流程激活匹配 SeAT 后端，最后恢复 Sentry 端证据写入。升级不更改旧账、价格、收费开关或同步游标；不补扣缺失时长。新累计消费出现后禁止回退忽略余量或 0 分区间的程序，106 Down 会拒绝；保留账目向前修复。隔离测试与真实上线边界见[修复记录](history/sentry-billing-rounding-20261024.md)。
+
 ## 首页 SEO 产物与边缘路由
 
 新前端包含预渲染 `index.html` 和 noindex 的 `app.html`。必须同步应用 `deploy/edge-https.conf`：首页只读前者，成员路径回退后者并携带 `X-Robots-Tag: noindex, nofollow`；`/index.html` 跳转正式首页，robots/sitemap/llms 使用独立静态文件与正确 MIME。验证配置后切换静态产物并平滑 reload；公开 API 与登录代理保持原规则。
