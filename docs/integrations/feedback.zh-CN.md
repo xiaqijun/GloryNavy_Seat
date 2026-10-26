@@ -1,5 +1,15 @@
 # 意见反馈
 
+## 撤销反馈（Goose 108）
+
+当前提交账号可直接撤销 `submitted` 且从未被采纳（`accepted_at` 为空）的反馈，状态变为 `withdrawn`（已撤销），无需管理员审核。站点管理员也只能撤销自己的反馈，不能代他人撤销；已采纳、处理中、待确认、已完成或已关闭均不开放撤销。历史已采纳后关闭并重新提交的反馈仍不能撤销。采纳奖励与冻结金额不变，不扣回或补发。
+
+复用 messages API，传 `status=withdrawn`、当前 revision 和 UUID request_key，原因选填。校验在原账号锁和反馈行锁内，与管理员采纳串行竞争；同版本只允许一方提交，另一方 409，旧请求重放不重复写历史，也不会把已重新提交的反馈再次撤销。原文、截图和所有处理记录保留，不物理删除。
+
+已撤销反馈支持填写原因重新提交为 submitted；重新出现的管理员待办使用新的 `returned:<状态消息ID>`，避免沿用已发送的初次提醒引用。撤销期间不再是管理员待办，发送前仍按来源复核。无新提醒类型，不自动启用邮件。
+
+Goose 108 只扩展反馈/消息状态约束，不改写旧记录。前后端需共同支持新枚举；已有撤销记录或历史后，禁止 Down 或运行忽略 withdrawn 的程序，即使当前反馈已重新提交。权限与账号合并边界不变，状态及审计沿原父记录合并。
+
 ## 完整办理流程（Goose 105）
 
 提交 → 管理员采纳或不采纳 → 开始处理 → 提交完成 → 提交人确认。采纳仍按 Goose 104 首次发放固定奖励，之后退回、重开、确认均不再发币。
@@ -29,7 +39,7 @@ GET/POST `/api/v1/feedback/reward-settings` 仅当前站点管理员，POST 使�
 
 登录后从导航“意见反馈”（`/feedback`）提交 BUG 或功能需求，填写标题和详细描述。用户可以查看自己的反馈、处理状态和回复，并补充说明、确认或退回完成结果。当前站点管理员切换“全部反馈”，按上述流程处理成员反馈；军团管理员、专员或 `access.manage` 不代替站点管理员身份。
 
-状态为“待处理、已采纳、处理中、待确认、已完成、已关闭”。原始内容和历史不可修改或删除，保存当时作者名称、管理员身份与时间，按纯文本显示。支持类型/状态筛选、每页 30 条、ID 倒序分页及受保护详情链接。截图私有，提醒按独立模块配置。
+状态为“待处理、已采纳、处理中、待确认、已完成、已关闭、已撤销”。原始内容和历史不可修改或删除，保存当时作者名称、管理员身份与时间，按纯文本显示。支持类型/状态筛选、每页 30 条、ID 倒序分页及受保护详情链接。截图私有，提醒按独立模块配置。
 
 ## 截图（Goose 99/100）
 
@@ -45,10 +55,10 @@ Goose 100 在 `feedback_images` 保存字节数并兼容旧 content，新增私�
 
 ## 接口与权限
 
-- `GET /api/v1/feedback/tickets`：默认 `scope=mine`；`scope=all` 仅当前站点管理员；可选 `kind=bug|feature`、`status=submitted|accepted|in_progress|awaiting_confirmation|resolved|closed`、十进制 `before`。返回 `tickets`、`next_before` 和 `administrator`，列表不含正文。
+- `GET /api/v1/feedback/tickets`：默认 `scope=mine`；`scope=all` 仅当前站点管理员；可选 `kind=bug|feature`、`status=submitted|accepted|in_progress|awaiting_confirmation|resolved|closed|withdrawn`、十进制 `before`。返回 `tickets`、`next_before` 和 `administrator`，列表不含正文。
 - `POST /api/v1/feedback/tickets`：`request_key` 为非零 UUID，`kind`、`title`、`body` 必填；标题最多 120 字符、正文最多 6000 字符，去除首尾空白。返回已保存反馈。
 - `GET /api/v1/feedback/tickets/{id}`：返回 `ticket`、`messages` 和 `administrator`。仅归属账号或当前站点管理员可读，其他账号与不存在对象均返回 404。
-- `POST /api/v1/feedback/tickets/{id}/messages`：`request_key`、原 `revision`、`body`、`status`；正文最多 2000 字符，状态可空表示保持不变，仅管理员可提交非空状态。纯状态操作允许空正文。版本冲突返回 409，刷新后保留草稿再提交。
+- `POST /api/v1/feedback/tickets/{id}/messages`：`request_key`、原 `revision`、`body`、`status`；正文最多 2000 字符，状态可空表示保持不变；非空状态按上方拥有者／管理员转换规则校验。纯状态操作允许空正文。版本冲突返回 409，刷新后保留草稿再提交。
 
 全部入口由会话与 `feedback.self` 保护，写操作要求同源 Origin 和 CSRF。该 self 能力不加入可委派管理权限目录。每次业务读取/处理重查当前站点管理员，不依赖页面标记。兼容 JSON 限制 8 MiB、multipart 元数据限制 32 KiB；拒绝未知字段和额外 JSON；协议枚举不翻译。错误包括 400、401、403、404、409、429、503。完整响应见 [OpenAPI](../../api/openapi.yaml)。
 

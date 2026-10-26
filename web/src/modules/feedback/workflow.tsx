@@ -58,6 +58,8 @@ export function FeedbackWorkflow({
   });
   let actions: Action[] = [];
   if (owner) {
+    if (ticket?.status === "submitted" && !ticket.accepted_at)
+      actions = [{ target: "withdrawn", label: msg("撤销反馈") }];
     if (ticket?.status === "awaiting_confirmation")
       actions = [
         { target: "resolved", label: msg("确认完成") },
@@ -67,7 +69,7 @@ export function FeedbackWorkflow({
       actions = [
         { target: "in_progress", label: msg("重新打开"), required: true },
       ];
-    if (ticket?.status === "closed")
+    if (ticket?.status === "closed" || ticket?.status === "withdrawn")
       actions = [
         { target: "submitted", label: msg("重新提交"), required: true },
       ];
@@ -128,9 +130,10 @@ export function FeedbackWorkflow({
                   <Button
                     form={formID}
                     type="submit"
+                    variant={action.target === "withdrawn" ? "destructive" : "default"}
                     disabled={blocked || (action.required && !note.trim())}
                   >
-                    {mutation.isPending ? msg("正在提交") : msg("确认操作")}
+                    {mutation.isPending ? msg("正在提交") : msg(action.target === "withdrawn" ? "确认撤销反馈" : "确认操作")}
                   </Button>
                 </>
               ) : (
@@ -139,7 +142,7 @@ export function FeedbackWorkflow({
                   <Button
                     key={a.target}
                     disabled={blocked}
-                    variant={i === 0 ? "default" : "outline"}
+                    variant={i === 0 && a.target !== "withdrawn" ? "default" : "outline"}
                     onClick={() => {
                       setAction(a);
                       setNote("");
@@ -158,7 +161,7 @@ export function FeedbackWorkflow({
     >
       <div className="feedback-thread">
         {overview}
-        {ticket && ticket.status !== "closed" && (
+        {ticket && ticket.status !== "closed" && ticket.status !== "withdrawn" && (
           <ol className="feedback-progress" aria-label={msg("办理进度")}>
             {stages.map(([value, label], i) => (
               <li
@@ -185,6 +188,7 @@ export function FeedbackWorkflow({
             }}
           >
             <strong>{action.label}</strong>
+            {action.target === "withdrawn" && <p>{msg("撤销后停止处理，原记录会保留。")}</p>}
             <label>
               {msg(action.required ? "处理结果或原因" : "补充说明（选填）")}
               <textarea

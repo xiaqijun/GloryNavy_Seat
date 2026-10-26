@@ -27,6 +27,7 @@ const statuses = {
   awaiting_confirmation: msg("待确认"),
   resolved: msg("已完成"),
   closed: msg("已关闭"),
+  withdrawn: msg("已撤销"),
 };
 const options = (values: Record<string, string>) =>
   Object.entries(values).map(([value, label]) => ({ value, label }));

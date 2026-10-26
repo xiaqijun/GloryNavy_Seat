@@ -1,5 +1,13 @@
 # Member feedback
 
+## Withdrawal (Goose 108)
+
+Only the current owning account may withdraw submitted feedback that has never been accepted (`accepted_at` is absent). The transition is immediate to `withdrawn`, with no administrator approval. Administrators cannot withdraw another account's feedback; accepted, in-progress, pending-confirmation, completed and closed work cannot be withdrawn. A previously accepted ticket resubmitted after closure also remains ineligible. Existing rewards and frozen adoption facts are preserved, with no deduction or additional payment.
+
+Use the existing messages API with status=withdrawn, revision and UUID request_key; the note is optional. Account/row locks and idempotency serialize withdrawal against administrator acceptance. One concurrent action wins and the other receives 409; replay never adds history or withdraws a later resubmission. Original content, screenshots and audit history are retained. Owners may resubmit a withdrawn ticket with a reason.
+
+Withdrawn tickets leave the administrator pending source; resubmission creates a fresh `returned:<status-message-ID>` reference. Source authorization and final mail eligibility checks remain in force; no new reminder type is enabled. Goose 108 only extends state constraints. Once withdrawal facts or history exist, do not downgrade the runtime or migration, including after resubmission. Existing ownership/merge boundaries remain unchanged.
+
 ## Complete workflow (Goose 105)
 
 Submit → administrator accepts or declines → start handling → submit completion → submitter confirms. A non-owner site administrator can accept/decline submitted feedback, start accepted work, and submit a result from in_progress to awaiting_confirmation. Only the current owning account can confirm to resolved, or provide a reason and return it to in_progress. The owner may reopen resolved work or resubmit a closed ticket with a reason. Administrators cannot confirm for the owner or process their own ticket as staff.
@@ -16,7 +24,7 @@ GET/POST `/api/v1/feedback/reward-settings` require current site administrator a
 
 The authenticated `/feedback` page accepts bug reports and feature requests. Members see their own tickets, reply and confirm or return completion. Site administrators can select All feedback and handle other members' tickets through the workflow above. Corporation administrators, specialist roles and `access.manage` do not grant this access.
 
-Statuses are submitted, accepted, in_progress, awaiting_confirmation, resolved and closed. Original submissions and append-only history retain authors, staff flags and times. Content is plain text, private to the owner and administrators. Kind/status filters, 30-row ID-descending pages and protected detail links remain available.
+Statuses are submitted, accepted, in_progress, awaiting_confirmation, resolved, closed and withdrawn. Original submissions and append-only history retain authors, staff flags and times. Content is plain text, private to the owner and administrators. Kind/status filters, 30-row ID-descending pages and protected detail links remain available.
 
 ## Screenshots (Goose 99/100)
 

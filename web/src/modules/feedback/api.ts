@@ -1,7 +1,7 @@
 import { apiFetch, APIError, getData } from "@/lib/http";
 import { msg } from "@/lib/i18n";
 export type Kind = "bug" | "feature";
-export type Status = "submitted" | "in_progress" | "accepted" | "awaiting_confirmation" | "resolved" | "closed";
+export type Status = "submitted" | "in_progress" | "accepted" | "awaiting_confirmation" | "resolved" | "closed" | "withdrawn";
 export type Screenshot = { id: string; mime: "image/png" | "image/jpeg" };
 export type ImageUpload = File;
 export type Ticket = {
@@ -58,7 +58,7 @@ const date = (v: unknown) =>
   typeof v === "string" && Number.isFinite(Date.parse(v));
 const id = (v: unknown) => typeof v === "string" && /^[1-9]\d*$/.test(v);
 const status = (v: unknown) =>
-  ["submitted", "in_progress", "accepted", "awaiting_confirmation", "resolved", "closed"].includes(String(v));
+  ["submitted", "in_progress", "accepted", "awaiting_confirmation", "resolved", "closed", "withdrawn"].includes(String(v));
 const images = (v: unknown) =>
   v === undefined ||
   (Array.isArray(v) &&

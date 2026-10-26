@@ -1,5 +1,9 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "撤销反馈": "Withdraw feedback",
+  "确认撤销反馈": "Confirm withdrawal",
+  "已撤销": "Withdrawn",
+  "撤销后停止处理，原记录会保留。": "Withdrawal stops handling. The original record is retained.",
   "主题": "Theme",
   "跟随系统": "System",
   "浅色": "Light",

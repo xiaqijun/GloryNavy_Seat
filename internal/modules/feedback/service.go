@@ -91,7 +91,7 @@ func uuid(s string) pgtype.UUID { var v pgtype.UUID; _ = v.Scan(s); return v }
 func validKey(s string) bool    { v := uuid(s); return v.Valid && v.Bytes != [16]byte{} }
 func kindOK(s string) bool      { return s == "bug" || s == "feature" }
 func statusOK(s string) bool {
-	return s == "submitted" || s == "in_progress" || s == "accepted" || s == "awaiting_confirmation" || s == "resolved" || s == "closed"
+	return s == "submitted" || s == "in_progress" || s == "accepted" || s == "awaiting_confirmation" || s == "resolved" || s == "closed" || s == "withdrawn"
 }
 func clean(s string, max int) bool {
 	return utf8.ValidString(s) && !strings.ContainsRune(s, 0) && utf8.RuneCountInString(s) <= max

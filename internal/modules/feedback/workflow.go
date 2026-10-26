@@ -8,6 +8,9 @@ func validateTransition(t Ticket, actor string, admin bool, in Reply) error {
 	}
 	owner := actor == t.AccountID
 	staff := admin && !owner
+	if in.Status == "withdrawn" && !owner {
+		return forbidden
+	}
 	if (in.Status == "accepted" || in.Status == "closed" || in.Status == "awaiting_confirmation") && !staff {
 		return forbidden
 	}
@@ -20,7 +23,7 @@ func validateTransition(t Ticket, actor string, admin bool, in Reply) error {
 	allowed, reason := false, false
 	switch t.Status {
 	case "submitted":
-		allowed = staff && (in.Status == "accepted" || in.Status == "closed")
+		allowed = staff && (in.Status == "accepted" || in.Status == "closed") || owner && t.AcceptedAt == nil && in.Status == "withdrawn"
 		reason = in.Status == "closed"
 	case "accepted":
 		allowed = staff && (in.Status == "in_progress" || in.Status == "closed")
@@ -34,7 +37,7 @@ func validateTransition(t Ticket, actor string, admin bool, in Reply) error {
 	case "resolved":
 		allowed = owner && in.Status == "in_progress"
 		reason = true
-	case "closed":
+	case "closed", "withdrawn":
 		allowed = owner && in.Status == "submitted"
 		reason = true
 	}

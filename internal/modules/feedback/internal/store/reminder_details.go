@@ -25,11 +25,11 @@ func ReminderDetails(ctx context.Context, db *pgxpool.Pool, kind string, keys []
 	case "feedback_update":
 		query = `SELECT m.id::text key,jsonb_build_object('ref',t.id::text,'name',t.title,'kind',t.kind,'state',t.status,'eventstate',m.status,'author',m.author_name,'reason',m.body,'time',m.created_at) data FROM feedback_messages m JOIN feedback_tickets t ON t.id=m.ticket_id`
 	case "feedback_pending":
-		query = `SELECT CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed') THEN 'returned:'||m.id::text ELSE t.id::text END key,
+		query = `SELECT CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed','withdrawn') THEN 'returned:'||m.id::text ELSE t.id::text END key,
  jsonb_build_object('ref',t.id::text,'name',t.title,'kind',t.kind,'state',t.status,
- 'author',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed') THEN m.author_name ELSE t.author_name END,
- 'reason',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed') THEN m.body ELSE t.body END,
- 'time',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed') THEN m.created_at ELSE t.created_at END) data
+ 'author',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed','withdrawn') THEN m.author_name ELSE t.author_name END,
+ 'reason',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed','withdrawn') THEN m.body ELSE t.body END,
+ 'time',CASE WHEN m.previous_status IN ('awaiting_confirmation','resolved','closed','withdrawn') THEN m.created_at ELSE t.created_at END) data
  FROM feedback_tickets t LEFT JOIN LATERAL (
  SELECT id,author_name,body,created_at,lag(status) OVER(ORDER BY id) previous_status FROM feedback_messages WHERE ticket_id=t.id AND status<>'' ORDER BY id DESC LIMIT 1
  ) m ON true WHERE t.status IN ('submitted','in_progress')`
@@ -60,12 +60,12 @@ func ReminderDetails(ctx context.Context, db *pgxpool.Pool, kind string, keys []
 func reminderDetailMessage(kind, key string, r reminderDetail) remindermessage.Item {
 
 	category := remindermessage.Label(r.Kind, map[string]string{"bug": "BUG", "feature": "功能需求"})
-	state := remindermessage.Label(r.State, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "awaiting_confirmation": "待确认", "resolved": "已完成", "closed": "已关闭"})
+	state := remindermessage.Label(r.State, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "awaiting_confirmation": "待确认", "resolved": "已完成", "closed": "已关闭", "withdrawn": "已撤销"})
 	item := remindermessage.Item{Key: key, Title: category + " #" + r.Ref + " · " + r.Name, Fields: []remindermessage.Field{remindermessage.Text("当前状态", state)}}
 	if kind == "feedback_update" {
 		item.Fields = append(item.Fields, remindermessage.Text("回复人", r.Author), remindermessage.Text("回复", r.Reason), remindermessage.Text("回复时间", remindermessage.Date(r.Time)))
 		if r.EventState != "" {
-			item.Fields = append(item.Fields, remindermessage.Text("本次变更", remindermessage.Label(r.EventState, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "awaiting_confirmation": "待确认", "resolved": "已完成", "closed": "已关闭"})))
+			item.Fields = append(item.Fields, remindermessage.Text("本次变更", remindermessage.Label(r.EventState, map[string]string{"submitted": "待处理", "in_progress": "处理中", "accepted": "已采纳", "awaiting_confirmation": "待确认", "resolved": "已完成", "closed": "已关闭", "withdrawn": "已撤销"})))
 		}
 		item.Action = "请查看完整回复与处理进度。"
 	} else {
