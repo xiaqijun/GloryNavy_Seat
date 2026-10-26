@@ -18,7 +18,7 @@ LP 工具：[使用与接口](integrations/lp.zh-CN.md) / [English](integrations
 
 最新交付：[公开首页层级优化（2026-10-20）](history/public-home-ux-20261020.md) / [公开首页分屏翻页（2026-10-19）](history/public-home-pages-20261019.md) / [公开首页招募内容整理（2026-10-19）](history/public-home-content-20261019.md) / [公开首页视觉强化（二轮，2026-10-19）](history/public-home-impact-20261019.md) / [公开首页优化（2026-10-19）](history/public-home-20261019.md) / [同一奖励多份兑换（2026-10-19）](history/exchange-quantity-20261019.md) / [旗舰补贴整体优化（2026-10-19）](history/capital-subsidy-20261019.md)。
 
-- 意见反馈：[中文指南](integrations/feedback.zh-CN.md)、[English](integrations/feedback.en.md)、[页面布局](ui/feedback.md)。
+- 意见反馈：[中文指南](integrations/feedback.zh-CN.md)、[English](integrations/feedback.en.md)、[页面布局](ui/feedback.md)、[撤销发布记录](history/feedback-withdrawal-20261026.md)。
 
 - [快递服务](integrations/courier.zh-CN.md) / [English](integrations/courier.en.md) / [页面](ui/courier.md)：HA Logistics 路线、估价与合同复制。
 
