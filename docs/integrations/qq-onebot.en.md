@@ -1,5 +1,7 @@
 # NapCatQQ integration
 
+**Superseded on 2026-10-28:** the user requested [official QQ](qq-official.en.md). The content below is historical integration/recovery evidence, not current setup instructions. New code returns 410 on OneBot URLs and retains old configuration, bindings and receipts without converting numeric identities. Deployment status remains in [project status](../project-status.md).
+
 Updated 2026-10-17. [中文](qq-onebot.zh-CN.md). The user explicitly requested the third-party switch, superseding the previous official-only rule. See [project status](../project-status.md) for deployment and live acceptance.
 
 ## Selection and scope

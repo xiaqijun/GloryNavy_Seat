@@ -42,7 +42,7 @@ func TestProfileValidationVersionsAndConfirmationInvalidation(t *testing.T) {
 	}
 	// Fixtures simulate future trusted confirmations; there is no member confirmation API.
 	for _, platform := range []string{"qq", "kook"} {
-		_, err = pool.Exec(ctx, "INSERT INTO community_confirmations(user_id,platform,field_version,source,actor,event_id) VALUES($1,$2,1,'test','test-operator',$2)", user, platform)
+		_, err = pool.Exec(ctx, "INSERT INTO community_confirmations(user_id,platform,field_version,source,actor,event_id) VALUES($1,$2,1,'qqofficial','test-operator',$2)", user, platform)
 		if err != nil {
 			t.Fatal(err)
 		}

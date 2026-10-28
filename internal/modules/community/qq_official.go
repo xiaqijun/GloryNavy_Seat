@@ -57,7 +57,7 @@ func newOfficialQQBot(appID, secret, apiBase string) *OfficialQQBot {
 	if apiBase == "" {
 		apiBase = defaultQQBotAPIBase
 	}
-	return &OfficialQQBot{AppID: strings.TrimSpace(appID), AppSecret: strings.TrimSpace(secret), APIBase: apiBase, HTTP: &http.Client{Timeout: 8 * time.Second}, Groups: map[string]struct{}{}}
+	return &OfficialQQBot{AppID: strings.TrimSpace(appID), AppSecret: strings.TrimSpace(secret), APIBase: apiBase, HTTP: &http.Client{Timeout: 8 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, Groups: map[string]struct{}{}}
 }
 
 func (b *OfficialQQBot) configSnapshot() (string, string, string) {
@@ -81,13 +81,27 @@ func (b *OfficialQQBot) Reconfigure(appID, secret, apiBase string) {
 		apiBase = defaultQQBotAPIBase
 	}
 	b.configMu.Lock()
+	b.mu.Lock()
 	b.AppID = strings.TrimSpace(appID)
 	b.AppSecret = strings.TrimSpace(secret)
 	b.APIBase = apiBase
-	b.configMu.Unlock()
-	b.mu.Lock()
 	b.token = qqBotToken{}
 	b.mu.Unlock()
+	b.configMu.Unlock()
+}
+
+// A callback uses one immutable credential/token snapshot for verification and reply.
+func (b *OfficialQQBot) callbackSnapshot() *OfficialQQBot {
+	if b == nil {
+		return nil
+	}
+	b.configMu.RLock()
+	defer b.configMu.RUnlock()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	copy := newOfficialQQBot(b.AppID, b.AppSecret, b.APIBase)
+	copy.HTTP, copy.token = b.HTTP, b.token
+	return copy
 }
 
 func (b *OfficialQQBot) Configured() bool {
@@ -145,17 +159,18 @@ func (b *OfficialQQBot) ValidationSignature(eventTS, plainToken string) (string,
 }
 
 func (b *OfficialQQBot) accessToken(ctx context.Context) (string, error) {
-	if !b.Configured() {
+	b.configMu.RLock()
+	defer b.configMu.RUnlock()
+	if b.AppID == "" || b.AppSecret == "" {
 		return "", ErrQQOfficialDisabled
 	}
 	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.token.AccessToken != "" && time.Until(b.token.ExpiresAt) > time.Minute {
 		t := b.token.AccessToken
-		b.mu.Unlock()
 		return t, nil
 	}
-	b.mu.Unlock()
-	appID, secret, apiBase := b.configSnapshot()
+	appID, secret, apiBase := b.AppID, b.AppSecret, b.APIBase
 	payload, _ := json.Marshal(map[string]string{"appId": appID, "clientSecret": secret})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBase+"/app/getAppAccessToken", bytes.NewReader(payload))
 	if err != nil {
@@ -184,16 +199,17 @@ func (b *OfficialQQBot) accessToken(ctx context.Context) (string, error) {
 	}
 	var expires int64
 	if len(result.ExpiresIn) > 0 && result.ExpiresIn[0] == '"' {
-		_ = json.Unmarshal(result.ExpiresIn, &expires)
+		var value string
+		if json.Unmarshal(result.ExpiresIn, &value) == nil {
+			expires, _ = strconv.ParseInt(value, 10, 64)
+		}
 	} else {
 		_ = json.Unmarshal(result.ExpiresIn, &expires)
 	}
 	if expires < 60 {
 		expires = 60
 	}
-	b.mu.Lock()
 	b.token = qqBotToken{AccessToken: result.AccessToken, ExpiresAt: time.Now().Add(time.Duration(expires) * time.Second)}
-	b.mu.Unlock()
 	return result.AccessToken, nil
 }
 
@@ -490,7 +506,7 @@ func (s *Service) CreateQQOfficialChallenge(ctx context.Context, userID string) 
 	return code, expires, nil
 }
 
-func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code string, payload []byte) error {
+func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code string, payload []byte, verified ...*OfficialQQBot) error {
 	eventID, openid, code = strings.TrimSpace(eventID), strings.TrimSpace(openid), strings.TrimSpace(code)
 	if eventID == "" || len(eventID) > 160 || openid == "" || len(openid) > 256 || code == "" {
 		return ErrQQChallenge
@@ -502,6 +518,23 @@ func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code s
 	}
 	defer tx.Rollback(context.Background())
 	q := store.New(tx)
+	if len(verified) > 0 {
+		row, err := q.ShareQQBotSettings(ctx)
+		if err != nil {
+			return err
+		}
+		appID, secret, base := verified[0].configSnapshot()
+		current, err := s.openQQBotSecret(row.SecretCiphertext)
+		if err != nil || !row.Enabled || row.AppID != appID || row.ApiBase != base || current != secret {
+			return ErrQQOfficialDisabled
+		}
+	}
+	if err = q.LockOfficialQQEvent(ctx, eventID); err != nil {
+		return err
+	}
+	if err = q.LockOfficialQQIdentity(ctx, openid); err != nil {
+		return err
+	}
 	if existing, lookupErr := q.GetBotEvent(ctx, store.GetBotEventParams{Source: "qqofficial", EventID: eventID}); lookupErr == nil {
 		if !hmac.Equal(existing.PayloadHash, hash[:]) {
 			return ErrQQBotReplay
@@ -509,6 +542,19 @@ func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code s
 		return nil
 	} else if !errors.Is(lookupErr, pgx.ErrNoRows) {
 		return lookupErr
+	}
+	owner, err := q.QQChallengeOwner(ctx, officialChallengeHash(code))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrQQChallenge
+	}
+	if err != nil {
+		return err
+	}
+	if s.LockAccounts == nil {
+		return ErrQQOfficialDisabled
+	}
+	if err = s.LockAccounts(ctx, tx, []string{owner.String()}); err != nil {
+		return err
 	}
 	challenge, err := q.LockQQChallenge(ctx, officialChallengeHash(code))
 	if errors.Is(err, pgx.ErrNoRows) {

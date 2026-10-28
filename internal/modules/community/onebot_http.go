@@ -33,10 +33,6 @@ type oneBotEvent struct {
 }
 
 func (h Handler) legacyQQSync(w http.ResponseWriter, r *http.Request) {
-	if selected, err := h.Service.oneBotSelected(r.Context()); err != nil || selected {
-		httpapi.Failure(w, r, 503, "qq_bot_replaced", "已切换至 NapCat")
-		return
-	}
 	h.syncQQGroupApplications(w, r)
 }
 

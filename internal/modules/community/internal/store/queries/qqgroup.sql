@@ -100,12 +100,26 @@ ON CONFLICT(id) DO UPDATE SET updated_at=EXCLUDED.updated_at;
 SELECT EXISTS(SELECT 1 FROM community_qq_bot_settings WHERE id=true);
 
 -- name: GetQQBotSettings :one
-SELECT app_id,api_base,secret_ciphertext,created_at,updated_at
+SELECT app_id,api_base,secret_ciphertext,created_at,updated_at,enabled,revision
 FROM community_qq_bot_settings
 WHERE id=true;
 
 -- name: UpsertQQBotSettings :exec
-INSERT INTO community_qq_bot_settings(id,app_id,api_base,secret_ciphertext,updated_at)
-VALUES(true,$1,$2,$3,now())
+INSERT INTO community_qq_bot_settings(id,app_id,api_base,secret_ciphertext,enabled,updated_at)
+VALUES(true,$1,$2,$3,$4,now())
 ON CONFLICT(id) DO UPDATE SET app_id=EXCLUDED.app_id,api_base=EXCLUDED.api_base,
- secret_ciphertext=EXCLUDED.secret_ciphertext,updated_at=EXCLUDED.updated_at;
+ secret_ciphertext=EXCLUDED.secret_ciphertext,enabled=EXCLUDED.enabled,revision=community_qq_bot_settings.revision+1,updated_at=EXCLUDED.updated_at;
+
+-- name: LockQQBotSettings :one
+SELECT app_id,api_base,secret_ciphertext,enabled,revision FROM community_qq_bot_settings WHERE id=true FOR UPDATE;
+
+-- name: ShareQQBotSettings :one
+SELECT app_id,api_base,secret_ciphertext,enabled,revision FROM community_qq_bot_settings WHERE id=true FOR SHARE;
+
+-- name: ResetOfficialQQIdentity :exec
+WITH invalidated AS (
+ UPDATE community_confirmations SET invalidated_at=now() WHERE platform='qq' AND invalidated_at IS NULL RETURNING user_id
+), consumed AS (
+ UPDATE community_qq_link_challenges SET used_at=now() WHERE used_at IS NULL RETURNING user_id
+)
+DELETE FROM community_qq_bindings;

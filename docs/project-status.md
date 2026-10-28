@@ -1,5 +1,9 @@
 # 项目状态
 
+## 待发布：QQ 机器人切回官方（2026-10-28）
+
+本地已恢复官方配置/回调/验证码绑定，OneBot 活动入口改为 410，历史配置、数字绑定和通知回执保留。Goose 109 新增 enabled/revision，升级默认关闭且不恢复 QQ 审批提醒，游戏邮件保持原配置；AppID 变更失效旧身份、绑定事务重查凭据与活跃账号。隔离 PostgreSQL 的 community/宿主 race、vet 与命令构建通过，前端 18 项中英文响应式页面回归通过。详情见[本轮记录](history/qq-official-restore-20261028.md)。生产仍为下方反馈撤销版、Goose 108；官方平台收发尚未真实验收。指南：[中文](integrations/qq-official.zh-CN.md) / [English](integrations/qq-official.en.md)。
+
 ## 当前：反馈撤销（2026-10-26，已发布）
 
 提交人可直接撤销尚未被采纳的待处理反馈，保留原文和历史，可填写原因重新提交；已采纳或其他处理阶段不能撤销。前后端 `v0.1.0-feedback-withdrawal-20261026` 从干净且已推送 main `072ed81` 发布，Goose 108；保留此前预警计费 guard。定向后端 race/vet/构建、类型/lint/构建和 42 项中英文响应式浏览器回归通过。服务 active/running、ready 200、NRestarts=0；反馈 6 张表发布前后哈希完全一致（3 条反馈、4 条消息、奖励配置及审计不变），线上静态资源哈希和匿名权限核验通过。提醒重提使用新事件引用，奖励与账号合并沿用原边界；真实成员/邮件联调仍按 FEEDBACK-FLOW-01。见[本轮记录](history/feedback-withdrawal-20261026.md)。

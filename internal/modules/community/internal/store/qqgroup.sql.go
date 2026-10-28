@@ -89,7 +89,7 @@ func (q *Queries) FindQQGroupApplicationByMember(ctx context.Context, arg FindQQ
 }
 
 const getQQBotSettings = `-- name: GetQQBotSettings :one
-SELECT app_id,api_base,secret_ciphertext,created_at,updated_at
+SELECT app_id,api_base,secret_ciphertext,created_at,updated_at,enabled,revision
 FROM community_qq_bot_settings
 WHERE id=true
 `
@@ -100,6 +100,8 @@ type GetQQBotSettingsRow struct {
 	SecretCiphertext []byte
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
+	Enabled          bool
+	Revision         int64
 }
 
 func (q *Queries) GetQQBotSettings(ctx context.Context) (GetQQBotSettingsRow, error) {
@@ -111,6 +113,8 @@ func (q *Queries) GetQQBotSettings(ctx context.Context) (GetQQBotSettingsRow, er
 		&i.SecretCiphertext,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Enabled,
+		&i.Revision,
 	)
 	return i, err
 }
@@ -366,6 +370,31 @@ func (q *Queries) LockActiveQQGroupApplication(ctx context.Context, arg LockActi
 	return i, err
 }
 
+const lockQQBotSettings = `-- name: LockQQBotSettings :one
+SELECT app_id,api_base,secret_ciphertext,enabled,revision FROM community_qq_bot_settings WHERE id=true FOR UPDATE
+`
+
+type LockQQBotSettingsRow struct {
+	AppID            string
+	ApiBase          string
+	SecretCiphertext []byte
+	Enabled          bool
+	Revision         int64
+}
+
+func (q *Queries) LockQQBotSettings(ctx context.Context) (LockQQBotSettingsRow, error) {
+	row := q.db.QueryRow(ctx, lockQQBotSettings)
+	var i LockQQBotSettingsRow
+	err := row.Scan(
+		&i.AppID,
+		&i.ApiBase,
+		&i.SecretCiphertext,
+		&i.Enabled,
+		&i.Revision,
+	)
+	return i, err
+}
+
 const lockQQGroupApplication = `-- name: LockQQGroupApplication :one
 SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
  failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
@@ -507,20 +536,65 @@ func (q *Queries) ReplaceQQGroupSettings(ctx context.Context) error {
 	return err
 }
 
+const resetOfficialQQIdentity = `-- name: ResetOfficialQQIdentity :exec
+WITH invalidated AS (
+ UPDATE community_confirmations SET invalidated_at=now() WHERE platform='qq' AND invalidated_at IS NULL RETURNING user_id
+), consumed AS (
+ UPDATE community_qq_link_challenges SET used_at=now() WHERE used_at IS NULL RETURNING user_id
+)
+DELETE FROM community_qq_bindings
+`
+
+func (q *Queries) ResetOfficialQQIdentity(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, resetOfficialQQIdentity)
+	return err
+}
+
+const shareQQBotSettings = `-- name: ShareQQBotSettings :one
+SELECT app_id,api_base,secret_ciphertext,enabled,revision FROM community_qq_bot_settings WHERE id=true FOR SHARE
+`
+
+type ShareQQBotSettingsRow struct {
+	AppID            string
+	ApiBase          string
+	SecretCiphertext []byte
+	Enabled          bool
+	Revision         int64
+}
+
+func (q *Queries) ShareQQBotSettings(ctx context.Context) (ShareQQBotSettingsRow, error) {
+	row := q.db.QueryRow(ctx, shareQQBotSettings)
+	var i ShareQQBotSettingsRow
+	err := row.Scan(
+		&i.AppID,
+		&i.ApiBase,
+		&i.SecretCiphertext,
+		&i.Enabled,
+		&i.Revision,
+	)
+	return i, err
+}
+
 const upsertQQBotSettings = `-- name: UpsertQQBotSettings :exec
-INSERT INTO community_qq_bot_settings(id,app_id,api_base,secret_ciphertext,updated_at)
-VALUES(true,$1,$2,$3,now())
+INSERT INTO community_qq_bot_settings(id,app_id,api_base,secret_ciphertext,enabled,updated_at)
+VALUES(true,$1,$2,$3,$4,now())
 ON CONFLICT(id) DO UPDATE SET app_id=EXCLUDED.app_id,api_base=EXCLUDED.api_base,
- secret_ciphertext=EXCLUDED.secret_ciphertext,updated_at=EXCLUDED.updated_at
+ secret_ciphertext=EXCLUDED.secret_ciphertext,enabled=EXCLUDED.enabled,revision=community_qq_bot_settings.revision+1,updated_at=EXCLUDED.updated_at
 `
 
 type UpsertQQBotSettingsParams struct {
 	AppID            string
 	ApiBase          string
 	SecretCiphertext []byte
+	Enabled          bool
 }
 
 func (q *Queries) UpsertQQBotSettings(ctx context.Context, arg UpsertQQBotSettingsParams) error {
-	_, err := q.db.Exec(ctx, upsertQQBotSettings, arg.AppID, arg.ApiBase, arg.SecretCiphertext)
+	_, err := q.db.Exec(ctx, upsertQQBotSettings,
+		arg.AppID,
+		arg.ApiBase,
+		arg.SecretCiphertext,
+		arg.Enabled,
+	)
 	return err
 }

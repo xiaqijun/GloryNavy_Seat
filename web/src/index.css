@@ -724,6 +724,8 @@ main {
 @media (max-width: 520px) {
   .community-admin-page .qq-bot-settings-grid { grid-template-columns: minmax(0, 1fr); }
   .community-admin-page .community-form-actions { flex-wrap: wrap; }
+  .community-admin-page .qq-group-settings-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .community-admin-page .qq-group-settings-row .community-field { grid-column: 1 / -1; }
 }
 @media (max-width: 820px) {
   .community-admin-grid {

@@ -37,12 +37,6 @@ type OneBotSettingsInput struct {
 	Groups   []OneBotGroup `json:"groups"`
 }
 
-func (s *Service) oneBotSelected(ctx context.Context) (bool, error) {
-	if s.pool == nil {
-		return false, nil
-	}
-	return store.New(s.pool).OneBotSelected(ctx)
-}
 func (s *Service) ListOneBotSettings(ctx context.Context) (OneBotSettings, error) {
 	empty := OneBotSettings{APIBase: "http://127.0.0.1:3000", Revision: "0", Groups: []OneBotGroup{}}
 	if s.pool == nil {

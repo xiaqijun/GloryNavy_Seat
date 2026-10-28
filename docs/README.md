@@ -1,5 +1,7 @@
 # 项目文档
 
+QQ 机器人切回官方：[中文指南](integrations/qq-official.zh-CN.md) / [English](integrations/qq-official.en.md)，隔离数据库验证已通过，当前运行配置见[项目状态](project-status.md)。
+
 预警计费：[2026-10-24 累计取整修复与迁移边界](history/sentry-billing-rounding-20261024.md)（待发布；不修改历史余额）。
 
 LP 工具：[使用与接口](integrations/lp.zh-CN.md) / [English](integrations/lp.en.md) / [页面布局](ui/lp.md)。

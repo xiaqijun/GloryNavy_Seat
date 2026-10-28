@@ -164,18 +164,18 @@ func (h Handler) getQQBotSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) saveQQBotSettings(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		AppID   string `json:"app_id"`
-		APIBase string `json:"api_base"`
-		Secret  string `json:"secret"`
-	}
+	var body QQBotSettingsInput
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
 	decoder.DisallowUnknownFields()
 	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF {
 		httpapi.Failure(w, r, 400, "invalid_qq_bot_settings", "QQ 机器人配置格式无效")
 		return
 	}
-	settings, err := h.Service.SaveQQBotSettings(r.Context(), body.AppID, body.APIBase, body.Secret)
+	settings, err := h.Service.SaveQQBotSettings(r.Context(), body)
+	if errors.Is(err, ErrVersion) {
+		httpapi.Failure(w, r, 409, "qq_bot_conflict", err.Error())
+		return
+	}
 	if errors.Is(err, ErrQQBotSecretKey) {
 		httpapi.Failure(w, r, 503, "qq_bot_unavailable", err.Error())
 		return
@@ -191,11 +191,11 @@ func (h Handler) Module() module.Definition {
 		Manifest:    module.Manifest{ID: "community", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}}},
 		Permissions: []string{"community.profile.read", "community.profile.update", "community.group.apply", "community.group.manage"},
 		Routes: []module.Route{
-			{Method: "GET", Path: "/qq/onebot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.getOneBotSettings)},
-			{Method: "PUT", Path: "/qq/onebot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveOneBotSettings)},
-			{Method: "GET", Path: "/qq/onebot/status", Permission: "community.group.manage", Handler: http.HandlerFunc(h.oneBotStatus)},
-			{Method: "POST", Path: "/qq/onebot/test", Permission: "community.group.manage", Handler: http.HandlerFunc(h.testOneBotMention)},
-			{Method: "POST", Path: "/qq/onebot/webhook", Public: true, Handler: http.HandlerFunc(h.oneBotWebhook)},
+			{Method: "GET", Path: "/qq/onebot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(retiredOneBot)},
+			{Method: "PUT", Path: "/qq/onebot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(retiredOneBot)},
+			{Method: "GET", Path: "/qq/onebot/status", Permission: "community.group.manage", Handler: http.HandlerFunc(retiredOneBot)},
+			{Method: "POST", Path: "/qq/onebot/test", Permission: "community.group.manage", Handler: http.HandlerFunc(retiredOneBot)},
+			{Method: "POST", Path: "/qq/onebot/webhook", Public: true, Handler: http.HandlerFunc(retiredOneBot)},
 			{Method: "GET", Path: "/profile", Permission: "community.profile.read", Handler: http.HandlerFunc(h.get)},
 			{Method: "PUT", Path: "/profile", Permission: "community.profile.update", Handler: http.HandlerFunc(h.update)},
 			{Method: "POST", Path: "/qq/challenge", Permission: "community.profile.update", Handler: http.HandlerFunc(h.createOfficialQQChallenge)},

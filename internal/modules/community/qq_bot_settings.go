@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -17,13 +19,24 @@ import (
 // QQBotSettings is the safe projection returned to administrators. The bot
 // secret is write-only: only whether one is configured is exposed.
 type QQBotSettings struct {
+	Enabled          bool   `json:"enabled"`
+	Revision         string `json:"revision"`
 	AppID            string `json:"app_id"`
 	APIBase          string `json:"api_base"`
 	SecretConfigured bool   `json:"secret_configured"`
 	Initialized      bool   `json:"initialized"`
 }
 
+type QQBotSettingsInput struct {
+	AppID    string `json:"app_id"`
+	APIBase  string `json:"api_base"`
+	Secret   string `json:"secret"`
+	Enabled  bool   `json:"enabled"`
+	Revision string `json:"revision"`
+}
+
 var (
+	qqSettingsMu          sync.Mutex
 	ErrQQBotSecretKey     = errors.New("QQ Bot 配置加密密钥不可用，请先配置 EVE_TOKEN_KEY")
 	ErrQQBotSecretMissing = errors.New("已启用 QQ 机器人时必须填写 App Secret")
 )
@@ -96,7 +109,7 @@ func (s *Service) openQQBotSecret(raw []byte) (string, error) {
 
 func fallbackQQBotSettings(bot *OfficialQQBot) QQBotSettings {
 	appID, secret, apiBase := bot.configSnapshot()
-	return QQBotSettings{AppID: appID, APIBase: apiBase, SecretConfigured: secret != "", Initialized: false}
+	return QQBotSettings{AppID: appID, APIBase: apiBase, SecretConfigured: secret != "", Initialized: false, Revision: "0"}
 }
 
 func (s *Service) ListQQBotSettings(ctx context.Context) (QQBotSettings, error) {
@@ -118,7 +131,7 @@ func (s *Service) ListQQBotSettings(ctx context.Context) (QQBotSettings, error) 
 	if err != nil {
 		return QQBotSettings{}, err
 	}
-	return QQBotSettings{AppID: row.AppID, APIBase: row.ApiBase, SecretConfigured: len(row.SecretCiphertext) > 0, Initialized: true}, nil
+	return QQBotSettings{AppID: row.AppID, APIBase: row.ApiBase, SecretConfigured: len(row.SecretCiphertext) > 0, Initialized: true, Enabled: row.Enabled, Revision: strconv.FormatInt(row.Revision, 10)}, nil
 }
 
 // LoadQQBotSettings applies the persisted administrator configuration on
@@ -143,6 +156,10 @@ func (s *Service) LoadQQBotSettings(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if !row.Enabled {
+		s.SetQQBotOfficial("", "", row.ApiBase)
+		return nil
+	}
 	secret, err := s.openQQBotSecret(row.SecretCiphertext)
 	if err != nil {
 		return fmt.Errorf("读取 QQ Bot 配置失败: %w", err)
@@ -154,22 +171,10 @@ func (s *Service) LoadQQBotSettings(ctx context.Context) error {
 // SaveQQBotSettings persists the UI-managed settings and applies them to the
 // live callback adapter. An empty secret retains the current secret when the
 // AppID remains enabled; clearing AppID explicitly disables and clears it.
-func (s *Service) SaveQQBotSettings(ctx context.Context, appID, apiBase, secret string) (QQBotSettings, error) {
-	appID, apiBase, err := validateQQBotSettings(appID, apiBase, secret)
-	if err != nil {
-		return QQBotSettings{}, err
-	}
-	_, currentSecret, _ := s.qqOfficial.configSnapshot()
-	secret = strings.TrimSpace(secret)
-	if appID == "" {
-		secret = ""
-	} else if secret == "" {
-		secret = currentSecret
-		if secret == "" {
-			return QQBotSettings{}, ErrQQBotSecretMissing
-		}
-	}
-	ciphertext, err := s.sealQQBotSecret(secret)
+func (s *Service) SaveQQBotSettings(ctx context.Context, input QQBotSettingsInput) (QQBotSettings, error) {
+	qqSettingsMu.Lock()
+	defer qqSettingsMu.Unlock()
+	appID, apiBase, err := validateQQBotSettings(input.AppID, input.APIBase, input.Secret)
 	if err != nil {
 		return QQBotSettings{}, err
 	}
@@ -181,7 +186,37 @@ func (s *Service) SaveQQBotSettings(ctx context.Context, appID, apiBase, secret 
 		return QQBotSettings{}, err
 	}
 	defer tx.Rollback(context.Background())
-	if err = store.New(tx).UpsertQQBotSettings(ctx, store.UpsertQQBotSettingsParams{AppID: appID, ApiBase: apiBase, SecretCiphertext: ciphertext}); err != nil {
+	// Serialize configuration commits with callback binding publication.
+	q := store.New(tx)
+	old, err := q.LockQQBotSettings(ctx)
+	if err != nil {
+		return QQBotSettings{}, err
+	}
+	if input.Revision != strconv.FormatInt(old.Revision, 10) {
+		return QQBotSettings{}, ErrVersion
+	}
+	secret := strings.TrimSpace(input.Secret)
+	if appID == "" {
+		secret = ""
+	} else if secret == "" && appID == old.AppID {
+		secret, err = s.openQQBotSecret(old.SecretCiphertext)
+		if err != nil {
+			return QQBotSettings{}, err
+		}
+	}
+	if input.Enabled && (appID == "" || secret == "") {
+		return QQBotSettings{}, ErrQQBotSecretMissing
+	}
+	ciphertext, err := s.sealQQBotSecret(secret)
+	if err != nil {
+		return QQBotSettings{}, err
+	}
+	if appID != old.AppID {
+		if err = q.ResetOfficialQQIdentity(ctx); err != nil {
+			return QQBotSettings{}, err
+		}
+	}
+	if err = q.UpsertQQBotSettings(ctx, store.UpsertQQBotSettingsParams{AppID: appID, ApiBase: apiBase, SecretCiphertext: ciphertext, Enabled: input.Enabled}); err != nil {
 		if isUndefinedQQGroupSettings(err) {
 			return QQBotSettings{}, errors.New("数据库迁移未完成")
 		}
@@ -190,6 +225,9 @@ func (s *Service) SaveQQBotSettings(ctx context.Context, appID, apiBase, secret 
 	if err = tx.Commit(ctx); err != nil {
 		return QQBotSettings{}, err
 	}
-	s.SetQQBotOfficial(appID, secret, apiBase)
-	return QQBotSettings{AppID: appID, APIBase: apiBase, SecretConfigured: secret != "", Initialized: true}, nil
+	// Reload the latest committed revision instead of applying a stale writer.
+	if err = s.LoadQQBotSettings(ctx); err != nil {
+		return QQBotSettings{}, err
+	}
+	return s.ListQQBotSettings(ctx)
 }

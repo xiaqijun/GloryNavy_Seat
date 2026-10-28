@@ -58,6 +58,24 @@ func (q *Queries) InvalidateQQChallenges(ctx context.Context, userID pgtype.UUID
 	return err
 }
 
+const lockOfficialQQEvent = `-- name: LockOfficialQQEvent :exec
+SELECT pg_advisory_xact_lock(hashtextextended('community.qqofficial.event:'||$1::text,0))
+`
+
+func (q *Queries) LockOfficialQQEvent(ctx context.Context, dollar_1 string) error {
+	_, err := q.db.Exec(ctx, lockOfficialQQEvent, dollar_1)
+	return err
+}
+
+const lockOfficialQQIdentity = `-- name: LockOfficialQQIdentity :exec
+SELECT pg_advisory_xact_lock(hashtextextended('community.qqofficial.identity:'||$1::text,0))
+`
+
+func (q *Queries) LockOfficialQQIdentity(ctx context.Context, dollar_1 string) error {
+	_, err := q.db.Exec(ctx, lockOfficialQQIdentity, dollar_1)
+	return err
+}
+
 const lockQQChallenge = `-- name: LockQQChallenge :one
 SELECT id,user_id,qq_version,expires_at,used_at FROM community_qq_link_challenges WHERE code_hash=$1 FOR UPDATE
 `
@@ -90,6 +108,17 @@ UPDATE community_qq_link_challenges SET used_at=now() WHERE id=$1 AND used_at IS
 func (q *Queries) MarkQQChallengeUsed(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, markQQChallengeUsed, id)
 	return err
+}
+
+const qQChallengeOwner = `-- name: QQChallengeOwner :one
+SELECT user_id FROM community_qq_link_challenges WHERE code_hash=$1
+`
+
+func (q *Queries) QQChallengeOwner(ctx context.Context, codeHash []byte) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, qQChallengeOwner, codeHash)
+	var user_id pgtype.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
 const upsertQQBinding = `-- name: UpsertQQBinding :exec

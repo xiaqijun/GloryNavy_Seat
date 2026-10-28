@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { msg } from "@/lib/i18n";
 import { IconAction } from "@/components/ui/icon-action";
 import { useSession } from "@/modules/identity";
-import { OneBotSettings } from "./onebot-settings";
+import { QQBotSettings, QQGroupSettings } from "./qq-group-settings";
 
 export default function QQAdminPage() {
   const session = useSession();
@@ -23,7 +23,8 @@ export default function QQAdminPage() {
         </div>
       </div>
       <div className="community-admin-grid">
-        <OneBotSettings userID={current.user_id} csrf={current.csrf_token} />
+        <QQBotSettings userID={current.user_id} csrf={current.csrf_token} />
+        <QQGroupSettings userID={current.user_id} csrf={current.csrf_token} />
       </div>
     </div>
   );

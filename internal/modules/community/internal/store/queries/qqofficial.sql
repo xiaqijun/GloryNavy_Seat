@@ -16,3 +16,10 @@ ON CONFLICT(user_id) DO UPDATE SET openid=EXCLUDED.openid,qq_version=EXCLUDED.qq
 
 -- name: FindQQBinding :one
 SELECT user_id,openid,qq_version FROM community_qq_bindings WHERE openid=$1;
+
+-- name: LockOfficialQQEvent :exec
+SELECT pg_advisory_xact_lock(hashtextextended('community.qqofficial.event:'||$1::text,0));
+-- name: LockOfficialQQIdentity :exec
+SELECT pg_advisory_xact_lock(hashtextextended('community.qqofficial.identity:'||$1::text,0));
+-- name: QQChallengeOwner :one
+SELECT user_id FROM community_qq_link_challenges WHERE code_hash=$1;

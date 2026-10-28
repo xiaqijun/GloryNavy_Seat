@@ -83,7 +83,7 @@ func TestFeedbackWithdrawalHistoryReplayAndResubmitReminder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = provider.Down(ctx)
+	_, err = provider.DownTo(ctx, 107)
 	if err == nil || !strings.Contains(err.Error(), "withdrawal history") {
 		t.Fatalf("withdrawal history must block Down: %v", err)
 	}

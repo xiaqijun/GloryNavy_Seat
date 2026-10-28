@@ -25,6 +25,7 @@ func qqBindingFixture(t *testing.T) (*Service, *pgxpool.Pool, string, string) {
 		t.Fatal(err)
 	}
 	s := New(pool)
+	s.LockAccounts = users.LockActiveAccounts
 	if _, err = s.Update(ctx, session.UserID, "123456789", "Binding Pilot", "0"); err != nil {
 		t.Fatal(err)
 	}

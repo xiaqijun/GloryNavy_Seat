@@ -1,5 +1,10 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
+  "回调地址": "Callback URL",
+  "机器人已启用": "Bot enabled",
+  "机器人已停用": "Bot disabled",
+  "重新读取": "Reload",
+  "已切换为官方 QQ 机器人，请刷新页面": "Switched to the official QQ bot. Refresh the page.",
   "撤销反馈": "Withdraw feedback",
   "确认撤销反馈": "Confirm withdrawal",
   "已撤销": "Withdrawn",

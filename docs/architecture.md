@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+Goose 109 的 QQ 官方接入恢复仍归 community：现有官方配置增加 enabled/revision，升级默认停用并停用旧 OneBot 接收群提醒、失效旧 OneBot 确认和未用验证码；不删除旧数字绑定/审计/通知回执。官方回调按固定凭据快照验签，在本模块配置共享锁、事件/身份锁及宿主注入活跃账号锁下发布绑定；改 AppID 失效当前官方映射与旧确认，原历史留存。旧 OneBot URL 保留原管理鉴权/CSRF 后返回 410，旧队列处理器保留以安全消费历史任务，停用配置阻止发送。没有新的跨模块 store 或邮件渠道变更。见[官方 QQ](integrations/qq-official.zh-CN.md)。
+
 Goose 108 的反馈撤销仍归 feedback：原消息事务在账号/反馈锁内检查当前拥有者、submitted 和尚未采纳，追加 withdrawn 历史而不删除数据；重提沿原状态服务及独立提醒事件引用。无跨模块 store、币账写入或新合并参与方。见[反馈指南](integrations/feedback.zh-CN.md)。
 
 Goose 105 的反馈确认流程仍归 feedback：状态/历史在原私有表，锁内验证当前拥有者、管理员、版本与跳转。普通回复不推进流程，管理员提交完成、当前拥有者确认或退回；奖励沿用首次采纳的同事务接口。待办提醒以状态消息 ID 区分退回/重开事件，账号合并不改事件身份，不增加跨模块 store 或自动启用提醒。见[反馈流程](integrations/feedback.zh-CN.md)。

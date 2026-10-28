@@ -100,9 +100,6 @@ func (s *Service) LoadQQBotGroups(ctx context.Context) error {
 }
 
 func (s *Service) ListQQGroupOptions(ctx context.Context) (QQGroupOptions, error) {
-	if selected, err := s.oneBotSelected(ctx); err != nil || selected {
-		return QQGroupOptions{Items: []QQGroupSetting{}}, err
-	}
 	settings, err := s.ListQQGroupSettings(ctx)
 	if err != nil {
 		return QQGroupOptions{}, err

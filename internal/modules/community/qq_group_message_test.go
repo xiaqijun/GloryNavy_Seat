@@ -125,7 +125,7 @@ func TestQQGroupMessageRequiresSignature(t *testing.T) {
 func TestQQMessageBindingUsesSenderAndKeepsLegacyEvents(t *testing.T) {
 	s, pool, user, firstCode := qqBindingFixture(t)
 	bot, replies := qqMessageTestBot(t)
-	s.qqOfficial = bot
+	useOfficialQQTestBot(t, s, bot)
 	h := Handler{Service: s}
 	for i, eventType := range []string{"GROUP_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE", "C2C_MESSAGE_CREATE"} {
 		code := firstCode

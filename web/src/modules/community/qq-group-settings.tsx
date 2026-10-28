@@ -25,7 +25,9 @@ export function QQGroupSettings({ userID, csrf }: { userID: string; csrf: string
     queryFn: ({ signal }) => getQQGroupSettings(signal),
     enabled: access.data?.administrator === true,
   });
-  if (!access.data?.administrator || settings.isPending || settings.isError || !settings.data) return null;
+  if (!access.data?.administrator) return null;
+  if (settings.error) return <div role="alert"><p className="login-error">{settings.error.message}</p><Button variant="outline" onClick={() => void settings.refetch()}>{msg("重试")}</Button></div>;
+  if (!settings.data) return <p role="status">{msg("正在加载")}</p>;
   const key = settings.data.items.map((item) => `${item.group_openid}:${item.label}:${item.enabled ? 1 : 0}`).join("|");
   return <QQGroupSettingsEditor key={key} initial={settings.data.items} csrf={csrf} />;
 }
@@ -40,8 +42,12 @@ export function QQBotSettings({ userID, csrf }: { userID: string; csrf: string }
     queryFn: ({ signal }) => getQQBotSettings(signal),
     enabled: access.data?.administrator === true,
   });
-  if (!access.data?.administrator || settings.isPending || settings.isError || !settings.data) return null;
-  const key = `${settings.data.app_id}:${settings.data.api_base}:${settings.data.secret_configured ? 1 : 0}:${settings.data.initialized ? 1 : 0}`;
+  if (access.isPending) return <p role="status">{msg("正在加载")}</p>;
+  if (access.error) return <p role="alert" className="login-error">{access.error.message}</p>;
+  if (!access.data?.administrator) return <p role="alert">{msg("仅管理员可访问")}</p>;
+  if (settings.error) return <div role="alert"><p className="login-error">{settings.error.message}</p><Button variant="outline" onClick={() => void settings.refetch()}>{msg("重试")}</Button></div>;
+  if (!settings.data) return <p role="status">{msg("正在加载")}</p>;
+  const key = settings.data.revision;
   return <QQBotSettingsEditor key={key} initial={settings.data} csrf={csrf} />;
 }
 
@@ -50,8 +56,9 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
   const [appID, setAppID] = useState(initial.app_id);
   const [apiBase, setAPIBase] = useState(initial.api_base);
   const [secret, setSecret] = useState("");
+  const [enabled, setEnabled] = useState(initial.enabled);
   const save = useMutation({
-    mutationFn: () => saveQQBotSettings({ app_id: appID, api_base: apiBase, secret }, csrf),
+    mutationFn: () => saveQQBotSettings({ app_id: appID, api_base: apiBase, secret, enabled, revision: initial.revision }, csrf),
     onSuccess: (next) => {
       setSecret("");
       client.setQueryData(["community", "qq-bot-settings"], next);
@@ -66,11 +73,9 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
             <Bot size={18} aria-hidden="true" />
             <h2>{msg("官方 QQ Bot")}</h2>
           </div>
-          <span className="muted">{msg("管理员配置")}</span>
+          <span className={initial.enabled ? "status-chip success" : "status-chip muted"}>{initial.enabled ? msg("机器人已启用") : msg("机器人已停用")}</span>
         </div>
-        <p className="muted qq-group-settings-note">
-          {msg("AppID、API 地址和密钥均可在此维护；密钥只写入后端加密存储，不会回显。")}
-        </p>
+        <label className="qq-group-enabled"><input type="checkbox" checked={enabled} disabled={busy} onChange={e => setEnabled(e.target.checked)} />{msg("启用")}</label>
         <div className="qq-bot-settings-grid">
           <div className="community-field">
             <label htmlFor="qq-bot-app-id"><KeyRound size={14} aria-hidden="true" />{msg("AppID")}</label>
@@ -88,12 +93,14 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
             </span>
           </div>
         </div>
+        <div className="community-field"><label htmlFor="qq-bot-callback">{msg("回调地址")}</label><input id="qq-bot-callback" readOnly value={`${window.location.origin}/api/v1/community/qq/official/webhook`} /></div>
         <div className="community-form-actions">
           <Button type="button" size="sm" disabled={busy} onClick={() => save.mutate()}>
             <Save aria-hidden="true" />{busy ? msg("正在保存") : msg("保存 QQ 配置")}
           </Button>
         </div>
         {save.error && <p role="alert" className="login-error">{save.error.message}</p>}
+        {save.error && <Button type="button" variant="outline" size="sm" onClick={() => void client.invalidateQueries({queryKey: ["community", "qq-bot-settings"]})}>{msg("重新读取")}</Button>}
         {save.isSuccess && <p role="status" className="account-notice">{msg("QQ Bot 配置已保存")}</p>}
       </CardContent>
     </Card>

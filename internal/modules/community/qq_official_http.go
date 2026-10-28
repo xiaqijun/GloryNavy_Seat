@@ -7,20 +7,28 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"glorynavy.local/seat/internal/httpapi"
 )
 
+func validQQValidation(v officialQQValidation) bool {
+	timestamp, err := strconv.ParseInt(v.EventTS, 10, 64)
+	token := strings.TrimSpace(v.PlainToken)
+	// The unsigned bootstrap may sign a challenge, never callback JSON. Otherwise
+	// it becomes a signing oracle for timestamp + an attacker-chosen event body.
+	return err == nil && timestamp > 0 && strconv.FormatInt(timestamp, 10) == v.EventTS &&
+		token != "" && len(v.PlainToken) <= 1024 && !strings.HasPrefix(token, "{")
+}
+
 // officialQQWebhook receives the callback protocol used by q.qq.com. The
 // validation handshake is handled synchronously; event work is kept small and
 // the reply is sent through the official OpenAPI using the user's openid.
 func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
-	if selected, err := h.Service.oneBotSelected(r.Context()); err != nil || selected {
-		httpapi.Failure(w, r, 503, "qq_bot_replaced", "已切换至 NapCat")
-		return
-	}
-	if h.Service.qqOfficial == nil || !h.Service.qqOfficial.Configured() {
+	bot := h.Service.qqOfficial.callbackSnapshot()
+	if bot == nil || !bot.Configured() {
 		httpapi.Failure(w, r, 503, "qq_bot_unavailable", "官方 QQ 机器人未配置")
 		return
 	}
@@ -31,7 +39,7 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	var envelope officialQQEnvelope
 	decoder := json.NewDecoder(bytes.NewReader(body))
-	if decoder.Decode(&envelope) != nil {
+	if decoder.Decode(&envelope) != nil || decoder.Decode(new(any)) != io.EOF {
 		httpapi.Failure(w, r, 400, "invalid_qq_bot_event", "机器人事件格式无效")
 		return
 	}
@@ -40,11 +48,11 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 	// return before applying normal event verification.
 	if envelope.Op == 13 {
 		var validation officialQQValidation
-		if json.Unmarshal(envelope.Data, &validation) != nil || validation.PlainToken == "" || validation.EventTS == "" {
+		if json.Unmarshal(envelope.Data, &validation) != nil || !validQQValidation(validation) {
 			httpapi.Failure(w, r, 400, "invalid_qq_bot_event", "机器人验证事件格式无效")
 			return
 		}
-		signature, signErr := h.Service.qqOfficial.ValidationSignature(validation.EventTS, validation.PlainToken)
+		signature, signErr := bot.ValidationSignature(validation.EventTS, validation.PlainToken)
 		if signErr != nil {
 			httpapi.Failure(w, r, 503, "qq_bot_unavailable", "官方 QQ 机器人暂不可用")
 			return
@@ -56,7 +64,7 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"plain_token": validation.PlainToken, "signature": signature})
 		return
 	}
-	if err = h.Service.qqOfficial.Verify(r.Header.Get("X-Signature-Timestamp"), r.Header.Get("X-Signature-Ed25519"), body, time.Now().UTC()); err != nil {
+	if err = bot.Verify(r.Header.Get("X-Signature-Timestamp"), r.Header.Get("X-Signature-Ed25519"), body, time.Now().UTC()); err != nil {
 		if errors.Is(err, ErrQQOfficialTimestamp) {
 			httpapi.Failure(w, r, 401, "invalid_qq_bot_timestamp", "机器人事件已过期")
 		} else {
@@ -87,10 +95,13 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 			result := "绑定码无效或已过期，请先在本站生成新的 QQ 绑定码。"
 			if openid != "" && code != "" {
-				if confirmErr := h.Service.ConfirmQQOfficial(r.Context(), envelope.ID, openid, code, body); confirmErr == nil {
+				if confirmErr := h.Service.ConfirmQQOfficial(r.Context(), envelope.ID, openid, code, body, bot); confirmErr == nil {
 					result = "QQ 已绑定本站账号，社区确认完成。"
 				} else if errors.Is(confirmErr, ErrQQOfficialConflict) {
 					result = "该 QQ 机器人账号已绑定其他本站账号，请联系管理员。"
+				} else if errors.Is(confirmErr, ErrQQOfficialDisabled) {
+					httpapi.Failure(w, r, 503, "qq_bot_unavailable", "官方 QQ 机器人未配置")
+					return
 				}
 			}
 			// Official callback acknowledgements must be fast. Reply asynchronously;
@@ -99,7 +110,7 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 				go func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 					defer cancel()
-					_ = h.Service.qqOfficial.Reply(ctx, scope, replyTarget, message.ID, result)
+					_ = bot.Reply(ctx, scope, replyTarget, message.ID, result)
 				}()
 			}
 		case "GROUP_JOIN_REQUEST":

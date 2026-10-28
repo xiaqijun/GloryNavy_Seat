@@ -190,6 +190,8 @@ export async function saveQQGroupSettings(items: QQGroupSetting[], csrf: string)
 }
 
 export interface QQBotSettings {
+	 enabled: boolean;
+	 revision: string;
   app_id: string;
   api_base: string;
   secret_configured: boolean;
@@ -199,11 +201,12 @@ const isQQBotSettings = (v: unknown): v is QQBotSettings => {
   if (!v || typeof v !== "object") return false;
   const settings = v as Partial<QQBotSettings>;
   return typeof settings.app_id === "string" && typeof settings.api_base === "string" &&
-    typeof settings.secret_configured === "boolean" && typeof settings.initialized === "boolean";
+    typeof settings.secret_configured === "boolean" && typeof settings.initialized === "boolean" &&
+    typeof settings.enabled === "boolean" && typeof settings.revision === "string";
 };
 export const getQQBotSettings = (signal?: AbortSignal) =>
   getData("/api/v1/community/qq/bot/settings", isQQBotSettings, signal);
-export async function saveQQBotSettings(settings: { app_id: string; api_base: string; secret: string }, csrf: string) {
+export async function saveQQBotSettings(settings: { app_id: string; api_base: string; secret: string; enabled: boolean; revision: string }, csrf: string) {
   const response = await apiFetch("/api/v1/community/qq/bot/settings", {
     method: "PUT",
     credentials: "same-origin",

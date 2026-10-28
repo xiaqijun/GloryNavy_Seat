@@ -5731,135 +5731,61 @@ paths:
   /api/v1/community/qq/onebot/settings:
     get:
       operationId: getOneBotSettings
-      summary: Read NapCat connection and enabled groups (current site administrator only)
+      deprecated: true
+      summary: Retired OneBot endpoint; use official QQ settings and callback
       security: [{ SessionCookie: [] }]
       responses:
-        "200":
-          description: Write-only credentials are represented by booleans
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  request_id: { type: string }
-                  data: { $ref: "#/components/schemas/OneBotSettings" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "503": { $ref: "#/components/responses/CommunityUnavailable" }
+        "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
     put:
       operationId: saveOneBotSettings
-      summary: Replace NapCat connection and enabled groups
-      description: Current site administrator only. The first save selects OneBot and disables official callbacks, even when enabled is false. Empty credentials retain encrypted values. Revision is required; a stale revision returns 409. HTTPS or loopback HTTP origins only. The bot QQ number must match get_login_info before sending.
+      deprecated: true
+      summary: Retired OneBot endpoint; use official QQ settings and callback
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
         - { $ref: "#/components/parameters/CSRFToken" }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [enabled, api_base, bot_qq, token, secret, revision, groups]
-              properties:
-                enabled: { type: boolean }
-                api_base: { type: string, format: uri }
-                bot_qq: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
-                token: { type: string, maxLength: 512, writeOnly: true, description: Empty retains; otherwise at least 32 non-whitespace characters }
-                secret: { type: string, maxLength: 512, writeOnly: true, description: Empty retains; otherwise at least 32 non-whitespace characters }
-                revision: { type: string, pattern: '^[0-9]+$' }
-                groups: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/OneBotGroup" } }
       responses:
-        "200":
-          description: Settings saved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  request_id: { type: string }
-                  data: { $ref: "#/components/schemas/OneBotSettings" }
-        "400": { description: Invalid configuration or unavailable encryption key }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { description: Settings revision changed }
+        "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/community/qq/onebot/status:
     get:
       operationId: getOneBotStatus
-      summary: Check login identity, online status and available groups (current site administrator only)
+      deprecated: true
+      summary: Retired OneBot endpoint; use official QQ settings and callback
       security: [{ SessionCookie: [] }]
       responses:
-        "200":
-          description: Verified online bot and its groups
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  request_id: { type: string }
-                  data:
-                    type: object
-                    required: [online, bot_qq, nickname, groups]
-                    properties:
-                      online: { type: boolean }
-                      bot_qq: { type: string }
-                      nickname: { type: string }
-                      groups: { type: array, items: { $ref: "#/components/schemas/OneBotGroup" } }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "503": { description: Disabled, offline, wrong bot identity or unavailable OneBot service }
+        "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/community/qq/onebot/test:
     post:
       operationId: testOneBotMention
-      summary: Send one group mention to the current administrator's verified QQ
-      description: Uses the configured group whitelist and the current profile-version OneBot binding. Does not accept another member or arbitrary message text. No automatic retries after ambiguous send outcomes.
+      deprecated: true
+      summary: Retired OneBot endpoint; use official QQ settings and callback
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
         - { $ref: "#/components/parameters/CSRFToken" }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [group_id]
-              properties:
-                group_id: { type: string, pattern: '^[1-9][0-9]{4,11}$' }
       responses:
-        "200": { description: OneBot returned a nonzero message ID; client rendering still needs confirmation }
-        "400": { description: Invalid group ID or unknown fields }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { description: Missing current QQ binding, disallowed group, changed configuration or send failure }
+        "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/community/qq/onebot/webhook:
     post:
       operationId: receiveOneBotWebhook
-      summary: Receive signed NapCat OneBot 11 events
-      description: Requires HMAC-SHA1 of the exact body using the HTTP client token (X-Signature sha1=hex), expected self_id and a five-minute past/one-minute future timestamp window. Only normal group messages containing a standalone eight-character code in text segments are processed. Sender QQ must match the saved profile. Configured group, active account and current QQ version are checked in the binding transaction. Duplicate events return an empty object without sending another reply. Raw chat bodies are not retained. A reply is a OneBot quick operation with at and text segments, not the site's usual data envelope.
+      deprecated: true
+      summary: Retired OneBot endpoint; use official QQ settings and callback
       security: []
-      parameters:
-        - in: header
-          name: X-Signature
-          required: true
-          schema: { type: string, pattern: '^sha1=[a-fA-F0-9]{40}$' }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, description: OneBot 11 event; maximum 64 KiB }
       responses:
-        "200": { description: Empty object or standard OneBot quick operation reply }
-        "400": { description: Invalid or oversized event }
-        "401": { description: Invalid signature, identity or timestamp }
-        "503": { description: Disabled, changed configuration, replay conflict or transaction failure }
+        "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/community/qq/bot/settings:
     get:
       operationId: getQQBotSettings
       summary: Read administrator-managed official QQ Bot settings
-      description: Returns the App ID and API origin plus a boolean secret status. The App Secret is write-only and is never returned.
+      description: Returns enabled, revision, App ID and API origin plus a boolean secret status. The App Secret is write-only and is never returned.
       security: [{ SessionCookie: [] }]
       responses:
         "200":
@@ -5878,7 +5804,7 @@ paths:
     put:
       operationId: saveQQBotSettings
       summary: Replace administrator-managed official QQ Bot settings
-      description: Saves the App ID and HTTPS API origin, encrypts the App Secret server-side and applies the configuration immediately. An empty secret keeps the existing secret; an empty App ID disables the bot and clears it.
+      description: Requires the current revision; stale writes return 409. Disabled settings retain credentials. Empty secret retains only for the same AppID; enabling a changed AppID requires a new secret. Changing AppID invalidates QQ confirmation/codes and current official bindings while retaining event history. Writes and callback binding publication share configuration locks. New installations and the official restoration migration remain disabled until explicitly enabled.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5890,8 +5816,10 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [app_id, api_base, secret]
+              required: [app_id, api_base, secret, enabled, revision]
               properties:
+                enabled: { type: boolean }
+                revision: { type: string, pattern: '^[1-9][0-9]*$' }
                 app_id: { type: string, maxLength: 128 }
                 api_base: { type: string, maxLength: 256, format: uri }
                 secret: { type: string, maxLength: 512, description: Write-only; an empty value retains the current secret }
@@ -5909,12 +5837,13 @@ paths:
         "400": { description: Invalid QQ Bot settings, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Settings revision changed; reload explicitly before saving }
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
   /api/v1/community/qq/official/webhook:
     post:
       operationId: receiveOfficialQQBotWebhook
       summary: Receive the official QQ open platform callback
-      description: Public endpoint for the official QQ Bot API v2. It handles the unsigned op=13 validation handshake, verifies X-Signature-Ed25519 on normal callbacks, accepts standalone eight-character codes in GROUP_MESSAGE_CREATE and legacy C2C_MESSAGE_CREATE or GROUP_AT_MESSAGE_CREATE binding commands, and processes GROUP_JOIN_REQUEST plus GROUP_MEMBER_ADD for configured groups. GROUP_MESSAGE_CREATE uses author.member_openid as the sender and group_openid as the reply target; unrelated text, bot messages, or missing sender/group/message/event identifiers are silently acknowledged without binding writes or replies. Official events supply bot-scoped OpenID values; they do not expose the numeric QQ number.
+      description: Public endpoint for the official QQ Bot API v2. It handles the unsigned op=13 validation handshake, verifies X-Signature-Ed25519 on normal callbacks, accepts standalone eight-character codes in GROUP_MESSAGE_CREATE and legacy C2C_MESSAGE_CREATE or GROUP_AT_MESSAGE_CREATE binding commands, and processes GROUP_JOIN_REQUEST plus GROUP_MEMBER_ADD for configured groups. GROUP_MESSAGE_CREATE uses author.member_openid as the sender and group_openid as the reply target; unrelated text, bot messages, or missing sender/group/message/event identifiers are silently acknowledged without binding writes or replies. Official events supply bot-scoped OpenID values; they do not expose the numeric QQ number. Unsigned validation requires a canonical positive decimal timestamp and a nonempty challenge of at most 1024 bytes that does not start with a JSON object; normal callbacks are single JSON documents. Binding publication rechecks the exact verified enabled configuration and the active account under transaction locks.
       security: []
       parameters:
         - name: X-Signature-Timestamp
@@ -10391,9 +10320,11 @@ components:
         groups: { type: array, items: { $ref: "#/components/schemas/OneBotGroup" } }
     QQBotSettings:
       type: object
-      required: [app_id, api_base, secret_configured, initialized]
+      required: [app_id, api_base, secret_configured, initialized, enabled, revision]
       additionalProperties: false
       properties:
+        enabled: { type: boolean }
+        revision: { type: string, pattern: '^[1-9][0-9]*$' }
         app_id: { type: string, maxLength: 128 }
         api_base: { type: string, format: uri, maxLength: 256 }
         secret_configured: { type: boolean, description: Whether a write-only App Secret is available }

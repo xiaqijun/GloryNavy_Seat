@@ -60,7 +60,7 @@ func TestOneBotManagementRequiresCurrentAdministratorAndCSRF(t *testing.T) {
 	if err = permissions.SetAdministrator(ctx, session.UserID, true); err != nil {
 		t.Fatal(err)
 	}
-	if status := call("GET", "/api/v1/community/qq/onebot/settings", token, ""); status != 200 {
+	if status := call("GET", "/api/v1/community/qq/onebot/settings", token, ""); status != 410 {
 		t.Fatal("admin settings", status)
 	}
 	for _, path := range []string{"settings", "test"} {

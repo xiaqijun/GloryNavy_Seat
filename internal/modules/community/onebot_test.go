@@ -72,7 +72,7 @@ func TestOneBotSignedBindingAndReplay(t *testing.T) {
 		t.Fatal("replay conflict accepted", changed.Code)
 	}
 	profile, err := s.Get(context.Background(), user)
-	if err != nil || profile.QQ.Confirmation != "confirmed" {
+	if err != nil || profile.QQ.Confirmation != "pending" {
 		t.Fatal(profile, err)
 	}
 	var bindings, events, confirmations int
@@ -152,12 +152,12 @@ func TestOneBotConcurrentRetryRepliesOnce(t *testing.T) {
 func TestOneBotSettingsEncryptionConflictAndLegacyIsolation(t *testing.T) {
 	s, pool, user, code := oneBotFixture(t)
 	ctx := context.Background()
-	// A legacy proof must not become proof of a numeric QQ identity.
+	// Official identity is now active; retained OneBot settings cannot hide it.
 	if err := s.ConfirmQQOfficial(ctx, "legacy", "old-openid", code, []byte("old")); err != nil {
 		t.Fatal(err)
 	}
 	profile, err := s.Get(ctx, user)
-	if err != nil || profile.QQ.Confirmation != "pending" {
+	if err != nil || profile.QQ.Confirmation != "confirmed" {
 		t.Fatal(profile, err)
 	}
 	settings, err := s.ListOneBotSettings(ctx)
@@ -181,8 +181,8 @@ func TestOneBotSettingsEncryptionConflictAndLegacyIsolation(t *testing.T) {
 		t.Fatal("stale settings accepted", err)
 	}
 	profile, _ = s.Get(ctx, user)
-	if profile.QQ.Confirmation != "pending" {
-		t.Fatal("disabled bot restored old confirmation")
+	if profile.QQ.Confirmation != "confirmed" {
+		t.Fatal("retired bot configuration hid official confirmation")
 	}
 	response := httptest.NewRecorder()
 	Handler{Service: s}.officialQQWebhook(response, httptest.NewRequest("POST", "/", strings.NewReader(`{"op":13}`)))

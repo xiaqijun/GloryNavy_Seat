@@ -92,9 +92,6 @@ func optionalTime(value pgtype.Timestamptz) *time.Time {
 }
 
 func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpenID string) (QQGroupApplicationChallenge, error) {
-	if selected, err := s.oneBotSelected(ctx); err != nil || selected {
-		return QQGroupApplicationChallenge{}, ErrQQGroupNotConfigured
-	}
 	groupOpenID = strings.TrimSpace(groupOpenID)
 	if groupOpenID == "" && s.qqOfficial != nil && len(s.qqOfficial.ConfiguredGroups()) == 1 {
 		groupOpenID = s.qqOfficial.ConfiguredGroups()[0]
