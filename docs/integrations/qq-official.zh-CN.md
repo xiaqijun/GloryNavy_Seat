@@ -1,6 +1,6 @@
 # 官方 QQ 机器人
 
-更新：2026-10-28。[English](qq-official.en.md)。用户要求从 NapCat 切回官方 Bot。本轮本地实现，尚未发布；生产状态以[项目状态](../project-status.md)为准。
+更新：2026-10-28。[English](qq-official.en.md)。用户要求从 NapCat 切回官方 Bot。本轮已发布，官方机器人默认停用；生产状态以[项目状态](../project-status.md)为准。
 
 ## 管理员配置
 

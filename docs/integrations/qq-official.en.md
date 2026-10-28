@@ -1,6 +1,6 @@
 # Official QQ bot
 
-Updated 2026-10-28. [中文](qq-official.zh-CN.md). The user requested a switch from NapCat back to the official Bot API. This change is implemented locally, not deployed; see [project status](../project-status.md).
+Updated 2026-10-28. [中文](qq-official.zh-CN.md). The user requested a switch from NapCat back to the official Bot API. This change is deployed with the official bot disabled by default; see [project status](../project-status.md).
 
 ## Configuration and binding
 
