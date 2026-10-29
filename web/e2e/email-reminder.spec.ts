@@ -33,6 +33,12 @@ for (const lang of ["zh-CN", "en"]) {
     await config.getByRole("checkbox",{name:tr("启用推送")}).check();
     await config.getByRole("button",{name:tr("保存"),exact:true}).click();
     await expect(config.getByText(tr("已启用"))).toBeVisible();
+    await config.getByLabel(tr("发件账号")).fill("another@example.com");
+    await expect(config.getByText(tr("更换服务器或发件账号后，请重新填写 SMTP 授权码"))).toBeVisible();
+    await expect(config.getByLabel(tr("SMTP 授权码"))).toHaveAttribute("placeholder", tr("请重新填写授权码"));
+    await expect(config.getByRole("button",{name:tr("保存"),exact:true})).toBeDisabled();
+    await config.getByLabel(tr("SMTP 授权码")).fill("app-password");
+    await expect(config.getByRole("button",{name:tr("保存"),exact:true})).toBeEnabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`email-settings-${lang}.png`),fullPage:true});
     await page.goto("/account");

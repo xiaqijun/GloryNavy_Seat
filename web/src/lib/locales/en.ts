@@ -15,6 +15,8 @@ export const english: Record<string, string> = {
   "发件账号": "Sender account",
   "发件邮箱": "Sender email",
   "SMTP 授权码": "SMTP app password",
+  "请重新填写授权码": "Enter the app password again",
+  "更换服务器或发件账号后，请重新填写 SMTP 授权码": "Enter the SMTP app password again after changing the server or sender account",
   "已配置，留空保持不变": "Configured; leave blank to keep",
   "邮箱发送记录": "Email delivery history",
   "邮箱配置或发送服务不可用": "Email configuration or service is unavailable",
