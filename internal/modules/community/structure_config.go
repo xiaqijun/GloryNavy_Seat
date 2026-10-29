@@ -13,6 +13,7 @@ var ErrStructureWatchInvalid = errors.New("建筑提醒配置无效")
 var ErrStructureWatchForbidden = errors.New("无权管理建筑提醒")
 var ErrStructureWatchBot = errors.New("请先启用官方 QQ 机器人并确认群 OpenID")
 var ErrStructureWatchSource = errors.New("无法读取所选军团的建筑")
+var ErrStructureWatchUnavailable = errors.New("建筑提醒暂不可用")
 
 type StructureWatchSettings struct {
 	Enabled         bool   `json:"enabled"`
@@ -71,6 +72,11 @@ func (r *StructureJobs) Settings(ctx context.Context, actor string) (StructureWa
 func (r *StructureJobs) SaveSettings(ctx context.Context, actor string, input StructureWatchInput) (StructureWatchSettings, error) {
 	if err := r.structureAdmin(ctx, actor); err != nil {
 		return StructureWatchSettings{}, err
+	}
+	// The QQ gateway can hold a connection while this transaction rechecks
+	// current administrator and structure access through injected services.
+	if r.Service.pool.Config().MaxConns < 3 {
+		return StructureWatchSettings{}, ErrStructureWatchUnavailable
 	}
 	input.GroupOpenID = strings.TrimSpace(input.GroupOpenID)
 	corp, err := strconv.ParseInt(input.CorporationID, 10, 64)

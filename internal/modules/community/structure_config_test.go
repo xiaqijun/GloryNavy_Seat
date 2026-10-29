@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"glorynavy.local/seat/internal/modules/eve"
 )
 
@@ -100,6 +101,24 @@ func TestStructureSettingsProtectRevisionAndOwnership(t *testing.T) {
 	}
 	if _, err = job.SaveSettings(ctx, user, in); !errors.Is(err, ErrStructureWatchForbidden) {
 		t.Fatal("non-admin write", err)
+	}
+}
+
+func TestStructureSettingsRejectsInsufficientPool(t *testing.T) {
+	s, pool, user, _ := qqBindingFixture(t)
+	config := pool.Config().Copy()
+	config.MaxConns = 2
+	config.MinConns = 0
+	small, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer small.Close()
+	s.pool = small
+	job := &StructureJobs{Service: s, Enabled: true, Administrator: func(context.Context, string) (bool, error) { return true, nil }, Read: func(context.Context, string, int64) ([]eve.Structure, error) { return []eve.Structure{}, nil }}
+	_, err = job.SaveSettings(context.Background(), user, StructureWatchInput{Enabled: false, CorporationID: "0", Revision: "1"})
+	if !errors.Is(err, ErrStructureWatchUnavailable) {
+		t.Fatal("small pool must fail without waiting", err)
 	}
 }
 
