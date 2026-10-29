@@ -1,6 +1,6 @@
 # Linux 生产部署
 
-未发布的 QQ WebSocket 改造：启用时服务自动连接 QQ，服务器出口 IP 应在开放平台白名单中；`QQ_BOT_WS_MEMBER_EVENTS` 默认 false，只有获准后才启用。切换或回退前在开放平台调整接收模式，断线恢复与未验证事项见 [官方 QQ](integrations/qq-official.zh-CN.md)。
+已发布的 QQ WebSocket 改造：启用时服务自动连接 QQ，服务器出口 IP 应在开放平台白名单中；`QQ_BOT_WS_MEMBER_EVENTS` 默认 false，只有获准后才启用。切换或回退前在开放平台调整接收模式，断线恢复与未验证事项见 [官方 QQ](integrations/qq-official.zh-CN.md)。
 
 ## 2026-10-24：预警星系防线与暂停窗口（Goose 107，已发布）
 
