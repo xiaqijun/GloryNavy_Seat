@@ -48,6 +48,7 @@ type Credit struct {
 	Reason                      string    `json:"reason"`
 	Version                     int64     `json:"version"`
 	EvaluatedAt                 time.Time `json:"evaluated_at"`
+	EvidenceCutoff              time.Time `json:"evidence_cutoff"`
 	SettledLoans                int       `json:"settled_loans"`
 	ActiveLoans                 int       `json:"active_loans"`
 	DefaultedLoans              int       `json:"defaulted_loans"`

@@ -27,12 +27,14 @@ for (const language of ["zh-CN", "en"]) {
       else if (path.endsWith("/cases/1")) data = { security: security(), case: loan, guarantees: [], collateral, collateral_requests: pending, installments: [] };
       else if (path.endsWith("/collateral-assets")) data = assets;
       else if (path.endsWith("/collateral-quote")) {
-        const amount = r.request().postDataJSON().items.reduce((sum: number, i: { quantity: string }) => sum + Number(i.quantity) * 125000, 0);
-        data = { security: security(), valuation_minor: amount, covered_minor: Math.floor(amount * 0.8), required_minor: 200000, shortfall_minor: Math.max(0, 200000 - Math.floor(amount * 0.8)), can_submit: amount * 0.8 >= 200000 };
+        const body = r.request().postDataJSON();
+        const amount = body.items.reduce((sum: number, i: { quantity: string }) => sum + Number(i.quantity) * 125000, 0);
+        const target = body.allocation_minor || 200000;
+        data = { security: security(), valuation_minor: amount, covered_minor: Math.floor(amount * 0.8), required_minor: 200000, target_minor: target, shortfall_minor: Math.max(0, target - Math.floor(amount * 0.8)), can_submit: amount * 0.8 >= target };
       }
       else if (path.endsWith("/collateral-requests")) {
         expect(r.request().headers()["x-csrf-token"]).toBe("csrf");
-        expect(r.request().postDataJSON()).toEqual({ character_id: "111", recipient_character_id: "334", coverage_minor: 200000, items: [{ item_id: "501", quantity: "3" }] });
+        expect(r.request().postDataJSON()).toEqual({ character_id: "111", recipient_character_id: "334", coverage_minor: 200000, allocation_minor: 200000, items: [{ item_id: "501", quantity: "3" }] });
         writes++;
         if (writes === 1) return r.fulfill({ status: 409, json: { error: { message: "Assets changed; retry" } } });
         data = { coverage_minor: 200000, valuation_minor: 375000, id: "1", public_id: "LNC-TEST-DELIVERY", case_id: "1", source_character_id: "111", recipient_character_id: "334", items: [{ type_id: "34", quantity: "3", name: "Tritanium", included: true }], state: "awaiting_delivery", version: 1, created_at: "2026-10-16T00:00:00Z" };
@@ -65,9 +67,12 @@ for (const language of ["zh-CN", "en"]) {
     await dialog.getByRole("checkbox", { name: /Tritanium/ }).check();
     await expect(dialog.getByRole("checkbox", { name: /Pyerite/ })).toBeDisabled();
     await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toHaveValue("2000");
-    await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toHaveAttribute("readonly", "");
+    await expect(dialog.getByLabel(tr("抵押额度（ISK）"))).toBeEditable();
     await expect(dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true })).toBeDisabled();
     await expect(dialog).toContainText(tr("还差 {0} 可抵额度，请增加物品或数量。").replace("{0}", "1,000 ISK"));
+    await dialog.getByLabel(tr("抵押额度（ISK）")).fill("1000");
+    await expect(dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true })).toBeEnabled();
+    await dialog.getByLabel(tr("抵押额度（ISK）")).fill("2000");
     await dialog.getByRole("spinbutton").fill("2");
     await expect(dialog.getByRole("button", { name: tr("保存并查看交付信息"), exact: true })).toBeEnabled();
     await expect(dialog).toContainText("2,500 ISK");

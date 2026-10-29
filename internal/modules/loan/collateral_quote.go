@@ -20,6 +20,7 @@ type CollateralQuote struct {
 	ValuationMinor int64           `json:"valuation_minor"`
 	CoveredMinor   int64           `json:"covered_minor"`
 	RequiredMinor  int64           `json:"required_minor"`
+	TargetMinor    int64           `json:"target_minor"`
 	ShortfallMinor int64           `json:"shortfall_minor"`
 	CanSubmit      bool            `json:"can_submit"`
 }
@@ -123,5 +124,12 @@ func (s *Service) QuoteCollateralRequest(ctx context.Context, actor string, case
 		return CollateralQuote{}, err
 	}
 	covered := coveredByHaircut(value, collateralAdvanceBPS)
-	return CollateralQuote{Security: security, ValuationMinor: value, CoveredMinor: covered, RequiredMinor: security.UnallocatedMinor, ShortfallMinor: max(0, security.UnallocatedMinor-covered), CanSubmit: security.CreditReady && !security.LegacyPending && security.UnallocatedMinor > 0 && covered >= security.UnallocatedMinor}, nil
+	if !security.CreditReady || security.LegacyPending || security.UnallocatedMinor <= 0 {
+		return CollateralQuote{Security: security, ValuationMinor: value, CoveredMinor: covered, RequiredMinor: security.UnallocatedMinor, ShortfallMinor: max(0, security.UnallocatedMinor-covered)}, nil
+	}
+	target, err := securityAllocation(security, in.CoverageMinor, in.AllocationMinor)
+	if err != nil {
+		return CollateralQuote{}, err
+	}
+	return CollateralQuote{Security: security, ValuationMinor: value, CoveredMinor: covered, RequiredMinor: security.UnallocatedMinor, TargetMinor: target, ShortfallMinor: max(0, target-covered), CanSubmit: covered >= target}, nil
 }

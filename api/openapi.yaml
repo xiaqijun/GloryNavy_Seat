@@ -8409,7 +8409,7 @@ paths:
       operationId: loanCaseDetail
       security: [{SessionCookie: []}]
       summary: Read a visible loan case and its security records
-      description: Each guarantees item includes optional guarantor_character_name, resolved in one batch from stored positive character IDs after case-object authorization. Missing names or lookup failure omit the name without failing the detail read. Existing IDs, amounts, states and ownership are unchanged; empty guarantees remain an array. The UI falls back to character ID, then guarantor account for legacy records without a character. Submitted/awaiting_acceptance details also include security (LoanSecuritySummary); pending allocations prevent duplicate applications but never count as effective approval coverage.
+      description: Includes authorized case and security details. For a non-borrower with management permission, submitted/awaiting_acceptance details also include repayment_risk with status, duration, projected capacity and, for insufficient/unknown capacity, an acknowledgment token bound to the case, evaluation, policy and other outstanding repayment obligations. Pending security never counts as effective approval coverage.
       parameters: [{name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}]
       responses:
         '200': {description: Loan case, installments, guarantees and collateral}
@@ -8419,7 +8419,7 @@ paths:
       operationId: loanCaseReview
       security: [{SessionCookie: []}]
       summary: Approve or reject a submitted loan
-      description: A scoped manager other than the borrower may review with the current version. Approval requires a fresh active evaluation and sufficient shared-pool cash. Required security is max(0, principal - max(0, total_limit_minor - used responsibility)). Only this case's accepted/active guarantees and approved/held collateral count; they may be combined. There is no separate unsecured threshold or hard total-credit ceiling for a covered loan. Account credit and pool reservations are serialized; case, evaluation snapshot and single-credit-v1 audit commit together.
+      description: A scoped manager other than the borrower may review with the current version. Approval requires a fresh active v7 evaluation, sufficient pool cash, any configured borrower concentration limit, and effective security for the excess. When repayment capacity is insufficient or unknown, obtain the current risk token from authorized case details and explicitly acknowledge it; changed inputs require a fresh token. Checks and audit occur under the account, pool, case and policy locks.
       parameters:
         - {name: id, in: path, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
         - {$ref: '#/components/parameters/CSRFToken'}
@@ -8435,6 +8435,7 @@ paths:
                 state: {type: string, enum: [approved, rejected]}
                 version: {type: integer, format: int64, minimum: 1}
                 note: {type: string, maxLength: 1000}
+                risk_acknowledgement: {type: string, description: Current case-detail risk token, required when repayment risk is insufficient or unknown}
       responses:
         '200': {description: Reviewed loan case}
         '400': {description: Invalid input}
@@ -8831,6 +8832,7 @@ components:
         asset_credit_ltv_bps: {type: integer, minimum: 0, maximum: 10000, description: Personal asset-supported capacity ratio; 1000 bps is 10%}
         guarantee_cap_bps: {type: integer, minimum: 0, maximum: 10000}
         collateral_cap_bps: {type: integer, minimum: 0, maximum: 10000, description: Legacy compatibility field; new item collateral uses fixed 80 percent without an additional cap multiplier}
+        borrower_limit_bps: {type: integer, minimum: 0, maximum: 10000, description: Zero means no additional per-borrower cap; otherwise a percentage of pool cash plus unpaid funded principal. Omitted updates preserve the current value.}
         stale_after_hours: {type: integer, minimum: 1, maximum: 8760}
         min_income_samples: {type: integer, minimum: 0, maximum: 12}
         insufficient_income_policy: {type: string, enum: [fallback_pool, zero]}
@@ -8842,6 +8844,7 @@ components:
       properties:
         guarantor_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
         amount_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional expected gap in 0.01 ISK units; omitted or zero computes automatically and a positive mismatch is rejected}
+        allocation_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional partial guarantee amount; omitted or zero allocates the entire current gap.}
         note: {type: string, maxLength: 500}
     LoanCollateralInput:
       type: object
@@ -8863,6 +8866,7 @@ components:
       required: [character_id, items]
       properties:
         coverage_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional expected target for saving; omitted or zero computes automatically and a positive mismatch is rejected. Quote requests do not reserve this value.}
+        allocation_minor: {type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: Optional partial collateral target; omitted or zero allocates the entire current gap.}
         recipient_character_id: {type: string, pattern: '^[1-9][0-9]*$', description: Active bound character of a currently authorized loan officer; defaults to first main if omitted and freezes on save}
         character_id: {type: string, pattern: '^[1-9][0-9]*$'}
         items:
@@ -8889,12 +8893,13 @@ components:
         legacy_pending: {type: boolean, description: Finish or cancel old requests before allocating new security}
     LoanCollateralQuote:
       type: object
-      required: [security, valuation_minor, covered_minor, required_minor, shortfall_minor, can_submit]
+      required: [security, valuation_minor, covered_minor, required_minor, target_minor, shortfall_minor, can_submit]
       properties:
         security: {$ref: '#/components/schemas/LoanSecuritySummary'}
         valuation_minor: {type: integer, format: int64, minimum: 0}
         covered_minor: {type: integer, format: int64, minimum: 0}
         required_minor: {type: integer, format: int64, minimum: 0}
+        target_minor: {type: integer, format: int64, minimum: 0}
         shortfall_minor: {type: integer, format: int64, minimum: 0}
         can_submit: {type: boolean}
     LoanDecisionInput:

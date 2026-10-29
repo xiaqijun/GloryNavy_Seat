@@ -753,6 +753,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 					out.AllianceFulfilledMonths = pap.AllianceFulfilledMonths
 					out.PAPAvailable = pap.Complete
 					out.PAPSnapshotID = pap.SnapshotID
+					out.PAPObservedAt = pap.ObservedAt
 					out.EvidenceCutoff = pap.ObservedAt
 				}
 			}
@@ -763,6 +764,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 				out.AssetPricedTypes = assets.AssetPricedTypes
 				out.AssetUnpricedTypes = assets.AssetUnpricedTypes
 				out.AssetSnapshotID = assets.AssetSnapshotID
+				out.AssetObservedAt = assets.EvidenceCutoff
 				out.AssetEvidenceError = assets.AssetEvidenceError
 				if err != nil && out.AssetEvidenceError == "" {
 					out.AssetEvidenceError = err.Error()

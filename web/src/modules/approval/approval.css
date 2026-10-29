@@ -3,6 +3,44 @@
   gap: 20px;
   min-width: 0;
 }
+.approval-risk {
+  display: grid;
+  gap: 8px;
+  margin-block: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+.approval-risk label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.approval-loan-detail .approval-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.approval-loan-detail .approval-detail-grid > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.approval-loan-detail .approval-detail-grid span {
+  color: var(--muted-foreground);
+}
+.approval-loan-detail .approval-detail-grid > p {
+  grid-column: 1 / -1;
+}
+.approval-loan-detail .approval-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .approval-heading {
   display: flex;
   align-items: center;

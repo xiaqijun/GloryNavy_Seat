@@ -11,7 +11,7 @@ for (const language of ["zh-CN", "en"]) {
     let mode = "within", submitted = false, attempts = 0;
     const guarantees: unknown[] = [];
     loan.state = "submitted";
-    const security = () => ({ credit_ready: true, available_credit_minor: mode === "within" ? loan.principal_minor : loan.principal_minor - (mode === "changed" ? 150000000000 : 200000000000), required_minor: mode === "within" ? 0 : mode === "changed" ? 150000000000 : 200000000000, effective_minor: 0, pending_minor: submitted ? 150000000000 : 0, unallocated_minor: mode === "within" || submitted ? 0 : mode === "changed" ? 150000000000 : 200000000000, legacy_pending: false });
+    const security = () => ({ credit_ready: true, available_credit_minor: mode === "within" ? loan.principal_minor : loan.principal_minor - (mode === "changed" ? 150000000000 : 200000000000), required_minor: mode === "within" ? 0 : mode === "changed" ? 150000000000 : 200000000000, effective_minor: 0, pending_minor: submitted ? 100000000000 : 0, unallocated_minor: mode === "within" ? 0 : submitted ? 50000000000 : mode === "changed" ? 150000000000 : 200000000000, legacy_pending: false });
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), language);
     await page.route("https://images.evetech.net/**", r => r.abort());
     await page.route("**/api/v1/**", async r => {
@@ -30,9 +30,10 @@ for (const language of ["zh-CN", "en"]) {
         attempts++;
         expect(r.request().headers()["x-csrf-token"]).toBe("csrf");
         expect(r.request().postDataJSON().amount_minor).toBe(attempts === 1 ? 200000000000 : 150000000000);
+        expect(r.request().postDataJSON().allocation_minor).toBe(attempts === 1 ? 200000000000 : 100000000000);
         if (attempts === 1) { mode = "changed"; return r.fulfill({ status: 409, json: { error: { message: "Credit changed; retry" } } }); }
         submitted = true;
-        data = { id: "1", guarantor_account_id: "guarantor", guarantor_character_id: "222", guarantor_character_name: "Guarantor Pilot", amount_minor: 150000000000, state: "invited", version: 1 };
+        data = { id: "1", guarantor_account_id: "guarantor", guarantor_character_id: "222", guarantor_character_name: "Guarantor Pilot", amount_minor: 100000000000, state: "invited", version: 1 };
         guarantees.push(data);
       }
       else if (path.includes("/loan/")) data = { items: [] };
@@ -53,16 +54,17 @@ for (const language of ["zh-CN", "en"]) {
     await dialog.getByRole("button", { name: tr("找人担保"), exact: true }).click();
     const amount = dialog.getByLabel(tr("担保金额（ISK）"));
     await expect(amount).toHaveValue("2000000000");
-    await expect(amount).toHaveAttribute("readonly", "");
+    await expect(amount).toBeEditable();
     const character = dialog.getByRole("combobox");
     await expect(character).toHaveValue("222");
     await dialog.getByRole("button", { name: tr("发送邀请"), exact: true }).click();
     await expect(dialog.getByRole("alert")).toHaveText("Credit changed; retry");
     await expect(amount).toHaveValue("1500000000");
+    await amount.fill("1000000000");
     await page.screenshot({ path: info.outputPath("automatic-guarantee.png"), fullPage: true });
     await dialog.getByRole("button", { name: tr("发送邀请"), exact: true }).click();
-    await expect(dialog).toContainText(tr("保障正在办理，确认或审核通过后才生效。"));
-    await expect(dialog.getByRole("button", { name: tr("物品抵押"), exact: true })).toHaveCount(0);
+    await expect(dialog).toContainText(tr("还需申请保障：{0}").replace("{0}", "500,000,000 ISK"));
+    await expect(dialog.getByRole("button", { name: tr("物品抵押"), exact: true })).toBeVisible();
     await expect.poll(() => dialog.evaluate(e => e.scrollWidth <= e.clientWidth)).toBe(true);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath("pending-guarantee.png"), fullPage: true });

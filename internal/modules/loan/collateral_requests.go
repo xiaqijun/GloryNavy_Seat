@@ -38,6 +38,7 @@ type AssetSelection struct {
 type CollateralRequestInput struct {
 	RecipientCharacterID int64            `json:"recipient_character_id,string"`
 	CoverageMinor        int64            `json:"coverage_minor,omitempty"`
+	AllocationMinor      int64            `json:"allocation_minor,omitempty"`
 	CharacterID          int64            `json:"character_id,string"`
 	Items                []AssetSelection `json:"items"`
 }
@@ -113,7 +114,7 @@ func (s *Service) CreateCollateralRequest(ctx context.Context, actor string, cas
 	if err != nil {
 		return store.CollateralRequest{}, err
 	}
-	target, err := securityTarget(security, in.CoverageMinor)
+	target, err := securityAllocation(security, in.CoverageMinor, in.AllocationMinor)
 	if err != nil {
 		return store.CollateralRequest{}, err
 	}

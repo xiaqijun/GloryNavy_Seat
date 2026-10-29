@@ -66,13 +66,12 @@ func (w *creditDispatchWorker) Work(ctx context.Context, _ *river.Job[creditDisp
 	if err != nil {
 		return err
 	}
-	ruleVersion := creditPolicyRuleVersion(policy)
 	for _, user := range users {
 		e, err := store.LatestCreditEvaluation(ctx, r.Service.db(), user)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		if err == nil && e.PolicyVersion == ruleVersion && evaluationDue(e.EvaluatedAt, time.Now().UTC()) == false {
+		if err == nil && !creditEvaluationNeedsRefresh(e, policy, time.Now().UTC()) {
 			continue
 		}
 		if _, err := r.queue.Insert(ctx, creditEvaluationArgs{AccountID: user}, &river.InsertOpts{Queue: "loan", UniqueOpts: jobs.ActiveUnique(), MaxAttempts: 3}); err != nil {
@@ -84,6 +83,10 @@ func (w *creditDispatchWorker) Work(ctx context.Context, _ *river.Job[creditDisp
 
 func evaluationDue(evaluatedAt, now time.Time) bool {
 	return evaluatedAt.IsZero() || evaluatedAt.After(now) || now.Sub(evaluatedAt) >= 24*time.Hour
+}
+
+func creditEvaluationNeedsRefresh(e store.CreditEvaluation, p store.CreditPolicy, now time.Time) bool {
+	return evaluationDue(e.EvaluatedAt, now) || !creditFresh(creditFromEvaluation(e), p, now)
 }
 
 func (w *creditEvaluationWorker) Timeout(*river.Job[creditEvaluationArgs]) time.Duration {
@@ -103,7 +106,7 @@ func (w *creditEvaluationWorker) Work(ctx context.Context, j *river.Job[creditEv
 	if policyErr != nil {
 		return policyErr
 	}
-	if err == nil && e.PolicyVersion == creditPolicyRuleVersion(policy) && !evaluationDue(e.EvaluatedAt, time.Now().UTC()) {
+	if err == nil && !creditEvaluationNeedsRefresh(e, policy, time.Now().UTC()) {
 		return nil
 	}
 	_, err = r.Service.EvaluateAndStore(ctx, j.Args.AccountID)

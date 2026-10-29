@@ -75,6 +75,8 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 		code, status, msg = "loan_forbidden", 403, "没有该贷款记录或操作权限"
 	case errors.Is(e, ErrRule):
 		code, status, msg = "loan_rule_required", 409, "贷款规则或系统信用评估尚未完成"
+	case errors.Is(e, ErrRepaymentRisk):
+		code, status, msg = "loan_repayment_risk_review", 409, "请刷新贷款详情并确认还款能力风险"
 	case errors.Is(e, ErrLimit):
 		code, status, msg = "loan_limit_exceeded", 409, "超出贷款额度或资金池限制"
 	case errors.Is(e, ErrCoverage):
@@ -149,11 +151,28 @@ func (h Handler) policy(w http.ResponseWriter, r *http.Request) {
 	respond(w, r, map[string]any{"policy": v, "can_manage": canManage}, nil)
 }
 func (h Handler) policyUpdate(w http.ResponseWriter, r *http.Request) {
-	var in store.CreditPolicy
+	var in struct {
+		store.CreditPolicy
+		BorrowerLimitBPS *int `json:"borrower_limit_bps"`
+	}
 	if !read(w, r, &in) {
 		return
 	}
-	v, e := h.Service.UpdateCreditPolicy(r.Context(), h.User(r), in)
+	if in.BorrowerLimitBPS != nil {
+		in.CreditPolicy.BorrowerLimitBPS = *in.BorrowerLimitBPS
+	} else {
+		current, err := h.Service.CreditPolicy(r.Context())
+		if err != nil {
+			respond(w, r, nil, err)
+			return
+		}
+		if current.Version != in.CreditPolicy.Version {
+			respond(w, r, nil, ErrConflict)
+			return
+		}
+		in.CreditPolicy.BorrowerLimitBPS = current.BorrowerLimitBPS
+	}
+	v, e := h.Service.UpdateCreditPolicy(r.Context(), h.User(r), in.CreditPolicy)
 	respond(w, r, v, e)
 }
 func (h Handler) cases(w http.ResponseWriter, r *http.Request) {

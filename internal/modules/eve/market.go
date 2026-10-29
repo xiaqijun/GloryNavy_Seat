@@ -50,8 +50,8 @@ type MarketPrices struct {
 	Buy, Sell *string
 	// Mid is an authoritative midpoint supplied by ESI when an item has no
 	// usable order book. It is currently reserved for PLEX as a last resort.
-	Mid                   *string
-	ObservedAt, ExpiresAt time.Time
+	Mid                                *string
+	ObservedAt, ValidatedAt, ExpiresAt time.Time
 }
 type marketOrder struct {
 	TypeID     int64       `json:"type_id"`
@@ -108,7 +108,7 @@ func (s *ESIService) MarketAveragePrices(ctx context.Context) (map[int64]MarketP
 			return nil, errors.New("invalid market average price")
 		}
 		value := price.FloatString(2)
-		out[row.TypeID] = MarketPrices{Mid: &value, ObservedAt: observed, ExpiresAt: meta.ExpiresAt}
+		out[row.TypeID] = MarketPrices{Mid: &value, ObservedAt: observed, ValidatedAt: meta.ValidatedAt, ExpiresAt: meta.ExpiresAt}
 	}
 	return out, nil
 }

@@ -25,7 +25,7 @@ func TestCollateralRequestLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: "test", Score: 80, TotalLimitMinor: 30000, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
+	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: creditPolicyRuleVersion(defaultCreditPolicy()), Score: 80, TotalLimitMinor: 30000, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
 		t.Fatal(err)
 	}
 	var poolID int64
@@ -221,7 +221,7 @@ func TestCollateralRequestRoutes(t *testing.T) {
 	if e := db.QueryRow(ctx, `INSERT INTO identity_users DEFAULT VALUES RETURNING id::text`).Scan(&borrower); e != nil {
 		t.Fatal(e)
 	}
-	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: "test", Score: 80, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
+	if _, err := store.RecordCreditEvaluation(ctx, db, store.CreditEvaluation{AccountID: borrower, PolicyVersion: creditPolicyRuleVersion(defaultCreditPolicy()), Score: 80, State: "active", FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: time.Now(), EvaluatedAt: time.Now()}); err != nil {
 		t.Fatal(err)
 	}
 	var poolID int64

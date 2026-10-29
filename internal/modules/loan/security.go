@@ -76,3 +76,20 @@ func securityTarget(summary SecuritySummary, expected int64) (int64, error) {
 	}
 	return summary.UnallocatedMinor, nil
 }
+
+// allocation is an explicit partial amount; expected remains the previously
+// displayed entire gap so stale clients cannot silently allocate against a
+// changed snapshot. Zero keeps the original full-gap behavior.
+func securityAllocation(summary SecuritySummary, expected, allocation int64) (int64, error) {
+	gap, err := securityTarget(summary, expected)
+	if err != nil {
+		return 0, err
+	}
+	if allocation < 0 || allocation > gap {
+		return 0, ErrConflict
+	}
+	if allocation == 0 {
+		return gap, nil
+	}
+	return allocation, nil
+}

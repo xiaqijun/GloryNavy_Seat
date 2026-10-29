@@ -52,7 +52,7 @@ func (f *singleCreditFixture) credit(account string, limit int64, state string, 
 	f.t.Helper()
 	now := time.Now().UTC().Add(-age)
 	_, err := store.RecordCreditEvaluation(f.ctx, f.db, store.CreditEvaluation{
-		AccountID: account, PolicyVersion: "capacity-v6-policy-1", Score: 80,
+		AccountID: account, PolicyVersion: creditPolicyRuleVersion(defaultCreditPolicy()), Score: 80,
 		TotalLimitMinor: limit, UnsecuredLimitMinor: limit / 5, AssetSupportLimitMinor: limit - limit/5,
 		GuaranteeLimitMinor: limit, State: state, FactorScores: json.RawMessage(`{}`), Evidence: json.RawMessage(`{}`), EvidenceCutoff: now, EvaluatedAt: now,
 	})
@@ -100,7 +100,20 @@ func (f *singleCreditFixture) guarantee(c store.Case, guarantor string, amount i
 }
 
 func (f *singleCreditFixture) approve(c store.Case) error {
-	_, err := f.s.Review(f.ctx, f.manager, c.ID, ReviewInput{State: "approved", Version: c.Version})
+	e, err := store.LatestCreditEvaluation(f.ctx, f.db, c.BorrowerAccountID)
+	ack := ""
+	if err == nil {
+		p, pe := store.ReadCreditPolicy(f.ctx, f.db)
+		if pe != nil {
+			return pe
+		}
+		obligations, unknown, oe := store.OtherRepaymentObligations(f.ctx, f.db, c.BorrowerAccountID, c.ID)
+		if oe != nil {
+			return oe
+		}
+		ack = repaymentRisk(c, e, p, obligations, unknown, time.Now().UTC()).Token
+	}
+	_, err = f.s.Review(f.ctx, f.manager, c.ID, ReviewInput{State: "approved", Version: c.Version, RiskAcknowledgement: ack})
 	return err
 }
 

@@ -978,21 +978,26 @@ function LoanDetail({
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [riskAck, setRiskAck] = useState("");
+  const detail = useQuery({ queryKey: ["loan", "review-detail", item.id], queryFn: ({ signal }) => loan.detail(item.id, signal), retry: false, staleTime: 0 });
+  const risk = detail.data?.repayment_risk;
   const payload = item.payload as unknown as loan.Case;
   const decide = async (state: "approved" | "rejected") => {
     setBusy(true);
     setMessage("");
     try {
-      await loan.review(csrf, item.id, { state, version: Number(item.version) });
+      await loan.review(csrf, item.id, { state, version: Number(item.version), ...(state === "approved" && risk?.token && riskAck === risk.token ? { risk_acknowledgement: risk.token } : {}) });
       done();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : msg("贷款审核失败"));
+      setRiskAck("");
+      void detail.refetch();
     } finally {
       setBusy(false);
     }
   };
   return (
-    <Modal title={msg("贷款审批详情")} close={close}>
+    <Modal title={msg("贷款审批详情")} close={close} className="approval-loan-detail">
       <div className="approval-detail-grid">
         <div><span>{msg("编号")}</span><strong>{payload.public_id || item.reference}</strong></div>
         <div><span>{msg("贷款池")}</span><strong>{payload.pool_name || item.title}</strong></div>
@@ -1000,10 +1005,11 @@ function LoanDetail({
         <div><span>{payload.requested_due_at && !payload.first_due_at ? msg("预计总应还") : msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
         <RepaymentSummary item={payload} />
       </div>
+      {detail.isPending ? <p role="status">{msg("正在读取还款风险")}</p> : detail.isError ? <div role="alert"><p>{msg("还款风险读取失败，请重试。")}</p><Button variant="outline" onClick={() => void detail.refetch()}>{msg("重试")}</Button></div> : risk?.status === "unavailable" || !risk ? <p role="alert">{msg("信用评估暂不可用，请等待更新后审批。")}</p> : risk.status !== "adequate" && <div className="approval-risk" role="status"><p>{risk.status === "insufficient" ? msg("预计还款能力不足，请核对风险后决定。") : msg("还款能力数据不足，请核对风险后决定。")}</p>{risk.status === "insufficient" && <><p>{msg("截至第 {0} 天预计应还：{1}", risk.days, formatMinor(risk.total_due_minor))}</p><p>{msg("预计还款能力：{0}", formatMinor(risk.estimated_capacity_minor))}</p></>}<label><input type="checkbox" checked={!!risk.token && riskAck === risk.token} onChange={e => setRiskAck(e.target.checked ? risk.token ?? "" : "")} /> {msg("已了解还款风险")}</label></div>}
       {message && <p role="alert">{message}</p>}
       <div className="approval-modal-actions">
         <Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button>
-        <Button disabled={busy} onClick={() => void decide("approved")}>{msg("批准")}</Button>
+        <Button disabled={busy || detail.isPending || detail.isError || !risk || risk.status === "unavailable" || risk.status !== "adequate" && (!risk.token || riskAck !== risk.token)} onClick={() => void decide("approved")}>{msg("批准")}</Button>
       </div>
     </Modal>
   );

@@ -21,13 +21,14 @@ import (
 )
 
 var (
-	ErrInvalid   = errors.New("invalid loan request")
-	ErrForbidden = errors.New("loan access denied")
-	ErrRule      = errors.New("loan rule is not configured")
-	ErrLimit     = errors.New("loan credit limit exceeded")
-	ErrCoverage  = errors.New("loan guarantee or collateral coverage is insufficient")
-	ErrConflict  = errors.New("loan record changed")
-	ErrContract  = errors.New("loan contract evidence is not valid")
+	ErrInvalid       = errors.New("invalid loan request")
+	ErrForbidden     = errors.New("loan access denied")
+	ErrRule          = errors.New("loan rule is not configured")
+	ErrLimit         = errors.New("loan credit limit exceeded")
+	ErrCoverage      = errors.New("loan guarantee or collateral coverage is insufficient")
+	ErrConflict      = errors.New("loan record changed")
+	ErrContract      = errors.New("loan contract evidence is not valid")
+	ErrRepaymentRisk = errors.New("repayment risk must be reviewed")
 )
 
 type Character struct {
@@ -229,9 +230,10 @@ func repaymentInstallments(principal, interest int64, count, interval int, first
 }
 
 type ReviewInput struct {
-	State   string `json:"state"`
-	Version int64  `json:"version"`
-	Note    string `json:"note"`
+	State               string `json:"state"`
+	Version             int64  `json:"version"`
+	Note                string `json:"note"`
+	RiskAcknowledgement string `json:"risk_acknowledgement,omitempty"`
 }
 type PaymentInput struct {
 	Kind                 string `json:"kind"`
@@ -246,6 +248,7 @@ type GuaranteeInput struct {
 	GuarantorAccountID   string `json:"guarantor_account_id"`
 	GuarantorCharacterID int64  `json:"guarantor_character_id"`
 	AmountMinor          int64  `json:"amount_minor"`
+	AllocationMinor      int64  `json:"allocation_minor,omitempty"`
 	Note                 string `json:"note"`
 }
 type CollateralInput struct {
@@ -448,6 +451,7 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 	c = locked
 	var evaluatedCredit store.Credit
 	var used, required, coverage int64
+	var risk RepaymentRisk
 	if in.State == "approved" {
 		if p.IsShared {
 			summary, se := store.Summary(ctx, tx, p.ID)
@@ -457,6 +461,9 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 			if summary.AvailableMinor < c.PrincipalMinor {
 				return store.Case{}, ErrLimit
 			}
+		}
+		if e = store.LockCreditPolicy(ctx, tx); e != nil {
+			return store.Case{}, e
 		}
 		evaluation, ce := store.LatestCreditEvaluation(ctx, tx, c.BorrowerAccountID)
 		policy, pe := store.ReadCreditPolicy(ctx, tx)
@@ -476,6 +483,24 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 		if coverage < required {
 			return store.Case{}, ErrCoverage
 		}
+		if p.IsShared && policy.BorrowerLimitBPS > 0 {
+			capital, borrowed, err := store.PoolCapitalAndBorrowed(ctx, tx, p.ID, c.BorrowerAccountID)
+			if err != nil {
+				return store.Case{}, err
+			}
+			limit := safeScaled(capital, int64(policy.BorrowerLimitBPS), 10000)
+			if borrowed > limit || c.PrincipalMinor > limit-borrowed {
+				return store.Case{}, ErrLimit
+			}
+		}
+		obligations, unknown, err := store.OtherRepaymentObligations(ctx, tx, c.BorrowerAccountID, c.ID)
+		if err != nil {
+			return store.Case{}, err
+		}
+		risk = repaymentRisk(c, evaluation, policy, obligations, unknown, time.Now().UTC())
+		if risk.Status != "adequate" && (risk.Token == "" || in.RiskAcknowledgement != risk.Token) {
+			return store.Case{}, ErrRepaymentRisk
+		}
 	}
 	out, e := store.TransitionCase(ctx, tx, id, in.Version, in.State, actor, in.Note)
 	if e != nil {
@@ -492,6 +517,7 @@ func (s *Service) Review(ctx context.Context, actor string, id int64, in ReviewI
 			"model": "single-credit-v1", "total_limit_minor": evaluatedCredit.TotalLimitMinor,
 			"used_responsibility_minor": used, "principal_minor": c.PrincipalMinor,
 			"required_coverage_minor": required, "approved_coverage_minor": coverage,
+			"repayment_risk": risk, "risk_acknowledged": risk.Status != "adequate",
 		}); e != nil {
 			return store.Case{}, e
 		}
@@ -707,9 +733,6 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if pe != nil {
 		return store.Guarantee{}, pe
 	}
-	if in.AmountMinor > safeScaled(c.PrincipalMinor, int64(policy.GuaranteeCapBPS), 10000) {
-		return store.Guarantee{}, ErrCoverage
-	}
 	credit, ce := s.Credit(ctx, guarantor)
 	if ce != nil {
 		return store.Guarantee{}, ce
@@ -720,9 +743,6 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	usedResponsibility, ce := store.UsedResponsibility(ctx, s.db(), guarantor)
 	if ce != nil {
 		return store.Guarantee{}, ce
-	}
-	if in.AmountMinor > availableGuaranteeCapacity(credit, usedResponsibility) {
-		return store.Guarantee{}, ErrLimit
 	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
@@ -746,7 +766,7 @@ func (s *Service) AddGuarantee(ctx context.Context, actor string, id int64, in G
 	if e != nil {
 		return store.Guarantee{}, e
 	}
-	amount, e := securityTarget(security, in.AmountMinor)
+	amount, e := securityAllocation(security, in.AmountMinor, in.AllocationMinor)
 	if e != nil {
 		return store.Guarantee{}, e
 	}
@@ -1169,6 +1189,29 @@ func (s *Service) Detail(ctx context.Context, actor string, id int64) (map[strin
 			return nil, err
 		}
 		out["security"] = security
+		if actor != c.BorrowerAccountID {
+			pool, err := store.GetPool(ctx, s.db(), c.PoolID)
+			if err != nil {
+				return nil, err
+			}
+			allowed, err := s.canManage(ctx, actor, pool)
+			if err != nil {
+				return nil, err
+			}
+			if allowed {
+				e, ee := store.LatestCreditEvaluation(ctx, s.db(), c.BorrowerAccountID)
+				p, pe := store.ReadCreditPolicy(ctx, s.db())
+				if ee == nil && pe == nil && creditFromEvaluation(e).State == "active" && creditFresh(creditFromEvaluation(e), p, time.Now().UTC()) {
+					obligations, unknown, err := store.OtherRepaymentObligations(ctx, s.db(), c.BorrowerAccountID, c.ID)
+					if err != nil {
+						return nil, err
+					}
+					out["repayment_risk"] = repaymentRisk(c, e, p, obligations, unknown, time.Now().UTC())
+				} else {
+					out["repayment_risk"] = RepaymentRisk{Status: "unavailable"}
+				}
+			}
+		}
 	}
 	return out, nil
 }

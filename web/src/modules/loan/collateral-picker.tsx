@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { getLocale, msg } from "@/lib/i18n";
 import { LoanOfficerSelect, selectedOfficer } from "./officer-select";
-import { securityMoney } from "./security-format";
+import { parseSecurityAmount, securityMoney } from "./security-format";
 import * as api from "./api";
 
 export function CollateralPicker({ csrf, item, security, characters, officers, close, saved }: { csrf: string; item: api.Case; security: api.SecuritySummary; characters: AccountCharacterOption[]; officers: api.Character[]; close: () => void; saved: () => void }) {
@@ -14,6 +14,7 @@ export function CollateralPicker({ csrf, item, security, characters, officers, c
   const officerChoices = officers.filter(c => c.id !== character);
   const recipient = selectedOfficer(officerChoices, officer)?.id ?? "";
   const [selected, setSelected] = useState<Record<string, string>>({});
+  const [allocationDraft, setAllocationDraft] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(40);
   const [busy, setBusy] = useState(false);
@@ -23,8 +24,9 @@ export function CollateralPicker({ csrf, item, security, characters, officers, c
   const picked = choices.filter(a => selected[a.item_id] !== undefined);
   const location = picked[0]?.location_id;
   const filtered = choices.filter(a => `${a.name} ${a.type_id} ${a.location_id}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
-  const valid = !!recipient && picked.length > 0 && picked.length === Object.keys(selected).length && picked.every(a => Number.isSafeInteger(Number(selected[a.item_id])) && Number(selected[a.item_id]) > 0 && Number(selected[a.item_id]) <= Number(a.available) && a.location_id === location);
-  const selectionKey = JSON.stringify({ character_id: character, recipient_character_id: recipient, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) });
+  const allocation = allocationDraft === null ? 0 : parseSecurityAmount(allocationDraft);
+  const valid = allocation !== null && (allocation === 0 || allocation <= security.unallocated_minor) && !!recipient && picked.length > 0 && picked.length === Object.keys(selected).length && picked.every(a => Number.isSafeInteger(Number(selected[a.item_id])) && Number(selected[a.item_id]) > 0 && Number(selected[a.item_id]) <= Number(a.available) && a.location_id === location);
+  const selectionKey = JSON.stringify({ character_id: character, recipient_character_id: recipient, allocation_minor: allocation ?? 0, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) });
   const [quoteKey, setQuoteKey] = useState("");
   useEffect(() => { const timer = setTimeout(() => setQuoteKey(selectionKey), 250); return () => clearTimeout(timer); }, [selectionKey]);
   const quote = useQuery({ queryKey: ["loan", "collateral-quote", item.id, quoteKey], queryFn: () => api.quoteCollateral(csrf, item.id, JSON.parse(quoteKey)), enabled: valid && quoteKey === selectionKey, retry: false, refetchOnWindowFocus: false, staleTime: 0 });
@@ -33,7 +35,7 @@ export function CollateralPicker({ csrf, item, security, characters, officers, c
   return <FormDialog title={msg("选择抵押物品")} size="form" close={close} busy={busy} disabled={!canSubmit || assets.isFetching || assets.isError} submitLabel={msg("保存并查看交付信息")} className="loan-asset-picker" onSubmit={async () => {
     if (!canSubmit || busy || !estimate) return;
     setBusy(true); setError("");
-    try { await api.createCollateralRequest(csrf, item.id, { character_id: character, recipient_character_id: recipient, coverage_minor: estimate.required_minor, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) }); saved(); }
+    try { await api.createCollateralRequest(csrf, item.id, { character_id: character, recipient_character_id: recipient, coverage_minor: estimate.required_minor, allocation_minor: allocation ?? 0, items: picked.map(a => ({ item_id: a.item_id, quantity: selected[a.item_id] })) }); saved(); }
     catch (e) { setError(e instanceof Error ? e.message : msg("保存抵押物失败")); void assets.refetch(); void quote.refetch(); }
     finally { setBusy(false); }
   }}>
@@ -42,7 +44,8 @@ export function CollateralPicker({ csrf, item, security, characters, officers, c
     <LoanOfficerSelect officers={officerChoices} value={officer} onChange={setOfficer} />
     <label>{msg("搜索物品")}<input type="search" value={search} onChange={e => { setSearch(e.target.value); setLimit(40); }} /></label>
     <div className="loan-security-quote" aria-live="polite">
-      <label>{msg("抵押额度（ISK）")}<input readOnly value={String((estimate?.required_minor ?? security.unallocated_minor) / 100)} /></label>
+      <label>{msg("抵押额度（ISK）")}<input inputMode="decimal" value={allocationDraft ?? String((estimate?.required_minor ?? security.unallocated_minor) / 100)} onChange={e => setAllocationDraft(e.target.value)} /></label>
+      {allocationDraft !== null && (!allocation || allocation > security.unallocated_minor) && <p role="alert">{msg("请输入不超过剩余缺口的有效金额。")}</p>}
       <dl className="loan-detail-facts"><div><dt>{msg("所选物品总估值")}</dt><dd>{estimate ? securityMoney(estimate.valuation_minor) : "—"}</dd></div><div><dt>{msg("八折可抵额度")}</dt><dd>{estimate ? securityMoney(estimate.covered_minor) : "—"}</dd></div></dl>
       {valid && (quoteKey !== selectionKey || quote.isFetching) ? <p role="status">{msg("正在估值")}</p> : quote.isError && quoteKey === selectionKey ? <div role="alert"><p>{quote.error.message}</p><Button type="button" variant="outline" onClick={() => void quote.refetch()}>{msg("重新估值")}</Button></div> : estimate && <p role="status">{!estimate.security.credit_ready ? msg("信用评估暂不可用，请等待更新后申请保障。") : estimate.security.legacy_pending ? msg("请先完成或取消已有待交付物品，再新增保障。") : estimate.required_minor === 0 ? msg("无需新增担保或抵押，请查看已有保障记录") : estimate.shortfall_minor > 0 ? msg("还差 {0} 可抵额度，请增加物品或数量。", securityMoney(estimate.shortfall_minor)) : msg("已达到抵押额度，可保存并交付物品。")}</p>}
       {!picked.length && <p className="loan-dialog-note">{msg("所选物品总估值 × 80% 须达到抵押额度。")}</p>}

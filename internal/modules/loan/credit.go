@@ -62,6 +62,8 @@ type CreditEvidence struct {
 	AssetEvidenceError string
 	PAPSnapshotID      string
 	AssetSnapshotID    string
+	AssetObservedAt    time.Time
+	PAPObservedAt      time.Time
 	EvidenceCutoff     time.Time
 	Income             IncomeEvidence
 }
@@ -71,7 +73,7 @@ func defaultCreditPolicy() store.CreditPolicy {
 }
 
 func creditPolicyRuleVersion(policy store.CreditPolicy) string {
-	return fmt.Sprintf("capacity-v6-policy-%d", policy.Version)
+	return fmt.Sprintf("capacity-v7-policy-%d", policy.Version)
 }
 
 func clampScore(v, max int) int {
@@ -170,29 +172,24 @@ func safeScaled(value, numerator, denominator int64) int64 {
 }
 
 func assessCreditWithPolicy(account string, signals store.CreditSignals, evidence CreditEvidence, poolCash int64, policy store.CreditPolicy, now time.Time) store.Credit {
+	fresh := func(at time.Time) bool {
+		return !at.IsZero() && !at.After(now) && now.Sub(at) <= time.Duration(policy.StaleAfterHours)*time.Hour
+	}
+	if !fresh(evidence.AssetObservedAt) {
+		evidence.AssetAvailable = false
+	}
+	if !fresh(evidence.PAPObservedAt) {
+		evidence.PAPAvailable = false
+		evidence.PAPPoints, evidence.CorporationAttendancePoints, evidence.AllianceFulfillmentPoints = 0, 0, 0
+	}
 	c := assessCreditWithEvidence(account, signals, evidence, poolCash, now)
 	income := evidence.Income
-	// Income and consumption are separate positive observations. They are
-	// converted to independent capacity signals and combined by policy weight;
-	// no net-income subtraction is performed.
-	usable := income.Available && (income.MonthlyIncomeMinor > 0 || income.MonthlyExpenseMinor > 0) && income.Samples >= policy.MinIncomeSamples && !income.ObservedAt.IsZero() && !income.ObservedAt.After(now) && now.Sub(income.ObservedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
+	usable := income.Available && income.MonthlyIncomeMinor > 0 && income.Samples >= policy.MinIncomeSamples && fresh(income.ObservedAt)
 	base := int64(0)
 	assetSupport := int64(0)
-	consumptionWeight := 10000 - policy.IncomeWeightBPS
 	if usable {
 		factor := int64(policy.DebtRatioBPS) * int64(policy.TermMonths)
-		incomeCapacity := safeScaled(income.MonthlyIncomeMinor, factor, 10000)
-		// Consumption is a supporting signal, not a reason to lend more than
-		// the observed income can repay. This keeps the 70/30 blend while
-		// preventing unusually high spending from inflating the limit.
-		consumptionBase := income.MonthlyExpenseMinor
-		if consumptionBase > income.MonthlyIncomeMinor {
-			consumptionBase = income.MonthlyIncomeMinor
-		}
-		expenseCapacity := safeScaled(consumptionBase, factor, 10000)
-		incomePart := safeScaled(incomeCapacity, int64(policy.IncomeWeightBPS), 10000)
-		expensePart := safeScaled(expenseCapacity, int64(consumptionWeight), 10000)
-		base = incomePart + expensePart
+		base = safeScaled(income.MonthlyIncomeMinor, factor, 10000)
 	} else if policy.InsufficientIncomePolicy == "fallback_pool" {
 		// Keep the legacy option explicit for administrators who choose it;
 		// the new default is evidence-first zero.
@@ -222,7 +219,31 @@ func assessCreditWithPolicy(account string, signals store.CreditSignals, evidenc
 	c.IncomeAvailable, c.MonthlyIncomeMinor = usable, income.MonthlyIncomeMinor
 	c.MonthlyExpenseMinor = income.MonthlyExpenseMinor
 	c.PolicyVersion, c.RuleVersion = policy.Version, creditPolicyRuleVersion(policy)
-	c.Reason = fmt.Sprintf("%s; cashflow_base=%d; unsecured=%d; asset_support=%d; income_available=%t; income_samples=%d; monthly_income=%d; monthly_consumption=%d; income_weight_bps=%d; consumption_weight_bps=%d; debt_ratio_bps=%d; term_months=%d; score_factor_bps=%d; asset_credit_ltv_bps=%d", c.Reason, base, unsecured, c.AssetSupportLimitMinor, usable, income.Samples, income.MonthlyIncomeMinor, income.MonthlyExpenseMinor, policy.IncomeWeightBPS, consumptionWeight, policy.DebtRatioBPS, policy.TermMonths, policy.ScoreFactorBPS, policy.AssetCreditLTVBPS)
+	evidence.Income.Available = usable
+	cutoff := now
+	for _, at := range []time.Time{func() time.Time {
+		if usable {
+			return income.ObservedAt
+		}
+		return now
+	}(), func() time.Time {
+		if evidence.AssetAvailable {
+			return evidence.AssetObservedAt
+		}
+		return now
+	}(), func() time.Time {
+		if evidence.PAPPoints > 0 {
+			return evidence.PAPObservedAt
+		}
+		return now
+	}()} {
+		if at.Before(cutoff) {
+			cutoff = at
+		}
+	}
+	c.EvidenceCutoff = cutoff
+	c.Evidence = evidenceSummary(evidence, cutoff)
+	c.Reason = fmt.Sprintf("%s; cashflow_base=%d; unsecured=%d; asset_support=%d; income_available=%t; income_samples=%d; monthly_income=%d; monthly_consumption=%d; debt_ratio_bps=%d; term_months=%d; score_factor_bps=%d; asset_credit_ltv_bps=%d", c.Reason, base, unsecured, c.AssetSupportLimitMinor, usable, income.Samples, income.MonthlyIncomeMinor, income.MonthlyExpenseMinor, policy.DebtRatioBPS, policy.TermMonths, policy.ScoreFactorBPS, policy.AssetCreditLTVBPS)
 	return c
 }
 
@@ -242,7 +263,7 @@ func evidenceSummary(e CreditEvidence, cutoff time.Time) string {
 
 func creditFromEvaluation(e store.CreditEvaluation) store.Credit {
 	score := e.Score
-	c := store.Credit{AccountID: e.AccountID, Score: &score, TotalLimitMinor: e.TotalLimitMinor, UnsecuredLimitMinor: e.UnsecuredLimitMinor, GuaranteeLimitMinor: e.GuaranteeLimitMinor, AssetSupportLimitMinor: e.AssetSupportLimitMinor, State: e.State, RuleVersion: e.PolicyVersion, Version: 1, EvaluatedAt: e.EvaluatedAt}
+	c := store.Credit{AccountID: e.AccountID, Score: &score, TotalLimitMinor: e.TotalLimitMinor, UnsecuredLimitMinor: e.UnsecuredLimitMinor, GuaranteeLimitMinor: e.GuaranteeLimitMinor, AssetSupportLimitMinor: e.AssetSupportLimitMinor, State: e.State, RuleVersion: e.PolicyVersion, Version: 1, EvaluatedAt: e.EvaluatedAt, EvidenceCutoff: e.EvidenceCutoff}
 	if len(e.Evidence) == 0 {
 		return c
 	}
@@ -290,7 +311,18 @@ func creditFromEvaluation(e store.CreditEvaluation) store.Credit {
 func (s *Service) Credit(ctx context.Context, user string) (store.Credit, error) {
 	evaluation, err := store.LatestCreditEvaluation(ctx, s.db(), user)
 	if err == nil {
-		return creditFromEvaluation(evaluation), nil
+		credit := creditFromEvaluation(evaluation)
+		policy, err := store.ReadCreditPolicy(ctx, s.db())
+		if err != nil {
+			return store.Credit{}, err
+		}
+		if credit.State == "active" && !creditFresh(credit, policy, time.Now().UTC()) {
+			credit.State = "provisional"
+			credit.TotalLimitMinor, credit.UnsecuredLimitMinor, credit.GuaranteeLimitMinor, credit.AssetSupportLimitMinor = 0, 0, 0, 0
+			credit.Score, credit.IncomeAvailable = nil, false
+			credit.Reason = "等待最新信用评估"
+		}
+		return credit, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return store.Credit{}, err
@@ -352,7 +384,7 @@ func (s *Service) EvaluateAndStore(ctx context.Context, user string) (store.Cred
 }
 
 func creditFresh(c store.Credit, policy store.CreditPolicy, now time.Time) bool {
-	return !c.EvaluatedAt.IsZero() && !c.EvaluatedAt.After(now) && now.Sub(c.EvaluatedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour
+	return c.RuleVersion == creditPolicyRuleVersion(policy) && !c.EvaluatedAt.IsZero() && !c.EvaluatedAt.After(now) && now.Sub(c.EvaluatedAt) <= time.Duration(policy.StaleAfterHours)*time.Hour && !c.EvidenceCutoff.IsZero() && !c.EvidenceCutoff.After(now) && now.Sub(c.EvidenceCutoff) <= time.Duration(policy.StaleAfterHours)*time.Hour
 }
 
 func (s *Service) recordCreditEvaluation(ctx context.Context, tx store.DBTX, c store.Credit) error {
@@ -361,6 +393,6 @@ func (s *Service) recordCreditEvaluation(ctx context.Context, tx store.DBTX, c s
 	}
 	factors, _ := json.Marshal(map[string]int{"repayment": c.RepaymentPoints, "leverage": c.LeveragePoints, "security": c.SecurityPoints, "corporation_attendance": c.CorporationAttendancePoints, "alliance_pap_fulfillment": c.AllianceFulfillmentPoints, "pap": c.PAPPoints, "assets": c.AssetPoints})
 	returned, _ := json.Marshal(map[string]any{"reason": c.Reason, "evidence": c.Evidence, "guarantee_limit_minor": c.GuaranteeLimitMinor, "asset_support_limit_minor": c.AssetSupportLimitMinor, "policy_version": c.PolicyVersion})
-	_, err := store.RecordCreditEvaluation(ctx, tx, store.CreditEvaluation{AccountID: c.AccountID, PolicyVersion: c.RuleVersion, Score: *c.Score, TotalLimitMinor: c.TotalLimitMinor, UnsecuredLimitMinor: c.UnsecuredLimitMinor, GuaranteeLimitMinor: c.GuaranteeLimitMinor, AssetSupportLimitMinor: c.AssetSupportLimitMinor, State: c.State, FactorScores: factors, Evidence: returned, EvidenceCutoff: c.EvaluatedAt, EvaluatedAt: c.EvaluatedAt})
+	_, err := store.RecordCreditEvaluation(ctx, tx, store.CreditEvaluation{AccountID: c.AccountID, PolicyVersion: c.RuleVersion, Score: *c.Score, TotalLimitMinor: c.TotalLimitMinor, UnsecuredLimitMinor: c.UnsecuredLimitMinor, GuaranteeLimitMinor: c.GuaranteeLimitMinor, AssetSupportLimitMinor: c.AssetSupportLimitMinor, State: c.State, FactorScores: factors, Evidence: returned, EvidenceCutoff: c.EvidenceCutoff, EvaluatedAt: c.EvaluatedAt})
 	return err
 }

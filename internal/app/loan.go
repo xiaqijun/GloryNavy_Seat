@@ -45,8 +45,12 @@ func valueLoanAssets(counts map[int64]*big.Int, prices map[int64]eve.MarketPrice
 			continue
 		}
 		result.pricedTypes++
-		if !quote.ObservedAt.IsZero() && (result.cutoff.IsZero() || quote.ObservedAt.Before(result.cutoff)) {
-			result.cutoff = quote.ObservedAt
+		validated := quote.ValidatedAt
+		if validated.IsZero() {
+			validated = quote.ObservedAt
+		}
+		if !validated.IsZero() && (result.cutoff.IsZero() || validated.Before(result.cutoff)) {
+			result.cutoff = validated
 		}
 		result.total.Add(result.total, new(big.Rat).Mul(price, new(big.Rat).SetInt(counts[id])))
 	}
@@ -81,10 +85,7 @@ func loanAssetEvidence(ctx context.Context, account string, identities *identity
 			continue
 		}
 		snapshotsRead++
-		observed := snapshot.ContentUpdatedAt
-		if observed.IsZero() {
-			observed = snapshot.ObservedAt
-		}
+		observed := snapshot.ObservedAt
 		if !observed.IsZero() && (cutoff.IsZero() || observed.Before(cutoff)) {
 			cutoff = observed
 		}
@@ -180,11 +181,11 @@ func loanIncomeEvidence(ctx context.Context, account string, from time.Time, ide
 	if err != nil {
 		return loan.IncomeEvidence{}, err
 	}
-	ids := make([]int64, 0, len(characters))
+	ids := make([]eve.CreditWalletOwner, 0, len(characters))
 	for _, character := range characters {
-		ids = append(ids, character.ID)
+		ids = append(ids, eve.CreditWalletOwner{ID: character.ID, OwnerHash: character.OwnerHash})
 	}
-	rows, err := reader.WalletSummaries(ctx, ids, from)
+	rows, err := reader.CreditWalletSummaries(ctx, ids, from)
 	if err != nil {
 		return loan.IncomeEvidence{}, err
 	}
@@ -204,10 +205,10 @@ func loanIncomeEvidence(ctx context.Context, account string, from time.Time, ide
 		if expense.Sign() > 0 {
 			expenseTotal.Add(expenseTotal, expense)
 		}
-		if row.Observed != nil {
+		if !row.ObservedAt.IsZero() {
 			samples++
-			if row.Observed.After(observed) {
-				observed = *row.Observed
+			if observed.IsZero() || row.ObservedAt.Before(observed) {
+				observed = row.ObservedAt
 			}
 		}
 	}
