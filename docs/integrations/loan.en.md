@@ -1,6 +1,6 @@
 # Loan module
 
-## 2026-10-29: Credit optimization (local, not released)
+## 2026-10-29: Credit optimization (released)
 
 `capacity-v7` uses current-owner journal observations and excludes direct transfers between active characters bound to the same site account, retaining external transfers. Journal success times determine income freshness; source timestamps are checked independently. Income, rather than spending, contributes to the income component of the single credit limit; personal assets retain their configured contribution. Asset and average-price freshness uses the latest validation time, not the last content change. Missing or stale evidence is excluded, and old rule snapshots cannot be used for new approvals, guarantees or collateral. The hourly worker schedules reevaluation; historical snapshots are retained.
 
@@ -8,7 +8,7 @@ Guarantee and collateral requests retain the automatic full-gap default and may 
 
 Review checks projected income capacity against each repayment date, including the borrower's other unpaid installments due by that point. Missing income or a loan without a known schedule produces an unknown risk. Insufficient or unknown risk requires a manager to acknowledge the current case-detail token; the transaction recomputes and binds it to case, evaluation, policy and outstanding obligations. It does not bypass security or authorization.
 
-Goose 112 adds `borrower_limit_bps`, default 0 meaning no additional cap; otherwise it limits outstanding borrower principal plus this application as a percentage of pool cash plus unpaid funded principal. Approval serializes on the pool; other clients omitting the field preserve it under version checking. No historical loan or audit is rewritten. After v7 evaluations or configured-cap evidence exists, do not Down or roll back to a version that ignores these rules. Release and real-game verification remain pending.
+Goose 112 adds `borrower_limit_bps`, default 0 meaning no additional cap; otherwise it limits outstanding borrower principal plus this application as a percentage of pool cash plus unpaid funded principal. Approval serializes on the pool; other clients omitting the field preserve it under version checking. No historical loan or audit is rewritten. After v7 evaluations or configured-cap evidence exists, do not Down or roll back to a version that ignores these rules. Production is deployed; real-game verification remains pending.
 
 ## 2026-10-19: Loan officers handle contracts
 
