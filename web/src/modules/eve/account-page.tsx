@@ -194,15 +194,6 @@ export default function AccountPage() {
         </p>
       )}
       <div className="account-layout">
-        {session && (
-          <div className="grid gap-4">
-            <CommunityProfile
-              userID={session.user_id}
-              csrf={session.csrf_token}
-            />
-            {modules.data?.some(module => module.id === "reminder") && <EmailAccount user={session.user_id} csrf={session.csrf_token} />}
-          </div>
-        )}
         <div className="account-characters">
           {auth.isPending ||
           status.isPending ||
@@ -397,6 +388,17 @@ export default function AccountPage() {
             )
           )}
         </div>
+        {session && (
+          <div className="account-settings">
+            <CommunityProfile
+              userID={session.user_id}
+              csrf={session.csrf_token}
+            />
+            {modules.data?.some((module) => module.id === "reminder") && (
+              <EmailAccount user={session.user_id} csrf={session.csrf_token} />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
