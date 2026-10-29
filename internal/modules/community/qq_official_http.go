@@ -72,13 +72,24 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if !h.dispatchOfficialQQEvent(w, r, bot, envelope, body) {
+		return
+	}
+	// OP 12 is the official HTTP callback acknowledgement. Unknown events are
+	// acknowledged too, so the platform does not retry unsupported event types.
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"op":12,"d":0}`))
+}
+
+// dispatchOfficialQQEvent only accepts events authenticated by the caller.
+func (h Handler) dispatchOfficialQQEvent(w http.ResponseWriter, r *http.Request, bot *OfficialQQBot, envelope officialQQEnvelope, body []byte) bool {
 	if envelope.Op == 0 {
 		switch envelope.Type {
 		case "C2C_MESSAGE_CREATE", "GROUP_AT_MESSAGE_CREATE", "GROUP_MESSAGE_CREATE":
 			var message officialQQMessage
 			if json.Unmarshal(envelope.Data, &message) != nil {
 				httpapi.Failure(w, r, 400, "invalid_qq_bot_event", "机器人消息格式无效")
-				return
+				return false
 			}
 			scope, openid, replyTarget := "c2c", message.Author.UserOpenID, message.Author.UserOpenID
 			if envelope.Type != "C2C_MESSAGE_CREATE" {
@@ -101,7 +112,7 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 					result = "该 QQ 机器人账号已绑定其他本站账号，请联系管理员。"
 				} else if errors.Is(confirmErr, ErrQQOfficialDisabled) {
 					httpapi.Failure(w, r, 503, "qq_bot_unavailable", "官方 QQ 机器人未配置")
-					return
+					return false
 				}
 			}
 			// Official callback acknowledgements must be fast. Reply asynchronously;
@@ -135,10 +146,7 @@ func (h Handler) officialQQWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	// OP 12 is the official HTTP callback acknowledgement. Unknown events are
-	// acknowledged too, so the platform does not retry unsupported event types.
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write([]byte(`{"op":12,"d":0}`))
+	return true
 }
 
 func (h Handler) createOfficialQQChallenge(w http.ResponseWriter, r *http.Request) {

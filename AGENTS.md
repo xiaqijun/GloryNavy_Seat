@@ -1,5 +1,7 @@
 # 项目协作规则
 
+2026-10-29 用户要求官方 QQ Bot 切换 WebSocket：本地改造以 `docs/integrations/qq-official.zh-CN.md` 为准，发布状态以 `docs/project-status.md` 为准。此方向覆盖下文“仅官方回调为活动入口”，保留身份隔离、配置 revision、账号锁、历史数据与游戏邮件边界。
+
 2026-10-28 用户要求切回官方 QQ Bot：覆盖下方 2026-10-17 第三方接入约定。仅官方回调/配置为活动入口，OneBot URL 保留鉴权后返回 410；旧配置、数字绑定与提醒回执保留历史，不能当作官方 OpenID。Goose 109 默认停用官方与 OneBot，管理员显式启用；revision 防覆盖、AppID 变更清理当前官方映射并失效旧确认/验证码，绑定须复核已验签配置和活跃账号锁。保存新配置或有官方绑定后不可 Down；不自动恢复 QQ 审批提醒或替换游戏邮件。见 docs/integrations/qq-official.zh-CN.md，发布仍以项目状态为准。
 
 2026-10-26 反馈撤销：Goose 108 增加 withdrawn；仅当前拥有者可撤销 submitted 且 accepted_at 为空的反馈，不需管理员审批、不删除原始证据、不改奖励。重新提交需原因，待办使用新的 returned 状态事件引用；有撤销历史后禁止 Down 或回退忽略该状态的程序。

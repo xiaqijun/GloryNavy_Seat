@@ -93,7 +93,7 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
             </span>
           </div>
         </div>
-        <div className="community-field"><label htmlFor="qq-bot-callback">{msg("回调地址")}</label><input id="qq-bot-callback" readOnly value={`${window.location.origin}/api/v1/community/qq/official/webhook`} /></div>
+        <p>{msg("接收方式：WebSocket")}</p>
         <div className="community-form-actions">
           <Button type="button" size="sm" disabled={busy} onClick={() => save.mutate()}>
             <Save aria-hidden="true" />{busy ? msg("正在保存") : msg("保存 QQ 配置")}

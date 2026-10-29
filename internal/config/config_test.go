@@ -5,6 +5,25 @@ import (
 	"time"
 )
 
+func TestQQGatewayMemberEventConfiguration(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://dev@localhost/test")
+	t.Setenv("MODULES", "system")
+	t.Setenv("EVE_CLIENT_ID", "")
+	t.Setenv("EVE_CLIENT_SECRET", "")
+	for _, tc := range []struct {
+		value            string
+		enabled, invalid bool
+	}{{"false", false, false}, {"true", true, false}, {"invalid", false, true}} {
+		t.Run(tc.value, func(t *testing.T) {
+			t.Setenv("QQ_BOT_WS_MEMBER_EVENTS", tc.value)
+			cfg, err := Load()
+			if (err != nil) != tc.invalid || (!tc.invalid && cfg.QQBotMemberEvents != tc.enabled) {
+				t.Fatalf("config=%v err=%v", cfg.QQBotMemberEvents, err)
+			}
+		})
+	}
+}
+
 func TestSlowQueryConfiguration(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://dev@localhost/test")
 	t.Setenv("MODULES", "system")

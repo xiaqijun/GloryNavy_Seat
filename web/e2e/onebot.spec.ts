@@ -62,7 +62,8 @@ for (const locale of ["zh-CN", "en"]) {
       const card = page.locator(".qq-bot-settings-card");
       await expect(card.getByRole("heading")).toHaveText(en ? "Official QQ Bot" : "官方 QQ Bot");
       await expect(card.locator(".status-chip").first()).toHaveText(en ? "Bot disabled" : "机器人已停用");
-      await expect(card.locator("#qq-bot-callback")).toHaveValue(/\/api\/v1\/community\/qq\/official\/webhook$/);
+      await expect(card.getByText(en ? "Receive via WebSocket" : "接收方式：WebSocket")).toBeVisible();
+      await expect(card.locator("#qq-bot-callback")).toHaveCount(0);
       const enabled = card.getByRole("checkbox");
       const save = card.getByRole("button", { name: en ? "Save QQ settings" : "保存 QQ 配置", exact: true });
       await enabled.check();

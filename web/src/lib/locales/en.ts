@@ -1,6 +1,7 @@
 // Chinese source text is the stable message key. Keep interpolation placeholders intact.
 export const english: Record<string, string> = {
   "回调地址": "Callback URL",
+  "接收方式：WebSocket": "Receive via WebSocket",
   "机器人已启用": "Bot enabled",
   "机器人已停用": "Bot disabled",
   "重新读取": "Reload",

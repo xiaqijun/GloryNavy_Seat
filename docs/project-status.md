@@ -1,5 +1,7 @@
 # 项目状态
 
+本地开发中：官方 QQ 接收方式改为 WebSocket，仍需验证和发布；生产继续以以下已发布版本为准。
+
 ## 当前：QQ 机器人切回官方（2026-10-28，已发布）
 
 本地已恢复官方配置/回调/验证码绑定，OneBot 活动入口改为 410，历史配置、数字绑定和通知回执保留。Goose 109 新增 enabled/revision，升级默认关闭且不恢复 QQ 审批提醒，游戏邮件保持原配置；AppID 变更失效旧身份、绑定事务重查凭据与活跃账号。隔离 PostgreSQL 的 community/宿主 race、vet 与命令构建通过，前端 18 项中英文响应式页面回归通过。详情见[本轮记录](history/qq-official-restore-20261028.md)。前后端 `v0.1.0-qq-official-20261028` 已从干净且推送的 main `fca4892` 发布，Goose 109，服务 ready、active/running、NRestarts=0。官方配置保留 AppID 和密钥、默认停用；旧群提醒开关关闭，3 个未使用绑定码失效，历史绑定和发送回执数量不变。线上旧回调 410、官方停用回调 503、匿名管理接口 401；官方平台收发尚未真实验收。指南：[中文](integrations/qq-official.zh-CN.md) / [English](integrations/qq-official.en.md)。

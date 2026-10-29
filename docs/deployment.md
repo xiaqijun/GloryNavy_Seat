@@ -1,5 +1,7 @@
 # Linux 生产部署
 
+未发布的 QQ WebSocket 改造：启用时服务自动连接 QQ，服务器出口 IP 应在开放平台白名单中；`QQ_BOT_WS_MEMBER_EVENTS` 默认 false，只有获准后才启用。切换或回退前在开放平台调整接收模式，断线恢复与未验证事项见 [官方 QQ](integrations/qq-official.zh-CN.md)。
+
 ## 2026-10-24：预警星系防线与暂停窗口（Goose 107，已发布）
 
 后端 `v0.1.0-sentry-billing-guard-20261024` 从干净且已推送 main `dee67e6` 正式发布，前端保留 `v0.1.0-sentry-billing-20261024`。归档 29,204,917 字节，SHA256 `9a7c696e26f0285a43d7a55821e66a76a8497ed9654bdd60dd6b3e2ae6835e14`；174 个文件校验通过、6 个程序均保留。标准 `activate-release.sh` 完成备份、停旧 worker、迁移与激活；Goose 107，15:19:41 UTC 启动后 active/running、ready 200、NRestarts=0。dump 258,752,880 字节、mode 0600，`pg_restore --list` 931 行通过，未做完整恢复，路径及基线见[本轮记录](history/sentry-billing-rounding-20261024.md)。

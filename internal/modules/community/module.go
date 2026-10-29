@@ -208,7 +208,11 @@ func (h Handler) Module() module.Definition {
 			{Method: "PUT", Path: "/qq/group/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveQQGroupSettings)},
 			{Method: "GET", Path: "/qq/bot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.getQQBotSettings)},
 			{Method: "PUT", Path: "/qq/bot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveQQBotSettings)},
-			{Method: "POST", Path: "/qq/official/webhook", Public: true, Handler: http.HandlerFunc(h.officialQQWebhook)},
+			{Method: "POST", Path: "/qq/official/webhook", Public: true, Handler: http.HandlerFunc(retiredOfficialCallback)},
 		},
 	}
+}
+
+func retiredOfficialCallback(w http.ResponseWriter, r *http.Request) {
+	httpapi.Failure(w, r, http.StatusGone, "qq_callback_retired", "QQ 机器人已切换至 WebSocket")
 }

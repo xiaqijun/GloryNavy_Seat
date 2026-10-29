@@ -64,6 +64,7 @@ type AuthConfig struct {
 	QQBotAppSecret                                         string
 	QQBotAPIBase                                           string
 	QQBotGroupOpenIDs                                      []string
+	QQBotMemberEvents                                      bool
 	SentryIntegrationURL                                   string
 	SentryIntegrationToken                                 string
 	AlertConsumptionEnabled                                bool
@@ -93,6 +94,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	status := system.StatusHandler(system.New(pool, version), logger)
 	identityService := identity.New(pool)
 	communityService := community.New(pool)
+	communityService.QQGatewayMemberEvents = auth.QQBotMemberEvents
 	communityService.LockAccounts = identityService.LockActiveAccounts
 	if err := communityService.SetQQBotConfigKey(auth.TokenKey); err != nil {
 		return nil, err
@@ -892,6 +894,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	application := &Application{Handler: httpapi.New(logger, registry, system.ReadyHandler(system.New(pool, version)), authorize)}
 	backgrounds := []func(context.Context){}
+	if pool != nil && slices.Contains(enabled, "community") {
+		backgrounds = append(backgrounds, communityService.RunQQGateway)
+	}
 	if esiSync != nil {
 		backgrounds = append(backgrounds, esiSync.Run)
 	}

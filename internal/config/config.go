@@ -35,6 +35,7 @@ type Config struct {
 	QQBotAppSecret          string
 	QQBotAPIBase            string
 	QQBotGroupOpenIDs       []string
+	QQBotMemberEvents       bool
 	SentryIntegrationURL    string
 	SentryIntegrationToken  string
 	AlertConsumptionEnabled bool
@@ -106,6 +107,10 @@ func Load() (Config, error) {
 	c.QQBotAppID = strings.TrimSpace(os.Getenv("QQ_BOT_APP_ID"))
 	c.QQBotAppSecret = strings.TrimSpace(os.Getenv("QQ_BOT_APP_SECRET"))
 	c.QQBotAPIBase = strings.TrimRight(value("QQ_BOT_API_BASE", "https://api.bot.qq.com"), "/")
+	c.QQBotMemberEvents, err = strconv.ParseBool(value("QQ_BOT_WS_MEMBER_EVENTS", "false"))
+	if err != nil {
+		return c, errors.New("QQ_BOT_WS_MEMBER_EVENTS must be true or false")
+	}
 	for _, group := range strings.Split(os.Getenv("QQ_BOT_GROUP_OPENIDS"), ",") {
 		if group = strings.TrimSpace(group); group != "" {
 			if len(group) > 256 || strings.ContainsAny(group, "\r\n") || isNumericQQGroupID(group) {

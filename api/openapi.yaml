@@ -5842,28 +5842,11 @@ paths:
   /api/v1/community/qq/official/webhook:
     post:
       operationId: receiveOfficialQQBotWebhook
-      summary: Receive the official QQ open platform callback
-      description: Public endpoint for the official QQ Bot API v2. It handles the unsigned op=13 validation handshake, verifies X-Signature-Ed25519 on normal callbacks, accepts standalone eight-character codes in GROUP_MESSAGE_CREATE and legacy C2C_MESSAGE_CREATE or GROUP_AT_MESSAGE_CREATE binding commands, and processes GROUP_JOIN_REQUEST plus GROUP_MEMBER_ADD for configured groups. GROUP_MESSAGE_CREATE uses author.member_openid as the sender and group_openid as the reply target; unrelated text, bot messages, or missing sender/group/message/event identifiers are silently acknowledged without binding writes or replies. Official events supply bot-scoped OpenID values; they do not expose the numeric QQ number. Unsigned validation requires a canonical positive decimal timestamp and a nonempty challenge of at most 1024 bytes that does not start with a JSON object; normal callbacks are single JSON documents. Binding publication rechecks the exact verified enabled configuration and the active account under transaction locks.
+      summary: Retired QQ official callback endpoint
+      description: Inbound events use the official QQ WebSocket gateway. This legacy endpoint always returns 410.
       security: []
-      parameters:
-        - name: X-Signature-Timestamp
-          in: header
-          required: false
-          schema: { type: string }
-        - name: X-Signature-Ed25519
-          in: header
-          required: false
-          schema: { type: string, pattern: "^[0-9a-fA-F]{128}$" }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
       responses:
-        "200": { description: Official validation response or callback acknowledgement }
-        "400": { description: Invalid callback payload, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-        "401": { description: Invalid or expired callback signature, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-        "503": { description: Official QQ bot is not configured, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "410": { description: Callback retired, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /api/v1/identity/corporation-cleanup:
     get:
       operationId: getCorporationCleanup

@@ -1,5 +1,7 @@
 # 本地开发与验证
 
+官方 QQ WebSocket 可选环境变量 `QQ_BOT_WS_MEMBER_EVENTS` 默认为 `false`。只有平台已授予群成员事件权限时才设为 `true`；无权限订阅可能导致网关连接被拒绝。详见 [官方 QQ 机器人](integrations/qq-official.zh-CN.md)。
+
 LP 查询：在原 MODULES 中追加 lp（依赖 identity/access/eve），保持 SDE_WORK_DIR 活动 ZIP，按需设置 LP_HTTP_PROXY。无迁移与新 scope，见 [LP 指南](integrations/lp.zh-CN.md)。
 
 公开首页构建：`cd web && npm run build` 先进行类型检查和 Vite 构建，再生成静态首页、成员壳 `app.html`、`robots.txt`、`sitemap.xml` 与 `llms.txt`。不要仅运行 `vite build` 后直接部署；预渲染不需要后端、会话或生产数据。`npm run preview` 对成员路径使用应用壳，生产路由同步使用 `deploy/edge-https.conf`，见[首页说明](ui/homepage.md)。

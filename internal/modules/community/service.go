@@ -34,11 +34,12 @@ var (
 )
 
 type Service struct {
-	LockAccounts func(context.Context, pgx.Tx, []string) error
-	pool         *pgxpool.Pool
-	qqOfficial   *OfficialQQBot
-	qqConfigMu   sync.RWMutex
-	qqConfigBox  cipher.AEAD
+	LockAccounts          func(context.Context, pgx.Tx, []string) error
+	QQGatewayMemberEvents bool
+	pool                  *pgxpool.Pool
+	qqOfficial            *OfficialQQBot
+	qqConfigMu            sync.RWMutex
+	qqConfigBox           cipher.AEAD
 }
 
 func New(pool *pgxpool.Pool) *Service {
