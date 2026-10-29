@@ -1,6 +1,6 @@
 # 项目状态
 
-2026-10-29：前后端已发布 `v0.1.0-qq-websocket-20261029`，源码 `61b5a5a`，无新迁移；QQ 平台选择 WebSocket，生产已连接并收到 READY，后台 active/ready、NRestarts=0；旧官方回调及 OneBot URL 均 410，匿名设置接口 401。原配置和游戏邮件保留，群成员事件默认不订阅；真实绑定和入群审批仍待验收。详见 [发布记录](history/qq-websocket-20261029.md)。
+2026-10-29：前后端已发布 `v0.1.0-qq-websocket-20261029`，源码 `61b5a5a`，无新迁移；QQ 平台选择 WebSocket，生产已连接并收到 READY，后台 active/ready、NRestarts=0；旧官方回调及 OneBot URL 均 410，匿名设置接口 401。原配置和游戏邮件保留；真实验证码绑定及回复已由用户与服务器记录确认，群成员事件默认不订阅，入群审批仍待验收。详见 [发布记录](history/qq-websocket-20261029.md)。
 
 ## 当前：QQ 机器人切回官方（2026-10-28，已发布）
 
