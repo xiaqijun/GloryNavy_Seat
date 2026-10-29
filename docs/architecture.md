@@ -1,5 +1,7 @@
 # 模块架构与扩展边界
 
+Goose 110 的官方 QQ 建筑提醒归 community，保存配置、状态基线和独立群消息回执；宿主注入已鉴权建筑投影与当前管理员检查，不读取 EVE 私有 store。默认停用，认领和对外发送分离，结果未知不自动重试；账号失效停止发送，不改变游戏邮件或旧 OneBot 回执。详见[提醒指南](integrations/reminder.zh-CN.md)。
+
 Goose 109 的 QQ 官方接入恢复仍归 community：现有官方配置增加 enabled/revision，升级默认停用并停用旧 OneBot 接收群提醒、失效旧 OneBot 确认和未用验证码；不删除旧数字绑定/审计/通知回执。官方回调按固定凭据快照验签，在本模块配置共享锁、事件/身份锁及宿主注入活跃账号锁下发布绑定；改 AppID 失效当前官方映射与旧确认，原历史留存。旧 OneBot URL 保留原管理鉴权/CSRF 后返回 410，旧队列处理器保留以安全消费历史任务，停用配置阻止发送。没有新的跨模块 store 或邮件渠道变更。见[官方 QQ](integrations/qq-official.zh-CN.md)。
 
 Goose 108 的反馈撤销仍归 feedback：原消息事务在账号/反馈锁内检查当前拥有者、submitted 和尚未采纳，追加 withdrawn 历史而不删除数据；重提沿原状态服务及独立提醒事件引用。无跨模块 store、币账写入或新合并参与方。见[反馈指南](integrations/feedback.zh-CN.md)。

@@ -252,6 +252,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	deliveryJobs := &welfare.DeliveryJobs{Enabled: slices.Contains(enabled, "welfare")}
 	creditJobs := &loan.CreditJobs{Enabled: slices.Contains(enabled, "loan")}
 	approvalNotifications := &community.ApprovalJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "approval"), Origin: auth.Origin}
+	qqStructureNotifications := &community.StructureJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "structures"), Read: structureHandler.Read, Administrator: accessService.IsAdministrator}
 	reminderModule := reminderHandler(pool, identityService, accessService, syncService, slices.Contains(enabled, "reminder"), auth.Origin)
 	reminderJobs := &reminder.Jobs{Service: reminderModule.Service}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
@@ -288,7 +289,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	sentryService.MonitorRewardFunding = exchangeService
 	if pool != nil && slices.Contains(enabled, "eve") {
 		var err error
-		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension(), approvalNotifications.Extension(), reminderJobs.Extension())
+		esiSync, err = eve.NewSync(pool, syncService, logger, identityService.ValidESIIdentity, attendanceModule.Service.Extension(slices.Contains(enabled, "attendance")), deliveryJobs.Extension(), exchangeJobs.Extension(), creditJobs.Extension(), sentryService.Extension(sentryService.AlertEnabled), characterCleanup.Extension(), approvalNotifications.Extension(), reminderJobs.Extension(), qqStructureNotifications.Extension())
 		if err != nil {
 			return nil, err
 		}

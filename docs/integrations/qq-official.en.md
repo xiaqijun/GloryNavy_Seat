@@ -1,5 +1,7 @@
 # Official QQ bot
 
+The in-development official QQ structure group notifier is separate from legacy OneBot notices, uses bot-scoped group OpenIDs and independent receipts, and is disabled by default. Proactive messaging must be permitted by both the platform and target group. See the [reminder guide](reminder.zh-CN.md) for deployment and rollback status.
+
 > WebSocket migration deployed on 2026-10-29: inbound events use WebSocket and the previous official HTTP callback returns 410. The bot remains disabled by default. Configure WebSocket reception and the application server's egress IP in the QQ platform. A database session lock limits consumers to one instance. Resume is attempted within the same process; a restart or rejected resume may miss offline events. Group applications can be reconciled through the existing sync endpoint. The default intent is group and C2C (1<<25); set `QQ_BOT_WS_MEMBER_EVENTS=true` and restart only after group-member permission is granted. Real binding and reply have been verified; group approval remains unverified.
 
 Updated 2026-10-28. [中文](qq-official.zh-CN.md). The user requested a switch from NapCat back to the official Bot API. This change is deployed with the official bot disabled by default; see [project status](../project-status.md).
