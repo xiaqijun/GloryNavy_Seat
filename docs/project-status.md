@@ -1,6 +1,6 @@
 # 项目状态
 
-本地开发中：官方 QQ 群建筑提醒接入（Goose 110），按指定军团读取建筑授权快照并记录独立发送状态；未发布。已对目标群执行一次不含业务数据的主动发送测试，平台接受且用户确认收到；业务提醒及生产迁移尚未验收。见[提醒指南](integrations/reminder.zh-CN.md)。
+2026-10-29：后端已发布 `v0.1.0-qq-structure-20261029-r2`，源码 `cf8bfad`、Goose 110；Glory Navy 的建筑监测已启用，目标为经用户确认的 GNV 预警群，首轮 35 个建筑建立基线。当前无燃料或拆除告警，真实状态变化的业务提醒仍待实际发生后验收。官方主动测试消息已被平台接受并由用户确认收到；游戏邮件和旧 QQ 审批提醒配置不变。见[提醒指南](integrations/reminder.zh-CN.md)及[发布记录](history/qq-structure-notifications-20261029.md)。
 
 2026-10-29：前后端已发布 `v0.1.0-qq-websocket-20261029`，源码 `61b5a5a`，无新迁移；QQ 平台选择 WebSocket，生产已连接并收到 READY，后台 active/ready、NRestarts=0；旧官方回调及 OneBot URL 均 410，匿名设置接口 401。原配置和游戏邮件保留；真实验证码绑定及回复已由用户与服务器记录确认，群成员事件默认不订阅，入群审批仍待验收。详见 [发布记录](history/qq-websocket-20261029.md)。
 

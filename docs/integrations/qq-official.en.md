@@ -1,6 +1,6 @@
 # Official QQ bot
 
-The in-development official QQ structure group notifier is separate from legacy OneBot notices, uses bot-scoped group OpenIDs and independent receipts, and is disabled by default. Proactive messaging must be permitted by both the platform and target group. See the [reminder guide](reminder.zh-CN.md) for deployment and rollback status.
+The official QQ structure group notifier is separate from legacy OneBot notices, uses bot-scoped group OpenIDs and independent receipts, and is disabled by default on migration. Proactive messaging must be permitted by both the platform and target group. See the [reminder guide](reminder.zh-CN.md) for deployment and rollback status.
 
 > WebSocket migration deployed on 2026-10-29: inbound events use WebSocket and the previous official HTTP callback returns 410. The bot remains disabled by default. Configure WebSocket reception and the application server's egress IP in the QQ platform. A database session lock limits consumers to one instance. Resume is attempted within the same process; a restart or rejected resume may miss offline events. Group applications can be reconciled through the existing sync endpoint. The default intent is group and C2C (1<<25); set `QQ_BOT_WS_MEMBER_EVENTS=true` and restart only after group-member permission is granted. Real binding and reply have been verified; group approval remains unverified.
 
@@ -22,7 +22,7 @@ Publication rechecks the enabled configuration and exact verified AppID/secret/A
 
 Goose 109 adds enabled (default false) and revision to official settings. It preserves old credentials without enabling them, disables OneBot and its approval-group switches, and invalidates OneBot confirmations and unused codes. Numeric bindings, groups, events and delivery receipts remain as history. Retired management routes retain session/current-administrator/CSRF checks and return 410; the old public webhook also returns 410. Old pages cannot reactivate the transport.
 
-Historical queue handlers remain registered, but disabled OneBot settings prevent scanning or sending approval messages. QQ reminders are not automatically resumed, and game-mail reminders remain unchanged. Proactive group messages, Markdown member mentions and client rendering require permission-aware follow-up work; prior NapCat acceptance is not official-bot acceptance.
+Historical queue handlers remain registered, but disabled OneBot settings prevent scanning or sending approval messages. QQ approval reminders are not automatically resumed, and game-mail reminders remain unchanged. The structure group notifier is separately enabled; Markdown member mentions and QQ approval reminders still require permission-aware follow-up work. Prior NapCat acceptance is not official-bot acceptance.
 
 Down rejects configured official installations or official bindings; only blank unused development installations may remove the new fields. Do not run older code that ignores configuration versions, identity sources or receipts. This change does not log into a personal QQ account, start NapCat or delete history.
 
