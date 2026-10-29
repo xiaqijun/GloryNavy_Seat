@@ -14,8 +14,9 @@ import (
 )
 
 type Handler struct {
-	Service *Service
-	User    func(*http.Request) string
+	Service   *Service
+	User      func(*http.Request) string
+	Structure *StructureJobs
 }
 
 func (h Handler) get(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +209,9 @@ func (h Handler) Module() module.Definition {
 			{Method: "PUT", Path: "/qq/group/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveQQGroupSettings)},
 			{Method: "GET", Path: "/qq/bot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.getQQBotSettings)},
 			{Method: "PUT", Path: "/qq/bot/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveQQBotSettings)},
+			{Method: "GET", Path: "/qq/structure/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.getStructureWatch)},
+			{Method: "PUT", Path: "/qq/structure/settings", Permission: "community.group.manage", Handler: http.HandlerFunc(h.saveStructureWatch)},
+			{Method: "GET", Path: "/qq/structure/deliveries", Permission: "community.group.manage", Handler: http.HandlerFunc(h.structureDeliveries)},
 			{Method: "POST", Path: "/qq/official/webhook", Public: true, Handler: http.HandlerFunc(retiredOfficialCallback)},
 		},
 	}

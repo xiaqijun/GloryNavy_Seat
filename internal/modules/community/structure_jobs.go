@@ -294,7 +294,7 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 		return err
 	}
 	defer tx.Rollback(context.Background())
-	if err = tx.QueryRow(ctx, `SELECT enabled AND revision=$1 AND app_id=$2 AND group_openid=$3 AND corporation_id=$4 AND owner_id::text=$5 FROM community_qq_structure_watch WHERE id FOR SHARE`, watch.Revision, watch.AppID, watch.Group, watch.CorporationID, watch.Owner).Scan(&active); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT enabled AND revision=$1 AND app_id=$2 AND group_openid=$3 AND corporation_id=$4 AND owner_id::text=$5 FROM community_qq_structure_watch WHERE id FOR UPDATE`, watch.Revision, watch.AppID, watch.Group, watch.CorporationID, watch.Owner).Scan(&active); err != nil {
 		return err
 	}
 	bot := r.Service.qqOfficial.callbackSnapshot()
@@ -356,7 +356,7 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 		return err
 	}
 	if result.State == "rejected" && result.Code == 40034105 {
-		if _, err = tx.Exec(ctx, `UPDATE community_qq_structure_watch SET enabled=false,updated_at=now() WHERE id AND revision=$1`, watch.Revision); err != nil {
+		if _, err = tx.Exec(ctx, `UPDATE community_qq_structure_watch SET enabled=false,revision=revision+1,updated_at=now() WHERE id AND revision=$1`, watch.Revision); err != nil {
 			return err
 		}
 	}

@@ -87,8 +87,9 @@ func TestStructureNotificationsPersistBaselineAndDoNotResend(t *testing.T) {
 		t.Fatal("rejection", err)
 	}
 	var enabled bool
-	if err := pool.QueryRow(ctx, `SELECT enabled FROM community_qq_structure_watch WHERE id`).Scan(&enabled); err != nil || enabled {
-		t.Fatal("permission rejection must disable watch", enabled, err)
+	var revision int64
+	if err := pool.QueryRow(ctx, `SELECT enabled,revision FROM community_qq_structure_watch WHERE id`).Scan(&enabled, &revision); err != nil || enabled || revision != 2 {
+		t.Fatal("permission rejection must disable watch and advance revision", enabled, revision, err)
 	}
 	if err := job.scan(ctx); err != nil {
 		t.Fatal("disabled", err)

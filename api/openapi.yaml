@@ -5781,6 +5781,42 @@ paths:
       security: []
       responses:
         "410": { description: OneBot transport retired; refresh the site and configure official QQ, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /api/v1/community/qq/structure/settings:
+    get:
+      operationId: getQQStructureSettings
+      summary: Read official QQ structure notification configuration
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200": { description: "Settings, selected corporation and current bot readiness", content: { application/json: { schema: { type: object, properties: { data: { type: object, required: [enabled, group_openid, corporation_id, corporation_name, revision, bot_ready, bot_changed], properties: { enabled: { type: boolean }, group_openid: { type: string }, corporation_id: { type: string }, corporation_name: { type: string }, revision: { type: string }, bot_ready: { type: boolean }, bot_changed: { type: boolean } } } } } } } }
+        "401": { description: Authentication required }
+        "403": { description: Current administrator required }
+        "503": { description: Service unavailable }
+    put:
+      operationId: saveQQStructureSettings
+      summary: Save target group, corporation and enablement with revision and current object authorization
+      security: [{ SessionCookie: [] }]
+      parameters: [{ in: header, name: X-CSRF-Token, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false, required: [enabled, group_openid, corporation_id, revision], properties: { enabled: { type: boolean }, group_openid: { type: string, maxLength: 256 }, corporation_id: { type: string, pattern: '^(0|[1-9][0-9]*)$' }, revision: { type: string, pattern: '^[1-9][0-9]*$' } } } } }
+      responses:
+        "200": { description: Saved settings }
+        "400": { description: Invalid configuration }
+        "401": { description: Authentication required }
+        "403": { description: Current administrator and CSRF required }
+        "409": { description: Stale revision, bot unavailable or corporation not readable }
+        "503": { description: Service unavailable }
+  /api/v1/community/qq/structure/deliveries:
+    get:
+      operationId: listQQStructureDeliveries
+      summary: Read the latest 50 structure notification records for the currently authorized corporation
+      security: [{ SessionCookie: [] }]
+      responses:
+        "200": { description: Records with pending, sending, sent, rejected, unknown or obsolete status }
+        "401": { description: Authentication required }
+        "403": { description: Current administrator required }
+        "409": { description: Corporation not readable }
+        "503": { description: Service unavailable }
   /api/v1/community/qq/bot/settings:
     get:
       operationId: getQQBotSettings

@@ -443,7 +443,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		raw, err := json.Marshal(f.Fit)
 		return exchange.PhysicalFitting{ID: f.ID, Name: f.Name, CorporationID: f.CorporationID, ShipTypeID: f.Fit.ShipTypeID, Version: f.Version, Fit: raw}, err
 	}
-	communityHandler := community.Handler{Service: communityService, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
+	communityHandler := community.Handler{Service: communityService, Structure: qqStructureNotifications, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 	eveHandler := eve.NewHandler(pool, client, nil, auth.Origin, identityHandler.Secure, logger)
 	if slices.Contains(enabled, "reminder") {
 		eveHandler.MailAuthorizationAllowed = accessService.IsAdministrator
