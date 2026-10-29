@@ -254,6 +254,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	approvalNotifications := &community.ApprovalJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "approval"), Origin: auth.Origin}
 	qqStructureNotifications := &community.StructureJobs{Service: communityService, Enabled: slices.Contains(enabled, "community") && slices.Contains(enabled, "structures"), Read: structureHandler.Read, Administrator: accessService.IsAdministrator}
 	reminderModule := reminderHandler(pool, identityService, accessService, syncService, slices.Contains(enabled, "reminder"), auth.Origin)
+	if err := reminderModule.Service.SetEmailKey(auth.TokenKey); err != nil {
+		return nil, err
+	}
 	reminderJobs := &reminder.Jobs{Service: reminderModule.Service}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
@@ -321,7 +324,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		if permission == "community.group.manage" || permission == "reminder.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
-		if permission == "lp.self" || permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
+		if permission == "reminder.self" || permission == "lp.self" || permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
 		}
 		if permission == "sentry.manage" {

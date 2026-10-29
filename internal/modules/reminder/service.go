@@ -3,6 +3,7 @@ package reminder
 import (
 	"bytes"
 	"context"
+	"crypto/cipher"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,8 @@ type Result struct {
 }
 type Service struct {
 	Pool           *pgxpool.Pool
+	emailBox       cipher.AEAD
+	emailSend      func(context.Context, smtpConfig, string, string, string) Result
 	Enabled        bool
 	Origin         string
 	Administrator  func(context.Context, string) (bool, error)
@@ -226,7 +229,11 @@ func (s *Service) MergeAccountTx(ctx context.Context, tx pgx.Tx, source, target 
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]int{"deliveries": n})
+	email, err := store.MergeEmail(ctx, tx, source, target, apply)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]int{"deliveries": n, "email_deliveries": email})
 }
 
 func (s *Service) deliver(ctx context.Context, account string) error {

@@ -10,6 +10,7 @@ import { getAccountAccess } from "@/modules/access/api";
 import { getModuleCatalog } from "@/app/catalog";
 import * as api from "./api";
 import { QQStructure } from "./qq-structure";
+import { EmailSettings } from "./email-settings";
 import "./reminder.css";
 
 export default function ReminderPage() {
@@ -20,7 +21,7 @@ export default function ReminderPage() {
   const access = useQuery({ queryKey: ["access", "me", user], queryFn: ({ signal }) => getAccountAccess(signal), enabled: !!user });
   const config = useQuery({ queryKey: ["reminder", "settings", user], queryFn: ({ signal }) => api.settings(signal), enabled: access.data?.administrator === true });
   return <div className="reminder-page"><div className="page-heading"><h1>{msg("提醒")}</h1></div>
-    {access.error ? <p role="alert">{access.error.message}</p> : access.data && !access.data.administrator ? <p role="alert">{msg("仅管理员可访问")}</p> : access.data?.administrator && current ? <>{qqAvailable && <QQStructure user={user} csrf={current.csrf_token} />}{config.error ? <div role="alert"><p>{config.error.message}</p><Button onClick={() => void config.refetch()}>{msg("重试")}</Button></div> : config.data ? <><Editor key={`${user}:${config.data.revision}`} initial={config.data} user={user} csrf={current.csrf_token} /><Records events={config.data.available_events} user={user} csrf={current.csrf_token} /></> : <p role="status">{msg("正在加载")}</p>}</> : <p role="status">{msg("正在加载")}</p>}
+    {access.error ? <p role="alert">{access.error.message}</p> : access.data && !access.data.administrator ? <p role="alert">{msg("仅管理员可访问")}</p> : access.data?.administrator && current ? <>{qqAvailable && <QQStructure user={user} csrf={current.csrf_token} />}<EmailSettings user={user} csrf={current.csrf_token} />{config.error ? <div role="alert"><p>{config.error.message}</p><Button onClick={() => void config.refetch()}>{msg("重试")}</Button></div> : config.data ? <><Editor key={`${user}:${config.data.revision}`} initial={config.data} user={user} csrf={current.csrf_token} /><Records events={config.data.available_events} user={user} csrf={current.csrf_token} /></> : <p role="status">{msg("正在加载")}</p>}</> : <p role="status">{msg("正在加载")}</p>}
   </div>;
 }
 function Editor({ initial, user, csrf }: { initial: api.Settings; user: string; csrf: string }) {

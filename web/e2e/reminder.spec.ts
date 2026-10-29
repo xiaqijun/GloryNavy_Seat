@@ -12,6 +12,8 @@ async function fixture(page: Page, admin = true, ready = true) {
     if (path === "/api/v1/identity/characters") data = { characters: [{ id: "101", name: "Pilot", status: "active", is_main: true }] };
     if (path === "/api/v1/eve/status") data = { configured: true };
     if (path === "/api/v1/access/me") data = { administrator: admin, site_roles: [], characters: [] };
+    if (path === "/api/v1/reminder/email/settings") data = { enabled: false, host: "", port: 465, implicit_tls: true, username: "", sender: "", secret_configured: false, revision: "1", events: [], available_events: [] };
+    if (path === "/api/v1/reminder/email/deliveries") data = [];
     if (path === "/api/v1/reminder/settings") {
       expect(admin).toBe(true);
       if (r.request().method() === "PUT") {
@@ -36,8 +38,9 @@ for (const lang of ["zh-CN", "en"]) {
     await fixture(page, true, false);
     for (const [code, text] of [["session_expired", "登录已失效，请重新登录后授权发信"], ["authorization_required", "缺少发信权限，请确认 EVE 应用权限后重新授权"], ["forbidden", "当前账号无权授权发信"]]) {
       await page.goto(`/reminders?error=${code}`);
+      const game = page.locator('[data-slot="card"]').filter({ has: page.getByRole("heading", { name: tr("游戏内邮件") }) });
       await expect(page.getByRole("alert")).toContainText(tr(text));
-      await expect(page.getByRole("checkbox", { name: tr("启用推送") })).toBeDisabled();
+      await expect(game.getByRole("checkbox", { name: tr("启用推送") })).toBeDisabled();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.getByRole("button", { name: tr("关闭"), exact: true }).click();
       await expect(page.getByRole("alert")).toHaveCount(0);
@@ -48,14 +51,15 @@ for (const lang of ["zh-CN", "en"]) {
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), lang);
     const state = await fixture(page);
     await page.goto("/reminders");
-    const toggle = page.getByRole("checkbox", { name: tr("启用推送") });
+    const game = page.locator('[data-slot="card"]').filter({ has: page.getByRole("heading", { name: tr("游戏内邮件") }) });
+    const toggle = game.getByRole("checkbox", { name: tr("启用推送") });
     await expect(toggle).not.toBeChecked();
-    await page.getByRole("button", { name: tr("全选"), exact: true }).click();
+    await game.getByRole("button", { name: tr("全选"), exact: true }).click();
     await expect(page.getByRole("checkbox", { name: tr("待领取合同"), exact: true })).toBeChecked();
     await toggle.check(); state.fail = true;
-    await page.getByRole("button", { name: tr("保存"), exact: true }).click();
+    await game.getByRole("button", { name: tr("保存"), exact: true }).click();
     await expect(page.getByRole("alert")).toContainText("Version changed"); await expect(toggle).toBeChecked();
-    state.fail = false; await page.getByRole("button", { name: tr("保存"), exact: true }).click();
+    state.fail = false; await game.getByRole("button", { name: tr("保存"), exact: true }).click();
     await expect.poll(() => state.saved).toBe(1); expect(state.config.events.length).toBe(20); await expect(toggle).toBeChecked();
     await expect(page.locator("tbody tr")).toHaveCount(3);
     await expect(page.locator("tbody tr").nth(2).getByRole("button")).toHaveCount(0);
@@ -69,7 +73,8 @@ for (const lang of ["zh-CN", "en"]) {
     const tr = (s: string) => lang === "en" ? english[s] ?? s : s;
     await page.addInitScript(l => localStorage.setItem("glorynavy.locale", l), lang);
     const state = await fixture(page, true, false); await page.goto("/reminders?error=wrong_character");
-    await expect(page.getByRole("checkbox", { name: tr("启用推送") })).toBeDisabled();
+    const game = page.locator('[data-slot="card"]').filter({ has: page.getByRole("heading", { name: tr("游戏内邮件") }) });
+    await expect(game.getByRole("checkbox", { name: tr("启用推送") })).toBeDisabled();
     await expect(page.getByRole("alert")).toContainText(tr("授权角色不符，请在 EVE 页面选择 {0}").replace("{0}", state.config.sender_name));
     await page.getByRole("button", { name: tr("授权发信"), exact: true }).click();
     await expect.poll(() => state.auth).toBe(1); await expect(page.getByText("SSO unavailable")).toBeVisible();

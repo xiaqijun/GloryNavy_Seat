@@ -37,11 +37,15 @@ func (r *Jobs) Extension() jobs.Extension {
 	return jobs.Extension{Register: func(w *river.Workers) []*river.PeriodicJob {
 		river.AddWorker(w, &scanWorker{runtime: r})
 		river.AddWorker(w, &sendWorker{runtime: r})
+		river.AddWorker(w, &emailScanWorker{runtime: r})
+		river.AddWorker(w, &emailSendWorker{runtime: r})
 		if !r.Service.Enabled {
 			return nil
 		}
 		return []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(time.Minute), func() (river.JobArgs, *river.InsertOpts) {
 			return scanArgs{}, &river.InsertOpts{Queue: "reminder", UniqueOpts: jobs.ActiveUnique(), MaxAttempts: 3}
+		}, &river.PeriodicJobOpts{RunOnStart: true}), river.NewPeriodicJob(river.PeriodicInterval(time.Minute), func() (river.JobArgs, *river.InsertOpts) {
+			return emailScanArgs{}, &river.InsertOpts{Queue: "reminder", UniqueOpts: jobs.ActiveUnique(), MaxAttempts: 3}
 		}, &river.PeriodicJobOpts{RunOnStart: true})}
 	}, Bind: func(q *river.Client[pgx.Tx]) { r.queue = q }}
 }

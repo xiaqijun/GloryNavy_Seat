@@ -18,11 +18,19 @@ type Handler struct {
 }
 
 func (h Handler) Module() module.Definition {
-	return module.Definition{Manifest: module.Manifest{ID: "reminder", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}, {ID: "access", APIVersion: 1}, {ID: "eve", APIVersion: 1}, {ID: "approval", APIVersion: 1}}}, Permissions: []string{"reminder.manage"}, Routes: []module.Route{
+	return module.Definition{Manifest: module.Manifest{ID: "reminder", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}, {ID: "access", APIVersion: 1}, {ID: "eve", APIVersion: 1}, {ID: "approval", APIVersion: 1}}}, Permissions: []string{"reminder.manage", "reminder.self"}, Routes: []module.Route{
 		{Method: "GET", Path: "/settings", Permission: "reminder.manage", Handler: http.HandlerFunc(h.settings)},
 		{Method: "PUT", Path: "/settings", Permission: "reminder.manage", Handler: http.HandlerFunc(h.save)},
 		{Method: "GET", Path: "/deliveries", Permission: "reminder.manage", Handler: http.HandlerFunc(h.deliveries)},
 		{Method: "POST", Path: "/deliveries/{id}/retry", Permission: "reminder.manage", Handler: http.HandlerFunc(h.retry)},
+		{Method: "GET", Path: "/email/settings", Permission: "reminder.manage", Handler: http.HandlerFunc(h.emailSettings)},
+		{Method: "PUT", Path: "/email/settings", Permission: "reminder.manage", Handler: http.HandlerFunc(h.saveEmailSettings)},
+		{Method: "GET", Path: "/email/deliveries", Permission: "reminder.manage", Handler: http.HandlerFunc(h.emailDeliveries)},
+		{Method: "POST", Path: "/email/deliveries/{id}/retry", Permission: "reminder.manage", Handler: http.HandlerFunc(h.emailRetry)},
+		{Method: "GET", Path: "/email/account", Permission: "reminder.self", Handler: http.HandlerFunc(h.emailAccount)},
+		{Method: "PUT", Path: "/email/account", Permission: "reminder.self", Handler: http.HandlerFunc(h.saveEmailAccount)},
+		{Method: "POST", Path: "/email/challenge", Permission: "reminder.self", Handler: http.HandlerFunc(h.emailChallenge)},
+		{Method: "POST", Path: "/email/verify", Permission: "reminder.self", Handler: http.HandlerFunc(h.emailVerify)},
 	}}
 }
 func respond(w http.ResponseWriter, r *http.Request, v any, err error) {
@@ -39,6 +47,12 @@ func respond(w http.ResponseWriter, r *http.Request, v any, err error) {
 		httpapi.Failure(w, r, 409, "version_conflict", "配置已更新，请刷新后重试")
 	case errors.Is(err, ErrSender):
 		httpapi.Failure(w, r, 409, "sender_unavailable", "请选择本人角色并授权发信")
+	case errors.Is(err, ErrEmailConfig):
+		httpapi.Failure(w, r, 409, "email_unavailable", "邮箱配置或发送服务不可用")
+	case errors.Is(err, ErrEmailCode):
+		httpapi.Failure(w, r, 400, "email_code_invalid", "验证码无效或已过期")
+	case errors.Is(err, ErrEmailRate):
+		httpapi.Failure(w, r, 429, "email_rate_limited", "请稍后再发送验证码")
 	case errors.Is(err, pgx.ErrNoRows):
 		httpapi.Failure(w, r, 409, "retry_unavailable", "此记录不可重试")
 	default:

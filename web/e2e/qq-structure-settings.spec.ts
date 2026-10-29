@@ -15,6 +15,8 @@ async function fixture(page: Page) {
     if (path === "/api/v1/access/scope-options") data = { corporations: [{ id: "42", name: "Glory Navy" }, { id: "43", name: "Second Corporation" }], alliances: [] };
     if (path === "/api/v1/reminder/settings") data = { enabled: false, sender_id: "0", sender_name: "", revision: "1", status: "not_configured", characters: [], events: [], available_events: [] };
     if (path === "/api/v1/reminder/deliveries") data = [];
+    if (path === "/api/v1/reminder/email/settings") data = { enabled: false, host: "", port: 465, implicit_tls: true, username: "", sender: "", secret_configured: false, revision: "1", events: [], available_events: [] };
+    if (path === "/api/v1/reminder/email/deliveries") data = [];
     if (path === "/api/v1/community/qq/structure/settings") {
       if (route.request().method() === "PUT") {
         expect(route.request().headers()["x-csrf-token"]).toBe("csrf");

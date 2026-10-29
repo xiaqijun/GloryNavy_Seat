@@ -30,9 +30,13 @@ import { useLoginError } from "./use-login-error";
 import { CommunityProfile } from "@/modules/community/profile-card";
 import { SyncRows } from "./sync-rows";
 import { MergeAccount } from "@/modules/identity/merge-account";
+import { EmailAccount } from "@/modules/reminder/email-account";
+import { getModuleCatalog } from "@/app/catalog";
+import "@/modules/reminder/reminder.css";
 
 export default function AccountPage() {
   const auth = useSession();
+  const modules = useQuery({ queryKey: ["host", "modules"], queryFn: ({ signal }) => getModuleCatalog(signal), enabled: !!auth.data?.session });
   const status = useQuery({
     queryKey: ["eve", "status"],
     queryFn: ({ signal }) => getEVEStatus(signal),
@@ -196,6 +200,7 @@ export default function AccountPage() {
               userID={session.user_id}
               csrf={session.csrf_token}
             />
+            {modules.data?.some(module => module.id === "reminder") && <EmailAccount user={session.user_id} csrf={session.csrf_token} />}
           </div>
         )}
         <div className="account-characters">

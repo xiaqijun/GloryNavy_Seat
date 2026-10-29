@@ -6,6 +6,82 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/reminder/email/settings:
+    get:
+      summary: Read ordinary email notification settings
+      description: Current administrator only. SMTP credential is never returned; secret_configured indicates its presence.
+      security: [{ SessionCookie: [] }]
+      responses: { '200': { description: Settings and available events }, '401': { description: Session required }, '403': { description: Administrator required } }
+    put:
+      summary: Save ordinary email notification settings
+      description: Current administrator and CSRF required; revision prevents concurrent overwrite. Blank secret retains the prior credential only for the same host and username. Enabling requires valid SMTP settings and at least one event.
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled, host, port, implicit_tls, username, sender, secret, revision, events]
+              properties:
+                enabled: { type: boolean }
+                host: { type: string }
+                port: { type: integer, minimum: 1, maximum: 65535 }
+                implicit_tls: { type: boolean }
+                username: { type: string }
+                sender: { type: string }
+                secret: { type: string, writeOnly: true }
+                revision: { type: string }
+                events: { type: array, items: { type: string } }
+      responses: { '200': { description: Saved configuration }, '400': { description: Invalid events }, '401': { description: Session required }, '403': { description: Administrator or CSRF required }, '409': { description: Configuration invalid or revision conflict } }
+  /api/v1/reminder/email/deliveries:
+    get:
+      summary: Read the latest 50 ordinary email deliveries
+      security: [{ SessionCookie: [] }]
+      responses: { '200': { description: Delivery records }, '401': { description: Session required }, '403': { description: Administrator required } }
+  /api/v1/reminder/email/deliveries/{id}/retry:
+    post:
+      summary: Request a retry for a confirmed failed email delivery
+      description: Current administrator and CSRF required. Unknown outcomes cannot be retried; current recipient and source access are checked again before sending.
+      security: [{ SessionCookie: [] }]
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Retry queued }, '400': { description: Invalid ID }, '401': { description: Session required }, '403': { description: Administrator or CSRF required }, '409': { description: Delivery is not retryable } }
+  /api/v1/reminder/email/account:
+    get:
+      summary: Read the current account's email notification preference
+      security: [{ SessionCookie: [] }]
+      responses: { '200': { description: Current account preference }, '401': { description: Session required }, '403': { description: Profile gate } }
+    put:
+      summary: Enable or disable the current account's verified email
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [revision, enabled], properties: { revision: { type: string }, enabled: { type: boolean } } }
+      responses: { '200': { description: Updated preference }, '400': { description: Email is not verified }, '401': { description: Session required }, '403': { description: CSRF or profile gate }, '409': { description: Revision conflict } }
+  /api/v1/reminder/email/challenge:
+    post:
+      summary: Send a verification code to the current account's proposed mailbox
+      description: Requires enabled SMTP settings; limited to one request per account per minute. Code expires after ten minutes.
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [address], properties: { address: { type: string, format: email } } }
+      responses: { '200': { description: SMTP accepted the verification message }, '401': { description: Session required }, '403': { description: CSRF or profile gate }, '409': { description: Email service unavailable }, '429': { description: Rate limited } }
+  /api/v1/reminder/email/verify:
+    post:
+      summary: Verify the current account's proposed mailbox
+      description: Eight-digit single-use code, limited to five unsuccessful attempts.
+      security: [{ SessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [code], properties: { code: { type: string, pattern: '^[0-9]{8}$' } } }
+      responses: { '200': { description: Verified preference }, '400': { description: Invalid or expired code }, '401': { description: Session required }, '403': { description: CSRF or profile gate } }
   /api/v1/lp/catalog:
     {"get":{"operationId":"lpCatalog","summary":"Read-only LP catalog","description":"Session and profile gate; no orders, approvals or personal LP. See docs/integrations/lp.en.md for reference, timeout, cache, station and failure semantics.","security":[{"SessionCookie":[]}],"parameters":[],"responses":{"200":{"description":"Query data","content":{"application/json":{"schema":{"type":"object","required":["data"],"properties":{"data":{"type":"object","required":["build","corporations","factions"],"properties":{"build":{"type":"integer","minimum":0},"corporations":{"type":"array","items":{"allOf":[{"type":"object","required":["zh","en"],"properties":{"zh":{"type":"string"},"en":{"type":"string"}}},{"type":"object","required":["id","faction_id"],"properties":{"id":{"type":"integer","minimum":0},"faction_id":{"type":"integer","minimum":0}}}]}},"factions":{"type":"array","items":{"allOf":[{"type":"object","required":["zh","en"],"properties":{"zh":{"type":"string"},"en":{"type":"string"}}},{"type":"object","required":["id"],"properties":{"id":{"type":"integer","minimum":0}}}]}}}}}}}}},"400":{"description":"Invalid query"},"401":{"description":"Session required"},"403":{"description":"Profile gate"},"429":{"description":"Market busy; Retry-After 5 seconds"},"503":{"description":"Source unavailable"}}}}
   /api/v1/lp/offers:
