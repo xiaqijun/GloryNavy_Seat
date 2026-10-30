@@ -404,20 +404,46 @@ test("organizer captures fleet and corrects attendance", async ({ page }) => {
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
-test("fleet notice channels and live PAP", async ({ page }) => {
+test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await setup(page);
   await page.goto("/attendance?event=1");
+  const noticeButton = page.getByRole("button", {name:"舰队公告", exact:true});
+  await expect(page.getByLabel("星系", {exact:true})).toHaveCount(0);
+  await noticeButton.click();
+  const notice = page.getByRole("dialog", {name:"舰队公告"});
+  await expect(notice).toBeVisible();
   await page.getByLabel("星系", {exact:true}).fill("Jita");
+  await page.keyboard.press("Escape");
+  await expect(notice).toHaveCount(0);
+  await expect(noticeButton).toBeFocused();
+  await noticeButton.click();
+  await expect(notice.getByLabel("星系", {exact:true})).toHaveValue("Jita");
   await page.getByLabel("建制", {exact:true}).fill("护卫舰");
+  await expect(notice).toHaveJSProperty("scrollWidth", await notice.evaluate(el => el.clientWidth));
+  await notice.screenshot({path:testInfo.outputPath("fleet-notice.png")});
   await page.getByRole("button", {name:"保存公告"}).click();
   await expect(page.getByText("已保存", {exact:true})).toBeVisible();
   await page.getByRole("button", {name:"同步舰队置顶"}).click();
+  await expect(notice.getByText("舰队置顶已更新")).toBeVisible();
+  await notice.getByRole("button", {name:"关闭", exact:true}).last().click();
   await expect(page.getByText("舰队置顶已更新")).toBeVisible();
+  await noticeButton.click();
   await page.getByLabel("QQ群", {exact:true}).check();
   await page.getByLabel("游戏邮件", {exact:true}).check();
   await page.getByLabel("Email", {exact:true}).check();
+  let releaseDispatch!: () => void;
+  const dispatchWait = new Promise<void>(resolve => { releaseDispatch = resolve; });
+  await page.route("**/api/v1/attendance/events/1/fleet-dispatch", async route => {
+    if (route.request().method() === "POST") await dispatchWait;
+    await route.fallback();
+  });
   await page.getByRole("button", {name:"推送", exact:true}).click();
+  await expect(notice.getByRole("button", {name:"关闭", exact:true}).last()).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(notice).toBeVisible();
+  releaseDispatch();
   await expect(page.getByText(/邮箱未验证或未启用/)).toBeVisible();
+  await notice.getByRole("button", {name:"关闭", exact:true}).last().click();
   await page.getByRole("button", {name:"点名并发放 PAP"}).click();
   await expect(page.getByText("已向 3 个角色发放 PAP")).toBeVisible();
   await expect(page.getByText("舰队置顶已更新")).toBeVisible();
