@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-10-30：审批回退（前后端，Goose 116）
+
+前后端 `v0.1.0-approval-reversion-20261030` 来自已推送 main `ce31e22`，升级 Goose 116。出现回退记录后不得降级到不识别回退历史、额度及合同证据的程序；优先向前修复。备份、迁移演练和线上核验见[发布记录](history/approval-reversion-release-20261030.md)。
+
 ## 2026-10-30：舰队点名来源角色（前后端，Goose 115）
 
 前后端 `v0.1.0-fleet-source-20261030` 来自已推送 main `1c2a72f`，升级 Goose 115。已有选择后不得 Down；优先向前修复，保留现有选择与活动数据。备份及验证见[发布记录](history/fleet-source-release-20261030.md)。
