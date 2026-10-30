@@ -1,6 +1,6 @@
 # SeAT default scopes and standalone login
 
-2026-10-30, locally implemented and unreleased: fleet MOTD updates request `esi-fleets.write_fleet.v1` explicitly from the character, without changing ordinary login scopes. The developer application must also permit that scope. Explicit fleet and existing game-mail authorization flows preserve each other's grants; live authorization and fleet acceptance remain outstanding. See the [implementation record](../plans/fleet-notice-and-pap-20261029.zh-CN.md).
+2026-10-30, released: fleet MOTD updates request `esi-fleets.write_fleet.v1` explicitly from the character, without changing ordinary login scopes. The developer application must also permit that scope. Explicit fleet and existing game-mail authorization flows preserve each other's grants; live authorization and fleet acceptance remain outstanding. See the [release record](../history/fleet-ops-20261030.md).
 
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 

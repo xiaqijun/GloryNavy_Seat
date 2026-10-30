@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-10-30：舰队公告与进行中 PAP（Goose 113，已发布）
+
+前后端 `v0.1.0-fleet-ops-20261030` 从干净且已推送的 main `6a262a2` 发布。标准流程备份、迁移并激活后，服务 ready、active/running、NRestarts=0；原有考勤与提醒配置保持，真实舰队和渠道验收待完成。备份和回退约束见[发布记录](history/fleet-ops-20261030.md)。
+
 已发布的 QQ WebSocket 改造：启用时服务自动连接 QQ，服务器出口 IP 应在开放平台白名单中；`QQ_BOT_WS_MEMBER_EVENTS` 默认 false，只有获准后才启用。切换或回退前在开放平台调整接收模式，断线恢复与未验证事项见 [官方 QQ](integrations/qq-official.zh-CN.md)。
 
 ## 2026-10-24：预警星系防线与暂停窗口（Goose 107，已发布）

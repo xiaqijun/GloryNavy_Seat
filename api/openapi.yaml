@@ -4675,7 +4675,7 @@ paths:
       - {in: path, name: id, required: true, schema: {type: string}}
     get:
       operationId: attendanceFleetNotice
-      summary: Read the managed fleet notice template (locally implemented; unreleased).
+      summary: Read the managed fleet notice template.
       security: [{SessionCookie: []}]
       responses:
         '200': {description: Nullable notice with revision}
@@ -4683,7 +4683,7 @@ paths:
         '404': {description: Event unavailable or outside management scope}
     put:
       operationId: attendanceSaveFleetNotice
-      summary: Save a revision-checked fleet notice template (locally implemented; unreleased).
+      summary: Save a revision-checked fleet notice template.
       security: [{SessionCookie: []}]
       requestBody:
         required: true
@@ -4709,7 +4709,7 @@ paths:
   /api/v1/attendance/events/{id}/capture-pap:
     post:
       operationId: attendanceCaptureFleetPAP
-      summary: Capture the current fleet and issue PAP once per eligible character (locally implemented; unreleased).
+      summary: Capture the current fleet and issue PAP once per eligible character.
       security: [{SessionCookie: []}]
       parameters:
         - {in: path, name: id, required: true, schema: {type: string}}

@@ -1,10 +1,10 @@
 # 军团考勤与在线时长
 
-## 2026-10-30 舰队公告与进行中 PAP（本地实现，未发布）
+## 2026-10-30 舰队公告与进行中 PAP（已发布，待真实联调）
 
 公告模板按版本保存，管理者选择 QQ 群、游戏邮件或普通邮箱推送；QQ 群取当前军团绑定的建筑提醒群，游戏邮件发至指定军团，普通邮箱只发送给本站已绑定、已验证并启用提醒的军团成员。发送状态与失败原因独立记录，不确定的发送不会自动重试。点名发分只对当前舰队中本团有效绑定角色，PAP 与既有果壳币来源和审计同事务入账；已有角色不重复发放，后来入队可补发。舰队置顶更新独立执行并显示结果，需来源角色的舰队写入授权。Goose 113 的 Down 在模板、发送记录或新发分审计存在时拒绝，回退不得运行忽略这些记录的版本。真实渠道及舰队联调待验收，详见[实施记录](../plans/fleet-notice-and-pap-20261029.zh-CN.md)。
 
-本地接口：`GET /events/{id}/fleet-notice` 返回 `{notice: null | 模板}`，`PUT` 携带星系、建制、集结点、指挥、补充信息、`revision` 与 UUID `request_key`；首次 revision 为 0，之后以保存结果为准。`POST /events/{id}/capture-pap` 带活动版本、来源角色、PAP 分值和 UUID，返回本次新发放角色数；活动、舰队、授权和当前绑定在写入前核验，相同键重试不会再次入账。上述路径均位于 `/api/v1/attendance` 并继承会话、CSRF 和军团对象授权。
+接口：`GET /events/{id}/fleet-notice` 返回 `{notice: null | 模板}`，`PUT` 携带星系、建制、集结点、指挥、补充信息、`revision` 与 UUID `request_key`；首次 revision 为 0，之后以保存结果为准。`POST /events/{id}/capture-pap` 带活动版本、来源角色、PAP 分值和 UUID，返回本次新发放角色数；活动、舰队、授权和当前绑定在写入前核验，相同键重试不会再次入账。上述路径均位于 `/api/v1/attendance` 并继承会话、CSRF 和军团对象授权。
 
 `GET /events/{id}/fleet-motd` 查询置顶任务，`GET /events/{id}/fleet-dispatch` 查询最近一次推送，`POST` 同一路径携带模板 `revision`、UUID `request_key` 和 `channels`（`qq`、`eve_mail`、`email`）。已合并账号的待发普通邮件会停止；发送中的邮件变为待确认，保留原账号审计。
 
