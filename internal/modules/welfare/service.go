@@ -250,7 +250,7 @@ func (s *Service) Preview(ctx context.Context, actor string, c Command) (Quote, 
 	return q, nil
 }
 func (s *Service) Execute(ctx context.Context, actor string, c Command) (out json.RawMessage, err error) {
-	if !validUUID(actor) || !validUUID(c.RequestKey) || !slices.Contains([]string{"configure", "profile", "apply", "resubmit", "approve", "information", "external", "reject", "cancel", "execute", "complete", "grant", "reverse", "void", "link_delivery", "appraise", "request_cancel", "approve_cancel", "reject_cancel", "release_coins"}, c.Action) {
+	if !validUUID(actor) || !validUUID(c.RequestKey) || !slices.Contains([]string{"configure", "profile", "apply", "resubmit", "approve", "information", "external", "reject", "cancel", "execute", "complete", "grant", "reverse", "void", "link_delivery", "appraise", "request_cancel", "approve_cancel", "reject_cancel", "release_coins", "revert_approval", "revert_cancel_review"}, c.Action) {
 		return nil, ErrInvalid
 	}
 	newAction := slices.Contains([]string{"configure", "profile", "apply", "grant"}, c.Action)
@@ -296,7 +296,7 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 		if err = json.Unmarshal(previous.Detail, &d); err != nil {
 			return nil, err
 		}
-		if c.Action == "approve_cancel" || c.Action == "execute" || c.Action == "complete" || c.Action == "link_delivery" || c.Action == "release_coins" || c.Action == "approve" && automaticFulfillment(previous.Kind) {
+		if c.Action == "approve_cancel" || c.Action == "revert_approval" || c.Action == "revert_cancel_review" || c.Action == "execute" || c.Action == "complete" || c.Action == "link_delivery" || c.Action == "release_coins" || c.Action == "approve" && automaticFulfillment(previous.Kind) {
 			charID = d.CharacterID
 		}
 		if c.Action == "appraise" {
@@ -780,6 +780,14 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 			return nil, ErrInvalid
 		}
 		switch c.Action {
+		case "revert_approval":
+			if e = s.revertApproval(ctx, tx, actor, &v, &d, c); e != nil {
+				return nil, e
+			}
+		case "revert_cancel_review":
+			if e = s.revertCancelReview(ctx, tx, actor, &v, &d, c); e != nil {
+				return nil, e
+			}
 		case "request_cancel", "approve_cancel", "reject_cancel":
 			if e = s.cancelLoss(ctx, tx, actor, &v, &d, c); e != nil {
 				return nil, e
@@ -824,6 +832,9 @@ func (s *Service) Execute(ctx context.Context, actor string, c Command) (out jso
 				return nil, e
 			}
 		case "approve":
+			if e = s.guardRevertedApproval(ctx, tx, actor, v, d); e != nil {
+				return nil, e
+			}
 			if e = s.prepareFulfillment(v.Kind, &d); e != nil {
 				return nil, e
 			}

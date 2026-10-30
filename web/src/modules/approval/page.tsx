@@ -979,9 +979,23 @@ function LoanDetail({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [riskAck, setRiskAck] = useState("");
+  const [revert, setRevert] = useState(false);
+  const [revertNote, setRevertNote] = useState("");
+  const [confirmedNotDisbursed, setConfirmedNotDisbursed] = useState(false);
   const detail = useQuery({ queryKey: ["loan", "review-detail", item.id], queryFn: ({ signal }) => loan.detail(item.id, signal), retry: false, staleTime: 0 });
   const risk = detail.data?.repayment_risk;
   const payload = item.payload as unknown as loan.Case;
+  const canRevert = item.actions.includes("revert_review");
+  const revertDecision = async () => {
+    setBusy(true);
+    setMessage("");
+    try {
+      await loan.revertReview(csrf, item.id, {version: Number(item.version), note: revertNote, confirmed_not_disbursed: confirmedNotDisbursed});
+      done();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : msg("贷款审核失败"));
+    } finally { setBusy(false); }
+  };
   const decide = async (state: "approved" | "rejected") => {
     setBusy(true);
     setMessage("");
@@ -1005,11 +1019,11 @@ function LoanDetail({
         <div><span>{payload.requested_due_at && !payload.first_due_at ? msg("预计总应还") : msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
         <RepaymentSummary item={payload} />
       </div>
-      {detail.isPending ? <p role="status">{msg("正在读取还款风险")}</p> : detail.isError ? <div role="alert"><p>{msg("还款风险读取失败，请重试。")}</p><Button variant="outline" onClick={() => void detail.refetch()}>{msg("重试")}</Button></div> : risk?.status === "unavailable" || !risk ? <p role="alert">{msg("信用评估暂不可用，请等待更新后审批。")}</p> : risk.status !== "adequate" && <div className="approval-risk" role="status"><p>{risk.status === "insufficient" ? msg("预计还款能力不足，请核对风险后决定。") : msg("还款能力数据不足，请核对风险后决定。")}</p>{risk.status === "insufficient" && <><p>{msg("截至第 {0} 天预计应还：{1}", risk.days, formatMinor(risk.total_due_minor))}</p><p>{msg("预计还款能力：{0}", formatMinor(risk.estimated_capacity_minor))}</p></>}<label><input type="checkbox" checked={!!risk.token && riskAck === risk.token} onChange={e => setRiskAck(e.target.checked ? risk.token ?? "" : "")} /> {msg("已了解还款风险")}</label></div>}
+      {item.state === "submitted" && (detail.isPending ? <p role="status">{msg("正在读取还款风险")}</p> : detail.isError ? <div role="alert"><p>{msg("还款风险读取失败，请重试。")}</p><Button variant="outline" onClick={() => void detail.refetch()}>{msg("重试")}</Button></div> : risk?.status === "unavailable" || !risk ? <p role="alert">{msg("信用评估暂不可用，请等待更新后审批。")}</p> : risk.status !== "adequate" && <div className="approval-risk" role="status"><p>{risk.status === "insufficient" ? msg("预计还款能力不足，请核对风险后决定。") : msg("还款能力数据不足，请核对风险后决定。")}</p>{risk.status === "insufficient" && <><p>{msg("截至第 {0} 天预计应还：{1}", risk.days, formatMinor(risk.total_due_minor))}</p><p>{msg("预计还款能力：{0}", formatMinor(risk.estimated_capacity_minor))}</p></>}<label><input type="checkbox" checked={!!risk.token && riskAck === risk.token} onChange={e => setRiskAck(e.target.checked ? risk.token ?? "" : "")} /> {msg("已了解还款风险")}</label></div>)}
+      {revert && <div className="approval-risk"><label>{msg("回退原因")}<textarea value={revertNote} onChange={e => setRevertNote(e.target.value)} required /></label>{item.state === "approved" && <label><input type="checkbox" checked={confirmedNotDisbursed} onChange={e => setConfirmedNotDisbursed(e.target.checked)} />{msg("已在游戏中核对：未放款，且相关合同已撤销")}</label>}</div>}
       {message && <p role="alert">{message}</p>}
       <div className="approval-modal-actions">
-        <Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button>
-        <Button disabled={busy || detail.isPending || detail.isError || !risk || risk.status === "unavailable" || risk.status !== "adequate" && (!risk.token || riskAck !== risk.token)} onClick={() => void decide("approved")}>{msg("批准")}</Button>
+        {canRevert ? <Button variant="outline" disabled={busy || revert && (!revertNote.trim() || item.state === "approved" && !confirmedNotDisbursed)} onClick={() => revert ? void revertDecision() : setRevert(true)}>{msg(revert ? "确认回退" : "回退审批")}</Button> : item.state === "submitted" && <><Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button><Button disabled={busy || detail.isPending || detail.isError || !risk || risk.status === "unavailable" || risk.status !== "adequate" && (!risk.token || riskAck !== risk.token)} onClick={() => void decide("approved")}>{msg("批准")}</Button></>}
       </div>
     </Modal>
   );
@@ -1052,8 +1066,8 @@ function WelfareDetail({
       user={user}
       csrf={csrf}
       manage={
-        !!q.data.corporations.find((c) => c.id === item.corporation_id)
-          ?.can_manage
+        !!q.data.corporations.find((c) => c.id === item.corporation_id)?.can_manage ||
+        (welfare.activeLossKinds.includes(item.kind) && !!q.data.corporations.find((c) => c.id === item.corporation_id)?.can_compensate)
       }
       admin={q.data.administrator}
       personalActions={false}

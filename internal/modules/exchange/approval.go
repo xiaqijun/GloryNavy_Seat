@@ -129,6 +129,8 @@ func (s *Service) ApprovalDecorate(_ context.Context, user string, item *reviewq
 	// capable of delaying the approval page.
 	if item.Account != user && item.State == "cancel_requested" {
 		item.Actions = []string{"cancelled", "pending"}
+	} else if item.Account != user && item.State == "pending" && item.Action == "pending" {
+		item.Actions = []string{"revert_cancel_review"}
 	}
 	return nil
 }
@@ -225,6 +227,8 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 		}
 		if v.Account != user && v.State == "cancel_requested" {
 			v.Actions = []string{"cancelled", "pending"}
+		} else if v.Account != user && v.State == "pending" && v.Action == "pending" {
+			v.Actions = []string{"revert_cancel_review"}
 		}
 	}
 	return page, nil

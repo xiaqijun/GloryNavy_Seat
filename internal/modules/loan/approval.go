@@ -48,8 +48,13 @@ func (s *Service) ApprovalSnapshot(ctx context.Context) ([]reviewqueue.Item, err
 }
 
 func (s *Service) ApprovalDecorate(_ context.Context, user string, item *reviewqueue.Item) error {
-	if item != nil && item.Account != user && item.State == "submitted" {
-		item.Actions = []string{"approve", "reject"}
+	if item != nil && item.Account != user {
+		switch item.State {
+		case "submitted":
+			item.Actions = []string{"approve", "reject"}
+		case "approved", "rejected":
+			item.Actions = []string{"revert_review"}
+		}
 	}
 	return nil
 }
@@ -115,14 +120,14 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
  SELECT c.id,
  coalesce(a.created_at,c.updated_at,c.created_at) moment,
  CASE WHEN c.state='submitted' THEN 'pending' ELSE 'history' END bucket,
- (c.state<>'submitted') history,
+ (a.actor_id IS NOT NULL OR c.state<>'submitted') history,
  coalesce(a.actor_id::text,'') processed_by,
  jsonb_build_object(
    'id',c.id::text,'version',c.version::text,'account_id',c.borrower_account_id::text,
    'corporation_id',p.corporation_id::text,'kind','loan','state',c.state,'status',c.state,
    'recipient',c.borrower_character_id::text,'title',p.name,'reference',c.public_id,
    'amount_minor',c.principal_minor,'unit','isk','action',coalesce(a.action,''),
-   'actions',CASE WHEN c.state='submitted' AND c.borrower_account_id<>$2::uuid THEN '["approve","reject"]'::jsonb ELSE '[]'::jsonb END,
+   'actions',CASE WHEN c.borrower_account_id=$2::uuid THEN '[]'::jsonb WHEN c.state='submitted' THEN '["approve","reject"]'::jsonb WHEN c.state IN ('approved','rejected') THEN '["revert_review"]'::jsonb ELSE '[]'::jsonb END,
    'payload',jsonb_build_object('id',c.id::text,'public_id',c.public_id,'version',c.version::text,
      'pool_id',c.pool_id::text,'pool_name',p.name,'corporation_id',p.corporation_id::text,
      'borrower_account_id',c.borrower_account_id::text,'borrower_character_id',c.borrower_character_id::text,
@@ -133,7 +138,7 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
  JOIN loan_pools p ON p.id=c.pool_id
  LEFT JOIN LATERAL (
    SELECT actor_id, action, created_at FROM loan_audit
-   WHERE case_id=c.id AND action='review' ORDER BY id DESC LIMIT 1
+   WHERE case_id=c.id AND action IN ('review','revert_review') ORDER BY id DESC LIMIT 1
  ) a ON true
  WHERE p.lender_kind='corporation'
  AND EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) scope WHERE scope->>'corporation'=p.corporation_id::text)

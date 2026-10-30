@@ -147,8 +147,18 @@ func (s *Service) ApprovalDecorate(ctx context.Context, user string, item *revie
 		case "cancel_requested":
 			item.Actions = []string{"approve_cancel", "reject_cancel"}
 		case "approved", "executing":
+			item.Actions = []string{"revert_approval"}
+			if d.Cancellation != nil && d.Cancellation.Decision == "rejected" {
+				item.Actions = append(item.Actions, "revert_cancel_review")
+			}
 			if coinOnly(d) {
-				item.Actions = []string{"release_coins"}
+				item.Actions = append(item.Actions, "release_coins")
+			}
+		case "rejected":
+			item.Actions = []string{"revert_approval"}
+		case "cancelled":
+			if d.Cancellation != nil && d.Cancellation.Decision == "approved" {
+				item.Actions = []string{"revert_cancel_review"}
 			}
 		}
 	}
@@ -284,8 +294,18 @@ func (s *Service) approvalQueue(ctx context.Context, user string, f reviewqueue.
 			case "cancel_requested":
 				v.Actions = []string{"approve_cancel", "reject_cancel"}
 			case "approved", "executing":
+				v.Actions = []string{"revert_approval"}
+				if d.Cancellation != nil && d.Cancellation.Decision == "rejected" {
+					v.Actions = append(v.Actions, "revert_cancel_review")
+				}
 				if coinOnly(d) {
-					v.Actions = []string{"release_coins"}
+					v.Actions = append(v.Actions, "release_coins")
+				}
+			case "rejected":
+				v.Actions = []string{"revert_approval"}
+			case "cancelled":
+				if d.Cancellation != nil && d.Cancellation.Decision == "approved" {
+					v.Actions = []string{"revert_cancel_review"}
 				}
 			}
 		}

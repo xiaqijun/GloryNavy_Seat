@@ -1821,6 +1821,8 @@ export function CaseView({
     "request_cancel",
     "approve_cancel",
     "reject_cancel",
+    "revert_approval",
+    "revert_cancel_review",
   ].includes(action);
   const lossReview =
     approvalEntry &&
@@ -1838,6 +1840,10 @@ export function CaseView({
   const [receipt, setReceipt] = useState("");
   const [evidence, setEvidence] = useState(v.detail.evidence);
   const actions: { value: string; label: string }[] = [];
+  if (manage && user !== v.account_id && v.kind !== "grant" && ["approved", "executing", "rejected"].includes(v.state))
+    actions.push({ value: "revert_approval", label: msg("回退审批") });
+  if (manage && user !== v.account_id && ((["approved", "executing"].includes(v.state) && v.detail.cancellation?.decision === "rejected") || (v.state === "cancelled" && v.detail.cancellation?.decision === "approved")))
+    actions.push({ value: "revert_cancel_review", label: msg("回退取消审批") });
   if (
     personalActions &&
     unified &&
@@ -2081,7 +2087,7 @@ export function CaseView({
       onFailure={action === "approve" && loss ? quotaReview.retry : undefined}
       disabled={
         quotaReview.blocked ||
-        (action === "approve_cancel" && !confirmedNotDelivered) ||
+        ((action === "approve_cancel" || action === "revert_approval" && v.state !== "rejected" || action === "revert_cancel_review" && v.state === "cancelled") && !confirmedNotDelivered) ||
         (action === "approve" &&
           ((automaticPricing && v.detail.valuation?.state !== "ready") ||
             (capitalSubsidy && !v.detail.purchase)))
@@ -2093,7 +2099,7 @@ export function CaseView({
         corporation_id: v.corporation_id,
         note,
         confirmed_not_delivered:
-          action === "approve_cancel" && confirmedNotDelivered,
+          (action === "approve_cancel" || action === "revert_approval" || action === "revert_cancel_review") && confirmedNotDelivered,
         manual_pricing: action === "approve" && manualPricing,
         ...(action === "approve" && loss
           ? { loss_policy_version: policy?.version || "0", loss_quota_consent: quotaReview.consent }
@@ -2132,7 +2138,7 @@ export function CaseView({
           content
         )}
       </div>
-      {action === "approve_cancel" && (
+      {(action === "approve_cancel" || action === "revert_approval" && v.state !== "rejected" || action === "revert_cancel_review" && v.state === "cancelled") && (
         <label className="wide welfare-pricing-toggle">
           <input
             type="checkbox"
@@ -2142,6 +2148,7 @@ export function CaseView({
           {msg("已在游戏中核对：未发放，且相关发放合同已撤销")}
         </label>
       )}
+      {action === "revert_approval" && <p className="wide welfare-warning">{msg("回退后将重新审批，已完成发放或退款的记录不能回退。")}</p>}
       {action === "approve" && v.kind === "solo" && (
         <label className="wide welfare-pricing-toggle">
           <input

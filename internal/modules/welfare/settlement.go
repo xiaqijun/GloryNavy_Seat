@@ -154,6 +154,7 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 		return out, ErrInvalid
 	}
 	selection := make([]store.SettlementSelection, 0, len(input.Items))
+	welfareVersions := make(map[int64]int64)
 	seen := map[string]bool{}
 	accountGroup := ""
 	for _, item := range input.Items {
@@ -177,6 +178,7 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 			if caseRow.State != "approved" && caseRow.State != "executing" && caseRow.State != "cancel_requested" {
 				return out, ErrConflict
 			}
+			welfareVersions[item.ID] = caseRow.Version
 			account = caseRow.AccountID
 		} else if s.ExchangeSettlementEligible != nil {
 			if checkErr := s.ExchangeSettlementEligible(ctx, item.ID); checkErr != nil {
@@ -246,6 +248,22 @@ func (s *Service) CreateSettlementBatch(ctx context.Context, actor string, input
 		}
 		if e = s.ExchangeSettlementStartTx(ctx, tx, actor, accountGroup, item.ID); e != nil {
 			return out, e
+		}
+	}
+	if len(welfareVersions) > 0 {
+		// The summary above was prepared outside the transaction. Serialize with
+		// approval changes and reject it if any included case changed meanwhile.
+		if e = store.Lock(ctx, tx); e != nil {
+			return out, e
+		}
+		for id, version := range welfareVersions {
+			current, readErr := store.Read(ctx, tx, id)
+			if readErr != nil {
+				return out, readErr
+			}
+			if current.Version != version || current.AccountID != accountGroup || (current.State != "approved" && current.State != "executing" && current.State != "cancel_requested") {
+				return out, ErrConflict
+			}
 		}
 	}
 	reference, e := settlementReference(ctx, tx)

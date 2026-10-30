@@ -25,9 +25,9 @@ func LossQuotaDays(ctx context.Context, db DB, account string, corp, day int64) 
  WHERE c.account_id=$1 AND c.corporation_id=$2 AND c.kind IN ('srp','solo')
  AND c.state IN ('approved','executing','cancel_requested','completed') AND c.award_minor>0
  AND NOT EXISTS (SELECT 1 FROM welfare_loss_quota_days q WHERE q.case_id=c.id)
- AND (SELECT min(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve')
+ AND (SELECT max(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve')
      >= (date '1970-01-01'+$3::integer)::timestamp AT TIME ZONE 'Asia/Shanghai'
- AND (SELECT min(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve')
+ AND (SELECT max(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve')
      < (date '1970-01-01'+$3::integer+1)::timestamp AT TIME ZONE 'Asia/Shanghai'`, account, corp, day)
 	if err != nil {
 		return nil, err

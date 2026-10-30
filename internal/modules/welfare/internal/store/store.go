@@ -92,7 +92,7 @@ func List(ctx context.Context, db DB, corp int64, owner, kind string, before int
 // Authorization is deliberately absent here; the approval service applies the
 // actor's corporation scope when reading the central index.
 func Snapshot(ctx context.Context, db DB) ([]ApprovalSnapshotRow, error) {
-	rows, e := db.Query(ctx, "SELECT "+cols+",coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM welfare_audit WHERE case_id=c.id AND action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void')),'{}'::text[]),coalesce((a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance'),false),CASE WHEN a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance' THEN coalesce(a.audit_at,c.updated_at,c.created_at) ELSE coalesce((SELECT max(created_at) FROM welfare_audit WHERE case_id=c.id AND action IN ('apply','resubmit')),c.created_at) END,coalesce(a.action,'') FROM welfare_cases c LEFT JOIN LATERAL (SELECT actor_id,created_at AS audit_at,action FROM welfare_audit WHERE case_id=c.id AND (action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void') OR action='delivery_check' AND result->>'state'='completed') ORDER BY created_at DESC,id DESC LIMIT 1) a ON true WHERE c.kind<>'grant' ORDER BY c.id")
+	rows, e := db.Query(ctx, "SELECT "+cols+",coalesce((SELECT array_agg(DISTINCT actor_id::text) FROM welfare_audit WHERE case_id=c.id AND action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void','revert_approval','revert_cancel_review')),'{}'::text[]),coalesce((a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance'),false),CASE WHEN a.actor_id IS NOT NULL OR c.state IN ('completed','cancelled','rejected','reversed') OR c.detail->>'payment_status'='awaiting_acceptance' THEN coalesce(a.audit_at,c.updated_at,c.created_at) ELSE coalesce((SELECT max(created_at) FROM welfare_audit WHERE case_id=c.id AND action IN ('apply','resubmit')),c.created_at) END,coalesce(a.action,'') FROM welfare_cases c LEFT JOIN LATERAL (SELECT actor_id,created_at AS audit_at,action FROM welfare_audit WHERE case_id=c.id AND (action IN ('approve','reject','information','approve_cancel','reject_cancel','complete','release_coins','cancel','void','revert_approval','revert_cancel_review') OR action='delivery_check' AND result->>'state'='completed') ORDER BY created_at DESC,id DESC LIMIT 1) a ON true WHERE c.kind<>'grant' ORDER BY c.id")
 	if e != nil {
 		return nil, e
 	}
@@ -122,8 +122,8 @@ func ApprovedLossTotal(ctx context.Context, db DB, account string, corp int64, k
 		FROM welfare_cases c
 		WHERE c.account_id=$1 AND c.corporation_id=$2 AND c.kind=$3
 		AND c.state IN ('approved','executing','cancel_requested','completed')
-		AND EXISTS (SELECT 1 FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve'
-			AND a.created_at >= $4 AND a.created_at < $5)`, account, corp, kind, start, end).Scan(&total)
+		AND (SELECT max(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve') >= $4
+		AND (SELECT max(a.created_at) FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve') < $5`, account, corp, kind, start, end).Scan(&total)
 	return total, err
 }
 
@@ -174,16 +174,11 @@ func PendingLosses(ctx context.Context, db DB, account string, corp int64) ([]Pe
 func ApprovedLossTotals(ctx context.Context, db DB, account string, corp int64, dayStart, dayEnd, weekStart, weekEnd, monthStart, monthEnd time.Time) (map[string]LossQuotaUsage, error) {
 	rows, err := db.Query(ctx, `
 		SELECT c.kind,
-			COALESCE(SUM(c.award_minor) FILTER (WHERE EXISTS (
-				SELECT 1 FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve' AND a.created_at >= $3 AND a.created_at < $4
-			)),0),
-			COALESCE(SUM(c.award_minor) FILTER (WHERE EXISTS (
-				SELECT 1 FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve' AND a.created_at >= $5 AND a.created_at < $6
-			)),0),
-			COALESCE(SUM(c.award_minor) FILTER (WHERE EXISTS (
-				SELECT 1 FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve' AND a.created_at >= $7 AND a.created_at < $8
-			)),0)
+			COALESCE(SUM(c.award_minor) FILTER (WHERE latest.approved_at >= $3 AND latest.approved_at < $4),0),
+			COALESCE(SUM(c.award_minor) FILTER (WHERE latest.approved_at >= $5 AND latest.approved_at < $6),0),
+			COALESCE(SUM(c.award_minor) FILTER (WHERE latest.approved_at >= $7 AND latest.approved_at < $8),0)
 		FROM welfare_cases c
+		LEFT JOIN LATERAL (SELECT max(a.created_at) approved_at FROM welfare_audit a WHERE a.case_id=c.id AND a.action='approve') latest ON true
 		WHERE c.account_id=$1 AND c.corporation_id=$2 AND c.kind IN ('srp','solo')
 		  AND c.state IN ('approved','executing','cancel_requested','completed')
 		GROUP BY c.kind`, account, corp, dayStart, dayEnd, weekStart, weekEnd, monthStart, monthEnd)

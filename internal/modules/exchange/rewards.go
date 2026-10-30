@@ -419,7 +419,7 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 	}
 	actor, err := uuid(user)
 	key, e := uuid(c.RequestKey)
-	if err != nil || e != nil || c.Version < 1 || len([]rune(c.Note)) < 1 || len([]rune(c.Note)) > 200 || (c.State != "fulfilled" && c.State != "cancelled" && c.State != "cancel_requested" && c.State != "pending" && c.State != "withdrawn") {
+	if err != nil || e != nil || c.Version < 1 || len([]rune(c.Note)) < 1 || len([]rune(c.Note)) > 200 || (c.State != "fulfilled" && c.State != "cancelled" && c.State != "cancel_requested" && c.State != "pending" && c.State != "withdrawn" && c.State != "revert_cancel_review") {
 		return ErrInvalid
 	}
 	row, err := store.New(s.Pool).Redemption(ctx, id)
@@ -479,6 +479,13 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 		return ErrConflict
 	}
 	switch c.State {
+	case "revert_cancel_review":
+		if row.State != "pending" {
+			return ErrConflict
+		}
+		if err = s.guardRevertCancelReview(ctx, tx, id); err != nil {
+			return err
+		}
 	case "cancel_requested":
 		if row.State != "pending" {
 			return ErrConflict
@@ -513,6 +520,9 @@ func (s *Service) DecideOrder(ctx context.Context, user string, id int64, c Orde
 		}
 	}
 	targetState := c.State
+	if c.State == "revert_cancel_review" {
+		targetState = "cancel_requested"
+	}
 	if withdraw {
 		targetState = "cancelled"
 	}

@@ -169,3 +169,6 @@ Stop the local API, back up database/configuration, run `npm run db:migrate` for
 Site administrators may pass `member=<site-account UUID>` to GET /wallet and GET /rewards for read-only member wallet access. Each request checks the current administrator and an active target binding. Other users receive 404 for foreign targets. Writes never accept a target account or delegate spending.
 
 Stop old API/workers before Goose 40 and start matching code after migration; do not mix versions. Once random references exist, do not roll back to code deriving references from numeric IDs. Down also refuses to remove random references. Account merges, retries and state changes retain the saved ID. It is a correlation reference, not a replacement for authorization or delivery evidence.
+# Cancellation review reversion (unreleased)
+
+An administrator can reopen a wrongly rejected cancellation request before delivery begins, with a reason. The operation preserves balance, stock and audit history; refunded orders cannot be reverted. Ordinary redemptions do not require approval.

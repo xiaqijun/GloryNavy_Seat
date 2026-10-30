@@ -456,6 +456,23 @@ test("中心复用审批表单并保留版本和CSRF", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(new URL(page.url()).searchParams.has("source")).toBe(false);
 });
+test("已批准补损回退需要确认并提交当前版本", async ({ page }) => {
+  const { writes } = await setup(page, { loss: true });
+  const approved = { ...lossItem, state: "approved", award_minor: 4282133332 };
+  const reviewed = { ...lossRow, state: "approved", actions: ["revert_approval"], payload: approved };
+  await page.route("**/api/v1/approval/items/welfare/9", (route) => route.fulfill({json: {data: reviewed}}));
+  await page.route("**/api/v1/welfare/cases/9", (route) => route.fulfill({json: {data: {item: approved, history: []}}}));
+  await page.goto("/approvals?source=welfare&id=9");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", {name: "回退审批", exact: true}).click();
+  await dialog.getByRole("textbox", {name: "处理说明"}).fill("审批错误");
+  const submit = dialog.getByRole("button", {name: "确认", exact: true});
+  await expect(submit).toBeDisabled();
+  await dialog.getByRole("checkbox", {name: /已在游戏中核对/}).check();
+  await submit.click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toMatchObject({action: "revert_approval", id: "9", version: "2", confirmed_not_delivered: true});
+});
 test("补损审批先显示损失与金额，证据按需展开", async ({ page }, info) => {
   await setup(page, { loss: true });
   await page.goto("/approvals");
@@ -536,6 +553,19 @@ test("兑换取消审核需要理由和未交付确认", async ({ page }) => {
     version: "2",
     undelivered_confirmed: true,
   });
+});
+test("误驳回的兑换取消审批可退回待审", async ({ page }) => {
+  const { writes } = await setup(page);
+  const pending = { ...order, state: "pending" };
+  const reviewed = { ...rows.find((row) => row.source === "exchange")!, state: "pending", action: "pending", actions: ["revert_cancel_review"], payload: pending };
+  await page.route("**/api/v1/approval/items/exchange/8", (route) => route.fulfill({json: {data: reviewed}}));
+  await page.goto("/approvals?source=exchange&id=8");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", {name: "回退审批", exact: true}).click();
+  await dialog.getByRole("textbox", {name: "回退原因"}).fill("误驳回");
+  await dialog.getByRole("button", {name: "确认回退"}).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toMatchObject({state: "revert_cancel_review", version: "2", note: "误驳回"});
 });
 test("普通成员没有入口，不查询管理列表", async ({ page }) => {
   const { reads } = await setup(page, { allowed: false });

@@ -26,7 +26,7 @@ func (h Handler) Module() module.Definition {
 		fn           http.HandlerFunc
 	}{
 		{"GET", "/context", h.context}, {"GET", "/credit", h.credit}, {"GET", "/evaluations", h.evaluations}, {"GET", "/settings/policy", h.policy}, {"POST", "/settings/policy", h.policyUpdate}, {"GET", "/cases", h.cases}, {"GET", "/cases/{id}", h.detail}, {"POST", "/settings/funding", h.adminFunding},
-		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review}, {"POST", "/cases/{id}/cancel", h.applicationCancel},
+		{"POST", "/contributions", h.contributionCreate}, {"GET", "/contributions", h.contributions}, {"POST", "/contributions/{id}/auto-verify", h.contributionAutoVerify}, {"POST", "/contributions/{id}/cancel", h.contributionCancel}, {"POST", "/applications", h.applicationCreate}, {"POST", "/cases/{id}/review", h.review}, {"POST", "/cases/{id}/revert-review", h.revertReview}, {"POST", "/cases/{id}/cancel", h.applicationCancel},
 		{"POST", "/cases/{id}/payments", h.payment}, {"POST", "/cases/{id}/guarantees", h.guarantee}, {"POST", "/guarantees/{id}/decision", h.guaranteeDecision},
 		{"GET", "/guarantees", h.guarantees},
 		{"GET", "/guarantees/candidates", h.guaranteeCandidates},
