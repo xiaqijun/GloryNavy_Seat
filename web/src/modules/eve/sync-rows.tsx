@@ -1,8 +1,8 @@
 import { msg } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock3, RefreshCw, TriangleAlert } from "lucide-react";
-import { useState } from "react";
 import { IconAction } from "@/components/ui/icon-action";
+import { useToast } from "@/components/ui/toast-context";
 import {
   getCharacterSync,
   refreshSync,
@@ -24,7 +24,7 @@ export function SyncRows({
   csrf: string;
 }) {
   const client = useQueryClient();
-  const [notice, setNotice] = useState("");
+  const toast = useToast();
   const query = useQuery({
     queryKey: ["eve", "sync", "character", userID, characterID],
     queryFn: ({ signal }) => getCharacterSync(characterID, signal),
@@ -37,7 +37,7 @@ export function SyncRows({
   const update = useMutation({
     mutationFn: (resource: string) => refreshSync(characterID, csrf, resource),
     onSuccess: async (results) => {
-      setNotice(
+      toast.info(
         results.some((r) => r.outcome === "deferred")
           ? msg("已安排，将在可更新时同步")
           : results.some((r) => r.outcome === "already_pending")
@@ -112,7 +112,6 @@ export function SyncRows({
               }
               aria-busy={update.isPending && update.variables === t.resource}
               onClick={() => {
-                setNotice("");
                 update.mutate(t.resource);
               }}
             >
@@ -130,11 +129,6 @@ export function SyncRows({
       {update.error && (
         <p role="alert" className="login-error">
           {update.error.message}
-        </p>
-      )}
-      {notice && (
-        <p role="status" className="sync-reason">
-          {notice}
         </p>
       )}
     </div>

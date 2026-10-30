@@ -21,6 +21,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
+import { useToast } from "@/components/ui/toast-context";
 import { EveImage } from "@/components/eve-image";
 import { APIError } from "@/lib/http";
 import { useManagementAccess } from "./use-management-access";
@@ -98,6 +99,7 @@ function Feedback({
 }
 function Management({ user, csrf }: { user: string; csrf: string }) {
   const client = useQueryClient();
+  const toast = useToast();
   const [params] = useSearchParams();
   const [tab, setTab] = useState(params.get("tab") === "members" ? "members" : "roles");
   const roles = useQuery({
@@ -110,18 +112,16 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
   });
   const [selected, setSelected] = useState<Role | null>(null);
   const [removing, setRemoving] = useState<Role | null>(null);
-  const [notice, setNotice] = useState("");
   const [editorKey, setEditorKey] = useState(0);
   const refresh = () => client.invalidateQueries({ queryKey: ["access"] });
   const save = useMutation({
-    onMutate: () => setNotice(""),
     mutationFn: (r: Role) => saveRole(r, csrf),
     onSuccess: async (_, r) => {
       await refresh();
       const result = await roles.refetch();
       setSelected(result.data?.find((x) => x.id === r.id) ?? null);
       setEditorKey((k) => k + 1);
-      setNotice(msg("角色已保存"));
+      toast.success(msg("角色已保存"));
     },
     onError: () => {
       void client.invalidateQueries({ queryKey: ["access", "me"] });
@@ -132,7 +132,7 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
     onSuccess: async () => {
       if (selected?.id === removing?.id) setSelected(null);
       setRemoving(null);
-      setNotice(msg("角色已删除"));
+      toast.success(msg("角色已删除"));
       await refresh();
     },
   });
@@ -149,7 +149,7 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
           <RefreshCw aria-hidden="true" />
         </IconAction>
       </div>
-      <Tabs.Root value={tab} onValueChange={(value) => { setTab(value); setNotice(""); }}>
+      <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.List className="access-tabs" aria-label={msg("权限管理分区")}>
           <Tabs.Trigger value="roles">
             <ShieldCheck size={18} aria-hidden="true" />
@@ -164,11 +164,6 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
             {msg("操作记录")}{" "}
           </Tabs.Trigger>
         </Tabs.List>
-        {notice && (
-          <p className="account-notice" role="status">
-            {notice}
-          </p>
-        )}
         {roles.isError || permissions.isError ? (
           <Feedback retry={() => void refresh()}>
             {roles.error?.message ?? permissions.error?.message}
@@ -196,7 +191,6 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
                           grants: [],
                         });
                         save.reset();
-                        setNotice("");
                       }}
                     >
                       <Plus aria-hidden="true" />
@@ -218,7 +212,6 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
                             setSelected(r);
                             setEditorKey((k) => k + 1);
                             save.reset();
-                            setNotice("");
                           }}
                         >
                           <span className="access-role-icon">
@@ -259,7 +252,7 @@ function Management({ user, csrf }: { user: string; csrf: string }) {
                   <CardContent>
                     {selected && selected.version !== "0" && (
                       <div className="access-officer-assign">
-                        <Button variant="outline" disabled={busy} onClick={() => { setTab("members"); setNotice(""); }}>
+                        <Button variant="outline" disabled={busy} onClick={() => { setTab("members"); }}>
                           <UsersRound aria-hidden="true" />{msg("配置成员")}
                         </Button>
                       </div>
@@ -331,13 +324,13 @@ function Members({
   roles: Role[];
 }) {
   const client = useQueryClient();
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [cursors, setCursors] = useState([""]);
   const [selected, setSelected] = useState<Member | null>(null);
   const [roleID, setRoleID] = useState("");
   const [revoke, setRevoke] = useState<Role | null>(null);
-  const [notice, setNotice] = useState("");
   const members = useQuery({
     queryKey: ["access", "members", user, query, cursors.at(-1)],
     queryFn: ({ signal }) => getMembers(query, cursors.at(-1)!, signal),
@@ -351,7 +344,7 @@ function Members({
     onSuccess: async (_, v) => {
       setRevoke(null);
       setRoleID("");
-      setNotice(v.enabled ? msg("角色已授予") : msg("角色已撤销"));
+      toast.success(v.enabled ? msg("角色已授予") : msg("角色已撤销"));
       await client.invalidateQueries({ queryKey: ["access"] });
     },
     onError: (e) => {
@@ -416,7 +409,6 @@ function Members({
                   onClick={() => {
                     setSelected(m);
                     setRoleID("");
-                    setNotice("");
                     assignment.reset();
                   }}
                 >
@@ -544,11 +536,6 @@ function Members({
                       {msg("授予")}{" "}
                     </Button>
                   </form>
-                  {notice && (
-                    <p role="status" className="account-notice">
-                      {notice}
-                    </p>
-                  )}
                   {assignment.error && !revoke && (
                     <p role="alert" className="login-error">
                       {assignment.error.message}

@@ -18,6 +18,7 @@ import { Link, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { EveImage } from "@/components/eve-image";
 import { IconAction } from "@/components/ui/icon-action";
+import { useToast } from "@/components/ui/toast-context";
 import {
   useSession,
   logout,
@@ -35,6 +36,7 @@ import { getModuleCatalog } from "@/app/catalog";
 import "@/modules/reminder/reminder.css";
 
 export default function AccountPage() {
+  const toast = useToast();
   const auth = useSession();
   const modules = useQuery({ queryKey: ["host", "modules"], queryFn: ({ signal }) => getModuleCatalog(signal), enabled: !!auth.data?.session });
   const status = useQuery({
@@ -73,7 +75,7 @@ export default function AccountPage() {
       changeCharacter(id, action, session?.csrf_token ?? ""),
     onSuccess: async (_, variables) => {
       setConfirmUnlink(false);
-      setNotice(
+      toast.success(
         variables.action === "main" ? msg("主角色已更新") : msg("角色已解绑"),
       );
       await client.cancelQueries({ queryKey: ["access"] });

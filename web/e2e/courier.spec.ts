@@ -35,6 +35,7 @@ for (const language of ["zh-CN", "en"]) {
     await expect(page.getByLabel(t("报酬 / ISK","Reward / ISK"),{exact:true})).toHaveValue("22000000");
     await page.getByRole("button",{name:t("复制 报酬 / ISK","Copy Reward / ISK"),exact:true}).click();
     await expect(page.locator("html")).toHaveAttribute("data-copied","22000000");
+    await expect(page.locator(".toast-success").getByText(t("已复制", "Copied"), {exact:true})).toBeVisible();
     await page.screenshot({path:info.outputPath(`manual-${language}.png`),fullPage:true});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.getByLabel(t("货物体积 / m³","Cargo volume / m³"),{exact:true}).fill("375001");

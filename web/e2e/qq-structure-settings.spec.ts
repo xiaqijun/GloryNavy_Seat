@@ -58,7 +58,7 @@ for (const lang of ["zh-CN", "en"]) {
     await card.getByRole("button", { name: tr("保存"), exact: true }).click();
     await expect.poll(() => state.saves).toBe(1);
     expect(state.value.corporation_id).toBe("43");
-    await expect(card.getByText(tr("建筑提醒配置已保存"))).toBeVisible();
+    await expect(page.locator(".toast-success").getByText(tr("建筑提醒配置已保存"))).toBeVisible();
     await card.getByRole("checkbox", { name: tr("启用推送") }).uncheck();
     await card.getByRole("button", { name: tr("保存"), exact: true }).click();
     await expect.poll(() => state.saves).toBe(2);

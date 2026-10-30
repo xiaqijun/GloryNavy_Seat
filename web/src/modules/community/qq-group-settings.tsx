@@ -4,6 +4,7 @@ import { Bot, Globe, KeyRound, Plus, Save, Trash2, UsersRound } from "lucide-rea
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { IconAction } from "@/components/ui/icon-action";
 import { getAccountAccess } from "@/modules/access/api";
 import {
@@ -53,6 +54,7 @@ export function QQBotSettings({ userID, csrf }: { userID: string; csrf: string }
 
 function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; csrf: string }) {
   const client = useQueryClient();
+  const toast = useToast();
   const [appID, setAppID] = useState(initial.app_id);
   const [apiBase, setAPIBase] = useState(initial.api_base);
   const [secret, setSecret] = useState("");
@@ -62,6 +64,7 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
     onSuccess: (next) => {
       setSecret("");
       client.setQueryData(["community", "qq-bot-settings"], next);
+      toast.success(msg("QQ Bot 配置已保存"));
     },
   });
   const busy = save.isPending;
@@ -101,7 +104,6 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
         </div>
         {save.error && <p role="alert" className="login-error">{save.error.message}</p>}
         {save.error && <Button type="button" variant="outline" size="sm" onClick={() => void client.invalidateQueries({queryKey: ["community", "qq-bot-settings"]})}>{msg("重新读取")}</Button>}
-        {save.isSuccess && <p role="status" className="account-notice">{msg("QQ Bot 配置已保存")}</p>}
       </CardContent>
     </Card>
   );
@@ -109,10 +111,11 @@ function QQBotSettingsEditor({ initial, csrf }: { initial: QQBotSettingsData; cs
 
 function QQGroupSettingsEditor({ initial, csrf }: { initial: QQGroupSetting[]; csrf: string }) {
   const client = useQueryClient();
+  const toast = useToast();
   const [items, setItems] = useState(initial);
   const save = useMutation({
     mutationFn: () => saveQQGroupSettings(items, csrf),
-    onSuccess: (next) => client.setQueryData(["community", "qq-group-settings"], next),
+    onSuccess: (next) => { client.setQueryData(["community", "qq-group-settings"], next); toast.success(msg("QQ 群配置已保存")); },
   });
   const busy = save.isPending;
   return (
@@ -176,7 +179,6 @@ function QQGroupSettingsEditor({ initial, csrf }: { initial: QQGroupSetting[]; c
           </Button>
         </div>
         {save.error && <p role="alert" className="login-error">{save.error.message}</p>}
-        {save.isSuccess && <p role="status" className="account-notice">{msg("QQ 群配置已保存")}</p>}
       </CardContent>
     </Card>
   );

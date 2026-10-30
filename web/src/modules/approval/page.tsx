@@ -1134,6 +1134,7 @@ function SettlementTableRow({
 }
 
 function BatchCopyField({ label, value }: { label: string; value: string }) {
+  const toast = useToast();
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <div className="approval-batch-copy-field">
@@ -1150,6 +1151,7 @@ function BatchCopyField({ label, value }: { label: string; value: string }) {
           try {
             await navigator.clipboard.writeText(value);
             setStatus("copied");
+            toast.success(msg("已复制"));
           } catch {
             setStatus("failed");
           }
@@ -1157,7 +1159,6 @@ function BatchCopyField({ label, value }: { label: string; value: string }) {
       >
         {status === "copied" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
       </Button>
-      {status === "copied" && <small role="status">{msg("已复制")}</small>}
       {status === "failed" && <small role="alert">{msg("复制失败，请手动复制")}</small>}
     </div>
   );

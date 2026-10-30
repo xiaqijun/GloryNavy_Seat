@@ -50,7 +50,7 @@ const syncedLoss = {
   ship_name: "毒蜥级",
   solar_system_id: "30000142",
   solar_system_name: "吉他",
-  occurred_at: "2026-09-01T12:00:00Z",
+  occurred_at: new Date().toISOString(),
   observed_at: "2026-09-16T01:00:00Z",
   damage_taken: 8000,
   attackers: [

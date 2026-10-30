@@ -175,7 +175,7 @@ test("shipped permissions, assignment, concurrency recovery and deletion", async
   await page.getByLabel("角色名称", { exact: true }).fill("角色管理员");
   await page.getByRole("checkbox", { name: "权限管理", exact: true }).check();
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("角色已保存");
+  await expect(page.locator(".toast-success").getByText("角色已保存", {exact:true})).toBeVisible();
   expect(state.roles[0].grants).toEqual([
     { permission: "access.manage", corporations: [], alliances: [] },
   ]);
@@ -222,7 +222,7 @@ test("shipped permissions, assignment, concurrency recovery and deletion", async
     .getByLabel("授予角色", { exact: true })
     .selectOption(state.roles[0].id);
   await page.getByRole("button", { name: "授予", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("角色已授予");
+  await expect(page.locator(".toast-success").getByText("角色已授予", {exact:true})).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: `../.local/permissions-members-${info.project.name}.png`,
@@ -233,7 +233,7 @@ test("shipped permissions, assignment, concurrency recovery and deletion", async
     .getByRole("alertdialog")
     .getByRole("button", { name: "确认", exact: true })
     .click();
-  await expect(page.getByRole("status")).toHaveText("角色已撤销");
+  await expect(page.locator(".toast-success").getByText("角色已撤销", {exact:true})).toBeVisible();
   await page.getByRole("tab", { name: "操作记录" }).click();
   await page.getByText("授予角色", { exact: true }).click();
   await expect(page.getByText(user, { exact: true })).toBeVisible();
@@ -296,7 +296,7 @@ test("editing published permissions preserves hidden historical grants", async (
   await expect(page.getByLabel("军团 ID", { exact: true })).toHaveCount(0);
   await page.getByLabel("角色名称", { exact: true }).fill("保留历史授权");
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("角色已保存");
+  await expect(page.locator(".toast-success").getByText("角色已保存", {exact:true})).toBeVisible();
   expect(state.roles[0].grants).toEqual(legacy.grants);
 });
 

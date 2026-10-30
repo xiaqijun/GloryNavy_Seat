@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { getData } from "@/lib/http";
 import { getLocale, msg } from "@/lib/i18n";
 import { write } from "./api";
@@ -14,7 +15,7 @@ export function AllianceCoinConversion({ user, csrf, version }: { user: string; 
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
   const trigger = useRef<HTMLButtonElement>(null);
   const attempt = useRef<{ month: string; version: string; request_key: string; token: string; reason: string } | null>(null);
   const client = useQueryClient();
@@ -48,7 +49,7 @@ export function AllianceCoinConversion({ user, csrf, version }: { user: string; 
     },
     onSuccess: () => {
       setOpen(false);
-      setSaved(true);
+      toast.success(msg("已兑换"));
       attempt.current = null;
       void client.invalidateQueries({ queryKey: ["attendance"] });
       void client.invalidateQueries({ queryKey: ["exchange"] });
@@ -58,10 +59,9 @@ export function AllianceCoinConversion({ user, csrf, version }: { user: string; 
   return (
     <div className="attendance-pap-history">
       <div className="attendance-toolbar">
-        <Button ref={trigger} variant="outline" aria-expanded={open} disabled={m.isPending} onClick={() => { setOpen((v) => !v); setReason(""); setSelectedMonth(""); attempt.current = null; setSaved(false); m.reset(); }}>
+        <Button ref={trigger} variant="outline" aria-expanded={open} disabled={m.isPending} onClick={() => { setOpen((v) => !v); setReason(""); setSelectedMonth(""); attempt.current = null; m.reset(); }}>
           <Coins aria-hidden="true" />{msg("兑换联盟 PAP")} {" "}
         </Button>
-        {saved && <span role="status">{msg("已兑换")}</span>}
       </div>
       {open && <FormDialog title={msg("兑换联盟 PAP")} close={() => setOpen(false)} busy={m.isPending}
         showSubmit={!!q.data && q.data.pending > 0}

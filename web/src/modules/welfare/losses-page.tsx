@@ -6,6 +6,7 @@ import { Crosshair } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { LossBrowser } from "./loss-browser";
 import { Apply } from "./page";
 import * as api from "./api";
@@ -81,23 +82,21 @@ function Records({
   characters: api.Character[];
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [claim, setClaim] = useState<{ loss: api.Loss; kind: string } | null>(
     null,
   );
-  const [message, setMessage] = useState("");
   const context = useQuery({
     queryKey: ["welfare", "context", user, corp],
     queryFn: ({ signal }) => api.context(corp, signal),
   });
   return (
     <>
-      {message && <p role="status">{message}</p>}
       <LossBrowser
         corp={corp}
         csrf={csrf}
         characters={characters}
         select={(loss, kind) => {
-          setMessage("");
           setClaim({ loss, kind });
         }}
       />
@@ -121,7 +120,7 @@ function Records({
             close={() => setClaim(null)}
             done={() => {
               setClaim(null);
-              setMessage(msg("补损申请已提交"));
+              toast.success(msg("补损申请已提交"));
               void queryClient.invalidateQueries({
                 queryKey: ["welfare", "cases"],
               });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { msg } from "@/lib/i18n";
 import type { Case } from "./api";
 
@@ -15,6 +16,7 @@ function CopyField({
   action: string;
   wide?: boolean;
 }) {
+  const toast = useToast();
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <div className={`welfare-contract-copy${wide ? " wide" : ""}`}>
@@ -35,6 +37,7 @@ function CopyField({
           try {
             await navigator.clipboard.writeText(value);
             setStatus("copied");
+            toast.success(msg("已复制"));
           } catch {
             setStatus("failed");
           }
@@ -46,7 +49,6 @@ function CopyField({
           <Copy size={16} aria-hidden="true" />
         )}
       </Button>
-      {status === "copied" && <small role="status">{msg("已复制")}</small>}
       {status === "failed" && (
         <small role="alert">{msg("复制失败，请手动复制")}</small>
       )}

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins } from "lucide-react";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { getData } from "@/lib/http";
 import { write, type Event } from "./api";
 import { isSaved } from "./pap-api";
@@ -21,7 +22,7 @@ export function CoinConversion({
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
   const trigger = useRef<HTMLButtonElement>(null);
   const attempt = useRef<{
     version: string;
@@ -59,7 +60,7 @@ export function CoinConversion({
     },
     onSuccess: () => {
       setOpen(false);
-      setSaved(true);
+      toast.success(msg("已兑换"));
       attempt.current = null;
       void client.invalidateQueries({ queryKey: ["attendance"] });
       void client.invalidateQueries({ queryKey: ["exchange"] });
@@ -78,14 +79,12 @@ export function CoinConversion({
             setOpen((v) => !v);
             setReason("");
             attempt.current = null;
-            setSaved(false);
             m.reset();
           }}
         >
           <Coins aria-hidden="true" />
           {msg("兑换果壳币")}{" "}
         </Button>
-        {saved && <span role="status">{msg("已兑换")}</span>}
       </div>
       {open && (
         <FormDialog

@@ -618,7 +618,7 @@ function EventDetail({
         <FleetNoticeEditor eventID={id} corporationID={e.corporation_id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />
       </div>
       </div>
-      <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} />
+      <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} notify />
       {capture.isError && (
         <Feedback error={capture.error} retry={() => void q.refetch()} />
       )}

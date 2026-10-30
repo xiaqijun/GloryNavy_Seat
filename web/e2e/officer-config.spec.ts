@@ -70,8 +70,10 @@ for (const language of ["zh-CN", "en"]) {
       await page.getByRole("combobox", { name: tr("{0}：{1}").replace("{0}", tr(label)).replace("{1}", tr("联盟")) }).click();
       await page.getByRole("option", { name: "已接入联盟", exact: true }).click();
       await page.getByRole("button", { name: tr("保存角色"), exact: true }).click();
-      await expect(page.getByRole("status")).toHaveText(tr("角色已保存"));
+      const savedNotice = page.locator(".toast-success").filter({hasText:tr("角色已保存")}).last();
+      await expect(savedNotice).toBeVisible();
       expect(state.roles.find(role => role.name === tr(name))?.grants).toEqual([{ permission, corporations: ["12345"], alliances: ["1000009"] }]);
+      await savedNotice.getByRole("button", {name:tr("关闭通知")}).click();
     }
     await page.getByRole("group", { name: tr("平台角色列表") }).getByRole("button", { name: new RegExp("^" + tr("贷款专员")) }).click();
     await expect(page.getByRole("button", { name: tr("配置成员"), exact: true })).toBeVisible();
@@ -84,11 +86,11 @@ for (const language of ["zh-CN", "en"]) {
     const loan = state.roles.find(role => role.name === tr("贷款专员"))!;
     await page.getByLabel(tr("授予角色"), { exact: true }).selectOption(loan.id);
     await page.getByRole("button", { name: tr("授予"), exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText(tr("角色已授予"));
+    await expect(page.locator(".toast-success").getByText(tr("角色已授予"), {exact:true}).last()).toBeVisible();
     expect(state.assigned).toEqual([loan.id]);
     await page.getByRole("button", { name: tr("撤销{0}").replace("{0}", loan.name), exact: true }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: tr("确认"), exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText(tr("角色已撤销"));
+    await expect(page.locator(".toast-success").getByText(tr("角色已撤销"), {exact:true}).last()).toBeVisible();
     expect(state.assigned).toEqual([]);
     // Existing translated names and corporation restrictions survive locale changes.
     loan.grants[0].corporations = ["12345"];
@@ -98,7 +100,7 @@ for (const language of ["zh-CN", "en"]) {
       .getByRole("button", { name: new RegExp("^" + loan.name) }).click();
     await expect(page.getByLabel(other === "en" ? english["角色名称"] : "角色名称", { exact: true })).toHaveValue(loan.name);
     await page.getByRole("button", { name: other === "en" ? english["保存角色"] : "保存角色", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText(other === "en" ? english["角色已保存"] : "角色已保存");
+    await expect(page.locator(".toast-success").getByText(other === "en" ? english["角色已保存"] : "角色已保存", {exact:true}).last()).toBeVisible();
     expect(state.roles).toHaveLength(3);
     expect(state.roles.find(role => role.id === loan.id)?.grants).toEqual(loan.grants);
   });
@@ -116,7 +118,7 @@ test("existing welfare role stays editable without changing grants or assignment
   expect(state.writes).toBe(0);
   await page.getByLabel("角色名称", { exact: true }).fill("福利专员");
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
+  await expect(page.locator(".toast-success").getByText("角色已保存", {exact:true}).last()).toBeVisible();
   expect(state.roles).toEqual([{ ...legacy, name: "福利专员", version: "5" }]);
   expect(state.assigned).toEqual([legacy.id]);
 });
@@ -178,7 +180,7 @@ test("unavailable scope options preserve existing filters and never imply unrest
   await page.getByRole("group", { name: "平台角色列表" }).getByRole("button", { name: /^范围测试/ }).click();
   await expect(page.getByText("军团与联盟读取失败", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
+  await expect(page.locator(".toast-success").getByText("角色已保存", {exact:true}).last()).toBeVisible();
   expect(state.roles[0].grants).toEqual(existing.grants);
   await page.route("**/api/v1/access/scope-options", (route) => route.fulfill({ json: { data: { corporations: [], alliances: [] } } }));
   await page.reload();
@@ -191,6 +193,6 @@ test("unavailable scope options preserve existing filters and never imply unrest
   expect(state.writes).toBe(1);
   await page.getByLabel("福利审核与交付授权范围", { exact: true }).selectOption("all");
   await page.getByRole("button", { name: "保存角色", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^角色已保存$/ })).toBeVisible();
+  await expect(page.locator(".toast-success").getByText("角色已保存", {exact:true}).last()).toBeVisible();
   expect(state.roles.find((role) => role.name === "空范围")?.grants).toEqual([{ permission: "corporation.welfare", corporations: [], alliances: [] }]);
 });

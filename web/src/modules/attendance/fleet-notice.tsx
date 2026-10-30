@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, APIError, getData } from "@/lib/http";
 import { getLocale, msg } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { Modal } from "@/components/ui/dialog";
 import { ClipboardList } from "lucide-react";
 import { FleetDispatch } from "./fleet-dispatch";
@@ -20,6 +21,7 @@ const isEnvelope = (v: unknown): v is {notice: Notice | null} => !!v && typeof v
 
 export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStartsAt, eventVersion, open, source, csrf, user}: {eventID: string; corporationID:string; eventTitle:string; eventStartsAt:string; eventVersion:string; open:boolean; source:string; csrf: string; user: string}) {
   const client = useQueryClient();
+  const toast = useToast();
   const formId = useId();
   const [visible, setVisible] = useState(false);
   const [dispatchBusy, setDispatchBusy] = useState(false);
@@ -35,7 +37,7 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
     if (!response.ok) throw new APIError(payload?.error?.message ?? msg("保存失败，请重试"), response.status, payload?.request_id);
     if (!isNotice(payload?.data)) throw new APIError(msg("响应格式异常，请刷新核对结果"), response.status);
     return payload.data;
-  }, onSuccess: notice => { client.setQueryData(["attendance", "fleet-notice", user, eventID], {notice}); setEdited(null); setKey(crypto.randomUUID()); }});
+  }, onSuccess: notice => { client.setQueryData(["attendance", "fleet-notice", user, eventID], {notice}); setEdited(null); setKey(crypto.randomUUID()); toast.success(msg("已保存")); }});
   const sync = useMutation({mutationFn: async () => {
     if(!syncKey.current || syncKey.current.source!==source || syncKey.current.version!==eventVersion || syncKey.current.revision!==draft.revision) syncKey.current={source,version:eventVersion,revision:draft.revision,key:crypto.randomUUID()};
     const response = await apiFetch(`/api/v1/attendance/events/${encodeURIComponent(eventID)}/fleet-motd`, {method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},body:JSON.stringify({source_character_id:source,version:eventVersion,revision:draft.revision,request_key:syncKey.current.key})});
@@ -76,7 +78,6 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
       </dl>
       {draft.details && <div className="fleet-notice-details">{draft.details}</div>}
     </section>
-    {save.isSuccess && <p className="fleet-notice-save-status" role="status">{msg("已保存")}</p>}
     {save.isError && <p className="fleet-notice-save-status" role="alert">{save.error.message}</p>}
     </form><div className="fleet-notice-actions"><div className="attendance-toolbar fleet-notice-sync"><Button variant="outline" disabled={!open || !source || edited!==null || !query.data?.notice || busy} onClick={()=>sync.mutate()}>{sync.isPending ? msg("正在同步") : msg("同步舰队置顶")}</Button>{sync.isError && <span role="alert">{sync.error.message}</span>}</div><FleetMOTDStatus eventID={eventID} source={source} csrf={csrf} user={user} /><FleetDispatch eventID={eventID} user={user} csrf={csrf} revision={draft.revision} ready={edited===null && !!query.data?.notice && !busy} onBusyChange={setDispatchBusy} /></div>
     </>}

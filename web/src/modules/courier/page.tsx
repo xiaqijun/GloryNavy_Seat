@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, RefreshCw, Truck } from "lucide-react";
 import { useSession } from "@/modules/identity";
 import { msg, getLocale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { IconAction } from "@/components/ui/icon-action";
 import { Select } from "@/components/ui/select";
 import * as api from "./api";
@@ -22,6 +23,7 @@ export default function CourierPage() {
 }
 
 function Workspace({ user, csrf }: { user: string; csrf: string }) {
+  const toast = useToast();
   const [mode, setMode] = useState<"paste" | "manual">("paste");
   const [text, setText] = useState("");
   const [origin, setOrigin] = useState("");
@@ -46,7 +48,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
   const ready = !!result && totalVolume > 0 && !result.oversized && !failed.length && (mode === "manual" || (!!appraisal && !estimate.isError)) && !estimate.isPending && !q.isError && !q.isFetching;
   const resetCopy = () => { setCopied(""); setCopyError(""); };
   async function copy(label: string, value: string) {
-    try { await navigator.clipboard.writeText(value); setCopied(`${label}:${value}`); setCopyError(""); }
+    try { await navigator.clipboard.writeText(value); setCopied(`${label}:${value}`); setCopyError(""); toast.success(msg("已复制")); }
     catch { setCopyError(msg("复制失败，请手动复制")); }
   }
   const field = (label: string, value: string) => <div className="courier-copy" key={label}><label><span>{label}</span><input aria-label={label} value={value} readOnly onFocus={e => e.target.select()} /></label><IconAction label={copied === `${label}:${value}` ? msg("已复制") : msg("复制 {0}", label)} disabled={!ready} onClick={() => void copy(label, value)}>{copied === `${label}:${value}` ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}</IconAction></div>;

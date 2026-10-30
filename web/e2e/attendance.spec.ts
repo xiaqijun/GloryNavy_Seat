@@ -51,6 +51,7 @@ async function setup(page: Page, manage = true, pap = false) {
   let fleetNotice: Record<string, unknown> | null = null;
   let fleetDispatch: Record<string, unknown> | null = null;
   let fleetMOTD = "none";
+  let fleetMOTDUpdate = 0;
   const papHistory: {
     id: string;
     character_id: string;
@@ -93,9 +94,10 @@ async function setup(page: Page, manage = true, pap = false) {
         expect(body.source_character_id).toBe("123");
         expect(body.revision).toBe(1);
         fleetMOTD = "sent";
+        fleetMOTDUpdate++;
         return r.fulfill({json:{data:{queued:true}}});
       }
-      return r.fulfill({json:{data:{state:fleetMOTD}}});
+      return r.fulfill({json:{data:{state:fleetMOTD,updated_at:`2026-10-30T10:00:0${fleetMOTDUpdate}Z`}}});
     }
     if (url.pathname.endsWith("/audit")) return r.fulfill({json:{data:{next_cursor:"",items:["fleet_notice","fleet_dispatch","capture_pap","pap"].map((action,i)=>({id:String(i+1),actor_id:"user",action,reason:"",recorded:0,excluded:0,created_at:"2026-10-29T10:00:00Z",observed_at:null,character_id:"0",present:false}))}}});
     if (url.pathname.endsWith("/fleet-dispatch")) {
@@ -111,7 +113,7 @@ async function setup(page: Page, manage = true, pap = false) {
     if (url.pathname.endsWith("/capture-pap")) {
       const body=r.request().postDataJSON();
       expect(body.pap_points).toBe(1);
-      version++;captured=true;papIssued=true;fleetMOTD="sent";
+      version++;captured=true;papIssued=true;fleetMOTD="sent";fleetMOTDUpdate++;
       return r.fulfill({json:{data:{event:event(),recorded:3,excluded:0,pap_awarded:3}}});
     }
 
@@ -404,6 +406,54 @@ test("organizer captures fleet and corrects attendance", async ({ page }) => {
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+test("old fleet notice success does not create a new notification", async ({ page }) => {
+  await setup(page);
+  let reads = 0;
+  await page.route("**/api/v1/attendance/events/1/fleet-motd", route => {
+    if (route.request().method() !== "GET") return route.fallback();
+    reads++;
+    return route.fulfill({json:{data:{state:"sent",updated_at:"2026-10-30T09:00:00Z"}}});
+  });
+  await page.goto("/attendance?event=1");
+  await expect.poll(() => reads).toBeGreaterThan(0);
+  await expect(page.locator(".toast-success")).toHaveCount(0);
+  await page.getByRole("button", {name:"舰队公告", exact:true}).click();
+  await expect(page.getByRole("dialog", {name:"舰队公告"})).toBeVisible();
+  await expect(page.locator(".toast-success")).toHaveCount(0);
+  await expect(page.getByText("舰队置顶已更新")).toHaveCount(0);
+});
+
+test("fleet notice failures retain recovery information", async ({ page }) => {
+  await setup(page);
+  await page.route("**/api/v1/attendance/events/1/fleet-motd", route => {
+    if (route.request().method() !== "GET") return route.fallback();
+    return route.fulfill({json:{data:{state:"failed",reason:"reauthorize",updated_at:"2026-10-30T09:00:00Z"}}});
+  });
+  await page.goto("/attendance?event=1");
+  await expect(page.getByText(/舰队置顶更新失败/)).toBeVisible();
+  await expect(page.getByRole("button", {name:"授权舰队置顶"})).toBeVisible();
+  await expect(page.locator(".toast-success")).toHaveCount(0);
+});
+
+test("fleet notice notifies only after the queued update finishes", async ({ page }) => {
+  await setup(page);
+  let state = "none";
+  await page.route("**/api/v1/attendance/events/1/fleet-motd", route => {
+    if (route.request().method() !== "GET") return route.fallback();
+    return route.fulfill({json:{data:{state,updated_at:state === "sent" ? "2026-10-30T09:00:02Z" : "2026-10-30T09:00:01Z"}}});
+  });
+  await page.route("**/api/v1/attendance/events/1/capture-pap", route => {
+    state = "pending";
+    return route.fallback();
+  });
+  await page.goto("/attendance?event=1");
+  await page.getByRole("button", {name:"点名并发放 PAP"}).click();
+  await expect(page.getByText("正在更新舰队置顶")).toBeVisible();
+  await expect(page.locator(".toast-success")).toHaveCount(0);
+  state = "sent";
+  await expect(page.locator(".toast-success").filter({hasText:"舰队置顶已更新"})).toBeVisible({timeout:20000});
+});
+
 test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await setup(page);
   await page.route("**/api/v1/eve/solar-systems/search?*", async route => {
@@ -458,11 +508,14 @@ test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await expect(notice).toHaveJSProperty("scrollWidth", await notice.evaluate(el => el.clientWidth));
   await notice.screenshot({path:testInfo.outputPath("fleet-notice.png")});
   await page.getByRole("button", {name:"保存公告"}).click();
-  await expect(page.getByText("已保存", {exact:true})).toBeVisible();
+  await expect(page.locator(".toast-success").getByText("已保存", {exact:true})).toBeVisible();
+  await expect(notice.getByText("已保存", {exact:true})).toHaveCount(0);
   await page.getByRole("button", {name:"同步舰队置顶"}).click();
-  await expect(notice.getByText("舰队置顶已更新")).toBeVisible();
+  const successToast = page.locator(".toast-success").filter({hasText:"舰队置顶已更新"});
+  await expect(successToast).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath("fleet-motd-toast.png")});
   await notice.getByRole("button", {name:"关闭", exact:true}).last().click();
-  await expect(page.getByText("舰队置顶已更新")).toBeVisible();
+  await expect(page.getByText("舰队置顶已更新")).toHaveCount(0, {timeout:10000});
   await noticeButton.click();
   await page.getByLabel("QQ群", {exact:true}).check();
   await page.getByLabel("游戏邮件", {exact:true}).check();
@@ -482,7 +535,7 @@ test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await notice.getByRole("button", {name:"关闭", exact:true}).last().click();
   await page.getByRole("button", {name:"点名并发放 PAP"}).click();
   await expect(page.getByText("已向 3 个角色发放 PAP")).toBeVisible();
-  await expect(page.getByText("舰队置顶已更新")).toBeVisible();
+  await expect(successToast).toBeVisible();
   await page.getByRole("button", {name:"修订记录"}).click();
   await expect(page.getByRole("heading", {name:"修订记录"})).toBeVisible();
   await expect(page.getByText("集结分调整")).toBeVisible();

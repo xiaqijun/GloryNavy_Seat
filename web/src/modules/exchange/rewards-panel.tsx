@@ -11,6 +11,7 @@ import { Gift, Coins, Package, Copy, Check, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { Select } from "@/components/ui/select";
 import { AccountCharacterSelect } from "@/components/account-character-select";
 import { EveImage } from "@/components/eve-image";
@@ -710,6 +711,7 @@ export function DeliveryInfo({
   order: Order;
   copyReference?: boolean;
 }) {
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   const reference = order.reference ?? `GNV-EX-${order.id}`;
@@ -736,6 +738,7 @@ export function DeliveryInfo({
               await navigator.clipboard.writeText(reference);
               setCopied(true);
               setFailed(false);
+              toast.success(msg("已复制"));
             } catch {
               setFailed(true);
             }
@@ -747,7 +750,6 @@ export function DeliveryInfo({
       ) : (
         <code>{reference}</code>
       )}
-      {copied && <span role="status">{msg("已复制")}</span>}
       {failed && <span role="alert">{msg("复制失败，请手动复制")}</span>}
       {order.state !== "cancelled" && order.delivery && (
         <small>{labels[order.delivery.status] ?? msg("等待核对")}</small>

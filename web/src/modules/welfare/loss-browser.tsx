@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { IconAction } from "@/components/ui/icon-action";
 import { EveImage } from "@/components/eve-image";
 import { getData } from "@/lib/http";
@@ -273,13 +274,13 @@ export function LossBrowser({
   select: (v: api.Loss, kind: string) => void;
   rulesAction?: ReactNode;
 }) {
+  const toast = useToast();
   const chars = characters.filter((c) => c.corporation_id === corp);
   const [character, setCharacter] = useState(chars[0]?.id || "");
   const [before, setBefore] = useState("");
   const [id, setID] = useState("");
   const [kind, setKind] = useState("srp");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const q = useQuery({
     queryKey: ["welfare", "losses", corp, character, before, id],
@@ -318,7 +319,6 @@ export function LossBrowser({
   const refresh = async () => {
     setBusy(true);
     setError("");
-    setMessage("");
     try {
       const r = await apiFetch(
         `/api/v1/eve/sync/characters/${character}/refresh`,
@@ -331,7 +331,7 @@ export function LossBrowser({
       );
       const v = await r.json();
       if (!r.ok) throw new Error(v.error?.message || msg("同步请求失败"));
-      setMessage(msg("已请求同步"));
+      toast.info(msg("已请求同步"));
       await q.refetch();
     } catch (e) {
       setError(e instanceof Error ? e.message : msg("同步请求失败"));
@@ -349,7 +349,6 @@ export function LossBrowser({
             setCharacter(v);
             setBefore("");
             setID("");
-            setMessage("");
             setError("");
           }}
           options={chars.map((c) => ({ value: c.id, label: c.name }))}
@@ -363,7 +362,6 @@ export function LossBrowser({
         </IconAction>
         {rulesAction}
       </div>
-      {message && <small role="status">{message}</small>}
       {error && <p role="alert">{error}</p>}
       {q.isError ? (
         <p role="alert">

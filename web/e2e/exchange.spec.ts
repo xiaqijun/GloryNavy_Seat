@@ -580,7 +580,7 @@ for (const complete of [true,false]) {
 
 
 test("admin contract information copies only recipient and settlement ID",async({page})=>{
- await page.addInitScript(()=>Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async(text:string)=>{document.documentElement.dataset.copied=text;}}}));
+ await page.addInitScript(()=>Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async(text:string)=>{if(document.documentElement.dataset.failCopy === "true") throw new Error("clipboard unavailable"); document.documentElement.dataset.copied=text;}}}));
  await rewardSetup(page);
  await page.getByRole("button",{name:"兑换",exact:true}).click();
  await page.getByRole("button",{name:"确认兑换",exact:true}).click();
@@ -593,7 +593,11 @@ test("admin contract information copies only recipient and settlement ID",async(
  for(const [label,value]of [["复制接收角色","Hajimi1"],["复制合同结算 ID","EX-20260921-A2C49E70-91F6-4AF1-8B52-3D8AE61C2097"]]){
   await dialog.getByRole("button",{name:label,exact:true}).click();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.dataset.copied)).toBe(value);
+  await expect(page.locator(".toast-success").getByText("已复制", {exact:true}).last()).toBeVisible();
  }
+ await page.evaluate(()=>{document.documentElement.dataset.failCopy="true";});
+ await dialog.getByRole("button",{name:"复制接收角色",exact:true}).click();
+ await expect(dialog.getByRole("alert")).toContainText("复制失败，请手动复制");
  for(const width of [1440,375,320]){await page.setViewportSize({width,height:900});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  await dialog.getByRole("button",{name:"关闭",exact:true}).click();
  await expect(page.getByRole("button",{name:"合同信息",exact:true})).toBeFocused();

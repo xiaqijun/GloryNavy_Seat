@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Check } from "lucide-react";
 import { Modal } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-context";
 import { getData } from "@/lib/http";
 import { write } from "./api";
 import { msg } from "@/lib/i18n";
@@ -45,6 +46,7 @@ function CopyButton({
   label: string;
   disabled?: boolean;
 }) {
+  const toast = useToast();
   const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <span className="exchange-copy-action">
@@ -57,6 +59,7 @@ function CopyButton({
           try {
             await navigator.clipboard.writeText(value);
             setStatus("copied");
+            toast.success(msg("已复制"));
           } catch {
             setStatus("failed");
           }
@@ -64,7 +67,6 @@ function CopyButton({
       >
         {status === "copied" ? <Check size={16} /> : <Copy size={16} />}
       </Button>
-      {status === "copied" && <small role="status">{msg("已复制")}</small>}
       {status === "failed" && (
         <small role="alert">{msg("复制失败，请手动复制")}</small>
       )}

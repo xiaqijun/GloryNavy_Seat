@@ -19,6 +19,7 @@ import { RatePanel } from "./rate-panel";
 import { TokenPanel } from "./token-panel";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconAction } from "@/components/ui/icon-action";
+import { useToast } from "@/components/ui/toast-context";
 import { EveImage } from "@/components/eve-image";
 import { useManagementAccess } from "@/modules/access";
 import {
@@ -114,11 +115,11 @@ function SyncWorkspace({ user, csrf }: { user: string; csrf: string }) {
   );
 }
 function SyncManagement({ user, csrf }: { user: string; csrf: string }) {
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [draft, setDraft] = useState("");
   const [cursors, setCursors] = useState<string[]>([""]);
-  const [notice, setNotice] = useState("");
   const client = useQueryClient();
   const query = useQuery({
     queryKey: [
@@ -141,7 +142,7 @@ function SyncManagement({ user, csrf }: { user: string; csrf: string }) {
   const retry = useMutation({
     mutationFn: (id: string) => refreshSync(id, csrf, undefined, true),
     onSuccess: async (rows) => {
-      setNotice(
+      toast.info(
         rows.some((r) => r.outcome === "deferred")
           ? msg("已安排，将在可更新时重试")
           : msg("已加入同步队列"),
@@ -202,11 +203,6 @@ function SyncManagement({ user, csrf }: { user: string; csrf: string }) {
               </select>
             </label>
           </div>
-          {notice && (
-            <p role="status" className="sync-notice">
-              {notice}
-            </p>
-          )}
           {retry.error && (
             <p role="alert" className="login-error">
               {retry.error.message}
@@ -262,7 +258,6 @@ function SyncManagement({ user, csrf }: { user: string; csrf: string }) {
                       target={t}
                       disabled={!query.data.available || retry.isPending}
                       retry={() => {
-                        setNotice("");
                         retry.mutate(t.id);
                       }}
                     />
