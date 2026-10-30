@@ -175,6 +175,10 @@ const isAudit = (v: unknown): v is Audit =>
       typeof a.actor_id === "string" &&
       [
         "capture",
+        "capture_pap",
+        "fleet_notice",
+        "fleet_dispatch",
+        "pap",
         "manual",
         "close",
         "reopen",
@@ -254,6 +258,7 @@ export const isChanged = (
   excluded_external?: number | null;
   excluded_unbound?: number | null;
   auto_closed?: boolean;
+  pap_awarded?: number;
 } =>
   obj(v) &&
   isEvent(v.event) &&
@@ -261,7 +266,8 @@ export const isChanged = (
   count(v.excluded) &&
   (v.excluded_external == null || count(v.excluded_external)) &&
   (v.excluded_unbound == null || count(v.excluded_unbound)) &&
-  (v.auto_closed == null || typeof v.auto_closed === "boolean");
+  (v.auto_closed == null || typeof v.auto_closed === "boolean") &&
+  (v.pap_awarded == null || count(v.pap_awarded));
 export const duration = (seconds: number) =>
   `${(seconds / 3600).toLocaleString(getLocale(), { maximumFractionDigits: 1 })} h`;
 export const formatDate = (raw: string) =>

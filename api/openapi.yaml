@@ -4670,6 +4670,138 @@ paths:
             ],
         },
     }
+  /api/v1/attendance/events/{id}/fleet-notice:
+    parameters:
+      - {in: path, name: id, required: true, schema: {type: string}}
+    get:
+      operationId: attendanceFleetNotice
+      summary: Read the managed fleet notice template (locally implemented; unreleased).
+      security: [{SessionCookie: []}]
+      responses:
+        '200': {description: Nullable notice with revision}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+    put:
+      operationId: attendanceSaveFleetNotice
+      summary: Save a revision-checked fleet notice template (locally implemented; unreleased).
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [solar_system, doctrine, revision, request_key]
+              properties:
+                solar_system: {type: string, maxLength: 120}
+                doctrine: {type: string, maxLength: 500}
+                meeting_point: {type: string, maxLength: 300}
+                commander: {type: string, maxLength: 120}
+                details: {type: string, maxLength: 3000}
+                revision: {type: integer, minimum: 0}
+                request_key: {type: string, format: uuid}
+      responses:
+        '200': {description: Saved notice and revision}
+        '400': {description: Invalid input}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+        '409': {description: Notice revision or request key conflict}
+  /api/v1/attendance/events/{id}/capture-pap:
+    post:
+      operationId: attendanceCaptureFleetPAP
+      summary: Capture the current fleet and issue PAP once per eligible character (locally implemented; unreleased).
+      security: [{SessionCookie: []}]
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, request_key, source_character_id, pap_points]
+              properties:
+                version: {type: string}
+                request_key: {type: string, format: uuid}
+                source_character_id: {type: string}
+                pap_points: {type: integer, minimum: 1, maximum: 10000}
+      responses:
+        '200': {description: Capture result and new award count}
+        '400': {description: Invalid input}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+        '409': {description: Activity or request changed}
+        '422': {description: Fleet unavailable}
+  /api/v1/attendance/events/{id}/fleet-motd:
+    get:
+      operationId: attendanceFleetMOTDStatus
+      summary: Read the most recent fleet MOTD update status.
+      security: [{SessionCookie: []}]
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      responses:
+        '200': {description: State and optional reason}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+    post:
+      operationId: attendanceSyncFleetNotice
+      summary: Queue a saved activity notice and current PAP status to the fleet MOTD.
+      security: [{SessionCookie: []}]
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_character_id, version, revision, request_key]
+              properties:
+                source_character_id: {type: string}
+                version: {type: string}
+                revision: {type: integer, minimum: 1}
+                request_key: {type: string, format: uuid}
+      responses:
+        '200': {description: Queued or replayed}
+        '400': {description: Invalid input}
+        '401': {description: Authentication required}
+        '404': {description: Event or source character unavailable}
+        '409': {description: Activity, template, fleet, or prior update conflict}
+        '503': {description: Fleet service unavailable}
+  /api/v1/attendance/events/{id}/fleet-dispatch:
+    parameters:
+      - {in: path, name: id, required: true, schema: {type: string}}
+    get:
+      operationId: attendanceFleetDispatchStatus
+      summary: Read the latest dispatch and per-channel state counts.
+      security: [{SessionCookie: []}]
+      responses:
+        '200': {description: Nullable dispatch with delivery counts}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+    post:
+      operationId: attendanceFleetDispatch
+      summary: Queue selected channels for the saved fleet announcement.
+      description: QQ uses the corporation's configured structure-alert group; email reaches verified opted-in site members. Uncertain sends are not retried automatically.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, request_key, channels]
+              properties:
+                revision: {type: integer, minimum: 1}
+                request_key: {type: string, format: uuid}
+                channels: {type: array, minItems: 1, maxItems: 3, uniqueItems: true, items: {type: string, enum: [qq, eve_mail, email]}}
+      responses:
+        '200': {description: Queued dispatch with state counts}
+        '400': {description: Invalid input}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+        '409': {description: Event, revision or request conflict}
+        '422': {description: Selected channel unavailable}
   /api/v1/attendance/events/{id}/capture:
     {
       "post":
@@ -6147,7 +6279,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/CharacterRateLimit" }
         "503": { $ref: "#/components/responses/CharacterUnavailable" }
-  # Optional purpose=reminder-mail is admin-only, owned-character scope addition; see docs/integrations/reminder.en.md.
+  # Optional purposes add explicit owned-character scopes; see integration documentation.
   /api/v1/eve/characters/{id}/reauthorize:
     post:
       operationId: startCharacterReauthorization
@@ -6155,7 +6287,7 @@ paths:
       description: Pins the expected character to a one-use flow using the current scope profile. Selecting another character at CCP returns wrong_character without creating a user, binding or credential. Original session, owner hash and requested scopes are rechecked.
       security: [{ SessionCookie: [] }]
       parameters:
-        - { in: query, name: purpose, schema: { type: string, enum: [reminder-mail] }, description: "Optional admin-only mail scope authorization; reminder must be enabled. Normal authorization scopes are unchanged when omitted." }
+        - { in: query, name: purpose, schema: { type: string, enum: [reminder-mail, fleet-write] }, description: "Optional mail or fleet-write scope authorization; mail requires an administrator and enabled reminders. Normal authorization scopes are unchanged when omitted." }
         - { $ref: "#/components/parameters/CharacterID" }
         - { $ref: "#/components/parameters/MutationOrigin" }
         - { $ref: "#/components/parameters/CSRFToken" }

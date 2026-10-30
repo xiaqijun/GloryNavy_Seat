@@ -49,12 +49,18 @@ func (s *Service) Extension(enabled bool) jobs.Extension {
 		river.AddWorker(w, &battleWorker{runtime: r})
 		river.AddWorker(w, &battleDispatchWorker{runtime: r})
 		river.AddWorker(w, &alliancePAPWorker{service: s, enabled: enabled})
+		river.AddWorker(w, &fleetMOTDWorker{runtime: r})
+		river.AddWorker(w, &fleetDispatchWorker{runtime: r})
 		if !enabled {
 			return nil
 		}
 		return []*river.PeriodicJob{river.NewPeriodicJob(river.PeriodicInterval(30*time.Second), func() (river.JobArgs, *river.InsertOpts) {
 			return battleDispatchArgs{}, &river.InsertOpts{Queue: "attendance", UniqueOpts: jobs.ActiveUnique()}
-		}, &river.PeriodicJobOpts{RunOnStart: true}), alliancePAPPeriodic(s, enabled)}
+		}, &river.PeriodicJobOpts{RunOnStart: true}), alliancePAPPeriodic(s, enabled), river.NewPeriodicJob(river.PeriodicInterval(30*time.Second), func() (river.JobArgs, *river.InsertOpts) {
+			return fleetMOTDArgs{}, &river.InsertOpts{Queue: "attendance", UniqueOpts: jobs.ActiveUnique(), MaxAttempts: 1}
+		}, &river.PeriodicJobOpts{RunOnStart: true}), river.NewPeriodicJob(river.PeriodicInterval(30*time.Second), func() (river.JobArgs, *river.InsertOpts) {
+			return fleetDispatchArgs{}, &river.InsertOpts{Queue: "attendance", UniqueOpts: jobs.ActiveUnique(), MaxAttempts: 1}
+		}, &river.PeriodicJobOpts{RunOnStart: true})}
 	}, Bind: func(q *river.Client[pgx.Tx]) { r.queue = q }}
 }
 func (w *battleDispatchWorker) Work(ctx context.Context, _ *river.Job[battleDispatchArgs]) error {

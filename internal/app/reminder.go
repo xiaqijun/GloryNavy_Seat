@@ -48,5 +48,9 @@ func reminderHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *acc
 		r := authorization.SendMail(ctx, ch.ID, ch.Owner, ch.Generation, recipient, subject, body)
 		return reminder.Result{ID: r.ID, State: r.State, Reason: r.Reason}
 	}
+	s.SendCorporation = func(ctx context.Context, ch reminder.Character, corporation int64, subject, body string) reminder.Result {
+		r := authorization.SendCorporationMail(ctx, ch.ID, ch.Owner, ch.Generation, corporation, subject, body)
+		return reminder.Result{ID: r.ID, State: r.State, Reason: r.Reason}
+	}
 	return reminder.Handler{Service: s, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}
 }

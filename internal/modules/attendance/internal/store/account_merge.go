@@ -18,13 +18,23 @@ func MergeAccount(ctx context.Context, tx pgx.Tx, source, target string, apply b
 	if err := tx.QueryRow(ctx, `SELECT jsonb_build_object('alliance',coalesce(jsonb_agg(to_jsonb(p) ORDER BY month,character_id),'[]'::jsonb)) FROM attendance_alliance_pap_snapshot p WHERE account_id IN($1::uuid,$2::uuid)`, source, target).Scan(&pap); err != nil {
 		return nil, err
 	}
+	var deliveries json.RawMessage
+	if err := tx.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(d) ORDER BY id),'[]'::jsonb) FROM attendance_fleet_deliveries d WHERE account_id IN($1::uuid,$2::uuid)`, source, target).Scan(&deliveries); err != nil {
+		return nil, err
+	}
 	details := map[string]any{}
 	if err := json.Unmarshal(summary, &details); err != nil {
 		return nil, err
 	}
-	details["fingerprint"] = fmt.Sprintf("%x", sha256.Sum256(append(summary, pap...)))
+	fingerprint := append(append(summary, pap...), deliveries...)
+	details["fingerprint"] = fmt.Sprintf("%x", sha256.Sum256(fingerprint))
 	summary, _ = json.Marshal(details)
 	if apply {
+		// Do not send a queued message to a merged identity or duplicate a target's delivery.
+		// A network send already in progress is uncertain, never automatically retried.
+		if _, err := tx.Exec(ctx, `UPDATE attendance_fleet_deliveries SET original_account_id=coalesce(original_account_id,account_id),account_id=$2,state=CASE WHEN state IN ('pending','preparing') THEN 'skipped' WHEN state='sending' THEN 'unknown' ELSE state END,reason=CASE WHEN state IN ('pending','preparing','sending') THEN 'account_merged' ELSE reason END,updated_at=now() WHERE account_id=$1`, source, target); err != nil {
+			return nil, err
+		}
 		if _, err := tx.Exec(ctx, `UPDATE attendance_alliance_pap_snapshot SET original_account_id=coalesce(original_account_id,account_id),account_id=$2 WHERE account_id=$1`, source, target); err != nil {
 			return nil, err
 		}

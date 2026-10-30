@@ -258,6 +258,27 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		return nil, err
 	}
 	reminderJobs := &reminder.Jobs{Service: reminderModule.Service}
+	attendanceModule.Service.FleetTarget = func(ctx context.Context, channel string, corporation int64) (string, error) {
+		if channel == "qq" {
+			return qqStructureNotifications.FleetGroupTarget(ctx, corporation)
+		}
+		return reminderModule.Service.FleetTarget(ctx, channel)
+	}
+	attendanceModule.Service.FleetSend = func(ctx context.Context, channel string, corporation int64, version, account, subject, body string) attendance.FleetDeliveryResult {
+		if channel == "qq" {
+			r := qqStructureNotifications.FleetGroup(ctx, corporation, version, body)
+			return attendance.FleetDeliveryResult{State: r.State, Reason: r.Reason}
+		}
+		var r reminder.Result
+		if channel == "eve_mail" {
+			r = reminderModule.Service.FleetCorporationMail(ctx, corporation, version, subject, body)
+		} else if channel == "email" {
+			r = reminderModule.Service.FleetEmail(ctx, account, version, subject, body)
+		} else {
+			return attendance.FleetDeliveryResult{State: "failed", Reason: "invalid_channel"}
+		}
+		return attendance.FleetDeliveryResult{State: r.State, Reason: r.Reason}
+	}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
 	accessService.ScopeNames = reader.WalletNames

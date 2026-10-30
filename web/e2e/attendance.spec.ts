@@ -45,8 +45,12 @@ async function setup(page: Page, manage = true, pap = false) {
   );
   let version = 1,
     captured = pap;
+  let closed = pap;
   let papIssued = false,
     papPoints = 1;
+  let fleetNotice: Record<string, unknown> | null = null;
+  let fleetDispatch: Record<string, unknown> | null = null;
+  let fleetMOTD = "none";
   const papHistory: {
     id: string;
     character_id: string;
@@ -61,8 +65,8 @@ async function setup(page: Page, manage = true, pap = false) {
     corporation_id: "10",
     title: "荣耀远航 · 周末联合舰队",
     starts_at: "2026-09-15T11:30:00Z",
-    ends_at: pap ? "2026-09-15T13:45:00Z" : null,
-    state: pap ? "closed" : "open",
+    ends_at: closed ? "2026-09-15T13:45:00Z" : null,
+    state: closed ? "closed" : "open",
     pap_points: papPoints,
     pap_issued: papIssued,
     version: String(version),
@@ -72,6 +76,44 @@ async function setup(page: Page, manage = true, pap = false) {
   });
   await page.route("**/api/v1/attendance/**", async (r) => {
     const url = new URL(r.request().url());
+
+    if (url.pathname.endsWith("/fleet-notice")) {
+      if (r.request().method() === "PUT") {
+        const body = r.request().postDataJSON();
+        expect(body.solar_system).toBe("Jita");
+        expect(body.doctrine).toBe("护卫舰");
+        fleetNotice = {...body, revision: 1, updated_at:"2026-10-29T10:00:00Z"};
+        return r.fulfill({json:{data:fleetNotice}});
+      }
+      return r.fulfill({json:{data:{notice:fleetNotice}}});
+    }
+    if (url.pathname.endsWith("/fleet-motd")) {
+      if (r.request().method() === "POST") {
+        const body = r.request().postDataJSON();
+        expect(body.source_character_id).toBe("123");
+        expect(body.revision).toBe(1);
+        fleetMOTD = "sent";
+        return r.fulfill({json:{data:{queued:true}}});
+      }
+      return r.fulfill({json:{data:{state:fleetMOTD}}});
+    }
+    if (url.pathname.endsWith("/audit")) return r.fulfill({json:{data:{next_cursor:"",items:["fleet_notice","fleet_dispatch","capture_pap","pap"].map((action,i)=>({id:String(i+1),actor_id:"user",action,reason:"",recorded:0,excluded:0,created_at:"2026-10-29T10:00:00Z",observed_at:null,character_id:"0",present:false}))}}});
+    if (url.pathname.endsWith("/fleet-dispatch")) {
+      if (r.request().method()==="POST") {
+        const body=r.request().postDataJSON();
+        expect(body.channels).toEqual(["qq","eve_mail","email"]);
+        expect(body.revision).toBe(1);
+        fleetDispatch={id:"1",counts:[{channel:"qq",state:"sent",count:1},{channel:"eve_mail",state:"sent",count:1},{channel:"email",state:"skipped",reason:"email_unavailable",count:1}]};
+        return r.fulfill({json:{data:fleetDispatch}});
+      }
+      return r.fulfill({json:{data:{dispatch:fleetDispatch}}});
+    }
+    if (url.pathname.endsWith("/capture-pap")) {
+      const body=r.request().postDataJSON();
+      expect(body.pap_points).toBe(1);
+      version++;captured=true;papIssued=true;fleetMOTD="sent";
+      return r.fulfill({json:{data:{event:event(),recorded:3,excluded:0,pap_awarded:3}}});
+    }
 
     if (url.pathname.endsWith("/events/1/pap")) {
       if (r.request().method() === "POST") {
@@ -225,6 +267,11 @@ async function setup(page: Page, manage = true, pap = false) {
         },
       });
     }
+    if (url.pathname.endsWith("/close")) {
+      closed = true;
+      version++;
+      return r.fulfill({json:{data:{event:event(),recorded:0,excluded:0}}});
+    }
     if (url.pathname.endsWith("/manual")) {
       expect(r.request().postDataJSON().reason).toBe("后勤补录");
       version++;
@@ -349,11 +396,34 @@ test("organizer captures fleet and corrects attendance", async ({ page }) => {
   await expect(
     page.getByText("出勤人数", { exact: true }).locator(".."),
   ).toContainText("2");
+  await page.getByRole("button", { name: "结束活动", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", {name:"确认"}).click();
   await page.getByRole("button", { name: "补录", exact: true }).click();
   await page.getByLabel("角色 ID", { exact: true }).fill("789");
   await page.getByLabel("修订原因").fill("后勤补录");
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+test("fleet notice channels and live PAP", async ({ page }) => {
+  await setup(page);
+  await page.goto("/attendance?event=1");
+  await page.getByLabel("星系", {exact:true}).fill("Jita");
+  await page.getByLabel("建制", {exact:true}).fill("护卫舰");
+  await page.getByRole("button", {name:"保存公告"}).click();
+  await expect(page.getByText("已保存", {exact:true})).toBeVisible();
+  await page.getByRole("button", {name:"同步舰队置顶"}).click();
+  await expect(page.getByText("舰队置顶已更新")).toBeVisible();
+  await page.getByLabel("QQ群", {exact:true}).check();
+  await page.getByLabel("游戏邮件", {exact:true}).check();
+  await page.getByLabel("Email", {exact:true}).check();
+  await page.getByRole("button", {name:"推送", exact:true}).click();
+  await expect(page.getByText(/邮箱未验证或未启用/)).toBeVisible();
+  await page.getByRole("button", {name:"点名并发放 PAP"}).click();
+  await expect(page.getByText("已向 3 个角色发放 PAP")).toBeVisible();
+  await expect(page.getByText("舰队置顶已更新")).toBeVisible();
+  await page.getByRole("button", {name:"修订记录"}).click();
+  await expect(page.getByRole("heading", {name:"修订记录"})).toBeVisible();
+  await expect(page.getByText("集结分调整")).toBeVisible();
 });
 test("create activity and dialog keyboard navigation", async ({ page }) => {
   await setup(page);

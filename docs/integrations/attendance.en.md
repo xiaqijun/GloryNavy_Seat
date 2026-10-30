@@ -1,5 +1,15 @@
 # Corporation attendance and estimated online time
 
+## 2026-10-30 fleet notices and live PAP (implemented locally, unreleased)
+
+Locally implemented notices can be delivered to the corporation's configured QQ structure-alert group, EVE corporation mail, and verified opted-in email addresses of bound corporation members. Delivery and fleet MOTD updates have independent durable status; uncertain external sends are not retried automatically. Eligible characters must be currently bound and belong to the activity corporation; repeated issuance skips previous awards and later arrivals can be added. PAP, configured automatic coin awards and audit commit in one transaction. Templates require management permission and use revision checking. Goose 113 Down refuses existing notices, deliveries or live-PAP audit; do not run an older version that ignores them. Real channel and fleet acceptance remains outstanding. See the [implementation record](../plans/fleet-notice-and-pap-20261029.zh-CN.md).
+
+Local APIs: `GET /events/{id}/fleet-notice` returns a nullable notice; `PUT` takes system, doctrine, rally point, commander, details, revision (initially 0) and UUID request key. `POST /events/{id}/capture-pap` accepts the event version, owned source character, PAP points and a UUID, returning the newly awarded character count. Event, fleet, authorization and binding are verified before commit; replay with the same key does not duplicate awards. Paths are under `/api/v1/attendance` and retain session, CSRF and corporation authorization.
+
+`GET /events/{id}/fleet-motd` reads the MOTD update status. `GET /events/{id}/fleet-dispatch` reads the latest dispatch; `POST` accepts the template revision, UUID request key and channel names `qq`, `eve_mail`, `email`. On account merge, pending email to the original account is stopped and an in-flight email is marked uncertain; original ownership is retained for audit.
+
+`POST /events/{id}/fleet-motd` queues an independent update with the source character, event version, saved notice revision and UUID request key. Live PAP capture also syncs the saved notice. Separate marked blocks retain other MOTD content; changed revisions or revoked permissions invalidate stale work, and uncertain sends are not automatically retried. The operator can inspect the in-game notice and manually retry. The source character must be fleet boss and grant `esi-fleets.write_fleet.v1`.
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 ## Corporation PAP and alliance PAP (Goose 44 policy, Goose 45 snapshots)

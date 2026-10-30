@@ -63,12 +63,13 @@ var pathNumber = regexp.MustCompile(`/[0-9]+`)
 func (s *Client) Request(ctx context.Context, client *http.Client, method, path, token string, body []byte, out any) (until time.Time, resultErr error) {
 	now := time.Now()
 	parsed, parseErr := url.Parse(path)
-	if parseErr != nil || !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || parsed.Host != "" || parsed.Scheme != "" || parsed.Fragment != "" || (method != "GET" && method != "POST") {
+	if parseErr != nil || !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || parsed.Host != "" || parsed.Scheme != "" || parsed.Fragment != "" || (method != "GET" && method != "POST" && method != "PUT") {
 		return now, Fault{Reason: "invalid_request"}
 	}
 	cred, _ := ctx.Value(CredentialKey{}).(Credential)
 	mutation, _ := ctx.Value(MutationKey{}).(bool)
-	if mutation && (method != "POST" || (routeKey(method, path) != "POST /characters/{id}/fittings/" && routeKey(method, path) != "POST /characters/{id}/mail/") || token == "") {
+	allowedMutation := (method == "POST" && (routeKey(method, path) == "POST /characters/{id}/fittings/" || routeKey(method, path) == "POST /characters/{id}/mail/")) || (method == "PUT" && routeKey(method, path) == "PUT /fleets/{id}/")
+	if (mutation && (!allowedMutation || token == "")) || (method == "PUT" && !mutation) {
 		return now, Fault{Reason: "invalid_request"}
 	}
 	event := RequestEvent{}
@@ -222,7 +223,8 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 		until := RetryUntil(res.Header, time.Now())
 		return until, RetryError{until}
 	}
-	if (mutation && res.StatusCode != 201) || (!mutation && res.StatusCode != 200 && res.StatusCode != 304) {
+	mutationOK := (method == "POST" && res.StatusCode == 201) || (method == "PUT" && res.StatusCode == 204)
+	if (mutation && !mutationOK) || (!mutation && res.StatusCode != 200 && res.StatusCode != 304) {
 		reason := "upstream_unavailable"
 		temporary := res.StatusCode >= 500
 		switch res.StatusCode {
@@ -234,6 +236,9 @@ func (s *Client) Request(ctx context.Context, client *http.Client, method, path,
 			reason = "resource_unavailable"
 		}
 		return now, Fault{reason, res.StatusCode, temporary}
+	}
+	if mutation && method == "PUT" && res.StatusCode == 204 {
+		return time.Now(), nil
 	}
 	expires, persistCache := cacheExpiry(res.Header, route, time.Now())
 	content := now

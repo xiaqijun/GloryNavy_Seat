@@ -136,6 +136,41 @@ func (h *Handler) accountStart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		r = r.WithContext(context.WithValue(r.Context(), mailAuthorizationKey{}, true))
+		cred, e := store.New(h.pool).GetCredential(r.Context(), intent.ExpectedID)
+		if e != nil && !errors.Is(e, pgx.ErrNoRows) {
+			httpapi.Failure(w, r, 503, "eve_unavailable", "EVE 授权暂不可用，请稍后重试")
+			return
+		}
+		if e == nil && hasScopes(cred.Scopes, []string{FleetWriteScope}) {
+			r = r.WithContext(context.WithValue(r.Context(), fleetAuthorizationKey{}, true))
+		}
+	}
+	if r.URL.Query().Get("purpose") == "fleet-write" {
+		if intent.Kind != "reauthorize" {
+			httpapi.Failure(w, r, 403, "forbidden", "请先选择自己的角色")
+			return
+		}
+		// Preserve an existing mail grant only for its still-authorized admin.
+		// Reauthorization replaces the token's scopes, so silently omitting it
+		// would disable the already configured sender.
+		cred, err := store.New(h.pool).GetCredential(r.Context(), intent.ExpectedID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			httpapi.Failure(w, r, 503, "eve_unavailable", "EVE 授权暂不可用，请稍后重试")
+			return
+		}
+		if err == nil && hasScopes(cred.Scopes, []string{MailSendScope}) {
+			if h.MailAuthorizationAllowed == nil {
+				httpapi.Failure(w, r, 403, "forbidden", "无法保留发信授权")
+				return
+			}
+			allowed, e := h.MailAuthorizationAllowed(r.Context(), session.UserID)
+			if e != nil || !allowed {
+				httpapi.Failure(w, r, 403, "forbidden", "无法保留发信授权")
+				return
+			}
+			r = r.WithContext(context.WithValue(r.Context(), mailAuthorizationKey{}, true))
+		}
+		r = r.WithContext(context.WithValue(r.Context(), fleetAuthorizationKey{}, true))
 	}
 	h.start(w, r, intent)
 }
@@ -170,8 +205,12 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.
 	verifier := base64.RawURLEncoding.EncodeToString(randBytes())
 	target, err := h.sso.AuthorizationURL(ctx, state, verifier)
 	mail, _ := ctx.Value(mailAuthorizationKey{}).(bool)
+	fleetWrite, _ := ctx.Value(fleetAuthorizationKey{}).(bool)
 	if mail && err == nil {
 		target, err = mailAuthorizationURL(target)
+	}
+	if fleetWrite && err == nil {
+		target, err = fleetAuthorizationURL(target)
 	}
 	if err != nil {
 		unavailable()
@@ -194,6 +233,9 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.
 	}
 	if mail {
 		required = append(required, MailSendScope)
+	}
+	if fleetWrite {
+		required = append(required, FleetWriteScope)
 	}
 	err = q.CreateFlow(ctx, store.CreateFlowParams{StateHash: httpapi.Hash(state), BrowserHash: httpapi.Hash(browser), SessionHash: httpapi.Hash(httpapi.CookieValue(r, httpapi.SessionCookie)), Verifier: verifier, RequestedScopes: required})
 	if err != nil {
@@ -251,11 +293,14 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	httpapi.SetCookie(w, httpapi.FlowCookie, "", -1, h.secure)
 	mail := hasScopes(flow.RequestedScopes, []string{MailSendScope})
+	fleetWrite := hasScopes(flow.RequestedScopes, []string{FleetWriteScope})
 	var authorizedID int64
 	result := func(code string) {
 		if mail {
 			h.logger.Warn("EVE mail authorization rejected", "request_id", httpapi.RequestID(r), "reason", code, "expected_character_id", flow.ExpectedCharacterID.Int64, "authorized_character_id", authorizedID)
 			http.Redirect(w, r, "/reminders?error="+code, http.StatusSeeOther)
+		} else if fleetWrite {
+			http.Redirect(w, r, "/attendance?error="+code, http.StatusSeeOther)
 		} else if flow.Intent == "login" {
 			h.result(w, r, code)
 		} else {
@@ -341,6 +386,10 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	}
 	if mail {
 		http.Redirect(w, r, "/reminders", http.StatusSeeOther)
+		return
+	}
+	if fleetWrite {
+		http.Redirect(w, r, "/attendance", http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/account", http.StatusSeeOther)

@@ -56,6 +56,8 @@ import {
 } from "./api";
 import "./attendance.css";
 import { BattlePanel } from "./battle-panel";
+import { FleetNoticeEditor } from "./fleet-notice";
+import { FleetMOTDStatus } from "./fleet-motd-status";
 import { StarLocation } from "./location";
 const Chart = lazy(() => import("@/components/charts/bar-comparison"));
 function Feedback({
@@ -450,6 +452,7 @@ function EventDetail({
   );
   const [audit, setAudit] = useState(false);
   const [notice, setNotice] = useState("");
+  const fleetPAPKey = useRef<{ version: string; source: string; key: string } | null>(null);
   const q = useQuery({
     queryKey: ["attendance", "event", user, id],
     queryFn: ({ signal }) => getEvent(id, signal),
@@ -476,6 +479,26 @@ function EventDetail({
     onSuccess: (r) => {
       setNotice(captureSummary(r));
       invalidate();
+    },
+  });
+  const fleetPAP = useMutation({
+    mutationFn: () => {
+      const version = q.data!.event.version;
+      if (!fleetPAPKey.current || fleetPAPKey.current.version !== version || fleetPAPKey.current.source !== source) {
+        fleetPAPKey.current = { version, source, key: crypto.randomUUID() };
+      }
+      return write(`/events/${id}/capture-pap`, csrf, {
+        source_character_id: source,
+        version,
+        request_key: fleetPAPKey.current.key,
+        pap_points: q.data!.event.pap_points ?? 1,
+      }, isChanged);
+    },
+    onSuccess: (r) => {
+      fleetPAPKey.current = null;
+      setNotice(r.auto_closed ? captureSummary(r) : msg("已向 {0} 个角色发放 PAP", r.pap_awarded ?? 0));
+      invalidate();
+      void client.invalidateQueries({ queryKey: ["exchange"] });
     },
   });
   if (q.isError)
@@ -558,6 +581,8 @@ function EventDetail({
         />
       </div>
       <PAPEvent user={user} csrf={csrf} event={e} entries={q.data.entries} />
+      {e.can_manage && <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} />}
+      {e.can_manage && <FleetNoticeEditor eventID={id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />}
       {e.can_manage && e.state === "open" && (
         <div className="attendance-toolbar attendance-capture">
           <AccountCharacterSelect
@@ -567,11 +592,15 @@ function EventDetail({
             characters={context.characters}
           />
           <Button
-            disabled={capture.isPending || !source}
+            disabled={capture.isPending || fleetPAP.isPending || !source}
             onClick={() => capture.mutate()}
           >
             <Radio />
             {capture.isPending ? msg("正在读取舰队") : msg("舰队点名")}
+          </Button>
+          <Button variant="outline" disabled={capture.isPending || fleetPAP.isPending || !source} onClick={() => fleetPAP.mutate()}>
+            <Award />
+            {fleetPAP.isPending ? msg("正在发放") : msg("点名并发放 PAP")}
           </Button>
         </div>
       )}
@@ -586,6 +615,7 @@ function EventDetail({
       {capture.isError && (
         <Feedback error={capture.error} retry={() => void q.refetch()} />
       )}
+      {fleetPAP.isError && <Feedback error={fleetPAP.error} retry={() => void q.refetch()} />}
       {notice && (
         <p role="status" className="attendance-note">
           {notice}
@@ -872,6 +902,9 @@ function AuditPanel({ user, id }: { user: string; id: string }) {
                     {
                       pap: msg("集结分调整"),
                       capture: msg("舰队点名"),
+                      capture_pap: msg("点名并发放 PAP"),
+                      fleet_notice: msg("保存公告"),
+                      fleet_dispatch: msg("推送公告"),
                       manual: msg("人工修订"),
                       close: msg("结束活动"),
                       reopen: msg("重新开启"),
@@ -892,7 +925,7 @@ function AuditPanel({ user, id }: { user: string; id: string }) {
                       )
                     : ""}
                   {a.reason ||
-                    (a.action === "capture" ? captureSummary(a) : "")}
+                    (a.action === "capture" || a.action === "capture_pap" ? captureSummary(a) : "")}
                 </p>
                 <small>
                   {formatDate(a.created_at)} {msg("· 操作人")} {a.actor_id}

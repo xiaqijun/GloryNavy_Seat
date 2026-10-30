@@ -40,6 +40,11 @@ type Gateway interface {
 	ActivityProfiles(context.Context, []int64) ([]eve.FleetMember, error)
 	OnlineDataTx(context.Context, pgx.Tx, []int64, time.Time, time.Time, ...int64) (eve.OnlineData, error)
 }
+type FleetWriter interface {
+	ReadFleetMOTD(context.Context, int64, []byte) (eve.FleetSnapshot, string, error)
+	UpdateFleetMOTD(context.Context, int64, []byte, int64, int64, string, string) eve.FleetMOTDResult
+}
+type FleetDeliveryResult struct{ State, Reason string }
 type Service struct {
 	Administrator          func(context.Context, string) (bool, error)
 	AlliancePAP            AlliancePAPConfig
@@ -50,6 +55,9 @@ type Service struct {
 	CoinAwards             func(context.Context, pgx.Tx, string, string, []PAPCoinAward) error
 	Pool                   *pgxpool.Pool
 	EVE                    Gateway
+	FleetWriter            FleetWriter
+	FleetTarget            func(context.Context, string, int64) (string, error)
+	FleetSend              func(context.Context, string, int64, string, string, string, string) FleetDeliveryResult
 	Battle                 BattleGateway
 	Names                  interface {
 		TypeNames(context.Context, []int64) (map[int64]eve.StaticTypeName, error)
@@ -353,11 +361,13 @@ type Change struct {
 	Version     int64  `json:"version,string"`
 	RequestKey  string `json:"request_key"`
 	SourceID    int64  `json:"source_character_id,string,omitempty"`
+	PAPPoints   int32  `json:"pap_points,omitempty"`
 	CharacterID int64  `json:"character_id,string,omitempty"`
 	Present     bool   `json:"present"`
 	Reason      string `json:"reason"`
 }
 type ChangeResult struct {
+	PAPAwarded       int   `json:"pap_awarded,omitempty"`
 	ExcludedExternal *int  `json:"excluded_external"`
 	ExcludedUnbound  *int  `json:"excluded_unbound"`
 	AutoClosed       bool  `json:"auto_closed,omitempty"`
@@ -366,6 +376,7 @@ type ChangeResult struct {
 	Excluded         int   `json:"excluded"`
 }
 type auditPayload struct {
+	PAPAwarded       int        `json:"pap_awarded,omitempty"`
 	PAPPoints        int32      `json:"pap_points"`
 	PAPDelta         int64      `json:"pap_delta"`
 	PAPRevoked       bool       `json:"pap_revoked"`
@@ -395,13 +406,17 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 	if err != nil || e != nil || c.Version < 1 || len([]rune(c.Reason)) > 200 {
 		return result, ErrInvalid
 	}
-	if action != "capture" && action != "manual" && action != "close" && action != "reopen" {
+	capture := action == "capture" || action == "capture_pap"
+	if !capture && action != "manual" && action != "close" && action != "reopen" {
+		return result, ErrInvalid
+	}
+	if action == "capture_pap" && (c.PAPPoints < 1 || c.PAPPoints > 10000) {
 		return result, ErrInvalid
 	}
 	if (action == "manual" || action == "reopen") && c.Reason == "" {
 		return result, ErrInvalid
 	}
-	if action == "capture" && c.SourceID <= 0 || action == "manual" && c.CharacterID <= 0 {
+	if capture && c.SourceID <= 0 || action == "manual" && c.CharacterID <= 0 {
 		return result, ErrInvalid
 	}
 	q := store.New(s.Pool)
@@ -428,7 +443,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		}
 		v := event(ev)
 		v.CanManage = true
-		return ChangeResult{Event: v, Recorded: p.Recorded, Excluded: p.Excluded, ExcludedExternal: p.ExcludedExternal, ExcludedUnbound: p.ExcludedUnbound, AutoClosed: p.AutoClosed}, nil
+		return ChangeResult{Event: v, Recorded: p.Recorded, Excluded: p.Excluded, ExcludedExternal: p.ExcludedExternal, ExcludedUnbound: p.ExcludedUnbound, AutoClosed: p.AutoClosed, PAPAwarded: p.PAPAwarded}, nil
 	}
 	if a, e := q.FindAudit(ctx, store.FindAuditParams{EventID: id, RequestKey: key}); e == nil {
 		return replay(a)
@@ -439,7 +454,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		return result, ErrConflict
 	}
 	if ev.Version != c.Version ||
-		(ev.State == "closed" && action == "capture") ||
+		(ev.State == "closed" && capture) ||
 		(ev.State == "open" && (action == "reopen" || action == "manual")) {
 		return result, ErrConflict
 	}
@@ -450,7 +465,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 	observed := time.Now()
 	excluded := 0
 	external, unbound := 0, 0
-	if action == "capture" {
+	if capture {
 		if ev.StartsAt.Time.After(time.Now()) {
 			return result, ErrInvalid
 		}
@@ -530,7 +545,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 	for _, b := range bindings {
 		bound[b.ID] = b
 	}
-	if action == "capture" {
+	if capture {
 		source, ok := bound[c.SourceID]
 		ownerHash := fleet.OwnerHash
 		if fleetEnded {
@@ -559,7 +574,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		return result, ErrConflict
 	}
 	if ev.Version != c.Version ||
-		(ev.State == "closed" && action == "capture") ||
+		(ev.State == "closed" && capture) ||
 		(ev.State == "open" && (action == "reopen" || action == "manual")) {
 		return result, ErrConflict
 	}
@@ -568,6 +583,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		source = "manual"
 	}
 	recorded := 0
+	eligible := make([]store.AttendancePapAward, 0, len(members))
 	for _, m := range members {
 		var account pgtype.UUID
 		if b, ok := bound[m.ID]; ok {
@@ -601,9 +617,12 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		if entry.AccountID != account || !entry.Present {
 			continue
 		}
+		if action == "capture_pap" {
+			eligible = append(eligible, store.AttendancePapAward{EventID: id, CharacterID: m.ID, AccountID: account, CharacterName: m.Name, Points: c.PAPPoints})
+		}
 		b := bound[m.ID]
 		if s.Battle != nil && len(b.OwnerHash) > 0 {
-			if action == "capture" && m.ShipTypeID > 0 {
+			if capture && m.ShipTypeID > 0 {
 				var joined pgtype.Timestamptz
 				if !m.JoinedAt.IsZero() {
 					joined = stamp(m.JoinedAt)
@@ -619,6 +638,19 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 			if e := q.SeedBattleTask(ctx, store.SeedBattleTaskParams{EventID: id, CharacterID: m.ID, AccountID: account, OwnerHash: b.OwnerHash, Kind: "losses"}); e != nil {
 				return result, e
 			}
+		}
+	}
+	awarded := 0
+	if action == "capture_pap" && !fleetEnded {
+		if ev.PapIssued && ev.PapPoints != c.PAPPoints {
+			return result, ErrConflict
+		}
+		awarded, err = s.awardFleetPAP(ctx, tx, q, id, actor, key, c.PAPPoints, eligible)
+		if err != nil {
+			return result, err
+		}
+		if err = store.InsertFleetMOTD(ctx, tx, id, key, actor, c.SourceID, fleet.FleetID, fleet.Generation, fleet.OwnerHash, c.PAPPoints); err != nil {
+			return result, err
 		}
 	}
 	state := ev.State
@@ -637,8 +669,8 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 		c.Reason = "舰队已解散，活动自动结束"
 		auditAction = "auto_close"
 	}
-	p := auditPayload{Fingerprint: fingerprint, Reason: c.Reason, SourceID: c.SourceID, Generation: fleet.Generation, FleetID: fleet.FleetID, CharacterID: c.CharacterID, Present: c.Present, Recorded: recorded, Excluded: excluded, ExcludedExternal: &external, ExcludedUnbound: &unbound, AutoClosed: fleetEnded}
-	if action == "capture" || action == "manual" {
+	p := auditPayload{Fingerprint: fingerprint, Reason: c.Reason, SourceID: c.SourceID, Generation: fleet.Generation, FleetID: fleet.FleetID, CharacterID: c.CharacterID, Present: c.Present, Recorded: recorded, Excluded: excluded, ExcludedExternal: &external, ExcludedUnbound: &unbound, AutoClosed: fleetEnded, PAPAwarded: awarded, PAPPoints: c.PAPPoints}
+	if capture || action == "manual" {
 		p.ObservedAt = &observed
 	}
 	payload, _ := json.Marshal(p)
@@ -650,7 +682,7 @@ func (s *Service) Change(ctx context.Context, user string, id int64, action stri
 	}
 	v := event(updated)
 	v.CanManage = true
-	return ChangeResult{Event: v, Recorded: recorded, Excluded: excluded, ExcludedExternal: &external, ExcludedUnbound: &unbound, AutoClosed: fleetEnded}, nil
+	return ChangeResult{Event: v, Recorded: recorded, Excluded: excluded, ExcludedExternal: &external, ExcludedUnbound: &unbound, AutoClosed: fleetEnded, PAPAwarded: awarded}, nil
 }
 
 func (s *Service) EventCorporations(ctx context.Context) ([]int64, error) {

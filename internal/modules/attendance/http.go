@@ -26,6 +26,10 @@ func (h Handler) Module() module.Definition {
 	}{
 		{"GET", "/context", h.context}, {"GET", "/events", h.list}, {"POST", "/events", h.create},
 		{"GET", "/events/{id}", h.detail}, {"POST", "/events/{id}/capture", h.change("capture")},
+		{"POST", "/events/{id}/capture-pap", h.change("capture_pap")},
+		{"GET", "/events/{id}/fleet-notice", h.fleetNotice}, {"PUT", "/events/{id}/fleet-notice", h.saveFleetNotice},
+		{"GET", "/events/{id}/fleet-motd", h.fleetMOTDStatus}, {"POST", "/events/{id}/fleet-motd", h.syncFleetMOTD},
+		{"GET", "/events/{id}/fleet-dispatch", h.latestFleetDispatch}, {"POST", "/events/{id}/fleet-dispatch", h.fleetDispatch},
 		{"GET", "/events/{id}/characters/{character_id}/battle", h.battle},
 		{"POST", "/events/{id}/characters/{character_id}/battle/refresh", h.refreshBattle},
 		{"POST", "/events/{id}/losses/{loss_id}/review", h.reviewLoss},

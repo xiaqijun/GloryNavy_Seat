@@ -18,7 +18,7 @@ import (
 )
 
 func attendanceHandler(pool *pgxpool.Pool, accounts *identity.Service, policy *access.Service, reader *eve.AuthorizationService, accountNicknames func(context.Context, []string) (map[string]string, error)) attendance.Handler {
-	s := &attendance.Service{Pool: pool, EVE: reader, Administrator: policy.IsAdministrator}
+	s := &attendance.Service{Pool: pool, EVE: reader, FleetWriter: reader, Administrator: policy.IsAdministrator}
 	s.AlliancePAPMemberNames = func(ctx context.Context, accountIDs []string) (map[string]string, error) {
 		names, err := accounts.MainCharacterNames(ctx, accountIDs)
 		if err != nil {

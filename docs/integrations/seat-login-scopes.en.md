@@ -1,5 +1,7 @@
 # SeAT default scopes and standalone login
 
+2026-10-30, locally implemented and unreleased: fleet MOTD updates request `esi-fleets.write_fleet.v1` explicitly from the character, without changing ordinary login scopes. The developer application must also permit that scope. Explicit fleet and existing game-mail authorization flows preserve each other's grants; live authorization and fleet acceptance remain outstanding. See the [implementation record](../plans/fleet-notice-and-pap-20261029.zh-CN.md).
+
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.
 
 With fittings enabled, the application appends `esi-fittings.write_fittings.v1` to the 57-scope SeAT baseline (58 total). This project-specific game fitting write scope does not change the baseline list below. Enable it in the developer application and explicitly reauthorize existing characters. See [fittings](fittings.en.md).

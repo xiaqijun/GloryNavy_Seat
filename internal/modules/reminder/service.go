@@ -32,22 +32,23 @@ type Result struct {
 	State, Reason string
 }
 type Service struct {
-	Pool           *pgxpool.Pool
-	emailBox       cipher.AEAD
-	emailSend      func(context.Context, smtpConfig, string, string, string) Result
-	Enabled        bool
-	Origin         string
-	Administrator  func(context.Context, string) (bool, error)
-	Own            func(context.Context, string) ([]Character, error)
-	Main           func(context.Context, string) (Character, error)
-	Users          func(context.Context) ([]string, error)
-	Pending        func(context.Context, string) ([]string, error)
-	Sources        map[string]Source
-	Details        map[string]DetailSource
-	Names          func(context.Context, []string) (map[string]string, error)
-	CharacterNames func(context.Context, []int64) map[int64]string
-	Send           func(context.Context, Character, int64, string, string) Result
-	LockAccounts   func(context.Context, pgx.Tx, []string) error
+	Pool            *pgxpool.Pool
+	emailBox        cipher.AEAD
+	emailSend       func(context.Context, smtpConfig, string, string, string) Result
+	Enabled         bool
+	Origin          string
+	Administrator   func(context.Context, string) (bool, error)
+	Own             func(context.Context, string) ([]Character, error)
+	Main            func(context.Context, string) (Character, error)
+	Users           func(context.Context) ([]string, error)
+	Pending         func(context.Context, string) ([]string, error)
+	Sources         map[string]Source
+	Details         map[string]DetailSource
+	Names           func(context.Context, []string) (map[string]string, error)
+	CharacterNames  func(context.Context, []int64) map[int64]string
+	Send            func(context.Context, Character, int64, string, string) Result
+	SendCorporation func(context.Context, Character, int64, string, string) Result
+	LockAccounts    func(context.Context, pgx.Tx, []string) error
 }
 type Configuration struct {
 	store.Settings

@@ -117,7 +117,7 @@ export function PAPEvent({
             {event.pap_issued
               ? msg("已发放 · 每角色 {0} 分", event.pap_points)
               : event.state === "open"
-                ? msg("结束活动后发分")
+                ? msg("尚未发放")
                 : msg("未发放")}
           </small>
         </div>
