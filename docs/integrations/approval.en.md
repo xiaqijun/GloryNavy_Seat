@@ -1,6 +1,6 @@
 # Approval center
 
-Unreleased: after a decision from approval details, the client refreshes the authorized source projection before reloading lists. Refresh directly rechecks current source access and is serialized with scheduled projection. A refresh failure does not undo the decision; the UI reports that the list is not yet synchronized. The endpoint changes no source decisions, payments or ledger entries.
+Deployed 2026-10-30: after a decision from approval details, the client refreshes the authorized source projection before reloading lists. Refresh directly rechecks current source access and is serialized with scheduled projection. A refresh failure does not undo the decision; the UI reports that the list is not yet synchronized. The endpoint changes no source decisions, payments or ledger entries. A real post-decision production display check is pending.
 
 2026-10-21: Fixed redemptions missing from the unified index. Authorization scopes for sources without a corporation must serialize an explicit empty `corporation`; omitting it makes the SQL comparison evaluate to NULL and excludes valid bindings. Current administrator and account/recipient checks remain required. Normal redemptions stay in Fulfillment, cancellation requests in Pending, and terminal records in History. No migration, order rebuild, accounting, contract, or approval-rule change is required. See the [verification and release record](../history/exchange-approval-visibility-20261021.md).
 

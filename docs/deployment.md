@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-10-30：审批列表同步（前后端，Goose 116 不变）
+
+前后端 `v0.1.0-approval-refresh-20261030` 来自已推送 main `3b6a436`，无新迁移。审批操作后先同步来源读模型再刷新列表，不修改付款与审批事实。备份、权限、并发和线上核验见[发布记录](history/approval-refresh-release-20261030.md)。
+
 ## 2026-10-30：审批回退（前后端，Goose 116）
 
 前后端 `v0.1.0-approval-reversion-20261030` 来自已推送 main `ce31e22`，升级 Goose 116。出现回退记录后不得降级到不识别回退历史、额度及合同证据的程序；优先向前修复。备份、迁移演练和线上核验见[发布记录](history/approval-reversion-release-20261030.md)。
