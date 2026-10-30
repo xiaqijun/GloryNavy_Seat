@@ -6,6 +6,7 @@ import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 async function setup(page: Page, manage = true, pap = false) {
   await page.route("https://images.evetech.net/**", (r) => r.abort());
+  await page.route("**/api/v1/community/profile", (r) => r.fulfill({json: {data: {version: "1", complete: true, qq: {value: "10000", version: "1", confirmation: "confirmed"}, kook: {value: "Pilot", version: "1", confirmation: "confirmed"}}}}));
   await page.route("**/api/v1/modules", (r) =>
     r.fulfill({
       json: {
@@ -52,6 +53,8 @@ async function setup(page: Page, manage = true, pap = false) {
   let fleetDispatch: Record<string, unknown> | null = null;
   let fleetMOTD = "none";
   let fleetMOTDUpdate = 0;
+  let selectedSource = "";
+  let sourceRevision = 0;
   const papHistory: {
     id: string;
     character_id: string;
@@ -77,6 +80,16 @@ async function setup(page: Page, manage = true, pap = false) {
   });
   await page.route("**/api/v1/attendance/**", async (r) => {
     const url = new URL(r.request().url());
+
+    if (url.pathname.endsWith("/events/1/source")) {
+      if (r.request().method() === "POST") {
+        const body = r.request().postDataJSON();
+        expect(body.revision).toBe(String(sourceRevision));
+        selectedSource = body.source_character_id;
+        sourceRevision++;
+      }
+      return r.fulfill({json: {data: {source_character_id: selectedSource, revision: String(sourceRevision), invalid: false}}});
+    }
 
     if (url.pathname.endsWith("/fleet-notice")) {
       if (r.request().method() === "PUT") {
@@ -283,6 +296,9 @@ async function setup(page: Page, manage = true, pap = false) {
     }
     if (url.pathname.endsWith("/events") && r.request().method() === "POST") {
       expect(r.request().postDataJSON().title).toBe("新活动");
+      selectedSource = r.request().postDataJSON().source_character_id;
+      expect(selectedSource).toBe("456");
+      sourceRevision = 1;
       return r.fulfill({ json: { data: event() } });
     }
     if (url.pathname.endsWith("/events"))
@@ -556,6 +572,7 @@ test("fleet notice permits manual values when choices are unavailable", async ({
   await expect(notice.getByText("已保存", {exact:true})).toBeVisible();
 });
 test("create activity and dialog keyboard navigation", async ({ page }) => {
+  test.setTimeout(90_000);
   await setup(page);
   await page.goto("/attendance");
   await page.getByRole("button", { name: "创建活动", exact: true }).click();
@@ -565,11 +582,19 @@ test("create activity and dialog keyboard navigation", async ({ page }) => {
   await page.getByRole("button", { name: "创建活动", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByLabel("活动名称").fill("新活动");
+  await page.getByRole("dialog").getByLabel("点名来源角色").selectOption("456");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "创建活动", exact: true })
     .click();
   await expect(page.getByRole("heading", { name: "出勤名单" })).toBeVisible();
+  await expect(page.getByLabel("点名来源角色")).toHaveValue("456");
+  await page.reload();
+  await expect(page.getByLabel("点名来源角色")).toHaveValue("456");
+  await page.getByLabel("点名来源角色").selectOption("123");
+  await expect(page.getByLabel("点名来源角色")).toHaveValue("123");
+  await page.reload();
+  await expect(page.getByLabel("点名来源角色")).toHaveValue("123");
 });
 test("member cannot see organizer controls and online distinguishes unknown", async ({
   page,

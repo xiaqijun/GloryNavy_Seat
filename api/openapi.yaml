@@ -4705,6 +4705,52 @@ paths:
             ],
         },
     }
+  /api/v1/attendance/events/{id}/source:
+    parameters:
+      - {in: path, name: id, required: true, schema: {type: string, pattern: '^[1-9][0-9]*$'}}
+    get:
+      operationId: attendanceEventSource
+      summary: Read the current manager's saved source for this event; invalid means it is no longer bound.
+      security: [{SessionCookie: []}]
+      responses:
+        '200':
+          description: Account-specific source and revision; an empty source and revision 0 means no saved selection.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [source_character_id, revision, invalid]
+                    properties:
+                      source_character_id: {type: string, pattern: '^([1-9][0-9]*)?$'}
+                      revision: {type: string, pattern: '^(0|[1-9][0-9]*)$'}
+                      invalid: {type: boolean}
+        '401': {description: Authentication required}
+        '404': {description: Event unavailable or outside management scope}
+    post:
+      operationId: attendanceSetEventSource
+      summary: Save an owned character as this account's event source using revision-based concurrency control.
+      security: [{SessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_character_id, revision]
+              additionalProperties: false
+              properties:
+                source_character_id: {type: string, pattern: '^[1-9][0-9]*$'}
+                revision: {type: string, pattern: '^(0|[1-9][0-9]*)$'}
+      responses:
+        '200': {description: Saved source and new revision}
+        '400': {description: Invalid input}
+        '401': {description: Authentication required}
+        '404': {description: Event or owned character unavailable}
+        '409': {description: Selection changed; reload before retrying}
   /api/v1/attendance/events/{id}/fleet-notice:
     parameters:
       - {in: path, name: id, required: true, schema: {type: string}}
@@ -9466,6 +9512,7 @@ components:
         "properties":
           {
             "corporation_id": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+            "source_character_id": { "type": "string", "pattern": "^[1-9][0-9]*$", "description": "Optional for legacy clients. When present, the owned source is saved atomically with the event; reusing a request key with a different creation source conflicts." },
             "title": { "type": "string", "minLength": 1, "maxLength": 80 },
             "starts_at": { "type": "string", "format": "date-time" },
             "request_key": { "type": "string", "format": "uuid" },

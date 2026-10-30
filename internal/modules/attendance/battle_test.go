@@ -192,7 +192,7 @@ func TestBattleLossCannotCountTwiceAndReopenKeepsSampling(t *testing.T) {
 	if err := s.ReviewLoss(ctx, manager, e.ID, 100, review); err != nil {
 		t.Fatal(err)
 	}
-	other, err := s.Create(ctx, manager, Create{10, "Another event", time.Now().Add(-time.Hour), "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"})
+	other, err := s.Create(ctx, manager, Create{CorporationID: 10, Title: "Another event", StartsAt: time.Now().Add(-time.Hour), RequestKey: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"})
 	if err != nil {
 		t.Fatal(err)
 	}

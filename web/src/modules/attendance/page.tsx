@@ -42,10 +42,12 @@ import {
   getContext,
   getEvents,
   getEvent,
+  getEventSource,
   getOnline,
   getAudit,
   write,
   isEvent,
+  isEventSource,
   isChanged,
   duration,
   formatDate,
@@ -364,6 +366,7 @@ function CreateForm({
   done: (id: string) => void;
 }) {
   const [corp, setCorp] = useState(context.corporations[0]?.id ?? "");
+  const [source, setSource] = useState(context.characters[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [at, setAt] = useState(() => {
     const now = new Date();
@@ -377,6 +380,7 @@ function CreateForm({
         csrf,
         {
           corporation_id: corp,
+          source_character_id: source,
           title,
           starts_at: new Date(`${at}:00+08:00`).toISOString(),
           request_key: key,
@@ -415,6 +419,7 @@ function CreateForm({
           }))}
         />
       </label>
+      <AccountCharacterSelect label={msg("点名来源角色")} characters={context.characters} value={source} onChange={setSource} disabled={m.isPending} />
       <label>
         {msg("开始时间（北京时间）")}{" "}
         <input
@@ -425,7 +430,7 @@ function CreateForm({
         />
       </label>
       {m.isError && <p role="alert">{m.error.message}</p>}
-      <Button type="submit" disabled={m.isPending || !corp}>
+      <Button type="submit" disabled={m.isPending || !corp || !source}>
         {m.isPending ? msg("正在创建") : msg("创建活动")}
       </Button>
     </form>
@@ -445,7 +450,6 @@ function EventDetail({
   back: () => void;
 }) {
   const client = useQueryClient();
-  const [source, setSource] = useState(context.characters[0]?.id ?? "");
   const [manual, setManual] = useState<Entry | "new" | null>(null);
   const [stateAction, setStateAction] = useState<"close" | "reopen" | null>(
     null,
@@ -457,6 +461,20 @@ function EventDetail({
     queryKey: ["attendance", "event", user, id],
     queryFn: ({ signal }) => getEvent(id, signal),
   });
+  const sourceQuery = useQuery({
+    queryKey: ["attendance", "event-source", user, id],
+    queryFn: ({ signal }) => getEventSource(id, signal),
+    enabled: q.data?.event.can_manage === true,
+  });
+  const changeSource = useMutation({
+    mutationFn: (next: string) => write(`/events/${id}/source`, csrf, {source_character_id: next, revision: sourceQuery.data!.revision}, isEventSource),
+    onSuccess: (saved) => client.setQueryData(["attendance", "event-source", user, id], saved),
+    onError: () => { void sourceQuery.refetch(); },
+  });
+  const selectedSource = sourceQuery.data;
+  const missingSource = !!selectedSource && (selectedSource.invalid || (!!selectedSource.source_character_id && !context.characters.some((c) => c.id === selectedSource.source_character_id)));
+  const source = selectedSource && !missingSource && !changeSource.isPending && !sourceQuery.isError
+    ? (selectedSource.source_character_id || context.characters[0]?.id || "") : "";
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (q.isSuccess) heading.current?.focus({ preventScroll: true });
@@ -587,12 +605,13 @@ function EventDetail({
       <div className="attendance-operation-main">
       {e.can_manage && e.state === "open" && (
         <div className="attendance-toolbar attendance-capture">
-          <AccountCharacterSelect
+          {sourceQuery.isPending ? <p role="status">{msg("正在读取")}</p> : sourceQuery.isError ? <div role="alert"><span>{sourceQuery.error.message}</span><Button variant="outline" onClick={() => void sourceQuery.refetch()}>{msg("重试")}</Button></div> : missingSource ? <label className="account-character-select">{msg("点名来源角色")}<select aria-label={msg("点名来源角色")} value="" disabled={changeSource.isPending} onChange={(event) => changeSource.mutate(event.target.value)}><option value="" disabled>{msg("请选择角色")}</option>{context.characters.map((character) => <option key={character.id} value={character.id}>{character.name}</option>)}</select></label> : <AccountCharacterSelect
             label={msg("点名来源角色")}
             value={source}
-            onChange={setSource}
+            onChange={(next) => changeSource.mutate(next)}
             characters={context.characters}
-          />
+            disabled={changeSource.isPending || capture.isPending || fleetPAP.isPending}
+          />}
           <Button
             disabled={capture.isPending || fleetPAP.isPending || !source}
             onClick={() => capture.mutate()}
@@ -619,6 +638,7 @@ function EventDetail({
       </div>
       </div>
       <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} notify />
+      {changeSource.isError && <p role="alert">{changeSource.error.message}</p>}
       {capture.isError && (
         <Feedback error={capture.error} retry={() => void q.refetch()} />
       )}

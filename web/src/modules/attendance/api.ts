@@ -3,6 +3,12 @@ import { msg, getLocale } from "@/lib/i18n";
 import { APIError, getData } from "@/lib/http";
 export type Entity = { id: string; name: string; account_id?: string; nickname?: string };
 export type Context = { corporations: Entity[]; characters: Entity[] };
+export type EventSource = { source_character_id: string; revision: string; invalid: boolean };
+export const isEventSource = (v: unknown): v is EventSource => {
+  if (!v || typeof v !== "object") return false;
+  const data = v as Record<string, unknown>;
+  return typeof data.source_character_id === "string" && (data.source_character_id === "" || /^[1-9]\d*$/.test(data.source_character_id)) && typeof data.revision === "string" && /^(0|[1-9]\d*)$/.test(data.revision) && typeof data.invalid === "boolean";
+};
 export type Event = {
   pap_points?: number;
   pap_issued?: boolean;
@@ -209,6 +215,8 @@ export const getPendingPAP = (signal?: AbortSignal) =>
   getData(`${root}/pap/pending`, isEventList, signal);
 export const getEvent = (id: string, signal?: AbortSignal) =>
   getData(`${root}/events/${encodeURIComponent(id)}`, isDetail, signal);
+export const getEventSource = (id: string, signal?: AbortSignal) =>
+  getData(`${root}/events/${encodeURIComponent(id)}/source`, isEventSource, signal);
 export const getOnline = (
   corp: string,
   days: string,

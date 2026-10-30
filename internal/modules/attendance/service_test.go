@@ -78,7 +78,7 @@ func attendanceFixture(t *testing.T) (*Service, *fakeEVE) {
 }
 func createTestEvent(t *testing.T, s *Service) Event {
 	t.Helper()
-	e, err := s.Create(context.Background(), manager, Create{10, "Fleet", time.Now().Add(-time.Hour), "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"})
+	e, err := s.Create(context.Background(), manager, Create{CorporationID: 10, Title: "Fleet", StartsAt: time.Now().Add(-time.Hour), RequestKey: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"})
 	if err != nil {
 		t.Fatal(err)
 	}

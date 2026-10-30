@@ -22,14 +22,25 @@ func MergeAccount(ctx context.Context, tx pgx.Tx, source, target string, apply b
 	if err := tx.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(d) ORDER BY id),'[]'::jsonb) FROM attendance_fleet_deliveries d WHERE account_id IN($1::uuid,$2::uuid)`, source, target).Scan(&deliveries); err != nil {
 		return nil, err
 	}
+	var sources json.RawMessage
+	if err := tx.QueryRow(ctx, `SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY event_id,account_id),'[]'::jsonb) FROM attendance_event_sources p WHERE account_id IN($1::uuid,$2::uuid)`, source, target).Scan(&sources); err != nil {
+		return nil, err
+	}
 	details := map[string]any{}
 	if err := json.Unmarshal(summary, &details); err != nil {
 		return nil, err
 	}
-	fingerprint := append(append(summary, pap...), deliveries...)
+	fingerprint := append(append(append(summary, pap...), deliveries...), sources...)
 	details["fingerprint"] = fmt.Sprintf("%x", sha256.Sum256(fingerprint))
 	summary, _ = json.Marshal(details)
 	if apply {
+		// Keep the destination's selection on collisions; preferences are not audit history.
+		if _, err := tx.Exec(ctx, `INSERT INTO attendance_event_sources(event_id,account_id,source_id,creation_source_id,revision,updated_at) SELECT event_id,$2,source_id,creation_source_id,revision,updated_at FROM attendance_event_sources WHERE account_id=$1 ON CONFLICT(event_id,account_id) DO NOTHING`, source, target); err != nil {
+			return nil, err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM attendance_event_sources WHERE account_id=$1`, source); err != nil {
+			return nil, err
+		}
 		// Do not send a queued message to a merged identity or duplicate a target's delivery.
 		// A network send already in progress is uncertain, never automatically retried.
 		if _, err := tx.Exec(ctx, `UPDATE attendance_fleet_deliveries SET original_account_id=coalesce(original_account_id,account_id),account_id=$2,state=CASE WHEN state IN ('pending','preparing') THEN 'skipped' WHEN state='sending' THEN 'unknown' ELSE state END,reason=CASE WHEN state IN ('pending','preparing','sending') THEN 'account_merged' ELSE reason END,updated_at=now() WHERE account_id=$1`, source, target); err != nil {

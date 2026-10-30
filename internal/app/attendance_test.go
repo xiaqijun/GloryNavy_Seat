@@ -46,7 +46,7 @@ func TestAttendanceHostPermissionsAndCSRF(t *testing.T) {
 		app.ServeHTTP(res, req)
 		return res.Code
 	}
-	for _, path := range []string{"/api/v1/attendance/context", "/api/v1/attendance/events", "/api/v1/attendance/events/1", "/api/v1/attendance/online", "/api/v1/attendance/pap", "/api/v1/attendance/pap/pending", "/api/v1/attendance/events/1/pap"} {
+	for _, path := range []string{"/api/v1/attendance/context", "/api/v1/attendance/events", "/api/v1/attendance/events/1", "/api/v1/attendance/events/1/source", "/api/v1/attendance/online", "/api/v1/attendance/pap", "/api/v1/attendance/pap/pending", "/api/v1/attendance/events/1/pap"} {
 		if code := call("GET", path, "", "", false); code != 401 {
 			t.Fatal("anonymous", path, code)
 		}
@@ -62,6 +62,9 @@ func TestAttendanceHostPermissionsAndCSRF(t *testing.T) {
 	}
 	if code := call("POST", "/api/v1/attendance/events/1/pap", `{}`, "", true); code != 403 {
 		t.Fatal("PAP missing CSRF", code)
+	}
+	if code := call("POST", "/api/v1/attendance/events/1/source", `{}`, "", true); code != 403 {
+		t.Fatal("event source missing CSRF", code)
 	}
 	if code := call("POST", "/api/v1/attendance/events/1/conversion", `{}`, "", true); code != 403 {
 		t.Fatal("conversion missing CSRF", code)
@@ -89,11 +92,17 @@ func TestAttendanceHostPermissionsAndCSRF(t *testing.T) {
 	if code := call("GET", "/api/v1/attendance/events/1", "", "", true); code != 200 {
 		t.Fatal("admin read", code)
 	}
+	if code := call("GET", "/api/v1/attendance/events/1/source", "", "", true); code != 200 {
+		t.Fatal("admin source read", code)
+	}
 	if _, err = pool.Exec(ctx, "DELETE FROM access_administrators WHERE user_id=$1", session.UserID); err != nil {
 		t.Fatal(err)
 	}
 	if code := call("GET", "/api/v1/attendance/events/1", "", "", true); code != 404 {
 		t.Fatal("revoked admin retained access", code)
+	}
+	if code := call("GET", "/api/v1/attendance/events/1/source", "", "", true); code != 404 {
+		t.Fatal("revoked admin retained source access", code)
 	}
 }
 

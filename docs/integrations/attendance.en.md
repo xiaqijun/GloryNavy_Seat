@@ -1,5 +1,11 @@
 # Corporation attendance and estimated online time
 
+## Fleet source selection (local, not released; Goose 115)
+
+The activity creation form selects a character bound to the current account, and saves the activity and selection atomically. Legacy clients may omit the character. During an open activity, managers can change their selection; it is stored per account and event and restored across devices without affecting other managers. An unbound saved character is marked invalid and must be replaced. On account merge, the destination's selection wins when both exist; otherwise the source selection transfers. Selection itself does not grant fleet, boss, or EVE authorization; operations still validate those separately.
+
+`GET /api/v1/attendance/events/{id}/source` returns the manager's `source_character_id`, string `revision`, and `invalid`; an absent selection has an empty character and revision `0`. `POST` accepts an owned character and the last read revision, rechecks the binding and event management scope, and rejects concurrent changes. Creation optionally accepts `source_character_id`; reusing its request key with a different initial source conflicts. Goose 115 Down refuses existing selections. Release the migration, backend, and frontend together.
+
 Released 2026-10-30: the fleet notice editor searches active SDE solar systems for the system and meeting point, and the accessible fitting library of the event's corporation for doctrine. Existing text and manual input remain supported; the saved text contract and authorization are unchanged.
 
 Released on 2026-10-30: site-managed notice and PAP blocks explicitly use EVE white. Existing uncolored blocks and repeated updates are supported, and other MOTD content is retained. A live sync returned white tags via ESI; after initially seeing red and manually setting white in the game, the user confirmed the display looked correct.

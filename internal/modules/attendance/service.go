@@ -142,13 +142,14 @@ type Create struct {
 	Title         string    `json:"title"`
 	StartsAt      time.Time `json:"starts_at"`
 	RequestKey    string    `json:"request_key"`
+	SourceID      int64     `json:"source_character_id,string,omitempty"`
 }
 
 func (s *Service) Create(ctx context.Context, user string, c Create) (Event, error) {
 	c.Title = strings.TrimSpace(c.Title)
 	key, err := uuid(c.RequestKey)
 	actor, e := uuid(user)
-	if err != nil || e != nil || len([]rune(c.Title)) < 1 || len([]rune(c.Title)) > 80 || c.StartsAt.IsZero() || c.StartsAt.Before(time.Now().AddDate(-1, 0, 0)) || c.StartsAt.After(time.Now().AddDate(1, 0, 0)) {
+	if err != nil || e != nil || c.SourceID < 0 || len([]rune(c.Title)) < 1 || len([]rune(c.Title)) > 80 || c.StartsAt.IsZero() || c.StartsAt.Before(time.Now().AddDate(-1, 0, 0)) || c.StartsAt.After(time.Now().AddDate(1, 0, 0)) {
 		return Event{}, ErrInvalid
 	}
 	if err = s.require(ctx, user, c.CorporationID); err != nil {
@@ -167,12 +168,54 @@ func (s *Service) Create(ctx context.Context, user string, c Create) (Event, err
 	if !known {
 		return Event{}, pgx.ErrNoRows
 	}
-	r, err := store.New(s.Pool).CreateEvent(ctx, store.CreateEventParams{CorporationID: c.CorporationID, Title: c.Title, StartsAt: stamp(c.StartsAt), CreatedBy: actor, RequestKey: key})
+	q := store.New(s.Pool)
+	var tx pgx.Tx
+	if c.SourceID > 0 {
+		if s.Bindings == nil || s.AllianceLockAccounts == nil {
+			return Event{}, ErrUnavailable
+		}
+		tx, err = s.Pool.Begin(ctx)
+		if err != nil {
+			return Event{}, err
+		}
+		defer tx.Rollback(context.Background())
+		bindings, e := s.Bindings(ctx, tx, []int64{c.SourceID})
+		if e != nil {
+			return Event{}, e
+		}
+		if len(bindings) != 1 || bindings[0].ID != c.SourceID || bindings[0].UserID != user {
+			return Event{}, pgx.ErrNoRows
+		}
+		if err = s.AllianceLockAccounts(ctx, tx, []string{user}); err != nil {
+			return Event{}, err
+		}
+		q = store.New(tx)
+	}
+	r, err := q.CreateEvent(ctx, store.CreateEventParams{CorporationID: c.CorporationID, Title: c.Title, StartsAt: stamp(c.StartsAt), CreatedBy: actor, RequestKey: key})
 	if err != nil {
 		return Event{}, err
 	}
 	if r.CorporationID != c.CorporationID || r.Title != c.Title || !r.StartsAt.Time.Equal(c.StartsAt.Truncate(time.Microsecond)) {
 		return Event{}, ErrConflict
+	}
+	if tx == nil {
+		selection, e := store.GetEventSource(ctx, s.Pool, r.ID, actor)
+		if e != nil && !errors.Is(e, pgx.ErrNoRows) {
+			return Event{}, e
+		}
+		if e == nil && selection.CreationSourceID.Valid {
+			return Event{}, ErrConflict
+		}
+	}
+	if tx != nil {
+		if err = store.SaveCreatedEventSource(ctx, tx, r.ID, actor, c.SourceID); errors.Is(err, pgx.ErrNoRows) {
+			return Event{}, ErrConflict
+		} else if err != nil {
+			return Event{}, err
+		}
+		if err = tx.Commit(ctx); err != nil {
+			return Event{}, err
+		}
 	}
 	dto := event(r)
 	dto.CanManage = true
