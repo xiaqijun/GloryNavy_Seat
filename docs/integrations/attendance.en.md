@@ -1,6 +1,6 @@
 # Corporation attendance and estimated online time
 
-Released on 2026-10-30: after the client displayed the fleet notice in red, site-managed notice and PAP blocks explicitly use EVE white. Existing uncolored blocks and repeated updates are supported, and other MOTD content is retained. Existing notices must be synced again; actual client color still requires verification.
+Released on 2026-10-30: site-managed notice and PAP blocks explicitly use EVE white. Existing uncolored blocks and repeated updates are supported, and other MOTD content is retained. A live sync returned white tags via ESI, but the user still saw red in the client; the cause remains under investigation.
 
 2026-10-30 live test: Hajimi6 synced the notice for activity #3 to a one-character fleet. The server recorded sent, and an ESI readback contained the activity, notice and PAP markers. The previous MOTD was empty; in-game rendering, preservation of existing content and concurrent edits remain unverified. See the [test record](../history/fleet-notice-live-test-20261030.md).
 
