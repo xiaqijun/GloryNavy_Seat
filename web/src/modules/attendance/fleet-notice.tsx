@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/dialog";
 import { ClipboardList } from "lucide-react";
 import { FleetDispatch } from "./fleet-dispatch";
 import { FleetMOTDStatus } from "./fleet-motd-status";
+import { FleetChoice } from "./fleet-notice-choices";
 
 type Notice = { solar_system: string; doctrine: string; meeting_point: string; commander: string; details: string; revision: number; updated_at?: string };
 const empty: Notice = { solar_system: "", doctrine: "", meeting_point: "", commander: "", details: "", revision: 0 };
@@ -17,7 +18,7 @@ const isNotice = (v: unknown): v is Notice => {
 };
 const isEnvelope = (v: unknown): v is {notice: Notice | null} => !!v && typeof v === "object" && ((v as {notice?: unknown}).notice === null || isNotice((v as {notice?: unknown}).notice));
 
-export function FleetNoticeEditor({eventID, eventTitle, eventStartsAt, eventVersion, open, source, csrf, user}: {eventID: string; eventTitle:string; eventStartsAt:string; eventVersion:string; open:boolean; source:string; csrf: string; user: string}) {
+export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStartsAt, eventVersion, open, source, csrf, user}: {eventID: string; corporationID:string; eventTitle:string; eventStartsAt:string; eventVersion:string; open:boolean; source:string; csrf: string; user: string}) {
   const client = useQueryClient();
   const formId = useId();
   const [visible, setVisible] = useState(false);
@@ -47,23 +48,37 @@ export function FleetNoticeEditor({eventID, eventTitle, eventStartsAt, eventVers
   const busy = save.isPending || sync.isPending || dispatchBusy;
   return <>
     <div className="attendance-toolbar"><Button variant="outline" onClick={() => setVisible(true)}><ClipboardList />{msg("舰队公告")}</Button></div>
-    {visible && <Modal title={msg("舰队公告")} close={() => setVisible(false)} busy={busy} footer={<>
+    {visible && <Modal title={msg("舰队公告")} className="fleet-notice-modal" close={() => setVisible(false)} busy={busy} onEscapeKeyDown={event => {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement && focused.closest(".fleet-notice-modal") && focused.getAttribute("role") === "combobox" && focused.getAttribute("aria-expanded") === "true") event.preventDefault();
+    }} footer={<>
       <Button variant="outline" onClick={() => setVisible(false)} disabled={busy}>{msg("关闭")}</Button>
       {!query.isPending && !query.isError && <Button type="submit" form={formId} disabled={busy}>{save.isPending ? msg("正在保存") : msg("保存公告")}</Button>}
     </>}>
     {query.isPending ? <p role="status">{msg("正在读取")}</p> : query.isError ? <p role="alert">{query.error.message}</p> : <>
-    <form id={formId} className="attendance-form" onSubmit={submit}>
+    <form id={formId} className="attendance-form fleet-notice-form" onSubmit={submit}>
     <fieldset className="fleet-notice-fields" disabled={busy}>
-    <label>{msg("星系")}<input value={draft.solar_system} maxLength={120} required onChange={e=>update("solar_system", e.target.value)} /></label>
-    <label>{msg("建制")}<input value={draft.doctrine} maxLength={500} required onChange={e=>update("doctrine", e.target.value)} /></label>
-    <label>{msg("集结地点")}<input value={draft.meeting_point} maxLength={300} onChange={e=>update("meeting_point", e.target.value)} /></label>
+    <FleetChoice label={msg("星系")} kind="system" corporationID={corporationID} user={user} value={draft.solar_system} maxLength={120} required onChange={value=>update("solar_system", value)} />
+    <FleetChoice label={msg("建制")} kind="doctrine" corporationID={corporationID} user={user} value={draft.doctrine} maxLength={500} required onChange={value=>update("doctrine", value)} />
+    <FleetChoice label={msg("集结地点")} kind="system" corporationID={corporationID} user={user} value={draft.meeting_point} maxLength={300} onChange={value=>update("meeting_point", value)} />
     <label>{msg("指挥")}<input value={draft.commander} maxLength={120} onChange={e=>update("commander", e.target.value)} /></label>
     <label>{msg("补充信息")}<textarea value={draft.details} maxLength={3000} onChange={e=>update("details", e.target.value)} /></label>
     </fieldset>
-    <div className="fleet-notice-preview"><strong>{msg("公告预览")}</strong><div>{eventTitle}</div><div>{msg("时间")}：{new Intl.DateTimeFormat(getLocale(),{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(eventStartsAt))}</div><div>{msg("星系")}：{draft.solar_system || "—"}</div><div>{msg("建制")}：{draft.doctrine || "—"}</div>{draft.meeting_point && <div>{msg("集结地点")}：{draft.meeting_point}</div>}{draft.commander && <div>{msg("指挥")}：{draft.commander}</div>}{draft.details && <div className="fleet-notice-details">{draft.details}</div>}</div>
-    {save.isSuccess && <p role="status">{msg("已保存")}</p>}
-    {save.isError && <p role="alert">{save.error.message}</p>}
-    </form><div className="attendance-toolbar fleet-notice-sync"><Button variant="outline" disabled={!open || !source || edited!==null || !query.data?.notice || busy} onClick={()=>sync.mutate()}>{sync.isPending ? msg("正在同步") : msg("同步舰队置顶")}</Button>{sync.isError && <span role="alert">{sync.error.message}</span>}</div><FleetMOTDStatus eventID={eventID} source={source} csrf={csrf} user={user} /><FleetDispatch eventID={eventID} user={user} csrf={csrf} revision={draft.revision} ready={edited===null && !!query.data?.notice && !busy} onBusyChange={setDispatchBusy} />
+    <section className="fleet-notice-preview" aria-label={msg("公告预览")}>
+      <strong>{msg("公告预览")}</strong>
+      <div className="fleet-notice-preview-title">{eventTitle}</div>
+      <dl>
+        <div><dt>{msg("时间")}</dt><dd>{new Intl.DateTimeFormat(getLocale(),{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(eventStartsAt))}</dd></div>
+        <div><dt>{msg("星系")}</dt><dd>{draft.solar_system || "—"}</dd></div>
+        <div><dt>{msg("建制")}</dt><dd>{draft.doctrine || "—"}</dd></div>
+        {draft.meeting_point && <div><dt>{msg("集结地点")}</dt><dd>{draft.meeting_point}</dd></div>}
+        {draft.commander && <div><dt>{msg("指挥")}</dt><dd>{draft.commander}</dd></div>}
+      </dl>
+      {draft.details && <div className="fleet-notice-details">{draft.details}</div>}
+    </section>
+    {save.isSuccess && <p className="fleet-notice-save-status" role="status">{msg("已保存")}</p>}
+    {save.isError && <p className="fleet-notice-save-status" role="alert">{save.error.message}</p>}
+    </form><div className="fleet-notice-actions"><div className="attendance-toolbar fleet-notice-sync"><Button variant="outline" disabled={!open || !source || edited!==null || !query.data?.notice || busy} onClick={()=>sync.mutate()}>{sync.isPending ? msg("正在同步") : msg("同步舰队置顶")}</Button>{sync.isError && <span role="alert">{sync.error.message}</span>}</div><FleetMOTDStatus eventID={eventID} source={source} csrf={csrf} user={user} /><FleetDispatch eventID={eventID} user={user} csrf={csrf} revision={draft.revision} ready={edited===null && !!query.data?.notice && !busy} onBusyChange={setDispatchBusy} /></div>
     </>}
     </Modal>}
   </>;

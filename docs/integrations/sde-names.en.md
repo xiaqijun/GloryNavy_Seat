@@ -1,5 +1,7 @@
 # SDE type and solar-system name imports
 
+Local, unreleased: authenticated `GET /api/v1/eve/solar-systems/search` searches the active SDE by literal Chinese/English name substring or exact ID, returning at most 30 entries without ESI requests; an empty query lists the first 30.
+
 LPDataService reads NPC corporations, factions and blueprints from the verified ZIP of the active build, with a process-local cache only. No name tables, mapper or migration change. It follows active-version pins and requires the active archive in SDE_WORK_DIR. See [LP lookup](lp.en.md).
 
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.

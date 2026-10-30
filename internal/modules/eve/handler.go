@@ -413,6 +413,7 @@ func (h *Handler) Module() module.Definition {
 		Manifest:    module.Manifest{ID: "eve", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}}},
 		Permissions: []string{"eve.characters.manage"},
 		Routes: []module.Route{
+			{Method: "GET", Path: "/solar-systems/search", Permission: "eve.characters.manage", Handler: http.HandlerFunc(h.searchSolarSystems)},
 			{Method: "GET", Path: "/public/activity", Public: true, Handler: h.PublicActivity},
 			{Method: "GET", Path: "/public/corporation", Public: true, Handler: h.PublicCorporation},
 			{Method: "POST", Path: "/accounts/merge", Permission: "eve.characters.manage", Handler: http.HandlerFunc(h.accountStart)},

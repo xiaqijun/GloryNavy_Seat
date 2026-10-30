@@ -406,19 +406,55 @@ test("organizer captures fleet and corrects attendance", async ({ page }) => {
 });
 test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await setup(page);
+  await page.route("**/api/v1/eve/solar-systems/search?*", async route => {
+    const term = new URL(route.request().url()).searchParams.get("q") ?? "";
+    const rows = [{id:"30000142",name:"Jita",name_zh:"吉他",name_en:"Jita"},{id:"30004759",name:"1DQ1-A",name_zh:"",name_en:"1DQ1-A"}];
+    if (term === "Ji") await new Promise(resolve => setTimeout(resolve, 1000));
+    return route.fulfill({json:{data:rows.filter(row => !term || `${row.name} ${row.name_zh}`.toLowerCase().includes(term.toLowerCase()))}});
+  });
+  await page.route("**/api/v1/fittings/library?*", route => {
+    expect(new URL(route.request().url()).searchParams.get("corporation_id")).toBe("10");
+    return route.fulfill({json:{data:[{id:"12",corporation_id:"10",name:"护卫舰",description:"",version:"1",updated_at:"2026-10-29T10:00:00Z",ship_name:"裂谷级",group:"",eft:"",fit:{name:"护卫舰",ship_type_id:"587",skill_mode:"all5",items:[]}}]}});
+  });
   await page.goto("/attendance?event=1");
   const noticeButton = page.getByRole("button", {name:"舰队公告", exact:true});
   await expect(page.getByLabel("星系", {exact:true})).toHaveCount(0);
   await noticeButton.click();
   const notice = page.getByRole("dialog", {name:"舰队公告"});
   await expect(notice).toBeVisible();
-  await page.getByLabel("星系", {exact:true}).fill("Jita");
+  await page.getByLabel("星系", {exact:true}).click();
+  await expect(notice.getByRole("option", {name:/Jita/})).toBeVisible();
+  const systemSearch = page.waitForRequest(request => request.url().includes("/solar-systems/search?q=Ji"));
+  await page.getByLabel("星系", {exact:true}).fill("Ji");
+  await expect(notice.getByRole("option", {name:/Jita/})).toBeVisible();
+  await page.getByLabel("星系", {exact:true}).press("Escape");
+  await expect(notice).toBeVisible();
+  await expect(notice.getByRole("option", {name:/Jita/})).toHaveCount(0);
+  await page.getByLabel("星系", {exact:true}).click();
+  await systemSearch;
+  await page.getByLabel("星系", {exact:true}).press("ArrowDown");
+  await page.getByLabel("星系", {exact:true}).press("Enter");
+  await expect(page.getByLabel("星系", {exact:true})).toHaveValue("Jita");
   await page.keyboard.press("Escape");
   await expect(notice).toHaveCount(0);
   await expect(noticeButton).toBeFocused();
   await noticeButton.click();
   await expect(notice.getByLabel("星系", {exact:true})).toHaveValue("Jita");
-  await page.getByLabel("建制", {exact:true}).fill("护卫舰");
+  await page.getByLabel("建制", {exact:true}).fill("护卫");
+  await expect(notice.getByRole("option", {name:/护卫舰/})).toBeVisible();
+  await notice.getByRole("option", {name:/护卫舰/}).click();
+  await page.getByLabel("集结地点", {exact:true}).fill("1DQ");
+  await expect(notice.getByRole("option", {name:/1DQ1-A/})).toBeVisible();
+  await notice.getByRole("option", {name:/1DQ1-A/}).click();
+  const fieldsBox = await notice.locator(".fleet-notice-fields").boundingBox();
+  const previewBox = await notice.getByRole("region", {name:"公告预览"}).boundingBox();
+  expect(fieldsBox).not.toBeNull();
+  expect(previewBox).not.toBeNull();
+  if ((page.viewportSize()?.width ?? 0) > 760) {
+    expect(previewBox!.x).toBeGreaterThanOrEqual(fieldsBox!.x + fieldsBox!.width);
+  } else {
+    expect(previewBox!.y).toBeGreaterThanOrEqual(fieldsBox!.y + fieldsBox!.height);
+  }
   await expect(notice).toHaveJSProperty("scrollWidth", await notice.evaluate(el => el.clientWidth));
   await notice.screenshot({path:testInfo.outputPath("fleet-notice.png")});
   await page.getByRole("button", {name:"保存公告"}).click();
@@ -451,9 +487,28 @@ test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await expect(page.getByRole("heading", {name:"修订记录"})).toBeVisible();
   await expect(page.getByText("集结分调整")).toBeVisible();
 });
+test("fleet notice permits manual values when choices are unavailable", async ({ page }) => {
+  await setup(page);
+  await page.route("**/api/v1/eve/solar-systems/search?*", route =>
+    route.fulfill({status:503,json:{error:{message:"unavailable"}}}));
+  await page.route("**/api/v1/fittings/library?*", route =>
+    route.fulfill({status:503,json:{error:{message:"unavailable"}}}));
+  await page.goto("/attendance?event=1");
+  await page.getByRole("button", {name:"舰队公告", exact:true}).click();
+  const notice = page.getByRole("dialog", {name:"舰队公告"});
+  await notice.getByLabel("星系", {exact:true}).fill("Jita");
+  await notice.getByLabel("建制", {exact:true}).fill("护卫舰");
+  await expect(notice.getByText("选项读取失败，可手动填写").first()).toBeVisible();
+  await notice.getByRole("button", {name:"保存公告"}).click();
+  await expect(notice.getByText("已保存", {exact:true})).toBeVisible();
+});
 test("create activity and dialog keyboard navigation", async ({ page }) => {
   await setup(page);
   await page.goto("/attendance");
+  await page.getByRole("button", { name: "创建活动", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "创建活动", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByLabel("活动名称").fill("新活动");

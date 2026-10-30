@@ -582,7 +582,7 @@ function EventDetail({
       </div>
       <PAPEvent user={user} csrf={csrf} event={e} entries={q.data.entries} />
       {e.can_manage && <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} />}
-      {e.can_manage && <FleetNoticeEditor eventID={id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />}
+      {e.can_manage && <FleetNoticeEditor eventID={id} corporationID={e.corporation_id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />}
       {e.can_manage && e.state === "open" && (
         <div className="attendance-toolbar attendance-capture">
           <AccountCharacterSelect

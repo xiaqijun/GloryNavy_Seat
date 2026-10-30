@@ -25,6 +25,7 @@ export function Modal({
   busy = false,
   className,
   size = "form",
+  onEscapeKeyDown,
 }: {
   title: string;
   close: () => void;
@@ -33,6 +34,7 @@ export function Modal({
   busy?: boolean;
   className?: string;
   size?: "compact" | "form";
+  onEscapeKeyDown?: (event: KeyboardEvent) => void;
 }) {
   const restoreFocus = useReturnFocus();
   return (
@@ -52,6 +54,7 @@ export function Modal({
           onCloseAutoFocus={restoreFocus}
           onEscapeKeyDown={(e) => {
             if (busy) e.preventDefault();
+            else onEscapeKeyDown?.(e);
           }}
           onPointerDownOutside={(e) => {
             if (busy) e.preventDefault();

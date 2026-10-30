@@ -6,6 +6,41 @@ info:
 servers:
   - url: /
 paths:
+  /api/v1/eve/solar-systems/search:
+    get:
+      operationId: searchSolarSystems
+      summary: Search solar systems in the active local SDE
+      description: Requires a signed-in account with eve.characters.manage. Returns up to 30 entries using a literal, case-insensitive Chinese or English name substring or an exact ID; an empty query lists the first 30. The display name follows Accept-Language. No ESI request is made.
+      security: [{SessionCookie: []}]
+      parameters:
+        - in: query
+          name: q
+          schema: {type: string, maxLength: 80}
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, request_id]
+                properties:
+                  request_id: {type: string}
+                  data:
+                    type: array
+                    maxItems: 30
+                    items:
+                      type: object
+                      required: [id, name, name_zh, name_en]
+                      properties:
+                        id: {type: string}
+                        name: {type: string}
+                        name_zh: {type: string}
+                        name_en: {type: string}
+        "400": {description: Invalid or overlong search}
+        "401": {description: Session required}
+        "403": {description: Account access denied}
+        "503": {description: Local SDE search unavailable}
   /api/v1/reminder/email/settings:
     get:
       summary: Read ordinary email notification settings

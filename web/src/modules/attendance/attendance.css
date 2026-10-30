@@ -369,8 +369,37 @@
 .fleet-dispatch-results { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:14px; }
 .fleet-notice-fields { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; padding:0; margin:0; border:0; min-width:0; }
 .fleet-notice-fields label:last-child { grid-column:1 / -1; }
-.fleet-notice-sync { margin-top:20px; flex-wrap:wrap; }
-@media (max-width: 600px) { .fleet-notice-fields { grid-template-columns:1fr; } }
+.fleet-choice-field { display:grid; align-content:start; gap:8px; min-width:0; }
+.fleet-choice { position:relative; display:block; min-width:0; }
+.fleet-choice input { padding-right:40px; }
+.fleet-choice > button { position:absolute; top:0; right:0; width:44px; height:44px; display:grid; place-items:center; color:var(--muted-foreground); background:transparent; border:0; cursor:pointer; }
+.fleet-choice-menu { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:5; max-height:220px; overflow-y:auto; padding:4px; border:1px solid var(--border); border-radius:8px; background:var(--card); box-shadow:0 8px 24px rgb(15 23 42 / .14); }
+.fleet-choice-menu [role="option"] { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:40px; padding:8px; border-radius:5px; cursor:pointer; overflow-wrap:anywhere; }
+.fleet-choice-menu [role="option"]:hover, .fleet-choice-menu .is-active { background:var(--surface-muted); }
+.fleet-choice-menu small, .fleet-choice-empty { color:var(--muted-foreground); font-size:12px; }
+.fleet-choice-empty { padding:10px 8px; }
+.fleet-choice-error { color:var(--color-destructive); font-size:12px; font-weight:400; overflow-wrap:anywhere; }
+.ui-modal.fleet-notice-modal[data-size="form"] { --dialog-width:920px; }
+.fleet-notice-modal .fleet-notice-form { grid-template-columns:minmax(0, 1.25fr) minmax(240px, 0.8fr); align-items:start; gap:20px 24px; }
+.fleet-notice-modal .fleet-notice-preview { min-width:0; padding:18px; gap:12px; background:var(--background); }
+.fleet-notice-preview-title { font-weight:600; }
+.fleet-notice-preview dl { display:grid; gap:10px; margin:0; }
+.fleet-notice-preview dl > div { display:grid; grid-template-columns:4.5em minmax(0, 1fr); gap:8px; }
+.fleet-notice-preview dt { color:var(--muted-foreground); }
+.fleet-notice-preview dd { margin:0; min-width:0; overflow-wrap:anywhere; }
+.fleet-notice-save-status { grid-column:1 / -1; margin:0; }
+.fleet-notice-actions { margin-top:24px; padding-top:20px; border-top:1px solid var(--border); }
+.fleet-notice-sync { margin-top:0; flex-wrap:wrap; }
+.fleet-notice-modal .fleet-dispatch { grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:8px 16px; }
+.fleet-notice-modal .fleet-dispatch > strong,
+.fleet-notice-modal .fleet-dispatch > p,
+.fleet-notice-modal .fleet-dispatch-results { grid-column:1 / -1; }
+.fleet-notice-modal .fleet-dispatch > button { grid-column:2; grid-row:2; }
+@media (max-width: 760px) { .fleet-notice-modal .fleet-notice-form { grid-template-columns:minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .fleet-notice-fields, .fleet-notice-modal .fleet-dispatch { grid-template-columns:1fr; }
+  .fleet-notice-modal .fleet-dispatch > button { grid-column:1; grid-row:auto; }
+}
 .fleet-notice-preview { display:grid; gap:4px; padding:12px; border:1px solid var(--border); border-radius:8px; overflow-wrap:anywhere; }
 .fleet-notice-details { white-space:pre-wrap; }
 .attendance-form input:focus-visible,
