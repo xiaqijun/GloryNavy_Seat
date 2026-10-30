@@ -1,5 +1,11 @@
 # Corporation attendance and estimated online time
 
+## Fleet notice links (local, not released)
+
+The notice editor can select the commander, fire anchor and logistics anchor from bound characters in the event corporation. Selected characters and a snapshot of a selected corporation fitting become in-game MOTD links; manually entered and historical text remains plain. QQ, EVE mail and email continue to use plain text. Link identifiers are validated and user text is escaped. Revision and request-key checks remain in force; older clients retain other new fields, and changing their legacy name clears its corresponding link. Goose 117 refuses Down when structured link data exists. Actual game-client link and fitting behavior remains to be verified.
+
+`GET /events/{id}/fleet-notice` also returns corporation `characters`; the notice and `PUT` support `links` with `commander_id`, `fire_anchor`, `fire_anchor_id`, `logistics_anchor`, `logistics_anchor_id`, and `fitting_dna`. Event corporation management permission is still required.
+
 ## Fleet source selection (released; Goose 115)
 
 The activity creation form selects a character bound to the current account, and saves the activity and selection atomically. Legacy clients may omit the character. During an open activity, managers can change their selection; it is stored per account and event and restored across devices without affecting other managers. An unbound saved character is marked invalid and must be replaced. On account merge, the destination's selection wins when both exist; otherwise the source selection transfers. Selection itself does not grant fleet, boss, or EVE authorization; operations still validate those separately.

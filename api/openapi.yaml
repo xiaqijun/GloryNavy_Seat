@@ -4774,7 +4774,7 @@ paths:
       summary: Read the managed fleet notice template.
       security: [{SessionCookie: []}]
       responses:
-        '200': {description: Nullable notice with revision}
+        '200': {description: Nullable notice with revision and bound characters in the activity corporation}
         '401': {description: Authentication required}
         '404': {description: Event unavailable or outside management scope}
     put:
@@ -4794,6 +4794,16 @@ paths:
                 meeting_point: {type: string, maxLength: 300}
                 commander: {type: string, maxLength: 120}
                 details: {type: string, maxLength: 3000}
+                links:
+                  type: object
+                  description: Frozen in-game link metadata; omitted by legacy clients to preserve other fields.
+                  properties:
+                    commander_id: {type: string, pattern: '^([1-9][0-9]*)?$'}
+                    fire_anchor: {type: string, maxLength: 120}
+                    fire_anchor_id: {type: string, pattern: '^([1-9][0-9]*)?$'}
+                    logistics_anchor: {type: string, maxLength: 120}
+                    logistics_anchor_id: {type: string, pattern: '^([1-9][0-9]*)?$'}
+                    fitting_dna: {type: string, maxLength: 6000}
                 revision: {type: integer, minimum: 0}
                 request_key: {type: string, format: uuid}
       responses:

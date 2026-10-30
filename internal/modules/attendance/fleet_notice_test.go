@@ -42,3 +42,25 @@ func TestFleetNoticePermissionsVersionsAndReplay(t *testing.T) {
 		t.Fatal("unauthorized read", err)
 	}
 }
+
+func TestFleetNoticeLegacySavePreservesUnchangedLinks(t *testing.T) {
+	s, _ := attendanceFixture(t)
+	ctx := context.Background()
+	e := createTestEvent(t, s)
+	input := FleetNoticeInput{SolarSystem: "Jita", Doctrine: "护卫舰", Commander: "Lead", Links: &FleetNoticeLinks{CommanderID: "1", FireAnchor: "Alt", FireAnchorID: "2", FittingDNA: "587:34;2::"}, RequestKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}
+	first, err := s.SaveFleetNotice(ctx, manager, e.ID, input)
+	if err != nil || first.Links.CommanderID != "1" {
+		t.Fatalf("initial: %+v %v", first, err)
+	}
+	input.Links = nil
+	input.Revision = first.Revision
+	input.RequestKey = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+	input.Commander = "Another"
+	second, err := s.SaveFleetNotice(ctx, manager, e.ID, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Links.CommanderID != "" || second.Links.FireAnchorID != "2" || second.Links.FittingDNA != "587:34;2::" {
+		t.Fatalf("legacy save: %+v", second.Links)
+	}
+}

@@ -10,14 +10,21 @@ import { FleetDispatch } from "./fleet-dispatch";
 import { FleetMOTDStatus } from "./fleet-motd-status";
 import { FleetChoice } from "./fleet-notice-choices";
 
-type Notice = { solar_system: string; doctrine: string; meeting_point: string; commander: string; details: string; revision: number; updated_at?: string };
-const empty: Notice = { solar_system: "", doctrine: "", meeting_point: "", commander: "", details: "", revision: 0 };
+type Links = { commander_id: string; fire_anchor: string; fire_anchor_id: string; logistics_anchor: string; logistics_anchor_id: string; fitting_dna: string };
+type Notice = { solar_system: string; doctrine: string; meeting_point: string; commander: string; details: string; links: Links; revision: number; updated_at?: string };
+const emptyLinks: Links = { commander_id: "", fire_anchor: "", fire_anchor_id: "", logistics_anchor: "", logistics_anchor_id: "", fitting_dna: "" };
+const empty: Notice = { solar_system: "", doctrine: "", meeting_point: "", commander: "", details: "", links: emptyLinks, revision: 0 };
 const isNotice = (v: unknown): v is Notice => {
   if (!v || typeof v !== "object") return false;
   const n = v as Record<string, unknown>;
-  return ["solar_system", "doctrine", "meeting_point", "commander", "details"].every(k => typeof n[k] === "string") && Number.isSafeInteger(n.revision) && Number(n.revision) >= 0;
+  return ["solar_system", "doctrine", "meeting_point", "commander", "details"].every(k => typeof n[k] === "string") && !!n.links && typeof n.links === "object" && Object.keys(emptyLinks).every(k => typeof (n.links as Record<string, unknown>)[k] === "string") && Number.isSafeInteger(n.revision) && Number(n.revision) >= 0;
 };
-const isEnvelope = (v: unknown): v is {notice: Notice | null} => !!v && typeof v === "object" && ((v as {notice?: unknown}).notice === null || isNotice((v as {notice?: unknown}).notice));
+type Character = { id: string; name: string };
+const isEnvelope = (v: unknown): v is {notice: Notice | null; characters: Character[]} => {
+  if (!v || typeof v !== "object") return false;
+  const data = v as { notice?: unknown; characters?: unknown };
+  return (data.notice === null || isNotice(data.notice)) && Array.isArray(data.characters) && data.characters.every(c => c && typeof c === "object" && typeof c.id === "string" && /^[1-9]\d*$/.test(c.id) && typeof c.name === "string");
+};
 
 export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStartsAt, eventVersion, open, source, csrf, user}: {eventID: string; corporationID:string; eventTitle:string; eventStartsAt:string; eventVersion:string; open:boolean; source:string; csrf: string; user: string}) {
   const client = useQueryClient();
@@ -37,7 +44,7 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
     if (!response.ok) throw new APIError(payload?.error?.message ?? msg("保存失败，请重试"), response.status, payload?.request_id);
     if (!isNotice(payload?.data)) throw new APIError(msg("响应格式异常，请刷新核对结果"), response.status);
     return payload.data;
-  }, onSuccess: notice => { client.setQueryData(["attendance", "fleet-notice", user, eventID], {notice}); setEdited(null); setKey(crypto.randomUUID()); toast.success(msg("已保存")); }});
+  }, onSuccess: notice => { client.setQueryData(["attendance", "fleet-notice", user, eventID], {notice, characters: query.data?.characters ?? []}); setEdited(null); setKey(crypto.randomUUID()); toast.success(msg("已保存")); }});
   const sync = useMutation({mutationFn: async () => {
     if(!syncKey.current || syncKey.current.source!==source || syncKey.current.version!==eventVersion || syncKey.current.revision!==draft.revision) syncKey.current={source,version:eventVersion,revision:draft.revision,key:crypto.randomUUID()};
     const response = await apiFetch(`/api/v1/attendance/events/${encodeURIComponent(eventID)}/fleet-motd`, {method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},body:JSON.stringify({source_character_id:source,version:eventVersion,revision:draft.revision,request_key:syncKey.current.key})});
@@ -46,6 +53,15 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
     if(payload?.data?.queued!==true) throw new APIError(msg("响应格式异常，请刷新核对结果"),response.status);
   },onSuccess:()=>{syncKey.current=null;void client.invalidateQueries({queryKey:["attendance","fleet-motd",user,eventID]});}});
   const update = (field: keyof Notice, value: string) => { setEdited({...draft, [field]:value}); setKey(crypto.randomUUID()); save.reset(); };
+  const updateLinked = (field: "commander" | "fire_anchor" | "logistics_anchor" | "doctrine", value: string, meta?: {id?: string; dna?: string}) => {
+    const links = {...draft.links};
+    if (field === "commander") links.commander_id = meta?.id ?? "";
+    if (field === "fire_anchor") { links.fire_anchor = value; links.fire_anchor_id = meta?.id ?? ""; }
+    if (field === "logistics_anchor") { links.logistics_anchor = value; links.logistics_anchor_id = meta?.id ?? ""; }
+    if (field === "doctrine") links.fitting_dna = meta?.dna ?? "";
+    setEdited({...draft, ...(field === "commander" || field === "doctrine" ? {[field]: value} : {}), links});
+    setKey(crypto.randomUUID()); save.reset();
+  };
   const submit = (event: FormEvent) => { event.preventDefault(); save.mutate(); };
   const busy = save.isPending || sync.isPending || dispatchBusy;
   return <>
@@ -61,9 +77,11 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
     <form id={formId} className="attendance-form fleet-notice-form" onSubmit={submit}>
     <fieldset className="fleet-notice-fields" disabled={busy}>
     <FleetChoice label={msg("星系")} kind="system" corporationID={corporationID} user={user} value={draft.solar_system} maxLength={120} required onChange={value=>update("solar_system", value)} />
-    <FleetChoice label={msg("建制")} kind="doctrine" corporationID={corporationID} user={user} value={draft.doctrine} maxLength={500} required onChange={value=>update("doctrine", value)} />
+    <FleetChoice label={msg("建制")} kind="doctrine" corporationID={corporationID} user={user} value={draft.doctrine} maxLength={500} required onChange={(value,meta)=>updateLinked("doctrine", value, meta)} />
     <FleetChoice label={msg("集结地点")} kind="system" corporationID={corporationID} user={user} value={draft.meeting_point} maxLength={300} onChange={value=>update("meeting_point", value)} />
-    <label>{msg("指挥")}<input value={draft.commander} maxLength={120} onChange={e=>update("commander", e.target.value)} /></label>
+    <FleetChoice label={msg("指挥")} kind="character" corporationID={corporationID} user={user} value={draft.commander} maxLength={120} characters={query.data?.characters} onChange={(value,meta)=>updateLinked("commander", value, meta)} />
+    <FleetChoice label={msg("火力走位")} kind="character" corporationID={corporationID} user={user} value={draft.links.fire_anchor} maxLength={120} characters={query.data?.characters} onChange={(value,meta)=>updateLinked("fire_anchor", value, meta)} />
+    <FleetChoice label={msg("后勤走位")} kind="character" corporationID={corporationID} user={user} value={draft.links.logistics_anchor} maxLength={120} characters={query.data?.characters} onChange={(value,meta)=>updateLinked("logistics_anchor", value, meta)} />
     <label>{msg("补充信息")}<textarea value={draft.details} maxLength={3000} onChange={e=>update("details", e.target.value)} /></label>
     </fieldset>
     <section className="fleet-notice-preview" aria-label={msg("公告预览")}>
@@ -75,6 +93,8 @@ export function FleetNoticeEditor({eventID, corporationID, eventTitle, eventStar
         <div><dt>{msg("建制")}</dt><dd>{draft.doctrine || "—"}</dd></div>
         {draft.meeting_point && <div><dt>{msg("集结地点")}</dt><dd>{draft.meeting_point}</dd></div>}
         {draft.commander && <div><dt>{msg("指挥")}</dt><dd>{draft.commander}</dd></div>}
+        {draft.links.fire_anchor && <div><dt>{msg("火力走位")}</dt><dd>{draft.links.fire_anchor}</dd></div>}
+        {draft.links.logistics_anchor && <div><dt>{msg("后勤走位")}</dt><dd>{draft.links.logistics_anchor}</dd></div>}
       </dl>
       {draft.details && <div className="fleet-notice-details">{draft.details}</div>}
     </section>

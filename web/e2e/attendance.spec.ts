@@ -99,7 +99,7 @@ async function setup(page: Page, manage = true, pap = false) {
         fleetNotice = {...body, revision: 1, updated_at:"2026-10-29T10:00:00Z"};
         return r.fulfill({json:{data:fleetNotice}});
       }
-      return r.fulfill({json:{data:{notice:fleetNotice}}});
+      return r.fulfill({json:{data:{notice:fleetNotice,characters:[{id:"123",name:"Hajimi1"},{id:"124",name:"Pilot"}]}}});
     }
     if (url.pathname.endsWith("/fleet-motd")) {
       if (r.request().method() === "POST") {
@@ -512,6 +512,15 @@ test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   await page.getByLabel("集结地点", {exact:true}).fill("1DQ");
   await expect(notice.getByRole("option", {name:/1DQ1-A/})).toBeVisible();
   await notice.getByRole("option", {name:/1DQ1-A/}).click();
+  await notice.getByLabel("指挥", {exact:true}).click();
+  await notice.getByRole("option", {name:"Hajimi1"}).click();
+  await notice.getByLabel("火力走位", {exact:true}).click();
+  await notice.getByRole("option", {name:"Pilot"}).click();
+  await notice.getByLabel("后勤走位", {exact:true}).click();
+  await notice.getByRole("option", {name:"Hajimi1"}).click();
+  await notice.getByLabel("指挥", {exact:true}).click();
+  await expect(notice.getByRole("option", {name:"Pilot"})).toBeVisible();
+  await notice.getByLabel("指挥", {exact:true}).press("Escape");
   const fieldsBox = await notice.locator(".fleet-notice-fields").boundingBox();
   const previewBox = await notice.getByRole("region", {name:"公告预览"}).boundingBox();
   expect(fieldsBox).not.toBeNull();
@@ -523,7 +532,9 @@ test("fleet notice channels and live PAP", async ({ page }, testInfo) => {
   }
   await expect(notice).toHaveJSProperty("scrollWidth", await notice.evaluate(el => el.clientWidth));
   await notice.screenshot({path:testInfo.outputPath("fleet-notice.png")});
+  const savedRequest = page.waitForRequest(request => request.method() === "PUT" && request.url().endsWith("/fleet-notice"));
   await page.getByRole("button", {name:"保存公告"}).click();
+  expect((await savedRequest).postDataJSON().links).toEqual({commander_id:"123",fire_anchor:"Pilot",fire_anchor_id:"124",logistics_anchor:"Hajimi1",logistics_anchor_id:"123",fitting_dna:"587::"});
   await expect(page.locator(".toast-success").getByText("已保存", {exact:true})).toBeVisible();
   await expect(notice.getByText("已保存", {exact:true})).toHaveCount(0);
   await page.getByRole("button", {name:"同步舰队置顶"}).click();

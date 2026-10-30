@@ -57,6 +57,8 @@ export const english: Record<string, string> = {
   "建制": "Doctrine",
   "集结地点": "Rally point",
   "指挥": "Commander",
+  "火力走位": "Fire anchor",
+  "后勤走位": "Logistics anchor",
   "补充信息": "Additional information",
   "保存公告": "Save notice",
   "汇总已同步的钱包流水，排除同一账号角色间转账；收入按每 30 天折算，消费不提高额度。": "Summarizes synchronized wallet transactions, excluding transfers between characters on the same account. Income is normalized to 30 days; spending does not increase credit.",

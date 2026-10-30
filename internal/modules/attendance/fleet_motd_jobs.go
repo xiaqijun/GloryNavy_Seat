@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
-	"html"
 	"strings"
 	"time"
 
@@ -159,7 +158,7 @@ func (s *Service) processFleetMOTD(ctx context.Context, u store.FleetMOTDUpdate)
 		return finish("obsolete", "activity_changed")
 	}
 	if noticeErr == nil {
-		body := strings.ReplaceAll(html.EscapeString(fleetNoticeText(event(ev), fleetNoticeDTO(n))), "\n", "<br>")
+		body := fleetNoticeHTML(event(ev), fleetNoticeDTO(n))
 		// User text must not be able to impersonate either managed block marker.
 		body = strings.NewReplacer("[", "&#91;", "]", "&#93;").Replace(body)
 		next, err = mergeFleetNotice(next, body)

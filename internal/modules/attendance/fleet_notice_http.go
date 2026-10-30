@@ -1,8 +1,11 @@
 package attendance
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -17,7 +20,29 @@ func (h Handler) fleetNotice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	n, err := h.Service.FleetNotice(r.Context(), h.User(r), id)
-	respond(w, r, map[string]any{"notice": n}, err)
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	ev, err := store.New(h.Service.Pool).GetEvent(r.Context(), id)
+	if err != nil {
+		respond(w, r, nil, err)
+		return
+	}
+	characters := []map[string]string{}
+	if h.Service.ReportBindings != nil {
+		members, e := h.Service.ReportBindings(r.Context(), h.User(r), "", ev.CorporationID)
+		if e != nil {
+			respond(w, r, nil, e)
+			return
+		}
+		for _, member := range members {
+			if member.ID > 0 && member.Name != "" {
+				characters = append(characters, map[string]string{"id": strconv.FormatInt(member.ID, 10), "name": member.Name})
+			}
+		}
+	}
+	respond(w, r, map[string]any{"notice": n, "characters": characters}, nil)
 }
 
 func (h Handler) fleetMOTDStatus(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +121,12 @@ func (h Handler) saveFleetNotice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input FleetNoticeInput
-	if !readBody(w, r, &input) {
+	// A fitting DNA snapshot and multilingual notice can exceed the shared
+	// 4 KiB limit; keep a bounded limit specific to this endpoint.
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024))
+	d.DisallowUnknownFields()
+	if d.Decode(&input) != nil || d.Decode(new(any)) != io.EOF {
+		respond(w, r, nil, ErrInvalid)
 		return
 	}
 	n, err := h.Service.SaveFleetNotice(r.Context(), h.User(r), id, input)

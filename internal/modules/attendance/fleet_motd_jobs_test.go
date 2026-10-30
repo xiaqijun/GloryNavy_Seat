@@ -98,7 +98,7 @@ func TestFleetNoticeMOTDSyncAndPAP(t *testing.T) {
 	e := createTestEvent(t, s)
 	writer := &fakeFleetWriter{fleet: fleet.fleet, motd: "已有指令", result: eve.FleetMOTDResult{State: "sent"}}
 	s.FleetWriter = writer
-	n, err := s.SaveFleetNotice(ctx, manager, e.ID, FleetNoticeInput{SolarSystem: "Jita", Doctrine: "<战舰>", Details: "[GNV PAP]", RequestKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"})
+	n, err := s.SaveFleetNotice(ctx, manager, e.ID, FleetNoticeInput{SolarSystem: "Jita", Doctrine: "<战舰>", Commander: "Lead", Links: &FleetNoticeLinks{CommanderID: "1", FireAnchor: "Alt", FireAnchorID: "2", FittingDNA: "587:34;2::"}, Details: "[GNV PAP]", RequestKey: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestFleetNoticeMOTDSyncAndPAP(t *testing.T) {
 	if err = s.processFleetMOTD(ctx, u); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"已有指令", "星系：Jita", "&lt;战舰&gt;", "&#91;GNV PAP&#93;", "未发放"} {
+	for _, want := range []string{"已有指令", "星系：Jita", "&lt;战舰&gt;", "&#91;GNV PAP&#93;", "未发放", `href="showinfo:1377//1"`, `href="showinfo:1377//2"`, `href="fitting:587:34;2::"`} {
 		if !strings.Contains(writer.motd, want) {
 			t.Fatalf("missing %s in %s", want, writer.motd)
 		}
