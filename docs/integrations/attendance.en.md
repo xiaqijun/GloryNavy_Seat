@@ -1,6 +1,6 @@
 # Corporation attendance and estimated online time
 
-## Fleet source selection (local, not released; Goose 115)
+## Fleet source selection (released; Goose 115)
 
 The activity creation form selects a character bound to the current account, and saves the activity and selection atomically. Legacy clients may omit the character. During an open activity, managers can change their selection; it is stored per account and event and restored across devices without affecting other managers. An unbound saved character is marked invalid and must be replaced. On account merge, the destination's selection wins when both exist; otherwise the source selection transfers. Selection itself does not grant fleet, boss, or EVE authorization; operations still validate those separately.
 

@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-10-30：舰队点名来源角色（前后端，Goose 115）
+
+前后端 `v0.1.0-fleet-source-20261030` 来自已推送 main `1c2a72f`，升级 Goose 115。已有选择后不得 Down；优先向前修复，保留现有选择与活动数据。备份及验证见[发布记录](history/fleet-source-release-20261030.md)。
+
 ## 2026-10-30：操作浮动通知（仅前端，已发布）
 
 前端 `v0.1.0-toast-notifications-20261030` 从已推送 main `60a213a` 构建；后端仍为 `v0.1.0-fleet-search-20261030`、Goose 114。只需撤回界面时可将前端恢复至 `v0.1.0-attendance-layout-20261030`，保留后端和业务数据；验证见[发布记录](history/toast-notifications-20261030.md)。
