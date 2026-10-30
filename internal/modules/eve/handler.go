@@ -135,6 +135,7 @@ func (h *Handler) accountStart(w http.ResponseWriter, r *http.Request) {
 			httpapi.Failure(w, r, 403, "forbidden", "无权授权发信")
 			return
 		}
+		r = r.WithContext(context.WithValue(r.Context(), authorizationPurposeKey{}, "reminder-mail"))
 		r = r.WithContext(context.WithValue(r.Context(), mailAuthorizationKey{}, true))
 		cred, e := store.New(h.pool).GetCredential(r.Context(), intent.ExpectedID)
 		if e != nil && !errors.Is(e, pgx.ErrNoRows) {
@@ -150,26 +151,16 @@ func (h *Handler) accountStart(w http.ResponseWriter, r *http.Request) {
 			httpapi.Failure(w, r, 403, "forbidden", "请先选择自己的角色")
 			return
 		}
-		// Preserve an existing mail grant only for its still-authorized admin.
-		// Reauthorization replaces the token's scopes, so silently omitting it
-		// would disable the already configured sender.
+		// Preserve existing scopes; using mail still requires its own authorization.
 		cred, err := store.New(h.pool).GetCredential(r.Context(), intent.ExpectedID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			httpapi.Failure(w, r, 503, "eve_unavailable", "EVE 授权暂不可用，请稍后重试")
 			return
 		}
 		if err == nil && hasScopes(cred.Scopes, []string{MailSendScope}) {
-			if h.MailAuthorizationAllowed == nil {
-				httpapi.Failure(w, r, 403, "forbidden", "无法保留发信授权")
-				return
-			}
-			allowed, e := h.MailAuthorizationAllowed(r.Context(), session.UserID)
-			if e != nil || !allowed {
-				httpapi.Failure(w, r, 403, "forbidden", "无法保留发信授权")
-				return
-			}
 			r = r.WithContext(context.WithValue(r.Context(), mailAuthorizationKey{}, true))
 		}
+		r = r.WithContext(context.WithValue(r.Context(), authorizationPurposeKey{}, "fleet-write"))
 		r = r.WithContext(context.WithValue(r.Context(), fleetAuthorizationKey{}, true))
 	}
 	h.start(w, r, intent)
@@ -231,16 +222,22 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request, intent identity.
 	if provider, ok := h.sso.(interface{ RequestedScopes() []string }); ok {
 		required = provider.RequestedScopes()
 	}
-	if mail {
+	if mail && !hasScopes(required, []string{MailSendScope}) {
 		required = append(required, MailSendScope)
 	}
-	if fleetWrite {
+	if fleetWrite && !hasScopes(required, []string{FleetWriteScope}) {
 		required = append(required, FleetWriteScope)
 	}
 	err = q.CreateFlow(ctx, store.CreateFlowParams{StateHash: httpapi.Hash(state), BrowserHash: httpapi.Hash(browser), SessionHash: httpapi.Hash(httpapi.CookieValue(r, httpapi.SessionCookie)), Verifier: verifier, RequestedScopes: required})
 	if err != nil {
 		unavailable()
 		return
+	}
+	if purpose, _ := ctx.Value(authorizationPurposeKey{}).(string); purpose != "" {
+		if err = store.SetAuthorizationPurpose(ctx, tx, httpapi.Hash(state), purpose); err != nil {
+			unavailable()
+			return
+		}
 	}
 	if intent.Kind != "login" {
 		var user pgtype.UUID
@@ -282,7 +279,7 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 12*time.Second)
 	defer cancel()
 	previous := httpapi.CookieValue(r, httpapi.SessionCookie)
-	flow, err := store.New(h.pool).ConsumeFlow(ctx, store.ConsumeFlowParams{StateHash: httpapi.Hash(state), BrowserHash: httpapi.Hash(browser), SessionHash: httpapi.Hash(previous)})
+	flow, purpose, err := store.ConsumeFlowWithPurpose(ctx, h.pool, store.ConsumeFlowParams{StateHash: httpapi.Hash(state), BrowserHash: httpapi.Hash(browser), SessionHash: httpapi.Hash(previous)})
 	if errors.Is(err, pgx.ErrNoRows) {
 		h.result(w, r, "invalid_state")
 		return
@@ -292,8 +289,8 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpapi.SetCookie(w, httpapi.FlowCookie, "", -1, h.secure)
-	mail := hasScopes(flow.RequestedScopes, []string{MailSendScope})
-	fleetWrite := hasScopes(flow.RequestedScopes, []string{FleetWriteScope})
+	mail := purpose == "reminder-mail"
+	fleetWrite := purpose == "fleet-write"
 	var authorizedID int64
 	result := func(code string) {
 		if mail {
@@ -337,7 +334,14 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 		result("invalid_state")
 		return
 	}
-	character, err := h.sso.Exchange(ctx, code, flow.Verifier)
+	var character Character
+	if scoped, ok := h.sso.(interface {
+		ExchangeForScopes(context.Context, string, string, []string) (Character, error)
+	}); ok {
+		character, err = scoped.ExchangeForScopes(ctx, code, flow.Verifier, flow.RequestedScopes)
+	} else {
+		character, err = h.sso.Exchange(ctx, code, flow.Verifier)
+	}
 	authorizedID = character.ID
 	if err != nil {
 		if errors.Is(err, ErrReauthorize) {
@@ -364,6 +368,9 @@ func (h *Handler) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.Warn("EVE identity could not sign in", "request_id", httpapi.RequestID(r))
 		code := "identity_rejected"
+		if errors.Is(err, ErrReauthorize) {
+			code = "authorization_required"
+		}
 		if errors.Is(err, identity.ErrConflict) {
 			code = "character_conflict"
 		}

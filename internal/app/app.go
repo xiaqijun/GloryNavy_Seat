@@ -114,10 +114,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	reader := eve.ReadAuthorization(pool)
 	var syncService *eve.AuthorizationService
 	if slices.Contains(enabled, "eve") && client.Configured() {
-		client.EnableSeatDefaultScopes()
-		if slices.Contains(enabled, "fittings") {
-			client.EnableFittingsWriteScope()
-		}
+		client.EnableAllESIScopes()
 		var err error
 		syncService, err = eve.NewAuthorization(pool, client, auth.TokenKey, logger)
 		if err != nil {
@@ -616,7 +613,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	eveHandler.Complete = func(ctx context.Context, character eve.Character, previous string, intent identity.LoginIntent) (string, error) {
 		var save identity.CredentialWrite
 		if syncService != nil {
-			save = func(ctx context.Context, tx pgx.Tx) error { return syncService.SaveTx(ctx, tx, character) }
+			save = func(ctx context.Context, tx pgx.Tx) error { return syncService.SaveTx(eve.PreserveExistingScopes(ctx), tx, character) }
 		}
 		if intent.Kind == "merge" {
 			return identityService.ProveMerge(ctx, character.ID, character.Owner, previous, intent.UserID, save)

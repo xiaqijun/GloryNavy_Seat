@@ -1,5 +1,13 @@
 # SeAT default scopes and standalone login
 
+## 2026-10-30 local change: complete ESI authorization (not yet released)
+
+Login, linking and reauthorization request the [72 scopes in the current ESI OpenAPI catalog](eve-all-scopes.txt), including fleet and mail writes and other write capabilities. The developer application must allow all scopes, and each character must consent with CCP. Existing grants do not gain scopes automatically; changing application scopes can also invalidate old refresh tokens. Real CCP consent and fleet writes remain to be verified. Future CCP scopes require a catalog and application update and renewed character consent; unknown scopes cannot be preauthorized.
+
+Scopes do not grant site RBAC permissions, corporation roles, or business actions; mail configuration still requires administrator access. Each one-time flow retains its requested scopes and explicit purpose. A narrower login cannot overwrite an intact broader grant for the same owner, and incompatible grants are rejected rather than merged. Goose 114 records purpose and prevents rollback after a full grant. See [project status](../project-status.md) for deployment.
+
+The following 57/58-scope profile is historical; its scope counts, setup steps and separate-scope statements do not describe the new local behavior.
+
 2026-10-30, released: fleet MOTD updates request `esi-fleets.write_fleet.v1` explicitly from the character, without changing ordinary login scopes. The developer application must also permit that scope. Explicit fleet and existing game-mail authorization flows preserve each other's grants; live authorization and fleet acceptance remain outstanding. See the [release record](../history/fleet-ops-20261030.md).
 
 > Status index (2026-09-23): this business capability is deployed; remaining extensions and live verification gaps are tracked in the [backlog](../backlog.md). See [current project status](../project-status.md) for versions. Dated/Goose introduction notes describe their historical stage, not today’s release state. Apply current repository migrations, not only the initial module version.

@@ -147,6 +147,11 @@ func (c *Client) AuthorizationURL(ctx context.Context, state, verifier string) (
 }
 
 func (c *Client) Exchange(ctx context.Context, code, verifier string) (Character, error) {
+	return c.ExchangeForScopes(ctx, code, verifier, c.RequestedScopes())
+}
+
+// ExchangeForScopes validates the scopes captured when this authorization began.
+func (c *Client) ExchangeForScopes(ctx context.Context, code, verifier string, required []string) (Character, error) {
 	m, err := c.discover(ctx)
 	if err != nil {
 		return Character{}, err
@@ -159,7 +164,7 @@ func (c *Client) Exchange(ctx context.Context, code, verifier string) (Character
 		return Character{}, ErrSSO
 	}
 	ch, err := c.verifiedAuthorization(ctx, m, tokens)
-	if err == nil && !hasScopes(ch.authorization.Scopes, c.RequestedScopes()) {
+	if err == nil && !hasScopes(ch.authorization.Scopes, required) {
 		return Character{}, ErrReauthorize
 	}
 	return ch, err

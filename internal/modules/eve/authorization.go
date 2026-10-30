@@ -102,6 +102,16 @@ func (s *AuthorizationService) SaveTx(ctx context.Context, tx pgx.Tx, ch Charact
 	if readErr != nil && !errors.Is(readErr, pgx.ErrNoRows) {
 		return readErr
 	}
+	preserve, _ := ctx.Value(preserveScopesKey{}).(bool)
+	if preserve && readErr == nil && previous.State != "reauthorize" && bytes.Equal(previous.OwnerHash, owner) && !hasScopes(ch.authorization.Scopes, previous.Scopes) {
+		old, openErr := s.open(ch.ID, owner, previous.Sealed)
+		if openErr == nil && old.RefreshToken != "" && hasScopes(old.Scopes, previous.Scopes) {
+			if hasScopes(previous.Scopes, ch.authorization.Scopes) {
+				return nil
+			}
+			return ErrReauthorize
+		}
+	}
 	if readErr == nil && !bytes.Equal(previous.OwnerHash, owner) {
 		if err = q.DeleteOnlineHistory(ctx, ch.ID); err != nil {
 			return err
@@ -112,6 +122,11 @@ func (s *AuthorizationService) SaveTx(ctx context.Context, tx pgx.Tx, ch Charact
 	}
 	if err = q.SaveCredential(ctx, store.SaveCredentialParams{CharacterID: ch.ID, OwnerHash: owner, Sealed: sealed, Scopes: ch.authorization.Scopes}); err != nil {
 		return err
+	}
+	if hasScopes(ch.authorization.Scopes, AllESIScopes()) {
+		if err = store.MarkFullScopeGrant(ctx, tx); err != nil {
+			return err
+		}
 	}
 	generation, err := q.AdvanceGeneration(ctx, ch.ID)
 	if err != nil {

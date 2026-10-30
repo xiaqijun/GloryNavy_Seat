@@ -36,7 +36,7 @@ Goose 31 本地新增 `welfare.self` 入口与可配置 `corporation.welfare`（
 
 更新：2026-09-14。对应 [English](seat-authorization.en.md)。
 
-后续更新：登录授权已扩大为 SeAT 默认清单的 57 项当前兼容 scopes，并拆分独立 `/login` 与 `/account`。应用权限配置请使用 [最新清单和步骤](seat-login-scopes.zh-CN.md)，不能再仅勾选下文第一轮的职务 scope。本文件的军团权限策略和任务边界继续适用。
+后续更新：登录和账号页面已拆分；当前授权范围和发布状态请使用 [最新清单和步骤](seat-login-scopes.zh-CN.md)，不能仅勾选下文第一轮的职务 scope。本文件的军团权限策略和任务边界继续适用。
 
 ## 权限管理页面（2026-09-14）
 

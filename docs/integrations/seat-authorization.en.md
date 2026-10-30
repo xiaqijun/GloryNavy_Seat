@@ -30,7 +30,7 @@ Goose 31 locally adds the `welfare.self` entry capability and configurable `corp
 
 Updated: 2026-09-14. [中文](seat-authorization.zh-CN.md).
 
-Update: login now requests the 57 current-compatible scopes from SeAT's default profile, with separate `/login` and `/account` pages. Use [the current scope setup](seat-login-scopes.en.md), not just the earlier role-only scope below. The corporation policy and synchronization boundaries remain applicable.
+Update: login and account pages are separate. Use [the current scope setup and release status](seat-login-scopes.en.md), not just the earlier role-only scope below. The corporation policy and synchronization boundaries remain applicable.
 
 ## Permission management UI (2026-09-14)
 
