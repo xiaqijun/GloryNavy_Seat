@@ -1,6 +1,6 @@
 # Corporation attendance and estimated online time
 
-Local, not released: the fleet notice editor searches active SDE solar systems for the system and meeting point, and the accessible fitting library of the event's corporation for doctrine. Existing text and manual input remain supported; the saved text contract and authorization are unchanged.
+Released 2026-10-30: the fleet notice editor searches active SDE solar systems for the system and meeting point, and the accessible fitting library of the event's corporation for doctrine. Existing text and manual input remain supported; the saved text contract and authorization are unchanged.
 
 Released on 2026-10-30: site-managed notice and PAP blocks explicitly use EVE white. Existing uncolored blocks and repeated updates are supported, and other MOTD content is retained. A live sync returned white tags via ESI; after initially seeing red and manually setting white in the game, the user confirmed the display looked correct.
 

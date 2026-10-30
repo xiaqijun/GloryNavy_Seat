@@ -1,6 +1,6 @@
 # SDE 物品与星系名称导入
 
-本地未发布：`GET /api/v1/eve/solar-systems/search` 供登录账号搜索活动 SDE 星系，支持中英文名称字面子串和精确 ID，最多返回 30 条；空查询返回前 30 条，不请求 ESI。
+2026-10-30 已发布：`GET /api/v1/eve/solar-systems/search` 供登录账号搜索活动 SDE 星系，支持中英文名称字面子串和精确 ID，最多返回 30 条；空查询返回前 30 条，不请求 ESI。
 
 LPDataService 按当前活动 build 读取已验证的官方 ZIP 中 NPC、阵营和蓝图，只建进程内缓存，不增加名称表、mapper 或迁移；跟随活动版本和固定回退。需保留 SDE_WORK_DIR 中活动 ZIP，详见 [LP 查询](lp.zh-CN.md)。
 
