@@ -516,26 +516,25 @@ function EventDetail({
   const present = q.data.entries.filter((r) => r.present);
   const corp = context.corporations.find((c) => c.id === e.corporation_id);
   return (
-    <div className="attendance-section">
+    <div className="attendance-section attendance-detail">
       <div className="attendance-toolbar attendance-detail-heading">
         <IconAction label={msg("返回活动记录")} onClick={back}>
           <ArrowLeft />
         </IconAction>
         <div className="attendance-event-copy">
-          <h2 ref={heading} tabIndex={-1}>
-            {e.title}
-          </h2>
+          <div className="attendance-detail-title">
+            <h2 ref={heading} tabIndex={-1}>
+              {e.title}
+            </h2>
+            <span className={`attendance-badge ${e.state === "open" ? "is-open" : ""}`}>
+              {e.state === "open" ? msg("进行中") : msg("已结束")}
+            </span>
+          </div>
           <small>
             {formatDate(e.starts_at)} ·{" "}
             {corp?.name ?? msg("军团 #{0}", e.corporation_id)}
           </small>
         </div>
-        <span
-          className={`attendance-badge ${e.state === "open" ? "is-open" : ""}`}
-        >
-          {e.state === "open" ? msg("进行中") : msg("已结束")}
-        </span>
-        <span className="attendance-spacer" />
         {e.can_manage && (
           <>
             <IconAction
@@ -561,6 +560,8 @@ function EventDetail({
           </>
         )}
       </div>
+      <div className="attendance-detail-dashboard">
+      <div className={`attendance-detail-overview ${e.state === "open" ? "is-open" : ""}`}>
       <div className="attendance-metrics">
         <Metric
           icon={<UsersRound />}
@@ -581,8 +582,9 @@ function EventDetail({
         />
       </div>
       <PAPEvent user={user} csrf={csrf} event={e} entries={q.data.entries} />
-      {e.can_manage && <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} />}
-      {e.can_manage && <FleetNoticeEditor eventID={id} corporationID={e.corporation_id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />}
+      </div>
+      {e.can_manage && <Card className="attendance-card attendance-operations">
+      <div className="attendance-operation-main">
       {e.can_manage && e.state === "open" && (
         <div className="attendance-toolbar attendance-capture">
           <AccountCharacterSelect
@@ -612,6 +614,11 @@ function EventDetail({
           </Button>
         </div>
       )}
+      <div className="attendance-operation-notice">
+        <FleetNoticeEditor eventID={id} corporationID={e.corporation_id} eventTitle={e.title} eventStartsAt={e.starts_at} eventVersion={e.version} open={e.state === "open"} source={source} csrf={csrf} user={user} />
+      </div>
+      </div>
+      <FleetMOTDStatus eventID={id} source={source} csrf={csrf} user={user} />
       {capture.isError && (
         <Feedback error={capture.error} retry={() => void q.refetch()} />
       )}
@@ -621,6 +628,8 @@ function EventDetail({
           {notice}
         </p>
       )}
+      </Card>}
+      </div>
       <Card className="attendance-card">
         <div className="attendance-card-heading">
           <h2>{msg("出勤名单")}</h2>

@@ -880,3 +880,82 @@
 .attendance-tabs > button svg {
   flex-shrink: 0;
 }
+
+/* Activity detail: keep its summary and everyday actions close to the roster. */
+.attendance-detail { gap:20px; }
+.attendance-detail-title { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; min-width:0; }
+.attendance-detail-title h2 { min-width:0; }
+.attendance-detail-dashboard {
+  min-width:0;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--card);
+  overflow:hidden;
+}
+.attendance-detail-overview { display:grid; gap:0; min-width:0; }
+.attendance-detail-overview > .attendance-metrics {
+  gap:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  overflow:hidden;
+}
+.attendance-detail-overview .attendance-metric {
+  min-width:0;
+  min-height:88px;
+  border:0;
+  border-right:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.attendance-detail-overview .attendance-metric:last-child { border-right:0; }
+.attendance-detail-overview > .attendance-pap {
+  min-width:0;
+  padding:16px 20px;
+  border:0;
+  border-top:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.attendance-operations {
+  gap:12px;
+  padding:16px 20px;
+  border:0;
+  border-top:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.attendance-operation-main { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; min-width:0; }
+.attendance-operation-main .attendance-capture { align-items:flex-end; flex:1 1 460px; gap:10px; }
+.attendance-operation-main .account-character-select { flex:0 1 220px; min-width:0; }
+.attendance-operation-notice { margin-left:auto; }
+.attendance-operations > .attendance-feedback { padding:0; }
+.attendance-operations > .attendance-note { margin:0; }
+@container (min-width: 900px) {
+  .attendance-detail-overview.is-open { grid-template-columns:minmax(0, 1.35fr) minmax(290px, .65fr); align-items:stretch; }
+  .attendance-detail-overview.is-open:has(.attendance-pap-history) { grid-template-columns:minmax(0, 1fr); }
+  .attendance-detail-overview.is-open:not(:has(.attendance-pap-history)) > .attendance-pap { border-top:0; border-left:1px solid var(--border); }
+  .attendance-person-record { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; column-gap:12px; }
+  .attendance-person-record > .attendance-person { grid-column:1; grid-row:1; }
+  .attendance-person-record > .attendance-battle { display:contents; }
+  .attendance-person-record .attendance-battle-toggle { grid-column:2; grid-row:1; }
+  .attendance-person-record .attendance-battle-content { grid-column:1 / -1; }
+}
+@container (max-width: 839px) {
+  .attendance-event-context { grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:12px; }
+  .attendance-event-context > span:first-child { grid-column:1 / -1; }
+}
+@media (max-width: 640px) {
+  .attendance-detail { gap:16px; }
+  .attendance-detail-overview .attendance-metric { min-height:76px; }
+  .attendance-detail-overview > .attendance-pap, .attendance-operations { padding:14px 16px; }
+  .attendance-detail-overview.is-open .attendance-pap > .attendance-toolbar { flex-wrap:nowrap; }
+  .attendance-detail-overview.is-open .attendance-pap .attendance-event-copy { flex:1 1 80px; }
+  .attendance-operation-main .attendance-capture { flex:0 1 auto; }
+  .attendance-operation-main .attendance-capture:has(.account-character-select) { flex-basis:100%; }
+  .attendance-operation-main .account-character-select { flex:1 1 100%; }
+  .attendance-operation-notice { margin-left:0; }
+}
