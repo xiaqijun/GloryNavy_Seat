@@ -473,6 +473,29 @@ test("已批准补损回退需要确认并提交当前版本", async ({ page }) 
   await expect.poll(() => writes.length).toBe(1);
   expect(writes[0]).toMatchObject({action: "revert_approval", id: "9", version: "2", confirmed_not_delivered: true});
 });
+test("回退后先同步来源再刷新待发放列表", async ({ page }) => {
+  await setup(page, { loss: true });
+  const approved = { ...lossItem, state: "approved", award_minor: 4282133332 };
+  const reviewed = { ...lossRow, state: "approved", actions: ["revert_approval"], payload: approved };
+  let refreshed = false;
+  await page.route("**/api/v1/approval/sources/welfare/refresh", (route) => {
+    expect(route.request().method()).toBe("POST");
+    expect(route.request().headers()["x-csrf-token"]).toBe("csrf");
+    refreshed = true;
+    return route.fulfill({json: {data: {refreshed: true}}});
+  });
+  await page.route("**/api/v1/approval/items?**", (route) => route.fulfill({json: {data: {items: refreshed ? [] : [reviewed], counts: {pending: 0, fulfillment: refreshed ? 0 : 1, exceptions: 0, history: 0}, next_cursor: "", unavailable: []}}}));
+  await page.route("**/api/v1/approval/items/welfare/9", (route) => route.fulfill({json: {data: reviewed}}));
+  await page.route("**/api/v1/welfare/cases/9", (route) => route.fulfill({json: {data: {item: approved, history: []}}}));
+  await page.goto("/approvals?view=fulfillment&source=welfare&id=9");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", {name: "回退审批", exact: true}).click();
+  await dialog.getByRole("textbox", {name: "处理说明"}).fill("审批错误");
+  await dialog.getByRole("checkbox", {name: /已在游戏中核对/}).check();
+  await dialog.getByRole("button", {name: "确认", exact: true}).click();
+  await expect.poll(() => refreshed).toBe(true);
+  await expect(page.getByRole("row").filter({hasText: "#9"})).toHaveCount(0);
+});
 test("补损审批先显示损失与金额，证据按需展开", async ({ page }, info) => {
   await setup(page, { loss: true });
   await page.goto("/approvals");

@@ -22,6 +22,7 @@ func (h Handler) Module() module.Definition {
 		{Method: "GET", Path: "/context", Permission: "approval.self", Handler: http.HandlerFunc(h.context)},
 		{Method: "GET", Path: "/items", Permission: "approval.self", Handler: http.HandlerFunc(h.list)},
 		{Method: "GET", Path: "/items/{source}/{id}", Permission: "approval.self", Handler: http.HandlerFunc(h.detail)},
+		{Method: "POST", Path: "/sources/{source}/refresh", Permission: "approval.self", Handler: http.HandlerFunc(h.refresh)},
 	}}
 }
 func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
@@ -37,13 +38,17 @@ func respond(w http.ResponseWriter, r *http.Request, v any, e error) {
 }
 func (h Handler) context(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
-	defer func() { slog.Info("approval context timing", "duration_ms", time.Since(started).Milliseconds(), "include_people", r.URL.Query().Get("include_people") == "true") }()
+	defer func() {
+		slog.Info("approval context timing", "duration_ms", time.Since(started).Milliseconds(), "include_people", r.URL.Query().Get("include_people") == "true")
+	}()
 	v, e := h.Service.ContextWithOptions(r.Context(), h.User(r), r.URL.Query().Get("include_people") == "true")
 	respond(w, r, v, e)
 }
 func (h Handler) list(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
-	defer func() { slog.Info("approval list timing", "duration_ms", time.Since(started).Milliseconds(), "view", r.URL.Query().Get("view"), "sort", r.URL.Query().Get("sort"), "indexed", h.Service.useIndexFor(h.User(r))) }()
+	defer func() {
+		slog.Info("approval list timing", "duration_ms", time.Since(started).Milliseconds(), "view", r.URL.Query().Get("view"), "sort", r.URL.Query().Get("sort"), "indexed", h.Service.useIndexFor(h.User(r)))
+	}()
 	q := r.URL.Query()
 	view := q.Get("view")
 	if view == "" {

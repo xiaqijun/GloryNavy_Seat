@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +19,7 @@ import (
 type Projection struct {
 	Index    store.Index
 	Interval time.Duration
+	mu       sync.Mutex
 }
 
 func NewProjection(pool *pgxpool.Pool) *Projection {
@@ -46,6 +48,10 @@ func (p *Projection) Run(ctx context.Context, sources []reviewqueue.Source) {
 }
 
 func (p *Projection) Reconcile(ctx context.Context, sources []reviewqueue.Source) error {
+	// Serialize snapshot collection as well as replacement: a snapshot taken
+	// before a decision must never overwrite a refresh taken after it.
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	var failures []error
 	for _, source := range sources {
 		if source.Snapshot == nil {

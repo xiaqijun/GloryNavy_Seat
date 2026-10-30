@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getModuleCatalog } from "@/app/catalog";
-import { getData } from "@/lib/http";
+import { apiFetch, getData } from "@/lib/http";
 import type { Case } from "@/modules/welfare/api";
 import type { Order } from "@/modules/exchange/rewards-api";
 
@@ -166,6 +166,12 @@ export const getItem = (source: string, id: string, signal?: AbortSignal) =>
     isItem,
     signal,
   );
+export async function refreshSource(source: string, csrf: string) {
+  const response = await apiFetch(`/api/v1/approval/sources/${encodeURIComponent(source)}/refresh`, {
+    method: "POST", credentials: "same-origin", headers: { "X-CSRF-Token": csrf },
+  });
+  if (!response.ok) throw new Error("approval source refresh failed");
+}
 export const approvalLink = (source: string, id: string) =>
   `/approvals?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`;
 export function useApprovalEnabled() {

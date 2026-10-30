@@ -31,5 +31,11 @@ func approvalHandler(pool *pgxpool.Pool, dualRead bool, indexAccounts []string, 
 		return approval.Handler{}, nil, err
 	}
 	projection := approval.NewProjection(pool)
+	s.RefreshProjection = func(ctx context.Context, source reviewqueue.Source) error {
+		if pool == nil {
+			return nil
+		}
+		return projection.Reconcile(ctx, []reviewqueue.Source{source})
+	}
 	return approval.Handler{Service: s, User: func(r *http.Request) string { return identity.Principal(r.Context()).UserID }}, projection, nil
 }

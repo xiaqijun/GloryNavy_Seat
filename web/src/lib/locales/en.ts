@@ -1682,6 +1682,7 @@ export const english: Record<string, string> = {
   人工记录: "Manual entries",
   点名来源角色: "Roll-call source character",
   回退审批: "Revert decision",
+  "操作已完成，列表同步失败，请稍后刷新": "The action completed, but the list could not be synchronized. Refresh later.",
   回退取消审批: "Revert cancellation decision",
   回退原因: "Reason for reverting",
   确认回退: "Confirm reversion",

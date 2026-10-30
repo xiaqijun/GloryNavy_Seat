@@ -26,7 +26,7 @@ import * as welfare from "@/modules/welfare/api";
 import type { Order } from "@/modules/exchange/rewards-api";
 import type { PhysicalContent } from "@/modules/exchange/catalog-api";
 import * as loan from "@/modules/loan/api";
-import { getContext, getQueue, getItem, lossQueueAmount, type QueueItem } from "./api";
+import { getContext, getQueue, getItem, refreshSource, lossQueueAmount, type QueueItem } from "./api";
 import { capitalAmount } from "@/modules/welfare/capital-api";
 import { settlementContractTitle } from "@/modules/welfare/contract-title";
 import * as settlement from "@/modules/welfare/settlement-api";
@@ -279,8 +279,16 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
     p.delete("batch");
     setParams(p, { replace: true });
   };
-  const done = () => {
+  const done = async () => {
+    const source = params.get("source");
     close();
+    if (source) {
+      try {
+        await refreshSource(source, csrf);
+      } catch {
+        toast.error(msg("操作已完成，列表同步失败，请稍后刷新"));
+      }
+    }
     for (const key of ["approval", "welfare", "exchange", "loan"])
       void client.invalidateQueries({ queryKey: [key] });
   };

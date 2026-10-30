@@ -24,12 +24,13 @@ var ErrInvalid = errors.New("invalid approval query")
 const defaultDualReadConcurrency = 4
 
 type Service struct {
-	Sources  []reviewqueue.Source
-	Names    func(context.Context, []string) (map[string]string, error)
-	Index    *store.Index
-	index    approvalIndex
-	UseIndex bool
-	DualRead bool
+	Sources           []reviewqueue.Source
+	RefreshProjection func(context.Context, reviewqueue.Source) error
+	Names             func(context.Context, []string) (map[string]string, error)
+	Index             *store.Index
+	index             approvalIndex
+	UseIndex          bool
+	DualRead          bool
 	// AccessCacheTTL only caches the source scope used to filter the indexed
 	// candidate list. Detail and decision paths always reauthorize directly at
 	// the owning source.
