@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-10-30：操作浮动通知（仅前端，已发布）
+
+前端 `v0.1.0-toast-notifications-20261030` 从已推送 main `60a213a` 构建；后端仍为 `v0.1.0-fleet-search-20261030`、Goose 114。只需撤回界面时可将前端恢复至 `v0.1.0-attendance-layout-20261030`，保留后端和业务数据；验证见[发布记录](history/toast-notifications-20261030.md)。
+
 ## 2026-10-30：活动出勤排版（仅前端，已发布）
 
 前端 `v0.1.0-attendance-layout-20261030` 从已推送 main `4f329ab` 构建；保留后端 `v0.1.0-fleet-search-20261030` 和 Goose 114。只需撤回界面时可将前端恢复至 `v0.1.0-fleet-search-20261030`，保留后端和业务数据；验证见[发布记录](history/attendance-layout-20261030.md)。
