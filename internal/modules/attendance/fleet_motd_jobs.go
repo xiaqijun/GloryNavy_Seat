@@ -54,29 +54,13 @@ func (w *fleetMOTDWorker) Work(ctx context.Context, _ *river.Job[fleetMOTDArgs])
 
 const fleetPAPStart = "[GNV PAP]"
 const fleetPAPEnd = "[/GNV PAP]"
+const fleetWhiteStart = `<font color="#ffffffff">`
+const fleetWhiteEnd = `</font>`
 
-func mergeFleetPAP(motd string, points int32) (string, error) {
-	start, end := strings.Index(motd, fleetPAPStart), strings.Index(motd, fleetPAPEnd)
-	block := fmt.Sprintf("%s 已发放 · 每角色 %d PAP %s", fleetPAPStart, points, fleetPAPEnd)
-	if points == 0 {
-		block = fleetPAPStart + " 未发放 " + fleetPAPEnd
-	}
-	if start < 0 && end < 0 {
-		if motd == "" {
-			return block, nil
-		}
-		return motd + "<br>" + block, nil
-	}
-	if start < 0 || end < start || strings.Count(motd, fleetPAPStart) != 1 || strings.Count(motd, fleetPAPEnd) != 1 {
-		return "", ErrConflict
-	}
-	return motd[:start] + block + motd[end+len(fleetPAPEnd):], nil
-}
-
-func mergeFleetNotice(motd, body string) (string, error) {
-	const startMarker, endMarker = "[GNV NOTICE]", "[/GNV NOTICE]"
+// Preserve unrelated MOTD content and replace either legacy or white managed blocks.
+func replaceFleetMOTDBlock(motd, startMarker, endMarker, content string) (string, error) {
 	start, end := strings.Index(motd, startMarker), strings.Index(motd, endMarker)
-	block := startMarker + "<br>" + body + "<br>" + endMarker
+	block := fleetWhiteStart + content + fleetWhiteEnd
 	if start < 0 && end < 0 {
 		if motd == "" {
 			return block, nil
@@ -86,7 +70,26 @@ func mergeFleetNotice(motd, body string) (string, error) {
 	if start < 0 || end < start || strings.Count(motd, startMarker) != 1 || strings.Count(motd, endMarker) != 1 {
 		return "", ErrConflict
 	}
-	return motd[:start] + block + motd[end+len(endMarker):], nil
+	end += len(endMarker)
+	if start >= len(fleetWhiteStart) && motd[start-len(fleetWhiteStart):start] == fleetWhiteStart && strings.HasPrefix(motd[end:], fleetWhiteEnd) {
+		start -= len(fleetWhiteStart)
+		end += len(fleetWhiteEnd)
+	}
+	return motd[:start] + block + motd[end:], nil
+}
+
+func mergeFleetPAP(motd string, points int32) (string, error) {
+	block := fmt.Sprintf("%s 已发放 · 每角色 %d PAP %s", fleetPAPStart, points, fleetPAPEnd)
+	if points == 0 {
+		block = fleetPAPStart + " 未发放 " + fleetPAPEnd
+	}
+	return replaceFleetMOTDBlock(motd, fleetPAPStart, fleetPAPEnd, block)
+}
+
+func mergeFleetNotice(motd, body string) (string, error) {
+	const startMarker, endMarker = "[GNV NOTICE]", "[/GNV NOTICE]"
+	block := startMarker + "<br>" + body + "<br>" + endMarker
+	return replaceFleetMOTDBlock(motd, startMarker, endMarker, block)
 }
 
 func (s *Service) processFleetMOTD(ctx context.Context, u store.FleetMOTDUpdate) error {

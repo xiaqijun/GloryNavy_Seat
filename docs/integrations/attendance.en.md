@@ -1,5 +1,9 @@
 # Corporation attendance and estimated online time
 
+2026-10-30 local change, not released: after the client displayed the fleet notice in red, site-managed notice and PAP blocks explicitly use EVE white. Existing uncolored blocks and repeated updates are supported, and other MOTD content is retained. Actual client color requires verification after release.
+
+2026-10-30 live test: Hajimi6 synced the notice for activity #3 to a one-character fleet. The server recorded sent, and an ESI readback contained the activity, notice and PAP markers. The previous MOTD was empty; in-game rendering, preservation of existing content and concurrent edits remain unverified. See the [test record](../history/fleet-notice-live-test-20261030.md).
+
 ## 2026-10-30 fleet notices and live PAP (released; live acceptance pending)
 
 Notices can be delivered to the corporation's configured QQ structure-alert group, EVE corporation mail, and verified opted-in email addresses of bound corporation members. Delivery and fleet MOTD updates have independent durable status; uncertain external sends are not retried automatically. Eligible characters must be currently bound and belong to the activity corporation; repeated issuance skips previous awards and later arrivals can be added. PAP, configured automatic coin awards and audit commit in one transaction. Templates require management permission and use revision checking. Goose 113 Down refuses existing notices, deliveries or live-PAP audit; do not run an older version that ignores them. Real channel and fleet acceptance remains outstanding. See the [release record](../history/fleet-ops-20261030.md).
