@@ -78,10 +78,13 @@ func structureNoticeDetails(item eve.Structure) string {
 	if name == "" {
 		name = fmt.Sprintf("编号 %d", item.ID)
 	}
-	text := "建筑：" + name
-	if typeName != "" && typeName != name {
-		text += "（" + typeName + "）"
+	if typeName == "" {
+		typeName = "未知"
+		if item.TypeID > 0 {
+			typeName += fmt.Sprintf("（ID %d）", item.TypeID)
+		}
 	}
+	text := "建筑：" + name + "\n建筑类型：" + typeName
 	if system := cleanStructureText(item.SolarSystemName); system != "" {
 		text += "\n星系：" + system
 	}

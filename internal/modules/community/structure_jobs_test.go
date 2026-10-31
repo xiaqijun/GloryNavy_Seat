@@ -19,18 +19,18 @@ func TestStructureNoticeDetailsAndTimes(t *testing.T) {
 	unanchor := expires.Add(time.Hour)
 	row := eve.Structure{ID: 123, Name: "5-O8B1 - Glory Navy", TypeName: "堡垒", SolarSystemName: "5-O8B1", FuelExpires: &expires, UnanchorsAt: &unanchor}
 	message := structureNoticeDetails(row) + structureNoticeTimes(row)
-	for _, want := range []string{"建筑：5-O8B1 - Glory Navy（堡垒）", "星系：5-O8B1", "燃料到期：2026-11-03 17:00（北京时间）", "计划拆除：2026-11-03 18:00（北京时间）"} {
+	for _, want := range []string{"建筑：5-O8B1 - Glory Navy", "建筑类型：堡垒", "星系：5-O8B1", "燃料到期：2026-11-03 17:00（北京时间）", "计划拆除：2026-11-03 18:00（北京时间）"} {
 		if !strings.Contains(message, want) {
 			t.Fatalf("missing %q in %q", want, message)
 		}
 	}
 	row.Name, row.Kind, row.UnanchorsAt = "", "pos", nil
 	message = structureNoticeDetails(row) + structureNoticeTimes(row)
-	if !strings.Contains(message, "建筑：编号 123（堡垒）") || !strings.Contains(message, "燃料预计耗尽：") || strings.Contains(message, "计划拆除") {
+	if !strings.Contains(message, "建筑：编号 123\n建筑类型：堡垒") || !strings.Contains(message, "燃料预计耗尽：") || strings.Contains(message, "计划拆除") {
 		t.Fatalf("unexpected POS message: %s", message)
 	}
 	row.Name, row.TypeName, row.SolarSystemName, row.FuelExpires = "unknown", "", "", nil
-	if got := structureNoticeDetails(row) + structureNoticeTimes(row); got != "建筑：unknown" {
+	if got := structureNoticeDetails(row) + structureNoticeTimes(row); got != "建筑：unknown\n建筑类型：未知" {
 		t.Fatalf("unexpected missing-field message: %s", got)
 	}
 }
@@ -64,7 +64,7 @@ func TestStructureNotificationContainsIdentityAndExpiry(t *testing.T) {
 	if err := job.scan(ctx); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"建筑：Test structure（堡垒）", "星系：5-O8B1", "燃料：24 小时内", expires.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04") + "（北京时间）"} {
+	for _, want := range []string{"建筑：Test structure", "建筑类型：堡垒", "星系：5-O8B1", "燃料：24 小时内", expires.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04") + "（北京时间）"} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("missing %q in sent message %q", want, content)
 		}
@@ -77,6 +77,19 @@ func TestStructureJobsExtensionHasLifecycleBindings(t *testing.T) {
 		if extension.Register == nil || extension.Bind == nil {
 			t.Fatalf("enabled=%v: lifecycle callbacks missing", enabled)
 		}
+	}
+}
+
+func TestStructureNoticeTypeHasOwnLabel(t *testing.T) {
+	item := eve.Structure{ID: 123, Name: "5-O8B1 - Glory Navy", TypeID: 35835, TypeName: "阿塔诺", SolarSystemName: "5-O8B1"}
+	got := structureNoticeDetails(item)
+	if !strings.Contains(got, "建筑类型：阿塔诺") {
+		t.Fatalf("missing explicit building type: %s", got)
+	}
+	item.TypeName = ""
+	got = structureNoticeDetails(item)
+	if !strings.Contains(got, "建筑类型：未知（ID 35835）") {
+		t.Fatalf("missing type fallback: %s", got)
 	}
 }
 
