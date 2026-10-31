@@ -1,6 +1,6 @@
 # Corporation attendance and estimated online time
 
-## Fleet notice links (local, not released)
+## Fleet notice links (released; Goose 117)
 
 The notice editor can select the commander, fire anchor and logistics anchor from bound characters in the event corporation. Selected characters and a snapshot of a selected corporation fitting become in-game MOTD links; manually entered and historical text remains plain. QQ, EVE mail and email continue to use plain text. Link identifiers are validated and user text is escaped. Revision and request-key checks remain in force; older clients retain other new fields, and changing their legacy name clears its corresponding link. Goose 117 refuses Down when structured link data exists. Actual game-client link and fitting behavior remains to be verified.
 
