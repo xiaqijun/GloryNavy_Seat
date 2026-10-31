@@ -70,6 +70,41 @@ func cleanStructureText(s string) string {
 	return s
 }
 
+// structureNoticeDetails uses only the authorized snapshot. A POS has no
+// custom name in ESI, so its type and ID identify it without inventing a name.
+func structureNoticeDetails(item eve.Structure) string {
+	name := cleanStructureText(item.Name)
+	typeName := cleanStructureText(item.TypeName)
+	if name == "" {
+		name = fmt.Sprintf("编号 %d", item.ID)
+	}
+	text := "建筑：" + name
+	if typeName != "" && typeName != name {
+		text += "（" + typeName + "）"
+	}
+	if system := cleanStructureText(item.SolarSystemName); system != "" {
+		text += "\n星系：" + system
+	}
+	return text
+}
+
+func structureNoticeTimes(item eve.Structure) string {
+	const layout = "2006-01-02 15:04"
+	beijing := time.FixedZone("UTC+8", 8*60*60)
+	text := ""
+	if item.FuelExpires != nil {
+		label := "燃料到期"
+		if item.Kind == "pos" {
+			label = "燃料预计耗尽"
+		}
+		text += "\n" + label + "：" + item.FuelExpires.In(beijing).Format(layout) + "（北京时间）"
+	}
+	if item.UnanchorsAt != nil {
+		text += "\n计划拆除：" + item.UnanchorsAt.In(beijing).Format(layout) + "（北京时间）"
+	}
+	return text
+}
+
 func structureReference(parts ...string) string {
 	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
 	return hex.EncodeToString(sum[:])
@@ -174,14 +209,8 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 		if item.CorporationID != watch.CorporationID || item.ID <= 0 || item.ObservedAt.IsZero() {
 			continue
 		}
-		name := cleanStructureText(item.Name)
-		if name == "" {
-			name = fmt.Sprintf("建筑 %d", item.ID)
-		}
-		loc := cleanStructureText(item.SolarSystemName)
-		if loc != "" {
-			name += " · " + loc
-		}
+		details := structureNoticeDetails(item)
+		times := structureNoticeTimes(item)
 		old, e := store.ReadStructureObservation(ctx, tx, watch.Revision, watch.CorporationID, item.ID)
 		if e != nil && !errors.Is(e, pgx.ErrNoRows) {
 			return e
@@ -197,7 +226,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 				if strings.HasPrefix(change.Field, "service:") {
 					field = "服务 " + cleanStructureText(strings.TrimPrefix(change.Field, "service:"))
 				}
-				body := fmt.Sprintf("%s：%s %s → %s（观测 %s UTC）", name, field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.UTC().Format("01-02 15:04"))
+				body := fmt.Sprintf("%s\n%s：%s → %s\n观测时间：%s UTC%s", details, field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.UTC().Format("2006-01-02 15:04"), times)
 				ref := structureReference("change", fmt.Sprint(item.ID), change.Field, change.ObservedAt.UTC().Format(time.RFC3339Nano), change.From, change.To)
 				if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "change", body); err != nil {
 					return err
@@ -215,7 +244,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 			stage := fuelStage(item.FuelExpires, now)
 			if stage != "" {
 				ref := structureReference("fuel", fmt.Sprint(item.ID), item.FuelExpires.UTC().Format("2006-01-02"), stage)
-				body := fmt.Sprintf("%s：燃料%s（截止 %s UTC）", name, stage, item.FuelExpires.UTC().Format("2006-01-02 15:04"))
+				body := fmt.Sprintf("%s\n燃料：%s%s", details, stage, times)
 				if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "fuel", body); err != nil {
 					return err
 				}
@@ -223,7 +252,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 		}
 		if item.UnanchorsAt != nil && item.UnanchorsAt.After(now) {
 			ref := structureReference("unanchor", fmt.Sprint(item.ID), item.UnanchorsAt.UTC().Format(time.RFC3339))
-			body := fmt.Sprintf("%s：计划拆除 %s UTC", name, item.UnanchorsAt.UTC().Format("2006-01-02 15:04"))
+			body := fmt.Sprintf("%s\n提醒：已安排拆除%s", details, times)
 			if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "unanchor", body); err != nil {
 				return err
 			}
