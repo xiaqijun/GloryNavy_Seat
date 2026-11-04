@@ -229,7 +229,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 				if strings.HasPrefix(change.Field, "service:") {
 					field = "服务 " + cleanStructureText(strings.TrimPrefix(change.Field, "service:"))
 				}
-				body := fmt.Sprintf("%s\n%s：%s → %s\n观测时间：%s UTC%s", details, field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.UTC().Format("2006-01-02 15:04"), times)
+				body := fmt.Sprintf("%s\n%s：%s → %s\n观测时间：%s（北京时间）%s", details, field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04"), times)
 				ref := structureReference("change", fmt.Sprint(item.ID), change.Field, change.ObservedAt.UTC().Format(time.RFC3339Nano), change.From, change.To)
 				if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "change", body); err != nil {
 					return err
@@ -380,7 +380,7 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 		}
 		return guardErr
 	}
-	result := sendQQGroupNotification(ctx, bot, watch.Group, strings.Join(lines, "\n"))
+	result := sendQQStructureMarkdown(ctx, bot, watch.Group, lines)
 	if result.State != "sent" {
 		slog.Warn("QQ structure notification not confirmed", "state", result.State, "code", result.Code)
 	}

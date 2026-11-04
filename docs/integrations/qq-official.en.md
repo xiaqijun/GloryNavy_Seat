@@ -4,6 +4,8 @@ The official QQ structure group notifier is separate from legacy OneBot notices,
 
 The in-site Reminders configuration and delivery history have been deployed; validation status is tracked in [project status](../project-status.md).
 
+Local, not deployed: structure group notifications use native Markdown and fall back to plain text only on a definite native-Markdown permission rejection; uncertain sends are not retried. The bot needs proactive native-Markdown permission and real group delivery remains unverified. Other group messages, including fleet announcements, keep their existing path.
+
 > WebSocket migration deployed on 2026-10-29: inbound events use WebSocket and the previous official HTTP callback returns 410. The bot remains disabled by default. Configure WebSocket reception and the application server's egress IP in the QQ platform. A database session lock limits consumers to one instance. Resume is attempted within the same process; a restart or rejected resume may miss offline events. Group applications can be reconciled through the existing sync endpoint. The default intent is group and C2C (1<<25); set `QQ_BOT_WS_MEMBER_EVENTS=true` and restart only after group-member permission is granted. Real binding and reply have been verified; group approval remains unverified.
 
 Updated 2026-10-28. [中文](qq-official.zh-CN.md). The user requested a switch from NapCat back to the official Bot API. This change is deployed with the official bot disabled by default; see [project status](../project-status.md).

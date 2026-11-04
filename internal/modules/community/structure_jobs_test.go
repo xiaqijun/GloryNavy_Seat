@@ -41,12 +41,14 @@ func TestStructureNotificationContainsIdentityAndExpiry(t *testing.T) {
 	var content string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			Content string `json:"content"`
+			Markdown struct {
+				Content string `json:"content"`
+			} `json:"markdown"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Error(err)
 		}
-		content = body.Content
+		content = strings.ReplaceAll(body.Markdown.Content, "**", "")
 		_, _ = w.Write([]byte(`{"id":"message"}`))
 	}))
 	defer server.Close()
