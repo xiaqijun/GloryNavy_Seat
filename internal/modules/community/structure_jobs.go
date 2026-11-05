@@ -380,7 +380,7 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 		}
 		return guardErr
 	}
-	result := sendQQStructureMarkdown(ctx, bot, watch.Group, lines)
+	result := sendQQGroupNotification(ctx, bot, watch.Group, strings.Join(lines, "\n"))
 	if result.State != "sent" {
 		slog.Warn("QQ structure notification not confirmed", "state", result.State, "code", result.Code)
 	}

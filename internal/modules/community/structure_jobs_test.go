@@ -41,14 +41,16 @@ func TestStructureNotificationContainsIdentityAndExpiry(t *testing.T) {
 	var content string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			Markdown struct {
-				Content string `json:"content"`
-			} `json:"markdown"`
+			Type    int    `json:"msg_type"`
+			Content string `json:"content"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Error(err)
 		}
-		content = strings.ReplaceAll(body.Markdown.Content, "**", "")
+		if body.Type != 0 {
+			t.Errorf("expected plain text, got message type %d", body.Type)
+		}
+		content = body.Content
 		_, _ = w.Write([]byte(`{"id":"message"}`))
 	}))
 	defer server.Close()
