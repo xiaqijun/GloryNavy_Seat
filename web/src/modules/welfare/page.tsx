@@ -38,6 +38,7 @@ import { LossCaseContent, LossCaseEvidence, LossReviewOverview } from "./loss-ca
 import { ValuationView } from "./valuation";
 import { GrowthEditor, RewardSummary } from "./growth-editor";
 import "./welfare.css";
+import "@/components/review-detail.css";
 import { GrowthProject } from "./growth-project";
 import { GrowthStatus } from "./growth-status";
 import { useGrowthStatus } from "./growth-query";
@@ -1920,32 +1921,27 @@ export function CaseView({
   ) : capitalSubsidy ? (
     <CapitalCaseContent item={v} user={user} manage={manage} history={q.data?.history || []} error={q.isError ? q.error.message : undefined} />
   ) : (
-    <div className="welfare-details">
-      <div className="welfare-detail-head">
+    <div className="welfare-details review-detail">
+      <div className="review-detail-heading">
+        <div><strong>{api.caseLabel(v)}</strong><span>#{v.id}</span></div>
         <span className={`welfare-status state-${v.state}`}>
           {api.states[v.state]}
         </span>
-        <strong>
-          {api.caseLabel(v)} #{v.id}
-        </strong>
-        <span>{v.detail.character_name}</span>
       </div>
-      <div className="welfare-detail-values">
+      <dl className="review-detail-facts">
+        <div><dt>{msg("接收角色")}</dt><dd>{v.detail.character_name || "—"}</dd></div>
         {!v.kind.startsWith("growth_") && !v.kind.startsWith("activity_") && (
-          <span>
-            {msg("核准金额")}{" "}
-            <strong>
+          <div className="is-award">
+            <dt>{msg("核准金额")}</dt>
+            <dd>
               {v.award_minor ? api.money(v.award_minor) : "—"}{" "}
               {v.kind === "grant" ? msg("币") : "ISK"}
-            </strong>
-          </span>
+            </dd>
+          </div>
         )}
-        <span>
-          {msg("提交时间")}
-          <strong>{api.date(v.created_at)}</strong>
-        </span>
-      </div>
-      <p className="welfare-proof">{v.detail.description}</p>
+        <div><dt>{msg("提交时间")}</dt><dd>{api.date(v.created_at)}</dd></div>
+      </dl>
+      {v.detail.description && <p className="welfare-proof">{v.detail.description}</p>}
       <RewardSummary rewards={v.detail.rewards} />
       {v.kind.startsWith("activity_") && (v.detail.image_count || 0) > 0 && <div className="welfare-activity-images">{Array.from({ length: v.detail.image_count || 0 }, (_, i) => <a key={i} href={`/api/v1/welfare/cases/${v.id}/images/${i + 1}`} target="_blank" rel="noreferrer"><img src={`/api/v1/welfare/cases/${v.id}/images/${i + 1}`} alt={msg("活动截图 {0}", i + 1)} loading="lazy" /></a>)}</div>}
       {v.kind.startsWith("activity_") && v.detail.supporting_contract_id && v.detail.supporting_contract_id !== "0" && <p className="welfare-proof">{msg("合同材料 #")}{v.detail.supporting_contract_id}</p>}

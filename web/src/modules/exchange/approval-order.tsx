@@ -13,12 +13,14 @@ import "./exchange.css";
 
 export function ApprovalOrder({
   item,
+  status,
   user,
   csrf,
   close,
   done,
 }: {
   item: QueueItem;
+  status: string;
   user: string;
   csrf: string;
   close: () => void;
@@ -65,15 +67,16 @@ export function ApprovalOrder({
         ) : undefined
       }
     >
-      <div className="approval-order">
-        <div className="approval-order-heading">
-          <strong>
+      <div className="approval-order review-detail">
+        <div className="review-detail-heading">
+          <div><strong>
             {order.name} ·{" "}
             {msg("{0} 份", (order.units ?? 1).toLocaleString(getLocale()))}
           </strong>
           <span>
             #{order.id} · {order.recipient_name}
-          </span>
+          </span></div>
+          <span className="approval-status">{status}</span>
         </div>
         <RewardSummary rewards={order.content} />
         {order.note && <p>{order.note}</p>}

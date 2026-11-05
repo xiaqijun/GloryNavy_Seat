@@ -32,6 +32,7 @@ import { settlementContractTitle } from "@/modules/welfare/contract-title";
 import * as settlement from "@/modules/welfare/settlement-api";
 import { useToast } from "@/components/ui/toast-context";
 import "./approval.css";
+import "@/components/review-detail.css";
 
 // The queue is used far more often than its detail forms. Fetch the existing
 // business views only when an administrator opens an item.
@@ -956,18 +957,16 @@ const approvalDetailRegistry: Record<string, ApprovalDetailRenderer> = {
     <LoanDetail item={item} csrf={csrf} close={close} done={done} />
   ),
   exchange: ({ item, user, csrf, close, done }) => (
-    <ApprovalOrder item={item} user={user} csrf={csrf} close={close} done={done} />
+    <ApprovalOrder item={item} status={statusLabel(item)} user={user} csrf={csrf} close={close} done={done} />
   ),
 };
 
 function GenericDetail({ item, close }: ApprovalDetailProps) {
   return (
     <Modal title={msg("审批详情")} close={close}>
-      <div className="approval-detail-grid">
-        <div><span>{msg("类型")}</span><strong>{item.detail_kind || item.source}</strong></div>
-        <div><span>{msg("编号")}</span><strong>{item.reference || item.id}</strong></div>
-        <div><span>{msg("状态")}</span><strong>{item.status || item.state}</strong></div>
-        {item.title && <div><span>{msg("项目")}</span><strong>{item.title}</strong></div>}
+      <div className="review-detail">
+        <div className="review-detail-heading"><div><strong>{item.title || item.detail_kind || item.source}</strong><span>{item.reference || item.id}</span></div><span className="approval-status">{item.status || item.state}</span></div>
+        <dl className="review-detail-facts"><div><dt>{msg("类型")}</dt><dd>{item.detail_kind || item.source}</dd></div></dl>
       </div>
     </Modal>
   );
@@ -1019,19 +1018,19 @@ function LoanDetail({
     }
   };
   return (
-    <Modal title={msg("贷款审批详情")} close={close} className="approval-loan-detail">
-      <div className="approval-detail-grid">
-        <div><span>{msg("编号")}</span><strong>{payload.public_id || item.reference}</strong></div>
-        <div><span>{msg("贷款池")}</span><strong>{payload.pool_name || item.title}</strong></div>
-        <div><span>{msg("本金")}</span><strong>{formatMinor(payload.principal_minor)}</strong></div>
-        <div><span>{payload.requested_due_at && !payload.first_due_at ? msg("预计总应还") : msg("总应还")}</span><strong>{formatMinor(payload.total_due_minor)}</strong></div>
-        <RepaymentSummary item={payload} />
-      </div>
+    <Modal title={msg("贷款审批详情")} close={close} className="approval-loan-detail" footer={<div className="approval-modal-actions">
+        {canRevert ? <Button variant="outline" disabled={busy || revert && (!revertNote.trim() || item.state === "approved" && !confirmedNotDisbursed)} onClick={() => revert ? void revertDecision() : setRevert(true)}>{msg(revert ? "确认回退" : "回退审批")}</Button> : item.state === "submitted" && <><Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button><Button disabled={busy || detail.isPending || detail.isError || !risk || risk.status === "unavailable" || risk.status !== "adequate" && (!risk.token || riskAck !== risk.token)} onClick={() => void decide("approved")}>{msg("批准")}</Button></>}
+      </div>}>
+      <div className="review-detail">
+      <div className="review-detail-heading"><div><strong>{payload.pool_name || item.title}</strong><span>{payload.public_id || item.reference}</span></div><span className="approval-status">{statusLabel(item)}</span></div>
+      <dl className="review-detail-facts">
+        <div><dt>{msg("本金")}</dt><dd>{formatMinor(payload.principal_minor)}</dd></div>
+        <div className="is-award"><dt>{payload.requested_due_at && !payload.first_due_at ? msg("预计总应还") : msg("总应还")}</dt><dd>{formatMinor(payload.total_due_minor)}</dd></div>
+      </dl>
+      <section className="review-detail-section"><strong>{msg("还款安排")}</strong><RepaymentSummary item={payload} /></section>
       {item.state === "submitted" && (detail.isPending ? <p role="status">{msg("正在读取还款风险")}</p> : detail.isError ? <div role="alert"><p>{msg("还款风险读取失败，请重试。")}</p><Button variant="outline" onClick={() => void detail.refetch()}>{msg("重试")}</Button></div> : risk?.status === "unavailable" || !risk ? <p role="alert">{msg("信用评估暂不可用，请等待更新后审批。")}</p> : risk.status !== "adequate" && <div className="approval-risk" role="status"><p>{risk.status === "insufficient" ? msg("预计还款能力不足，请核对风险后决定。") : msg("还款能力数据不足，请核对风险后决定。")}</p>{risk.status === "insufficient" && <><p>{msg("截至第 {0} 天预计应还：{1}", risk.days, formatMinor(risk.total_due_minor))}</p><p>{msg("预计还款能力：{0}", formatMinor(risk.estimated_capacity_minor))}</p></>}<label><input type="checkbox" checked={!!risk.token && riskAck === risk.token} onChange={e => setRiskAck(e.target.checked ? risk.token ?? "" : "")} /> {msg("已了解还款风险")}</label></div>)}
       {revert && <div className="approval-risk"><label>{msg("回退原因")}<textarea value={revertNote} onChange={e => setRevertNote(e.target.value)} required /></label>{item.state === "approved" && <label><input type="checkbox" checked={confirmedNotDisbursed} onChange={e => setConfirmedNotDisbursed(e.target.checked)} />{msg("已在游戏中核对：未放款，且相关合同已撤销")}</label>}</div>}
       {message && <p role="alert">{message}</p>}
-      <div className="approval-modal-actions">
-        {canRevert ? <Button variant="outline" disabled={busy || revert && (!revertNote.trim() || item.state === "approved" && !confirmedNotDisbursed)} onClick={() => revert ? void revertDecision() : setRevert(true)}>{msg(revert ? "确认回退" : "回退审批")}</Button> : item.state === "submitted" && <><Button variant="outline" disabled={busy} onClick={() => void decide("rejected")}>{msg("驳回")}</Button><Button disabled={busy || detail.isPending || detail.isError || !risk || risk.status === "unavailable" || risk.status !== "adequate" && (!risk.token || riskAck !== risk.token)} onClick={() => void decide("approved")}>{msg("批准")}</Button></>}
       </div>
     </Modal>
   );
@@ -1221,9 +1220,9 @@ function SettlementDetail({
   const recipients = batch.recipient_names?.join(", ") || "—";
   return (
     <Modal title={msg("批量结算")} close={close} size="compact">
-      <div className="approval-settlement-detail">
-        <div className="approval-settlement-heading">
-          <strong>{batch.settlement_reference || `#${batch.id}`}</strong>
+      <div className="approval-settlement-detail review-detail">
+        <div className="review-detail-heading">
+          <div><strong>{msg("批量结算")}</strong><span>{batch.settlement_reference || `#${batch.id}`}</span></div>
           <span className="approval-status">{settlementStatusLabel(batch)}</span>
         </div>
         <div className="approval-settlement-copy-grid">
