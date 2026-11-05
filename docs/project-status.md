@@ -1,6 +1,6 @@
 # 项目状态
 
-2026-11-05 本地未发布：QQ群建筑提醒恢复纯文本发送，保留建筑类型及北京时间；生产仍以以下发布记录为准。
+2026-11-05 已发布：后端 `v0.1.0-qq-structure-plaintext-20261105` 来自已推送 main `084fe55`。QQ群建筑提醒恢复纯文本发送，保留建筑类型及北京时间；隔离数据库与模拟发送测试通过，真实群内显示待验收。详见[发布记录](history/qq-structure-plaintext-20261105.md)。
 
 2026-11-04 已发布：后端 `v0.1.0-qq-structure-markdown-20261104` 来自已推送 main `8d69496`。QQ 建筑状态变化的观测时间改为北京时间，建筑提醒使用 Markdown；平台明确拒绝原生 Markdown 时回退纯文本，真实主动 Markdown 和客户端效果待验证。详见[发布记录](history/qq-structure-markdown-20261104.md)。
 

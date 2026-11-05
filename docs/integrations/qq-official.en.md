@@ -6,7 +6,7 @@ The in-site Reminders configuration and delivery history have been deployed; val
 
 Deployed on 2026-11-04: structure group notifications use native Markdown and fall back to plain text only on a definite native-Markdown permission rejection; uncertain sends are not retried. The bot needs proactive native-Markdown permission and real group delivery remains unverified. Other group messages, including fleet announcements, keep their existing path.
 
-Local, not deployed on 2026-11-05: structure group notifications return to plain text. Uncertain sends are not retried.
+Deployed on 2026-11-05: structure group notifications return to plain text. Uncertain sends are not retried.
 
 > WebSocket migration deployed on 2026-10-29: inbound events use WebSocket and the previous official HTTP callback returns 410. The bot remains disabled by default. Configure WebSocket reception and the application server's egress IP in the QQ platform. A database session lock limits consumers to one instance. Resume is attempted within the same process; a restart or rejected resume may miss offline events. Group applications can be reconciled through the existing sync endpoint. The default intent is group and C2C (1<<25); set `QQ_BOT_WS_MEMBER_EVENTS=true` and restart only after group-member permission is granted. Real binding and reply have been verified; group approval remains unverified.
 
