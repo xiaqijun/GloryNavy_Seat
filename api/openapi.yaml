@@ -5871,7 +5871,7 @@ paths:
     post:
       operationId: createQQGroupApplication
       summary: Create an official QQ group admission application
-      description: Creates a short-lived, one-time code for the signed-in site account. The member places the code in the official QQ group join verification message or review answer. The server approves only a configured bot-scoped group and binds the membership after GROUP_MEMBER_ADD; a numeric QQ group number is not accepted.
+      description: Issues a short-lived one-time code to a current configured-corporation member with an official QQ binding. The applicant places the code in the QQ join message or review answer. Before approving, the server rechecks membership, the configured group OpenID and the applicant OpenID against the current binding. GROUP_MEMBER_ADD confirms actual admission.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5898,7 +5898,7 @@ paths:
                   data: { $ref: "#/components/schemas/QQGroupApplicationChallenge" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { description: QQ number missing or an active application already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { description: No current official QQ binding or an active application already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
     get:
       operationId: getQQGroupApplication

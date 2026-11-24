@@ -28,6 +28,7 @@ var (
 	ErrVersion                  = errors.New("资料已在其他页面更新，请重新读取后修改")
 	ErrQQBotReplay              = errors.New("QQ 机器人事件重放冲突")
 	ErrQQNotBound               = errors.New("QQ 号尚未绑定本站账号")
+	ErrQQGroupMemberRequired    = errors.New("当前没有符合条件的军团角色")
 	ErrQQGroupNotConfigured     = errors.New("QQ 入群审批群组未配置")
 	ErrQQGroupApplicationExists = errors.New("该群已有待处理的入群申请")
 	qqPattern                   = regexp.MustCompile(`^[1-9][0-9]{4,11}$`)
@@ -35,6 +36,7 @@ var (
 
 type Service struct {
 	LockAccounts          func(context.Context, pgx.Tx, []string) error
+	QQGroupMember         func(context.Context, string) (bool, error)
 	QQGatewayMemberEvents bool
 	pool                  *pgxpool.Pool
 	qqOfficial            *OfficialQQBot

@@ -99,6 +99,13 @@ func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpe
 	if s.qqOfficial == nil || !s.qqOfficial.GroupAllowed(groupOpenID) {
 		return QQGroupApplicationChallenge{}, ErrQQGroupNotConfigured
 	}
+	if err := s.requireQQGroupMember(ctx, userID); err != nil {
+		return QQGroupApplicationChallenge{}, err
+	}
+	bot := s.qqOfficial.callbackSnapshot()
+	if bot == nil || s.LockAccounts == nil {
+		return QQGroupApplicationChallenge{}, ErrQQOfficialDisabled
+	}
 	var user pgtype.UUID
 	if err := user.Scan(userID); err != nil {
 		return QQGroupApplicationChallenge{}, err
@@ -114,6 +121,12 @@ func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpe
 	}
 	defer tx.Rollback(context.Background())
 	q := store.New(tx)
+	if err = s.lockQQGroupScope(ctx, q, bot, groupOpenID); err != nil {
+		return QQGroupApplicationChallenge{}, err
+	}
+	if err = s.LockAccounts(ctx, tx, []string{userID}); err != nil {
+		return QQGroupApplicationChallenge{}, err
+	}
 	if err = q.EnsureProfile(ctx, user); err != nil {
 		return QQGroupApplicationChallenge{}, err
 	}
@@ -123,6 +136,11 @@ func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpe
 	}
 	if profileRow.QqNumber == "" {
 		return QQGroupApplicationChallenge{}, ErrQQNotBound
+	}
+	if _, err = q.QQBindingOpenID(ctx, user, profileRow.QqVersion); errors.Is(err, pgx.ErrNoRows) {
+		return QQGroupApplicationChallenge{}, ErrQQNotBound
+	} else if err != nil {
+		return QQGroupApplicationChallenge{}, err
 	}
 	_ = q.ExpireQQGroupApplications(ctx)
 	if _, err = q.LockActiveQQGroupApplication(ctx, store.LockActiveQQGroupApplicationParams{UserID: user, GroupOpenid: groupOpenID}); err == nil {
@@ -171,6 +189,13 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if s.qqOfficial == nil || (len(verified) == 0 && !s.qqOfficial.GroupAllowed(request.GroupOpenID)) || request.MemberOpenID == "" || request.JoinRequestID == "" {
 		return nil
 	}
+	bot := s.qqOfficial.callbackSnapshot()
+	if len(verified) > 0 {
+		bot = verified[0]
+	}
+	if bot == nil || s.LockAccounts == nil {
+		return ErrQQOfficialDisabled
+	}
 	code := qqGroupCodeFromVerifyInfo(request.VerifyInfo)
 	hash := sha256.Sum256(payload)
 	tx, err := s.pool.Begin(ctx)
@@ -179,17 +204,10 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	}
 	defer tx.Rollback(context.Background())
 	q := store.New(tx)
-	if len(verified) > 0 {
-		if err = s.verifyQQGatewayConfig(ctx, q, verified[0]); err != nil {
-			return err
-		}
-		allowed, checkErr := q.QQGatewayGroupEnabled(ctx, request.GroupOpenID)
-		if checkErr != nil {
-			return checkErr
-		}
-		if !allowed {
-			return nil
-		}
+	if err = s.lockQQGroupScope(ctx, q, bot, request.GroupOpenID); errors.Is(err, ErrQQGroupNotConfigured) {
+		return nil
+	} else if err != nil {
+		return err
 	}
 	if eventID != "" {
 		if existing, lookupErr := q.GetBotEvent(ctx, store.GetBotEventParams{Source: "qqgroup-join", EventID: eventID}); lookupErr == nil {
@@ -209,7 +227,8 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 		}
 		return tx.Commit(ctx)
 	}
-	app, err := q.FindQQGroupApplicationByCode(ctx, officialChallengeHash(code))
+	codeHash := officialChallengeHash(code)
+	owner, err := q.QQGroupApprovalOwner(ctx, codeHash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if eventID != "" {
 			_ = q.InsertBotEvent(ctx, store.InsertBotEventParams{Source: "qqgroup-join", EventID: eventID, PayloadHash: hash[:]})
@@ -219,21 +238,23 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if err != nil {
 		return err
 	}
-	if app.GroupOpenid != request.GroupOpenID {
-		if eventID != "" {
-			if err = q.InsertBotEvent(ctx, store.InsertBotEventParams{Source: "qqgroup-join", EventID: eventID, PayloadHash: hash[:]}); err != nil {
-				return err
-			}
-		}
-		return tx.Commit(ctx)
+	if err = s.LockAccounts(ctx, tx, []string{owner.String()}); err != nil {
+		return err
 	}
-	if len(verified) > 0 {
-		if s.LockAccounts == nil {
-			return ErrQQOfficialDisabled
-		}
-		if err = s.LockAccounts(ctx, tx, []string{app.UserID.String()}); err != nil {
-			return err
-		}
+	app, err := q.FindQQGroupApplicationByCode(ctx, codeHash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if app.UserID != owner || app.GroupOpenid != request.GroupOpenID {
+		return nil
+	}
+	if err = s.checkQQGroupApplicant(ctx, q, app, request.MemberOpenID); errors.Is(err, ErrQQNotBound) || errors.Is(err, ErrQQGroupMemberRequired) {
+		return nil
+	} else if err != nil {
+		return err
 	}
 	if err = q.MarkQQGroupApplicationApproving(ctx, store.MarkQQGroupApplicationApprovingParams{ID: app.ID, MemberOpenid: pgtype.Text{String: request.MemberOpenID, Valid: true}, JoinRequestID: pgtype.Text{String: request.JoinRequestID, Valid: true}}); err != nil {
 		return err
@@ -246,34 +267,7 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
-	bot := s.qqOfficial
-	if len(verified) > 0 {
-		bot = verified[0]
-	}
-	if len(verified) > 0 {
-		// Hold shared configuration and group locks during the external action,
-		// independently of the business publication transaction above.
-		guard, beginErr := s.pool.Begin(ctx)
-		if beginErr != nil {
-			err = beginErr
-		} else {
-			guardQ := store.New(guard)
-			err = s.verifyQQGatewayConfig(ctx, guardQ, verified[0])
-			if err == nil {
-				var allowed bool
-				allowed, err = guardQ.QQGatewayGroupEnabled(ctx, request.GroupOpenID)
-				if err == nil && !allowed {
-					err = ErrQQOfficialDisabled
-				}
-			}
-			if err == nil {
-				err = bot.ApproveGroupJoinRequest(ctx, request.GroupOpenID, request.MemberOpenID, request.JoinRequestID)
-			}
-			_ = guard.Rollback(context.Background())
-		}
-	} else {
-		err = bot.ApproveGroupJoinRequest(ctx, request.GroupOpenID, request.MemberOpenID, request.JoinRequestID)
-	}
+	err = s.approveQQGroupApplicant(ctx, bot, app, request)
 	if err != nil {
 		failureTx, beginErr := s.pool.Begin(ctx)
 		if beginErr != nil {
@@ -398,10 +392,14 @@ func (s *Service) SyncQQGroupApplications(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			for index, item := range page.List {
-				eventID := "poll:" + group + ":" + item.JoinRequestID
-				payload := []byte(eventID + ":" + fmt.Sprint(index))
-				if err = s.ProcessQQGroupJoinRequest(ctx, eventID, item, payload); err != nil {
+			for _, item := range page.List {
+				// QQ scopes these entries by the GET path and omits the group from the list item.
+				if item.GroupOpenID != "" && item.GroupOpenID != group {
+					continue
+				}
+				item.GroupOpenID = group
+				eventID := "official-group-sync:" + group + ":" + item.JoinRequestID
+				if err = s.ProcessQQGroupJoinRequest(ctx, eventID, item, []byte(eventID)); err != nil {
 					return err
 				}
 			}

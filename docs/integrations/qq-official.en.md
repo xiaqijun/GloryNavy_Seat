@@ -24,6 +24,12 @@ Official callbacks expose OpenIDs, not numeric QQ numbers. Binding proves the re
 
 Publication rechecks the enabled configuration and exact verified AppID/secret/API snapshot under a shared configuration lock. Event/identity locks serialize replay and ownership, and the host's active-account lock blocks late writes after account merges. Codes, versions, identity ownership, confirmation and event hashes commit atomically. Passive replies use the source message ID and are not automatically retried.
 
+## Group admission
+
+Pending release. An administrator enables admission for a bot-scoped group OpenID received by the current bot. A member with a current character in a configured corporation and an official QQ binding can generate a 15-minute application code and enter it in the QQ join request or review answer.
+
+Before approval, the server rechecks the active bot configuration, group, corporation membership, binding version, and applicant OpenID. Automatic approval requires an exact match to the existing binding. The member-join event confirms actual admission. Administrator reconciliation uses the group from the official request-list endpoint and does not approve a request twice.
+
 ## Migration and compatibility
 
 Goose 109 adds enabled (default false) and revision to official settings. It preserves old credentials without enabling them, disables OneBot and its approval-group switches, and invalidates OneBot confirmations and unused codes. Numeric bindings, groups, events and delivery receipts remain as history. Retired management routes retain session/current-administrator/CSRF checks and return 410; the old public webhook also returns 410. Old pages cannot reactivate the transport.

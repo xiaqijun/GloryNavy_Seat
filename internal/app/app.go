@@ -278,6 +278,19 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	characterCleanup := corporationCleanupService(pool, accessService, reader)
 	accessService.ConfiguredCorporations = characterCleanup.ConfiguredCorporations
+	communityService.QQGroupMember = func(ctx context.Context, user string) (bool, error) {
+		account, err := accessService.Account(ctx, user)
+		if err != nil {
+			return false, err
+		}
+		now := time.Now()
+		for _, fact := range account.Characters {
+			if access.Fresh(fact, now) && account.CanViewCorporation(fact.Corporation.ID) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
 	accessService.ScopeNames = reader.WalletNames
 	identityHandler.CorporationCleanup = characterCleanup
 	var sentryRemote sentry.Remote
@@ -341,6 +354,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		}
 		if permission == "community.group.manage" || permission == "reminder.manage" {
 			return accessService.IsAdministrator(ctx, s.UserID)
+		}
+		if permission == "community.group.apply" {
+			return communityService.QQGroupMember(ctx, s.UserID)
 		}
 		if permission == "reminder.self" || permission == "lp.self" || permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
