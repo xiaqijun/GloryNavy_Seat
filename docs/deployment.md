@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-11-24 QQ 入群码排版与复制（仅前端）
+
+前端 `v0.1.0-qq-code-copy-20261124` 来自已推送的 main `cb3d966`。通过标准边缘脚本切换，回退可切换至 `v0.1.0-qq-first-binding-20261124` 的前端产物。详见[发布记录](history/qq-code-copy-release-20261124.md)。
+
 ## 2026-11-24 QQ 首次绑定与入群跳转（Goose 118）
 
 前后端 `v0.1.0-qq-first-binding-20261124` 从已推送的 main `c4f3a46` 发布，保留原审批群和 QQ 绑定。发布包校验、生产备份目录清单、数据库迁移和 QQ 网关连接已通过复核。发布证据见[记录](history/qq-first-binding-release-20261124.md)。
