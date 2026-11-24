@@ -26,7 +26,7 @@ Publication rechecks the enabled configuration and exact verified AppID/secret/A
 
 ## Group admission
 
-Pending release. An administrator enables admission for a bot-scoped group OpenID received by the current bot. A member with a current character in a configured corporation and an official QQ binding can generate a 15-minute application code and enter it in the QQ join request or review answer.
+An administrator enables admission for a bot-scoped group OpenID received by the current bot. A member with a current character in a configured corporation and an official QQ binding can generate a 15-minute application code and enter it in the QQ join request or review answer. The first live approval is pending verification. See the [release record](../history/qq-join-approval-20261124.md).
 
 Before approval, the server rechecks the active bot configuration, group, corporation membership, binding version, and applicant OpenID. Automatic approval requires an exact match to the existing binding. The member-join event confirms actual admission. Administrator reconciliation uses the group from the official request-list endpoint and does not approve a request twice.
 
