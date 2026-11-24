@@ -26,9 +26,9 @@ Publication rechecks the enabled configuration and exact verified AppID/secret/A
 
 ## Group admission
 
-An administrator enables admission for a bot-scoped group OpenID received by the current bot. The production release requires an existing official QQ link. The first live approval is pending verification. See the [release record](../history/qq-join-approval-20261124.md).
+An administrator enables admission for a bot-scoped group OpenID received by the current bot. Production supports first-time linking through admission. The first live admission is pending verification. See the [release record](../history/qq-first-binding-release-20261124.md).
 
-The unreleased update supports first-time linking through admission. Members with a current character in a configured corporation save their QQ number in My Characters, generate a 15-minute application code, and enter it in the desired QQ group's join request or review answer. The procedure uses the join request and requires no direct chat, group message, or bot mention.
+Members with a current character in a configured corporation save their QQ number in My Characters, generate a 15-minute application code, and enter it in the desired QQ group's join request or review answer. The procedure uses the join request and requires no direct chat, group message, or bot mention.
 
 Administrators can save a `https://qm.qq.com/q/…` invite link shared from each QQ group's profile. Members can choose **Open QQ to request to join** after generating a code, then paste it into the join verification field. Goose 118 adds the optional link field with an empty initial value for existing groups.
 
