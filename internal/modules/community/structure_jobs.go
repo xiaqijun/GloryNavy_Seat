@@ -126,6 +126,23 @@ func structureStateName(state string) string {
 	return cleanStructureText(state)
 }
 
+func structureStateIcon(state string) string {
+	switch state {
+	case "online":
+		return "🟢"
+	case "offline":
+		return "🔴"
+	case "shield_vulnerable", "armor_vulnerable", "hull_vulnerable":
+		return "⚔️"
+	case "armor_reinforce", "hull_reinforce":
+		return "🛡️"
+	case "anchoring", "unanchoring", "unanchored":
+		return "🏗️"
+	default:
+		return "🔄"
+	}
+}
+
 func fuelStage(expires *time.Time, now time.Time) string {
 	if expires == nil {
 		return ""
@@ -229,7 +246,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 				if strings.HasPrefix(change.Field, "service:") {
 					field = "服务 " + cleanStructureText(strings.TrimPrefix(change.Field, "service:"))
 				}
-				body := fmt.Sprintf("%s\n%s：%s → %s\n观测时间：%s（北京时间）%s", details, field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04"), times)
+				body := fmt.Sprintf("%s\n%s %s：%s → %s\n观测时间：%s（北京时间）%s", details, structureStateIcon(change.To), field, structureStateName(change.From), structureStateName(change.To), change.ObservedAt.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04"), times)
 				ref := structureReference("change", fmt.Sprint(item.ID), change.Field, change.ObservedAt.UTC().Format(time.RFC3339Nano), change.From, change.To)
 				if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "change", body); err != nil {
 					return err
@@ -247,7 +264,11 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 			stage := fuelStage(item.FuelExpires, now)
 			if stage != "" {
 				ref := structureReference("fuel", fmt.Sprint(item.ID), item.FuelExpires.UTC().Format("2006-01-02"), stage)
-				body := fmt.Sprintf("%s\n燃料：%s%s", details, stage, times)
+				icon := "⛽"
+				if stage == "已耗尽" {
+					icon = "🔴"
+				}
+				body := fmt.Sprintf("%s\n%s 燃料：%s%s", details, icon, stage, times)
 				if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "fuel", body); err != nil {
 					return err
 				}
@@ -255,7 +276,7 @@ func (r *StructureJobs) scan(ctx context.Context) error {
 		}
 		if item.UnanchorsAt != nil && item.UnanchorsAt.After(now) {
 			ref := structureReference("unanchor", fmt.Sprint(item.ID), item.UnanchorsAt.UTC().Format(time.RFC3339))
-			body := fmt.Sprintf("%s\n提醒：已安排拆除%s", details, times)
+			body := fmt.Sprintf("%s\n🏗️ 提醒：已安排拆除%s", details, times)
 			if err = store.InsertStructureNotice(ctx, tx, watch, item.ID, ref, "unanchor", body); err != nil {
 				return err
 			}
@@ -293,58 +314,75 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 	if err != nil || len(items) == 0 {
 		return err
 	}
-	ids := make([]int64, 0, len(items))
 	obsolete := make([]int64, 0)
 	selected := make([]store.StructureNotice, 0, len(items))
-	lines := []string{"SEAT 建筑提醒"}
 	for _, item := range items {
 		if !currentIDs[item.StructureID] || (item.Kind != "change" && !currentRefs[item.Reference]) {
 			obsolete = append(obsolete, item.ID)
 			continue
 		}
-		ids = append(ids, item.ID)
 		selected = append(selected, item)
-		lines = append(lines, item.Body)
 	}
 	if len(obsolete) > 0 {
 		if err = store.DiscardStructureNotices(ctx, tx, obsolete); err != nil {
 			return err
 		}
 	}
-	if len(ids) == 0 {
-		return tx.Commit(ctx)
-	}
-	if err = store.SetStructureNoticeState(ctx, tx, ids, "sending", 0); err != nil {
-		return err
-	}
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
-	// Once claimed, a crash or ambiguous HTTP response leaves no automatic retry.
-	tx, err = conn.Begin(ctx)
+	for _, item := range selected {
+		proceed, err := r.deliverNotice(ctx, conn, watch, item)
+		if err != nil || !proceed {
+			return err
+		}
+	}
+	return nil
+}
+
+// Claim each message just before its own request. An interruption must not
+// strand later, unattempted notices in the sending state.
+func (r *StructureJobs) deliverNotice(ctx context.Context, conn interface {
+	Begin(context.Context) (pgx.Tx, error)
+}, watch store.StructureWatch, item store.StructureNotice) (bool, error) {
+	ids := []int64{item.ID}
+	claim, err := conn.Begin(ctx)
 	if err != nil {
-		return err
+		return false, err
+	}
+	defer claim.Rollback(context.Background())
+	if err = store.SetStructureNoticeState(ctx, claim, ids, "sending", 0); err != nil {
+		return false, err
+	}
+	if err = claim.Commit(ctx); err != nil {
+		return false, err
+	}
+	// Once claimed, a crash or ambiguous HTTP response leaves no automatic retry.
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return false, err
 	}
 	defer tx.Rollback(context.Background())
+	var active bool
 	if err = tx.QueryRow(ctx, `SELECT enabled AND revision=$1 AND app_id=$2 AND group_openid=$3 AND corporation_id=$4 AND owner_id::text=$5 FROM community_qq_structure_watch WHERE id FOR UPDATE`, watch.Revision, watch.AppID, watch.Group, watch.CorporationID, watch.Owner).Scan(&active); err != nil {
-		return err
+		return false, err
 	}
 	bot := r.Service.qqOfficial.callbackSnapshot()
 	if !active || bot == nil {
 		if err = store.SetStructureNoticeState(ctx, tx, ids, "rejected", 0); err != nil {
-			return err
+			return false, err
 		}
-		return tx.Commit(ctx)
+		return false, tx.Commit(ctx)
 	}
 	appID, _, _ := bot.configSnapshot()
 	if appID != watch.AppID || r.Service.verifyQQGatewayConfig(ctx, store.New(tx), bot) != nil {
 		if err = store.SetStructureNoticeState(ctx, tx, ids, "rejected", 0); err != nil {
-			return err
+			return false, err
 		}
-		return tx.Commit(ctx)
+		return false, tx.Commit(ctx)
 	}
 	// The claim is durable, but no network request has started. If the owner or
-	// source becomes invalid while claiming, safely release the unsent batch.
+	// source becomes invalid while claiming, safely release the unsent notice.
 	guardErr := error(nil)
 	if r.Service.LockAccounts == nil {
 		guardErr = errors.New("structure notification account guard missing")
@@ -363,34 +401,32 @@ func (r *StructureJobs) deliver(ctx context.Context, conn interface {
 		latest, guardErr = r.Read(ctx, watch.Owner, watch.CorporationID)
 		if guardErr == nil {
 			idsNow, refsNow := structureActiveReferences(latest, watch.CorporationID, time.Now().UTC())
-			for _, item := range selected {
-				if !idsNow[item.StructureID] || (item.Kind != "change" && !refsNow[item.Reference]) {
-					guardErr = errors.New("structure notification no longer current")
-					break
-				}
+			if !idsNow[item.StructureID] || (item.Kind != "change" && !refsNow[item.Reference]) {
+				guardErr = errors.New("structure notification no longer current")
 			}
 		}
 	}
 	if guardErr != nil {
 		if err = store.ResetUnsentStructureNotices(ctx, tx, ids); err != nil {
-			return err
+			return false, err
 		}
 		if err = tx.Commit(ctx); err != nil {
-			return err
+			return false, err
 		}
-		return guardErr
+		return false, guardErr
 	}
-	result := sendQQGroupNotification(ctx, bot, watch.Group, strings.Join(lines, "\n"))
+	result := sendQQGroupNotification(ctx, bot, watch.Group, "SEAT 建筑提醒\n"+item.Body)
 	if result.State != "sent" {
 		slog.Warn("QQ structure notification not confirmed", "state", result.State, "code", result.Code)
 	}
 	if err = store.SetStructureNoticeState(ctx, tx, ids, result.State, result.Code); err != nil {
-		return err
+		return false, err
 	}
-	if result.State == "rejected" && result.Code == 40034105 {
+	permissionDenied := result.State == "rejected" && result.Code == 40034105
+	if permissionDenied {
 		if _, err = tx.Exec(ctx, `UPDATE community_qq_structure_watch SET enabled=false,revision=revision+1,updated_at=now() WHERE id AND revision=$1`, watch.Revision); err != nil {
-			return err
+			return false, err
 		}
 	}
-	return tx.Commit(ctx)
+	return !permissionDenied, tx.Commit(ctx)
 }

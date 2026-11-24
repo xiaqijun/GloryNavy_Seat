@@ -9,6 +9,8 @@ set -eu
 table inet glorynavy {
   chain api_input {
     type filter hook input priority -10; policy accept;
+    # The same edge node can use its rescue-network address on a managed route.
+    iifname "ztvdldagjl" ip saddr 10.233.54.17 ip daddr 10.233.53.209 tcp dport 18080 accept
     ip daddr 10.233.53.209 tcp dport 18080 ip saddr != { 127.0.0.1, 10.233.53.17, 10.233.53.209 } reject with tcp reset
   }
 }

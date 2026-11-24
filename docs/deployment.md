@@ -1101,7 +1101,7 @@ Goose/River 新迁移。结算 worker 和批次详情读取会重新解析本站
 - 应用版本 `/opt/glorynavy/releases/<版本>`，活动链接 `/opt/glorynavy/current`；可写 SDE `/var/lib/glorynavy/sde`。生产不运行 Vite 或安装 Node/Go 编译器。
 - 配置 `/etc/glorynavy/seat.env` 为 root 所有、0600；systemd 读取环境后以专用 `glorynavy` 用户运行应用。数据库引导密码 `/etc/glorynavy/db-password` 位于 root 专用 0700 目录，文件 0444 以便容器内 PostgreSQL 用户读取 secret 挂载，宿主普通用户不能遍历父目录。应用数据库账号单独生成密码，不具有超级用户权限。配置样例见[seat.env.example](../deploy/seat.env.example)。
 - 前端 `/opt/1panel/www/sites/seat.kisectool.com/releases/<版本>/web`，活动链接位于同目录 `current`；容器内对应 `/www/sites/seat.kisectool.com`。
-- 本项目 nftables 独立表只限制 API 端口，允许本机和反代机。不得清空宿主的现有防火墙或 Docker 规则。
+- 本项目 nftables 独立表只限制 API 端口，允许本机和反代机。备用 ZeroTier 网启用时，反代也可从 `10.233.54.17` 经 `ztvdldagjl` 连到 `10.233.53.209:18080`。该规则由 `glorynavy-network.service` 启动时加载。应用服务器上可直接执行 `sh /etc/glorynavy/api-firewall.sh` 重载该独立表。恢复旧发布后复核脚本仍包含备用入口规则。见 [2026-11-21 恢复记录](history/seat-zerotier-rescue-20261121.md)。
 
 ## 构建与安装
 

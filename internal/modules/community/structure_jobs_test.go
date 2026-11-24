@@ -3,7 +3,6 @@ package community
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,7 +67,7 @@ func TestStructureNotificationContainsIdentityAndExpiry(t *testing.T) {
 	if err := job.scan(ctx); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"建筑：Test structure", "建筑类型：堡垒", "星系：5-O8B1", "燃料：24 小时内", expires.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04") + "（北京时间）"} {
+	for _, want := range []string{"建筑：Test structure", "建筑类型：堡垒", "星系：5-O8B1", "⛽ 燃料：24 小时内", expires.In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02 15:04") + "（北京时间）"} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("missing %q in sent message %q", want, content)
 		}
@@ -102,11 +101,25 @@ func TestStructureNotificationsPersistBaselineAndDoNotResend(t *testing.T) {
 	ctx := context.Background()
 	var sends atomic.Int64
 	var reject atomic.Bool
+	var ambiguous atomic.Bool
+	messages := make(chan string, 8)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sends.Add(1)
+		var payload struct {
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		messages <- payload.Content
 		if reject.Load() {
 			w.WriteHeader(400)
 			_, _ = w.Write([]byte(`{"code":40034105}`))
+			return
+		}
+		if ambiguous.Load() && strings.Contains(payload.Content, "建筑：Beta") {
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = w.Write([]byte(`{}`))
 			return
 		}
 		_, _ = w.Write([]byte(`{"id":"message"}`))
@@ -120,41 +133,55 @@ func TestStructureNotificationsPersistBaselineAndDoNotResend(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().UTC()
-	row := eve.Structure{ID: 100, CorporationID: 42, Name: "Test", State: "online", ObservedAt: now, Services: []eve.StructureService{{Name: "market", State: "online"}}}
+	rows := []eve.Structure{
+		{ID: 100, CorporationID: 42, Name: "Alpha", State: "online", ObservedAt: now},
+		{ID: 101, CorporationID: 42, Name: "Beta", State: "online", ObservedAt: now, Services: []eve.StructureService{{Name: "market", State: "online"}}},
+	}
 	admin := true
-	job := &StructureJobs{Service: s, Enabled: true, Administrator: func(context.Context, string) (bool, error) { return admin, nil }, Read: func(context.Context, string, int64) ([]eve.Structure, error) { return []eve.Structure{row}, nil }}
+	job := &StructureJobs{Service: s, Enabled: true, Administrator: func(context.Context, string) (bool, error) { return admin, nil }, Read: func(context.Context, string, int64) ([]eve.Structure, error) { return rows, nil }}
 	if err := job.scan(ctx); err != nil {
 		t.Fatal("baseline", err)
 	}
 	if sends.Load() != 0 {
 		t.Fatal("baseline must not send")
 	}
-	row.State = "armor_reinforce"
-	row.Services[0].State = "offline"
-	row.ObservedAt = now.Add(time.Minute)
+	rows[0].State = "armor_reinforce"
+	rows[0].ObservedAt = now.Add(time.Minute)
+	rows[1].Services[0].State = "offline"
+	rows[1].ObservedAt = now.Add(time.Minute)
+	ambiguous.Store(true)
 	if err := job.scan(ctx); err != nil {
 		t.Fatal("change", err)
 	}
-	if sends.Load() != 1 {
-		t.Fatal("expected one grouped message", sends.Load())
+	if sends.Load() != 2 {
+		t.Fatal("expected two separate messages", sends.Load())
+	}
+	first, second := <-messages, <-messages
+	if !strings.Contains(first, "建筑：Alpha") || !strings.Contains(first, "🛡️ 建筑状态：在线 → 装甲增强") || strings.Contains(first, "建筑：Beta") {
+		t.Fatalf("unexpected first message: %q", first)
+	}
+	if !strings.Contains(second, "建筑：Beta") || !strings.Contains(second, "🔴 服务 market：在线 → 离线") || strings.Contains(second, "建筑：Alpha") {
+		t.Fatalf("unexpected second message: %q", second)
 	}
 	if err := job.scan(ctx); err != nil {
 		t.Fatal("repeat", err)
 	}
-	if sends.Load() != 1 {
+	if sends.Load() != 2 {
 		t.Fatal("duplicate message", sends.Load())
 	}
-	var delivered int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM community_qq_structure_notices WHERE status='sent'`).Scan(&delivered); err != nil || delivered != 2 {
-		t.Fatal("receipts", delivered, err)
+	var delivered, unknown int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FILTER (WHERE structure_id=100 AND status='sent'), count(*) FILTER (WHERE structure_id=101 AND status='unknown') FROM community_qq_structure_notices`).Scan(&delivered, &unknown); err != nil || delivered != 1 || unknown != 1 {
+		t.Fatal("independent receipts", delivered, unknown, err)
 	}
 	admin = false
-	row.State = "hull_reinforce"
-	row.ObservedAt = now.Add(2 * time.Minute)
+	rows[0].State = "hull_reinforce"
+	rows[0].ObservedAt = now.Add(2 * time.Minute)
+	rows[1].State = "offline"
+	rows[1].ObservedAt = now.Add(2 * time.Minute)
 	if err := job.scan(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if sends.Load() != 1 {
+	if sends.Load() != 2 {
 		t.Fatal("sent after administrator access revoked")
 	}
 	admin = true
@@ -170,8 +197,12 @@ func TestStructureNotificationsPersistBaselineAndDoNotResend(t *testing.T) {
 	if err := job.scan(ctx); err != nil {
 		t.Fatal("disabled", err)
 	}
-	if sends.Load() != 2 {
-		t.Fatal(fmt.Sprintf("unexpected sends %d", sends.Load()))
+	if sends.Load() != 3 {
+		t.Fatalf("permission refusal must stop later sends: %d", sends.Load())
+	}
+	var pending int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM community_qq_structure_notices WHERE structure_id=101 AND status='pending'`).Scan(&pending); err != nil || pending != 1 {
+		t.Fatal("later notice was claimed without sending", pending, err)
 	}
 }
 
