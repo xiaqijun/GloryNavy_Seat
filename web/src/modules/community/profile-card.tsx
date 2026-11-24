@@ -1,6 +1,6 @@
 import { msg } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   MessageCircle,
   AtSign,
@@ -8,6 +8,7 @@ import {
   Pencil,
   RefreshCw,
   LoaderCircle,
+  ExternalLink,
 } from "lucide-react";
 import { getModuleCatalog } from "@/app/catalog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,21 +57,34 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
   });
   const [editing, setEditing] = useState(false);
   const [reload, setReload] = useState(0);
+  const [selectedGroup, setSelectedGroup] = useState("");
   const editButton = useRef<HTMLButtonElement>(null);
-  const groupApplication = useQuery({
-    queryKey: ["community", "qq-group-application", userID],
-    queryFn: ({ signal }) => getQQGroupApplication(signal),
-  });
   const groupOptions = useQuery({
-    queryKey: ["community", "qq-group-options"],
+    queryKey: ["community", "qq-group-options", userID],
     queryFn: ({ signal }) => getQQGroupOptions(signal),
     enabled: !!query.data?.qq.value,
   });
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const groupApply = useMutation({
-    mutationFn: () => createQQGroupApplication(csrf, selectedGroup),
-    onSuccess: (application) => client.setQueryData(["community", "qq-group-application", userID], application),
+  const options = groupOptions.data?.items ?? [];
+  const targetGroup = selectedGroup || (options.length === 1 ? options[0].group_openid : "");
+  const groupApplication = useQuery({
+    queryKey: ["community", "qq-group-application", userID, targetGroup],
+    queryFn: ({ signal }) => getQQGroupApplication(targetGroup, signal),
+    enabled: !!targetGroup,
+    refetchInterval: ({ state }) => {
+      const status = state.data?.status ?? "";
+      return ["pending", "approving", "approved"].includes(status) ? 5_000 : false;
+    },
   });
+  const groupApply = useMutation({
+    mutationFn: (groupOpenID: string) => createQQGroupApplication(csrf, groupOpenID),
+    onSuccess: ({ code: _code, ...application }) => {
+      client.setQueryData(["community", "qq-group-application", userID, application.group_openid], application);
+    },
+  });
+  const groupBound = groupApplication.data?.status === "bound";
+  useEffect(() => {
+    if (groupBound) void client.invalidateQueries({ queryKey: ["community", "profile", userID] });
+  }, [client, groupBound, userID]);
   const p = query.data;
   return (
     <Card className="community-card">
@@ -141,16 +155,16 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
                 </div>
                 <BindingSummary label={msg("昵称")} binding={p.kook} icon="nickname" />
               </div>
-              {p.qq.value && ((groupOptions.data?.items.length ?? 0) > 0 || groupApplication.data) && (
+              {p.qq.value && options.length > 0 && (
                 <QQGroupAdmission
                   application={groupApplication.data}
                   challenge={groupApply.data}
-                  options={groupOptions.data?.items ?? []}
+                  options={options}
                   selectedGroup={selectedGroup}
                   onGroupChange={setSelectedGroup}
                   pending={groupApply.isPending}
-                  error={groupApply.error}
-                  onApply={() => groupApply.mutate()}
+                  error={groupApply.variables === targetGroup ? groupApply.error : null}
+                  onApply={() => groupApply.mutate(targetGroup)}
                 />
               )}
             </>
@@ -182,10 +196,12 @@ function QQGroupAdmission({
 }) {
   const active = application && ["pending", "approving", "approved", "bound"].includes(application.status);
   const requiresChoice = options.length > 1;
+  const currentCode = application?.status === "pending" && challenge?.id === application.id ? challenge.code : "";
   const targetGroup = selectedGroup || (options.length === 1 ? options[0].group_openid : "");
+  const joinURL = options.find((option) => option.group_openid === targetGroup)?.join_url;
   return (
     <div className="community-bot-bind">
-      {requiresChoice && !active && (
+      {requiresChoice && (
         <Select
           label={msg("申请加入 QQ 群")}
           value={selectedGroup}
@@ -198,8 +214,21 @@ function QQGroupAdmission({
           disabled={pending}
         />
       )}
-      {application?.status === "bound" ? (
-        <p role="status">{msg("QQ 群身份已绑定")}</p>
+      {currentCode ? (
+        <>
+          <p role="status">
+            {msg("用填写的 QQ 申请入群，并将此码填入验证信息")} <code>{currentCode}</code>
+          </p>
+          {joinURL && (
+            <Button asChild variant="outline">
+              <a href={joinURL} target="_blank" rel="noopener noreferrer">
+                {msg("打开 QQ 申请入群")}<ExternalLink aria-hidden="true" />
+              </a>
+            </Button>
+          )}
+        </>
+      ) : application?.status === "bound" ? (
+        <p role="status">{msg("已入群，QQ 已绑定")}</p>
       ) : active ? (
         <p role="status">
           {application.status === "approved" ? msg("入群申请已通过，等待入群确认") : msg("入群申请处理中")}
@@ -209,11 +238,6 @@ function QQGroupAdmission({
           {pending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
           {msg("申请加入 QQ 群")}
         </Button>
-      )}
-      {challenge?.code && (
-        <p role="status">
-          {msg("请将此申请码填写到 QQ 入群验证信息中")} <code>{challenge.code}</code>
-        </p>
       )}
       {error && <p className="login-error">{error.message}</p>}
     </div>

@@ -3,6 +3,8 @@ package community
 import (
 	"context"
 	"errors"
+	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -19,6 +21,7 @@ type QQGroupSetting struct {
 	GroupOpenID string `json:"group_openid"`
 	Label       string `json:"label"`
 	Enabled     bool   `json:"enabled"`
+	JoinURL     string `json:"join_url,omitempty"`
 }
 
 type QQGroupSettings struct {
@@ -49,7 +52,7 @@ func fallbackQQGroupSettings(bot *OfficialQQBot) []QQGroupSetting {
 }
 
 func settingFromRow(row store.CommunityQqGroupSetting) QQGroupSetting {
-	return QQGroupSetting{GroupOpenID: row.GroupOpenid, Label: row.Label, Enabled: row.Enabled}
+	return QQGroupSetting{GroupOpenID: row.GroupOpenid, Label: row.Label, Enabled: row.Enabled, JoinURL: row.JoinUrl}
 }
 
 func (s *Service) ListQQGroupSettings(ctx context.Context) (QQGroupSettings, error) {
@@ -122,11 +125,15 @@ func validateQQGroupSettings(items []QQGroupSetting) ([]QQGroupSetting, error) {
 	for _, item := range items {
 		item.GroupOpenID = strings.TrimSpace(item.GroupOpenID)
 		item.Label = strings.TrimSpace(item.Label)
+		item.JoinURL = strings.TrimSpace(item.JoinURL)
 		if !validQQGroupOpenID(item.GroupOpenID) {
 			return nil, errors.New("群 OpenID 格式无效")
 		}
 		if !utf8.ValidString(item.Label) || utf8.RuneCountInString(item.Label) > 128 || strings.ContainsFunc(item.Label, unicode.IsControl) {
 			return nil, errors.New("群名称格式无效，不能超过 128 个字符")
+		}
+		if item.JoinURL != "" && !validQQGroupJoinURL(item.JoinURL) {
+			return nil, errors.New("请填写 QQ 分享的加群链接（https://qm.qq.com/q/…）")
 		}
 		if _, ok := seen[item.GroupOpenID]; ok {
 			return nil, errors.New("群 OpenID 不能重复")
@@ -135,6 +142,17 @@ func validateQQGroupSettings(items []QQGroupSetting) ([]QQGroupSetting, error) {
 		result = append(result, item)
 	}
 	return result, nil
+}
+
+var qqGroupJoinPath = regexp.MustCompile(`^/q/[A-Za-z0-9_-]+$`)
+
+func validQQGroupJoinURL(value string) bool {
+	if len(value) > 512 || strings.ContainsFunc(value, unicode.IsSpace) || strings.ContainsFunc(value, unicode.IsControl) {
+		return false
+	}
+	link, err := url.Parse(value)
+	return err == nil && link.Scheme == "https" && link.Host == "qm.qq.com" && link.User == nil &&
+		qqGroupJoinPath.MatchString(link.EscapedPath()) && link.Fragment == ""
 }
 
 func (s *Service) SaveQQGroupSettings(ctx context.Context, items []QQGroupSetting) (QQGroupSettings, error) {
@@ -158,7 +176,9 @@ func (s *Service) SaveQQGroupSettings(ctx context.Context, items []QQGroupSettin
 		return QQGroupSettings{}, err
 	}
 	for _, item := range items {
-		if err = q.InsertQQGroupSetting(ctx, store.InsertQQGroupSettingParams{GroupOpenid: item.GroupOpenID, Label: item.Label, Enabled: item.Enabled}); err != nil {
+		if err = q.InsertQQGroupSetting(ctx, store.InsertQQGroupSettingParams{
+			GroupOpenid: item.GroupOpenID, Label: item.Label, Enabled: item.Enabled, JoinUrl: item.JoinURL,
+		}); err != nil {
 			return QQGroupSettings{}, err
 		}
 	}

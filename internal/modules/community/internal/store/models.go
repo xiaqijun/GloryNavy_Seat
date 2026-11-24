@@ -73,4 +73,5 @@ type CommunityQqGroupSetting struct {
 	Enabled     bool
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	JoinUrl     string
 }

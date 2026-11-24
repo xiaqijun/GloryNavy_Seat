@@ -29,7 +29,7 @@ export function QQGroupSettings({ userID, csrf }: { userID: string; csrf: string
   if (!access.data?.administrator) return null;
   if (settings.error) return <div role="alert"><p className="login-error">{settings.error.message}</p><Button variant="outline" onClick={() => void settings.refetch()}>{msg("重试")}</Button></div>;
   if (!settings.data) return <p role="status">{msg("正在加载")}</p>;
-  const key = settings.data.items.map((item) => `${item.group_openid}:${item.label}:${item.enabled ? 1 : 0}`).join("|");
+  const key = JSON.stringify(settings.data.items);
   return <QQGroupSettingsEditor key={key} initial={settings.data.items} csrf={csrf} />;
 }
 
@@ -115,7 +115,11 @@ function QQGroupSettingsEditor({ initial, csrf }: { initial: QQGroupSetting[]; c
   const [items, setItems] = useState(initial);
   const save = useMutation({
     mutationFn: () => saveQQGroupSettings(items, csrf),
-    onSuccess: (next) => { client.setQueryData(["community", "qq-group-settings"], next); toast.success(msg("QQ 群配置已保存")); },
+    onSuccess: (next) => {
+      client.setQueryData(["community", "qq-group-settings"], next);
+      void client.invalidateQueries({ queryKey: ["community", "qq-group-options"] });
+      toast.success(msg("QQ 群配置已保存"));
+    },
   });
   const busy = save.isPending;
   return (
@@ -167,6 +171,19 @@ function QQGroupSettingsEditor({ initial, csrf }: { initial: QQGroupSetting[]; c
               <IconAction label={msg("移除群配置")} disabled={busy} onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}>
                 <Trash2 aria-hidden="true" />
               </IconAction>
+              <div className="community-field col-span-full">
+                <label htmlFor={`qq-group-join-url-${index}`}>{msg("QQ 加群链接")}</label>
+                <input
+                  id={`qq-group-join-url-${index}`}
+                  type="url"
+                  value={item.join_url ?? ""}
+                  maxLength={512}
+                  disabled={busy}
+                  onChange={(event) => setItems((rows) => rows.map((row, i) => i === index ? { ...row, join_url: event.target.value } : row))}
+                  placeholder="https://qm.qq.com/q/…"
+                  autoComplete="off"
+                />
+              </div>
             </div>
           ))}
         </div>

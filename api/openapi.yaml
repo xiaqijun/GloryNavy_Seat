@@ -5871,7 +5871,7 @@ paths:
     post:
       operationId: createQQGroupApplication
       summary: Create an official QQ group admission application
-      description: Issues a short-lived one-time code to a current configured-corporation member with an official QQ binding. The applicant places the code in the QQ join message or review answer. Before approving, the server rechecks membership, the configured group OpenID and the applicant OpenID against the current binding. GROUP_MEMBER_ADD confirms actual admission.
+      description: Issues a 15-minute one-time code to a current member of a configured corporation who has saved a QQ number. The applicant enters it in the QQ join message or review answer. Before approval, the server rechecks membership, target group, and the applicant OpenID. An existing link must match. GROUP_MEMBER_ADD confirms admission and completes the QQ link for first-time applicants.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5898,12 +5898,14 @@ paths:
                   data: { $ref: "#/components/schemas/QQGroupApplicationChallenge" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { description: No current official QQ binding or an active application already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { description: A QQ number is missing or an active application already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
     get:
       operationId: getQQGroupApplication
       summary: Read the signed-in member's latest QQ group application
       security: [{ SessionCookie: [] }]
+      parameters:
+        - { name: group_openid, in: query, required: false, schema: { type: string, maxLength: 256 }, description: Scope the result to the given bot-scoped Group OpenID. }
       responses:
         "200":
           description: Latest application, or null when none exists
@@ -5917,6 +5919,7 @@ paths:
                   data:
                     nullable: true
                     allOf: [{ $ref: "#/components/schemas/QQGroupApplication" }]
+        "400": { description: Invalid group OpenID, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/CommunityUnavailable" }
@@ -10657,6 +10660,7 @@ components:
         group_openid: { type: string, minLength: 1, maxLength: 256, description: Bot-scoped QQ group OpenID, not a numeric group number }
         label: { type: string, maxLength: 128, description: Optional administrator-facing display name }
         enabled: { type: boolean }
+        join_url: { type: string, maxLength: 512, description: "Optional HTTPS invite link copied from QQ group sharing (https://qm.qq.com/q/…). An empty value removes the link." }
     QQGroupSettings:
       type: object
       required: [items, initialized]

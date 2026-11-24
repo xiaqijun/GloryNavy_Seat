@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -69,7 +70,7 @@ func (h Handler) createQQGroupApplication(w http.ResponseWriter, r *http.Request
 	application, err := h.Service.CreateQQGroupApplication(r.Context(), h.User(r), body.GroupOpenID)
 	switch {
 	case errors.Is(err, ErrQQNotBound):
-		httpapi.Failure(w, r, 409, "qq_profile_required", "请先用 QQ 机器人完成本站绑定")
+		httpapi.Failure(w, r, 409, "qq_profile_required", "请先在社区资料中填写 QQ 号")
 	case errors.Is(err, ErrQQGroupMemberRequired):
 		httpapi.Failure(w, r, 403, "qq_group_membership_required", ErrQQGroupMemberRequired.Error())
 	case errors.Is(err, ErrQQGroupNotConfigured):
@@ -84,7 +85,12 @@ func (h Handler) createQQGroupApplication(w http.ResponseWriter, r *http.Request
 }
 
 func (h Handler) getQQGroupApplication(w http.ResponseWriter, r *http.Request) {
-	application, err := h.Service.QQGroupApplication(r.Context(), h.User(r))
+	group := strings.TrimSpace(r.URL.Query().Get("group_openid"))
+	if group != "" && !validQQGroupOpenID(group) {
+		httpapi.Failure(w, r, 400, "invalid_group_application_query", "入群申请查询参数无效")
+		return
+	}
+	application, err := h.Service.qqGroupApplication(r.Context(), h.User(r), group)
 	if errors.Is(err, pgx.ErrNoRows) {
 		httpapi.Respond(w, r, http.StatusOK, nil)
 		return

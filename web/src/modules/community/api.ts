@@ -102,8 +102,10 @@ const isQQGroupApplication = (v: unknown): v is QQGroupApplication => {
 const isQQGroupApplicationData = (v: unknown): v is QQGroupApplication | null => v === null || isQQGroupApplication(v);
 const isQQGroupApplicationChallenge = (v: unknown): v is QQGroupApplicationChallenge =>
   isQQGroupApplication(v) && typeof (v as QQGroupApplicationChallenge).code === "string";
-export const getQQGroupApplication = (signal?: AbortSignal) =>
-  getData("/api/v1/community/qq/group/application", isQQGroupApplicationData, signal);
+export function getQQGroupApplication(groupOpenID: string, signal?: AbortSignal) {
+  const params = new URLSearchParams({ group_openid: groupOpenID });
+  return getData(`/api/v1/community/qq/group/application?${params}`, isQQGroupApplicationData, signal);
+}
 export async function createQQGroupApplication(csrf: string, groupOpenID = "") {
   const response = await apiFetch("/api/v1/community/qq/group/application", {
     method: "POST",
@@ -151,6 +153,7 @@ export interface QQGroupSetting {
   group_openid: string;
   label: string;
   enabled: boolean;
+  join_url?: string;
 }
 export interface QQGroupSettings {
   items: QQGroupSetting[];
@@ -160,7 +163,8 @@ const isQQGroupSetting = (v: unknown): v is QQGroupSetting => {
   if (!v || typeof v !== "object") return false;
   const item = v as Partial<QQGroupSetting>;
   return typeof item.group_openid === "string" &&
-    typeof item.label === "string" && typeof item.enabled === "boolean";
+    typeof item.label === "string" && typeof item.enabled === "boolean" &&
+    (item.join_url === undefined || typeof item.join_url === "string");
 };
 export const isQQGroupSettings = (v: unknown): v is QQGroupSettings =>
   !!v && typeof v === "object" && typeof (v as QQGroupSettings).initialized === "boolean" &&

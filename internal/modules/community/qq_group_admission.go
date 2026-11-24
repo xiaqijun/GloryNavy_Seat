@@ -49,14 +49,25 @@ func (s *Service) checkQQGroupApplicant(ctx context.Context, q *store.Queries, a
 		return ErrQQNotBound
 	}
 	openID, err := q.QQBindingOpenID(ctx, app.UserID, app.QqVersion)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrQQNotBound
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
 	}
+	if openID != "" && openID != member {
+		return ErrQQOfficialConflict
+	}
+	other, err := q.FindQQBinding(ctx, member)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
+	}
+	if err == nil && other.UserID != app.UserID {
+		return ErrQQOfficialConflict
+	}
+	reserved, err := q.QQGroupIdentityReserved(ctx, app.UserID, member)
 	if err != nil {
 		return err
 	}
-	if openID != member {
-		return ErrQQNotBound
+	if reserved {
+		return ErrQQOfficialConflict
 	}
 	return s.requireQQGroupMember(ctx, app.UserID.String())
 }
@@ -71,6 +82,9 @@ func (s *Service) approveQQGroupApplicant(ctx context.Context, bot *OfficialQQBo
 	if err = s.lockQQGroupScope(ctx, q, bot, request.GroupOpenID); err != nil {
 		return err
 	}
+	if err = q.LockOfficialQQIdentity(ctx, request.MemberOpenID); err != nil {
+		return err
+	}
 	if err = s.LockAccounts(ctx, guard, []string{app.UserID.String()}); err != nil {
 		return err
 	}
@@ -78,9 +92,15 @@ func (s *Service) approveQQGroupApplicant(ctx context.Context, bot *OfficialQQBo
 	if err != nil {
 		return err
 	}
-	if current.Status != "approving" || current.UserID != app.UserID ||
+	if current.UserID != app.UserID ||
 		current.GroupOpenid != request.GroupOpenID || current.MemberOpenid.String != request.MemberOpenID ||
-		current.JoinRequestID.String != request.JoinRequestID || !current.ExpiresAt.Time.After(time.Now()) {
+		current.JoinRequestID.String != request.JoinRequestID {
+		return errors.New("QQ group application is no longer current")
+	}
+	if current.Status == "bound" {
+		return nil
+	}
+	if current.Status != "approving" || !current.ExpiresAt.Time.After(time.Now()) {
 		return errors.New("QQ group application is no longer current")
 	}
 	if err = s.checkQQGroupApplicant(ctx, q, app, request.MemberOpenID); err != nil {

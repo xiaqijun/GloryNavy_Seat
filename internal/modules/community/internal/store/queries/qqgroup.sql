@@ -81,7 +81,7 @@ WHERE status IN ('pending','approving') AND expires_at<=now();
 SELECT EXISTS(SELECT 1 FROM community_qq_group_settings_meta WHERE id=true);
 
 -- name: ListQQGroupSettings :many
-SELECT group_openid,label,enabled,created_at,updated_at
+SELECT group_openid,label,enabled,created_at,updated_at,join_url
 FROM community_qq_group_settings
 ORDER BY created_at ASC, group_openid ASC;
 
@@ -89,8 +89,8 @@ ORDER BY created_at ASC, group_openid ASC;
 DELETE FROM community_qq_group_settings;
 
 -- name: InsertQQGroupSetting :exec
-INSERT INTO community_qq_group_settings(group_openid,label,enabled)
-VALUES($1,$2,$3);
+INSERT INTO community_qq_group_settings(group_openid,label,enabled,join_url)
+VALUES($1,$2,$3,$4);
 
 -- name: MarkQQGroupSettingsInitialized :exec
 INSERT INTO community_qq_group_settings_meta(id,updated_at) VALUES(true,now())

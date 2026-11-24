@@ -455,14 +455,14 @@ func officialChallengeHash(code string) []byte {
 }
 
 func newQQChallenge() (string, []byte, error) {
-	var raw [6]byte
+	var raw [8]byte
 	if _, err := rand.Read(raw[:]); err != nil {
 		return "", nil, err
 	}
 	code := make([]byte, 8)
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	for i := range code {
-		code[i] = alphabet[int(raw[i%len(raw)])%len(alphabet)]
+		code[i] = alphabet[int(raw[i])%len(alphabet)]
 	}
 	value := string(code)
 	return value, officialChallengeHash(value), nil
@@ -577,6 +577,13 @@ func (s *Service) ConfirmQQOfficial(ctx context.Context, eventID, openid, code s
 		return ErrQQOfficialConflict
 	} else if lookupErr != nil && !errors.Is(lookupErr, pgx.ErrNoRows) {
 		return lookupErr
+	}
+	reserved, err := q.QQGroupIdentityReserved(ctx, challenge.UserID, openid)
+	if err != nil {
+		return err
+	}
+	if reserved {
+		return ErrQQOfficialConflict
 	}
 	if err = q.InsertBotEvent(ctx, store.InsertBotEventParams{Source: "qqofficial", EventID: eventID, PayloadHash: hash[:]}); err != nil {
 		return err

@@ -26,9 +26,13 @@ Publication rechecks the enabled configuration and exact verified AppID/secret/A
 
 ## Group admission
 
-An administrator enables admission for a bot-scoped group OpenID received by the current bot. A member with a current character in a configured corporation and an official QQ binding can generate a 15-minute application code and enter it in the QQ join request or review answer. The first live approval is pending verification. See the [release record](../history/qq-join-approval-20261124.md).
+An administrator enables admission for a bot-scoped group OpenID received by the current bot. The production release requires an existing official QQ link. The first live approval is pending verification. See the [release record](../history/qq-join-approval-20261124.md).
 
-Before approval, the server rechecks the active bot configuration, group, corporation membership, binding version, and applicant OpenID. Automatic approval requires an exact match to the existing binding. The member-join event confirms actual admission. Administrator reconciliation uses the group from the official request-list endpoint and does not approve a request twice.
+The unreleased update supports first-time linking through admission. Members with a current character in a configured corporation save their QQ number in My Characters, generate a 15-minute application code, and enter it in the desired QQ group's join request or review answer. The procedure uses the join request and requires no direct chat, group message, or bot mention.
+
+Administrators can save a `https://qm.qq.com/q/…` invite link shared from each QQ group's profile. Members can choose **Open QQ to request to join** after generating a code, then paste it into the join verification field. Goose 118 adds the optional link field with an empty initial value for existing groups.
+
+Before approval, the server rechecks the bot configuration, target group, corporation membership, profile version, and applicant OpenID. Existing members must apply with their linked QQ identity. For first-time applicants, the OpenID is reserved for the site account until admission is confirmed. The matching member-join event rechecks eligibility, completes the link, and updates the application. Administrator reconciliation processes pending requests by their request-list group and remains idempotent. Changing the AppID expires unfinished applications and retains their history.
 
 ## Migration and compatibility
 

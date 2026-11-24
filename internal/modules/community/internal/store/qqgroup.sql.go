@@ -190,18 +190,24 @@ func (q *Queries) InsertQQGroupBinding(ctx context.Context, arg InsertQQGroupBin
 }
 
 const insertQQGroupSetting = `-- name: InsertQQGroupSetting :exec
-INSERT INTO community_qq_group_settings(group_openid,label,enabled)
-VALUES($1,$2,$3)
+INSERT INTO community_qq_group_settings(group_openid,label,enabled,join_url)
+VALUES($1,$2,$3,$4)
 `
 
 type InsertQQGroupSettingParams struct {
 	GroupOpenid string
 	Label       string
 	Enabled     bool
+	JoinUrl     string
 }
 
 func (q *Queries) InsertQQGroupSetting(ctx context.Context, arg InsertQQGroupSettingParams) error {
-	_, err := q.db.Exec(ctx, insertQQGroupSetting, arg.GroupOpenid, arg.Label, arg.Enabled)
+	_, err := q.db.Exec(ctx, insertQQGroupSetting,
+		arg.GroupOpenid,
+		arg.Label,
+		arg.Enabled,
+		arg.JoinUrl,
+	)
 	return err
 }
 
@@ -303,7 +309,7 @@ func (q *Queries) ListQQGroupApplications(ctx context.Context, arg ListQQGroupAp
 }
 
 const listQQGroupSettings = `-- name: ListQQGroupSettings :many
-SELECT group_openid,label,enabled,created_at,updated_at
+SELECT group_openid,label,enabled,created_at,updated_at,join_url
 FROM community_qq_group_settings
 ORDER BY created_at ASC, group_openid ASC
 `
@@ -323,6 +329,7 @@ func (q *Queries) ListQQGroupSettings(ctx context.Context) ([]CommunityQqGroupSe
 			&i.Enabled,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.JoinUrl,
 		); err != nil {
 			return nil, err
 		}

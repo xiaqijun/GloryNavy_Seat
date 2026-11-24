@@ -215,6 +215,9 @@ func (s *Service) SaveQQBotSettings(ctx context.Context, input QQBotSettingsInpu
 		if err = q.ResetOfficialQQIdentity(ctx); err != nil {
 			return QQBotSettings{}, err
 		}
+		if err = q.ExpireQQGroupApplicationsOnAppChange(ctx); err != nil {
+			return QQBotSettings{}, err
+		}
 	}
 	if err = q.UpsertQQBotSettings(ctx, store.UpsertQQBotSettingsParams{AppID: appID, ApiBase: apiBase, SecretCiphertext: ciphertext, Enabled: input.Enabled}); err != nil {
 		if isUndefinedQQGroupSettings(err) {
