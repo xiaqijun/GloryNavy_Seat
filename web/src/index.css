@@ -988,8 +988,6 @@ main {
 }
 .community-bot-bind p { margin: 0; }
 .community-bot-bind code {
-  padding: 2px 6px;
-  border-radius: 6px;
   background: var(--info-surface);
   color: var(--primary-hover);
   font-weight: 700;

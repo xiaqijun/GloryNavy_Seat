@@ -17,7 +17,7 @@ import { IconAction } from "@/components/ui/icon-action";
 import { APIError } from "@/lib/http";
 import { useToast } from "@/components/ui/toast-context";
 import { Select } from "@/components/ui/select";
-import { QQBinding } from "./qq-binding";
+import { QQBinding, QQVerificationCode } from "./qq-binding";
 import {
   getProfile,
   saveProfile,
@@ -216,11 +216,12 @@ function QQGroupAdmission({
       )}
       {currentCode ? (
         <>
-          <p role="status">
-            {msg("用填写的 QQ 申请入群，并将此码填入验证信息")} <code>{currentCode}</code>
-          </p>
+          <div className="grid min-w-0 basis-full gap-2">
+            <p role="status">{msg("用填写的 QQ 申请入群，并将此码填入验证信息")}</p>
+            <QQVerificationCode code={currentCode} />
+          </div>
           {joinURL && (
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" size="sm" className="h-auto min-h-11 max-w-full whitespace-normal py-1.5">
               <a href={joinURL} target="_blank" rel="noopener noreferrer">
                 {msg("打开 QQ 申请入群")}<ExternalLink aria-hidden="true" />
               </a>
@@ -234,7 +235,14 @@ function QQGroupAdmission({
           {application.status === "approved" ? msg("入群申请已通过，等待入群确认") : msg("入群申请处理中")}
         </p>
       ) : (
-        <Button type="button" variant="outline" disabled={pending || !targetGroup} onClick={onApply}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-auto min-h-11 max-w-full whitespace-normal py-1.5"
+          disabled={pending || !targetGroup}
+          onClick={onApply}
+        >
           {pending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
           {msg("申请加入 QQ 群")}
         </Button>

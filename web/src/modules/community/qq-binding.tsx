@@ -8,7 +8,6 @@ import { msg } from "@/lib/i18n";
 import { createQQChallenge, getProfile, type QQChallenge } from "./api";
 
 export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
-  const toast = useToast();
   const [challenge, setChallenge] = useState<QQChallenge>();
   const [expiredAt, setExpiredAt] = useState("");
   const generate = useMutation({
@@ -37,19 +36,7 @@ export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
         {generate.isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
         {challenge ? msg("重新生成") : msg("生成 QQ 绑定码")}
       </Button>
-      {active && (
-          <div className="community-qq-command">
-            <code>{challenge.code}</code>
-            <IconAction label={msg("复制验证码")} onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(challenge.code);
-                toast.success(msg("已复制"));
-              } catch {
-                toast.error(msg("复制失败，请手动复制"));
-              }
-            }}><Copy aria-hidden="true" /></IconAction>
-          </div>
-      )}
+      {active && <QQVerificationCode code={challenge.code} />}
       {expired && <p role="status">{msg("绑定码已过期，请重新生成")}</p>}
       {generate.error && <p role="alert" className="login-error">{generate.error.message}</p>}
       {active && confirmation.isError && (
@@ -60,6 +47,29 @@ export function QQBinding({ userID, csrf }: { userID: string; csrf: string }) {
           </IconAction>
         </div>
       )}
+    </div>
+  );
+}
+
+export function QQVerificationCode({ code }: { code: string }) {
+  const toast = useToast();
+  return (
+    <div className="community-qq-command">
+      <code>{code}</code>
+      <IconAction
+        type="button"
+        label={msg("复制验证码")}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(code);
+            toast.success(msg("已复制"));
+          } catch {
+            toast.error(msg("复制失败，请手动复制"));
+          }
+        }}
+      >
+        <Copy aria-hidden="true" />
+      </IconAction>
     </div>
   );
 }
