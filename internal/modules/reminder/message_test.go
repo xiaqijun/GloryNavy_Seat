@@ -51,7 +51,7 @@ func TestMailNamesUseSelectedReferencesAndFallbackWithoutUUIDs(t *testing.T) {
 		return map[int64]string{123: "收款小号"}
 	}
 	event, _ := eventByID("loan_funding")
-	body, err := s.message(context.Background(), "recipient", event, time.Now(), []string{detailKey("loan_funding", "a")})
+	body, err := s.message(context.Background(), "recipient", event, time.Now(), []string{detailKey("loan_funding", "a")}, renderMessage)
 	if err != nil {
 		t.Fatal(err)
 	}

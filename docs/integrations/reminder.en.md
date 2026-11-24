@@ -1,5 +1,9 @@
 # Reminders and EVE Mail
 
+## Email notifications
+
+The unreleased update adds a branded subject to standard email reminders, for example `【荣耀海军 SEAT】待审批提醒`. The HTML email shows the reminder type, total, individual business details, and a link to the relevant page. It uses inline styles and remains readable with images blocked. The format applies to business reminders sent by SMTP.
+
 The first event is pending approvals: actionable welfare requests/cancellations, exchange cancellations and corporation loans from live approval sources, excluding self-review. `/reminders` is under Administration; all settings, history and retries require current site administrator status. QQ remains disabled and is not used for recipient selection.
 
 ## Selectable events (Goose 98)

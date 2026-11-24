@@ -357,7 +357,7 @@ func (s *Service) deliver(ctx context.Context, account string) error {
 	}
 	// No network within the claim transaction. Recheck identity, permission, phase and revision at the send boundary.
 	result := Result{State: "failed", Reason: "context_changed"}
-	body, detailErr := s.message(ctx, account, event, c.Started[event.ID], due)
+	body, detailErr := s.message(ctx, account, event, c.Started[event.ID], due, renderMessage)
 	// Details are read first; current recipient, sender and source permissions
 	// are then checked again immediately before crossing the ESI boundary.
 	current, err = store.ReadSettings(ctx, conn, false)

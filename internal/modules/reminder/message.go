@@ -25,7 +25,7 @@ func detailKey(kind, key string) string {
 	return fmt.Sprintf("%s:%x", kind, sha256.Sum256([]byte(key)))
 }
 
-func (s *Service) message(ctx context.Context, account string, event Event, since time.Time, due []string) (string, error) {
+func (s *Service) message(ctx context.Context, account string, event Event, since time.Time, due []string, render func(string, string, []remindermessage.Item) (string, error)) (string, error) {
 	source := s.Details[event.ID]
 	if source == nil {
 		return "", ErrEvents
@@ -97,7 +97,7 @@ func (s *Service) message(ctx context.Context, account string, event Event, sinc
 			}
 		}
 	}
-	return renderMessage(event.Name, s.Origin+event.Path, selected)
+	return render(event.Name, s.Origin+event.Path, selected)
 }
 
 func mailText(s string, limit int) string {

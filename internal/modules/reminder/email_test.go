@@ -113,6 +113,11 @@ func TestEmailVerificationAndIndependentDelivery(t *testing.T) {
 	if err = s.deliver(ctx, user); err != nil {
 		t.Fatal(err)
 	}
+	var subject string
+	s.emailSend = func(_ context.Context, _ smtpConfig, _ string, title, htmlBody string) Result {
+		subject, *body = title, htmlBody
+		return Result{State: "sent"}
+	}
 	if err = s.deliverEmail(ctx, user); err != nil {
 		t.Fatal(err)
 	}
@@ -123,8 +128,8 @@ func TestEmailVerificationAndIndependentDelivery(t *testing.T) {
 	if eveCount != 1 || emailCount != 1 {
 		t.Fatalf("channels must be independent: eve=%d email=%d", eveCount, emailCount)
 	}
-	if !strings.Contains(*body, "测试事项") {
-		t.Fatalf("business details missing from email: %q", *body)
+	if subject != "【荣耀海军 SEAT】待审批提醒" || !strings.Contains(*body, "<h1 ") || !strings.Contains(*body, "<h2 ") || !strings.Contains(*body, "测试事项") {
+		t.Fatalf("unexpected reminder subject or HTML: %q, %q", subject, *body)
 	}
 	if err = s.deliverEmail(ctx, user); err != nil {
 		t.Fatal(err)

@@ -174,13 +174,13 @@ func (s *Service) deliverEmail(ctx context.Context, account string) error {
 		return err
 	}
 	result := Result{State: "failed", Reason: "context_changed"}
-	body, detailErr := s.message(ctx, account, event, c.Started[event.ID], due)
+	body, detailErr := s.message(ctx, account, event, c.Started[event.ID], due, renderEmailMessage)
 	current, err = store.ReadEmailSettings(ctx, conn, false)
 	currentAccount, accountErr := store.ReadEmailAccount(ctx, conn, account, false)
 	if detailErr == nil && err == nil && accountErr == nil && current.Enabled && current.Revision == c.Revision && currentAccount.Enabled && currentAccount.Verified && currentAccount.Revision == a.Revision && currentAccount.Email == a.Email {
 		fresh, e := readSource(ctx, s.source(event.ID), account, event.ID, c.Started[event.ID])
 		if e == nil && slices.Equal(keys, fresh) {
-			result = s.sendEmail(ctx, smtpConfig{Host: c.Host, Port: c.Port, ImplicitTLS: c.ImplicitTLS, Username: c.Username, Password: secret, From: c.Sender}, a.Email, event.Name, body)
+			result = s.sendEmail(ctx, smtpConfig{Host: c.Host, Port: c.Port, ImplicitTLS: c.ImplicitTLS, Username: c.Username, Password: secret, From: c.Sender}, a.Email, "【荣耀海军 SEAT】"+event.Name, body)
 		}
 	}
 	finish, cancel := context.WithTimeout(context.Background(), 5*time.Second)
