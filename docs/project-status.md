@@ -1,6 +1,6 @@
 # 项目状态
 
-2026-11-24 普通邮箱业务提醒补充邮件主题和分项 HTML 正文，对应意见反馈 #8、#9。隔离 PostgreSQL、SMTP、邮件正文、权限和游戏邮件回归通过，待发布。见[提醒指南](integrations/reminder.zh-CN.md)。
+2026-11-24 后端已发布 `v0.1.0-feedback-email-html-20261124`，源码 main `0a9a960`，Goose 118。普通邮箱业务提醒增加带品牌的主题和分项 HTML 正文，对应意见反馈 #8、#9。生产就绪和邮件配置已复核，真实收件效果待下一封业务邮件验证。详见[发布记录](history/feedback-email-html-release-20261124.md)。
 
 2026-11-24 前端已发布 `v0.1.0-qq-code-copy-20261124`。QQ 入群申请码单独成行并支持一键复制，申请与跳转按钮采用统一尺寸。前端发布见[记录](history/qq-code-copy-release-20261124.md)。
 

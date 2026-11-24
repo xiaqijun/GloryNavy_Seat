@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-11-24 邮件提醒主题与 HTML 正文（仅后端）
+
+后端 `v0.1.0-feedback-email-html-20261124` 来自已推送的 main `0a9a960`。按标准流程备份并发布，Goose 118，前端为 `v0.1.0-qq-code-copy-20261124`。详见[发布记录](history/feedback-email-html-release-20261124.md)。
+
 ## 2026-11-24 QQ 入群码排版与复制（仅前端）
 
 前端 `v0.1.0-qq-code-copy-20261124` 来自已推送的 main `cb3d966`。通过标准边缘脚本切换，回退可切换至 `v0.1.0-qq-first-binding-20261124` 的前端产物。详见[发布记录](history/qq-code-copy-release-20261124.md)。
