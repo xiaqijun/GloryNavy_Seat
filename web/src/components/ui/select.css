@@ -62,6 +62,42 @@
 .ui-select-viewport {
   padding: 6px;
 }
+.ui-searchable-select {
+  display: flex;
+  flex-direction: column;
+  width: min(max(224px, var(--radix-popover-trigger-width)), calc(100vw - 24px));
+  max-height: min(360px, var(--radix-popover-content-available-height));
+}
+.ui-searchable-select-search {
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.ui-searchable-select-search .search-field-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 44px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--foreground);
+}
+.ui-searchable-select-search .search-field-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.ui-searchable-select-options {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ui-searchable-select-options .ui-select-item:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+}
+.ui-searchable-select-empty {
+  padding: 0 16px 12px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
 .ui-select-item {
   position: relative;
   display: flex;

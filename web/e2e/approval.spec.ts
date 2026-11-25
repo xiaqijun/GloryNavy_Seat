@@ -365,6 +365,55 @@ async function setup(
   });
   return { writes, reads };
 }
+test("search approval filter options without applying an unfinished query", async ({ page }) => {
+  await setup(page);
+  await page.goto("/approvals?view=pending&cursor=page-2", { waitUntil: "domcontentloaded" });
+
+  const kindTrigger = page.getByLabel("业务类型", { exact: true });
+  await kindTrigger.click();
+  const kindSearch = page.getByRole("combobox", { name: "搜索业务类型" });
+  await expect(kindSearch).toBeFocused();
+  await kindSearch.fill("PVP");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await expect(page.getByRole("option", { name: "PVP补损" })).toBeVisible();
+  await expect(page).toHaveURL(/cursor=page-2/);
+  await kindSearch.press("ArrowDown");
+  await kindSearch.press("Enter");
+  await expect(page).toHaveURL(/view=pending&kind=solo$/);
+
+  await page.getByLabel("军团", { exact: true }).click();
+  await page.getByRole("combobox", { name: "搜索军团" }).fill("navy");
+  await page.getByRole("option", { name: "Glory Navy" }).click();
+  await expect(page).toHaveURL(/kind=solo&corporation=10$/);
+
+  await page.getByText("更多筛选", { exact: true }).click();
+  const applicantTrigger = page.getByLabel("申请人", { exact: true });
+  await applicantTrigger.click();
+  const applicantSearch = page.getByRole("combobox", { name: "搜索申请人" });
+  await expect(applicantSearch).toBeFocused();
+  await applicantSearch.fill("unknown");
+  await expect(page.getByText("没有匹配的选项", { exact: true })).toBeVisible();
+  await applicantSearch.press("Escape");
+  await expect(applicantTrigger).toBeFocused();
+  await applicantTrigger.click();
+  await expect(applicantSearch).toHaveValue("");
+  await applicantSearch.fill("character");
+  await page.getByRole("option", { name: "Main Character" }).click();
+  await expect(page).toHaveURL(new RegExp(`account=${member}$`));
+
+  await page.getByLabel("待办类型", { exact: true }).click();
+  await page.getByRole("combobox", { name: "搜索待办类型" }).fill("补充");
+  await page.getByRole("option", { name: "待补充" }).click();
+  await expect(page).toHaveURL(/view=information/);
+
+  await page.getByRole("button", { name: /^已处理/ }).click();
+  await page.getByRole("button", { name: "状态", exact: true }).click();
+  await page.getByRole("combobox", { name: "搜索状态" }).fill("驳回");
+  await page.getByRole("option", { name: "已驳回" }).click();
+  await expect(page).toHaveURL(/status=rejected$/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+});
+
 test("审批列表、双语和响应式", async ({ page }, info) => {
   await setup(page);
   await page.goto("/approvals");

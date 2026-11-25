@@ -19,7 +19,7 @@ import {
 import { useSession } from "@/modules/identity";
 import { Button } from "@/components/ui/button";
 import { IconAction } from "@/components/ui/icon-action";
-import { Select } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Modal } from "@/components/ui/dialog";
 import { msg, getLocale } from "@/lib/i18n";
 import * as welfare from "@/modules/welfare/api";
@@ -427,13 +427,13 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
             {msg("搜索")}
           </Button>
         </div>
-        <Select
+        <SearchableSelect
           label={msg("业务类型")}
           value={params.get("kind") || ""}
           onValueChange={(v) => change("kind", v)}
           options={kinds}
         />
-        <Select
+        <SearchableSelect
           label={msg("军团")}
           value={params.get("corporation") || ""}
           onValueChange={(v) => change("corporation", v)}
@@ -446,7 +446,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           ]}
         />
         {tab === "pending" && (
-          <Select
+          <SearchableSelect
             label={msg("待办类型")}
             value={
               view === "information"
@@ -480,7 +480,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
           </label>
         )}
         {tab !== "pending" && (
-          <Select
+          <SearchableSelect
             label={msg("状态")}
             value={params.get("status") || ""}
             onValueChange={(v) => change("status", v)}
@@ -546,7 +546,7 @@ function Workspace({ user, csrf }: { user: string; csrf: string }) {
                 }
               />
             </label>
-            <Select
+            <SearchableSelect
               label={msg("申请人")}
               value={params.get("account") || ""}
               onValueChange={(v) => change("account", v)}

@@ -4,6 +4,7 @@ export const english: Record<string, string> = {
   "选项读取失败，可手动填写": "Options could not be loaded; enter a value manually",
   "显示选项": "Show options",
   "没有匹配的选项": "No matching options",
+  "搜索{0}": "Search {0}",
   "尚未发放": "Not issued",
   "已向 {0} 个角色发放 PAP": "PAP issued to {0} characters",
   "点名并发放 PAP": "Capture fleet and issue PAP",
