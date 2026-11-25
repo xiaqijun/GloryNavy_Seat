@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -13,6 +14,65 @@ import (
 	"glorynavy.local/seat/internal/modules/eve/internal/store"
 	"glorynavy.local/seat/internal/testutil"
 )
+
+func TestContractFilterOptionsUseAuthorizedOwnerScope(t *testing.T) {
+	pool := testutil.Database(t)
+	q := store.New(pool)
+	rows := []struct {
+		id, assignee int64
+		kind, status string
+	}{
+		{1, 10, "item_exchange", "outstanding"},
+		{2, 10, "courier", "finished"},
+		{3, 10, "courier", "finished"},
+		{4, 99, "auction", "failed"},
+	}
+	for _, row := range rows {
+		payload := scopeContract(int(row.id), 20, row.assignee, 0, false)
+		if _, err := q.UpsertContract(context.Background(), store.UpsertContractParams{
+			OwnerKind: "corporation", OwnerID: 10, ContractID: row.id,
+			ContractType: row.kind, Status: row.status, Payload: payload,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h := NewContractHTTP(pool, nil, func(*http.Request) string { return "reviewer" })
+	h.Owners = func(context.Context, string) ([]ContractOwner, error) {
+		return []ContractOwner{{Kind: "corporation", ID: 10}, {Kind: "character", ID: 10}}, nil
+	}
+	router := chi.NewRouter()
+	for _, route := range h.Routes() {
+		router.Method(route.Method, route.Path, route.Handler)
+	}
+	get := func(path string, status int) []byte {
+		t.Helper()
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != status {
+			t.Fatalf("%s: got %d, want %d: %s", path, w.Code, status, w.Body.String())
+		}
+		return w.Body.Bytes()
+	}
+	var result struct {
+		Data struct {
+			Types    []string `json:"types"`
+			Statuses []string `json:"statuses"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(get("/contracts/corporation/10/filters?before=1&type=loan", 200), &result); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(result.Data.Types, []string{"courier", "item_exchange"}) || !slices.Equal(result.Data.Statuses, []string{"finished", "outstanding"}) {
+		t.Fatalf("unexpected filter options: %+v", result.Data)
+	}
+	if err := json.Unmarshal(get("/contracts/character/10/filters", 200), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Data.Types == nil || result.Data.Statuses == nil || len(result.Data.Types) != 0 || len(result.Data.Statuses) != 0 {
+		t.Fatalf("empty owner should return two empty arrays: %+v", result.Data)
+	}
+	get("/contracts/corporation/99/filters", 404)
+}
 
 func TestContractReadIsolationPaginationAndPrecision(t *testing.T) {
 	pool := testutil.Database(t)

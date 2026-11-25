@@ -36,6 +36,13 @@ AND (sqlc.arg(search)::text='' OR NOT EXISTS (
  )
 ))
 ORDER BY c.contract_id DESC LIMIT 26;
+
+-- name: ReadContractFilterOptions :one
+SELECT coalesce(array_agg(DISTINCT contract_type ORDER BY contract_type), '{}'::text[])::text[] AS types,
+       coalesce(array_agg(DISTINCT status ORDER BY status), '{}'::text[])::text[] AS statuses
+FROM eve_contracts
+WHERE owner_kind=sqlc.arg(owner_kind) AND owner_id=sqlc.arg(owner_id) AND in_scope;
+
 -- name: ReadContractCorporations :many
 SELECT DISTINCT ON (corporation_id) corporation_id,corporation_name,alliance_id,ceo_id
 FROM eve_role_snapshots WHERE valid_until>now() ORDER BY corporation_id,synced_at DESC;

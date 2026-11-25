@@ -117,6 +117,12 @@ async function setup(
         status: 404,
         json: { error: { message: "合同不存在或没有查看权限" } },
       });
+    if (path.endsWith("/filters")) {
+      const filters = path.endsWith("/456/filters")
+        ? { types: ["courier"], statuses: ["finished"] }
+        : { types: [current.type], statuses: [current.status] };
+      return r.fulfill({ json: { data: filters } });
+    }
     if (path.endsWith("/items"))
       return r.fulfill({
         json: {
@@ -258,32 +264,49 @@ test("anonymous contract deep links never prefetch private contract data", async
   expect(requests).toEqual([]);
 });
 
-test("contract selects support keyboard selection, dismissal and official filters", async ({ page }) => {
+test("contract selects show available filters and support keyboard dismissal", async ({ page, isMobile }) => {
   await setup(page);
   await page.goto("/contracts");
   const owner = page.getByRole("combobox", { name: "查看角色" });
-  await owner.click();
-  await expect(page.getByRole("option", { name: "远航舰长", exact: true })).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("Escape");
-  await expect(owner).toBeFocused();
-  await owner.press("ArrowDown");
-  await expect(page.getByRole("listbox")).toBeVisible();
-  await page.keyboard.press("Home");
-  await expect(page.getByRole("option", { name: "远航舰长", exact: true })).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("option", { name: "工业分队舰长", exact: true })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(owner).toHaveText("工业分队舰长");
+  await expect(owner).toHaveValue("123");
+  await owner.selectOption("456");
   await expect(page).toHaveURL(/owner=456/);
-  await page.getByRole("combobox", { name: "合同类型" }).click();
-  await expect(page.getByRole("group", { name: "兼容数据" })).toBeVisible();
-  await page.getByRole("option", { name: "借贷", exact: true }).click();
-  await expect(page).toHaveURL(/type=loan/);
+  const type = page.getByRole("combobox", { name: "合同类型" });
+  await expect(type).toBeEnabled();
+  if (isMobile) await type.tap();
+  else await type.press("ArrowDown");
+  const options = page.getByRole("listbox").getByRole("option");
+  await expect(options).toHaveText(["全部类型", "快递"]);
+  const courier = page.getByRole("option", { name: "快递", exact: true });
+  if (isMobile) {
+    await courier.tap();
+  } else {
+    await page.keyboard.press("Escape");
+    await expect(type).toBeFocused();
+    await type.press("ArrowDown");
+    await page.keyboard.press("End");
+    await expect(courier).toBeFocused();
+    await page.keyboard.press("Enter");
+  }
+  await expect(page).toHaveURL(/type=courier/);
   await page.getByRole("combobox", { name: "合同类型" }).click();
   await page.getByRole("option", { name: "全部类型", exact: true }).click();
   await expect(page).not.toHaveURL(/type=/);
   await page.getByRole("combobox", { name: "合同状态" }).click();
-  await page.getByRole("option", { name: "撤销", exact: true }).click();
+  await expect(options).toHaveText(["全部状态", "已结束"]);
+  await page.getByRole("option", { name: "已结束", exact: true }).click();
+  await expect(page).toHaveURL(/status=finished/);
+});
+
+test("unavailable bookmarked contract filters can still be cleared", async ({ page }) => {
+  await setup(page);
+  await page.goto("/contracts?kind=character&owner=123&type=loan&status=reversed");
+  const type = page.getByRole("combobox", { name: "合同类型" });
+  await expect(type).toHaveText("借贷");
+  await type.click();
+  await expect(page.getByRole("option", { name: "借贷", exact: true })).toHaveCount(0);
+  await page.getByRole("option", { name: "全部类型", exact: true }).click();
+  await expect(page).not.toHaveURL(/type=/);
   await expect(page).toHaveURL(/status=reversed/);
 });
 

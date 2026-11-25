@@ -93,7 +93,8 @@
 .contract-toolbar input {
   width: 100%;
 }
-.contract-export-error {
+.contract-export-error,
+.contract-filter-feedback {
   flex-basis: 100%;
   margin: 0;
   font-size: 14px;
@@ -593,7 +594,8 @@
     grid-template-columns: minmax(0, 1fr) 44px;
   }
   .contract-toolbar form,
-  .contract-export-error {
+  .contract-export-error,
+  .contract-filter-feedback {
     grid-column: 1 / -1;
   }
   .contract-toolbar > .ui-select-trigger {

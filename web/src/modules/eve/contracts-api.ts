@@ -55,6 +55,7 @@ export type Item = {
 };
 export type Bid = { id: string; bidder: Entity; amount: string; date: string };
 export type Page<T> = { items: T[]; next_cursor: string };
+type ContractFilterOptions = { types: string[]; statuses: string[] };
 const record = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === "object";
 const id = (v: unknown): v is string =>
@@ -119,6 +120,15 @@ export function getContractOwners(signal?: AbortSignal, member = "") {
 }
 const root = (owner: Owner) =>
   `/api/v1/eve/contracts/${owner.kind}/${encodeURIComponent(owner.id)}`;
+export const getContractFilterOptions = (owner: Owner, signal?: AbortSignal) =>
+  getData(
+    `${root(owner)}/filters`,
+    (value): value is ContractFilterOptions =>
+      record(value) && [value.types, value.statuses].every(
+        (options) => Array.isArray(options) && options.every((option) => typeof option === "string"),
+      ),
+    signal,
+  );
 export const getContracts = (
   owner: Owner,
   params: URLSearchParams,

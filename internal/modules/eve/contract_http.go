@@ -69,6 +69,7 @@ func (h *ContractHTTP) Routes() []module.Route {
 	}{
 		{"/contracts/owners", h.owners},
 		{"/contracts/{kind}/{id}", h.list},
+		{"/contracts/{kind}/{id}/filters", h.filters},
 		{"/contracts/{kind}/{id}/{contract}", h.detail},
 		{"/contracts/{kind}/{id}/{contract}/items", h.items},
 		{"/contracts/{kind}/{id}/{contract}/bids", h.bids},
@@ -360,6 +361,22 @@ func (h *ContractHTTP) list(w http.ResponseWriter, r *http.Request) {
 	h.summaries(r.Context(), o.Kind, o.ID, items)
 	httpapi.Respond(w, r, 200, map[string]any{"items": items, "next_cursor": next})
 }
+
+func (h *ContractHTTP) filters(w http.ResponseWriter, r *http.Request) {
+	o, ok := h.owned(w, r)
+	if !ok {
+		return
+	}
+	options, err := store.New(h.pool).ReadContractFilterOptions(r.Context(), store.ReadContractFilterOptionsParams{
+		OwnerKind: o.Kind, OwnerID: o.ID,
+	})
+	if err != nil {
+		contractFailure(w, r, err)
+		return
+	}
+	httpapi.Respond(w, r, http.StatusOK, map[string][]string{"types": options.Types, "statuses": options.Statuses})
+}
+
 func (h *ContractHTTP) record(w http.ResponseWriter, r *http.Request) (store.EveContract, bool) {
 	o, ok := h.owned(w, r)
 	if !ok {

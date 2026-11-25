@@ -1976,6 +1976,7 @@ export const english: Record<string, string> = {
   合同类型: "Contract type",
   全部类型: "All types",
   兼容数据: "Legacy data",
+  "合同筛选选项暂不可用，请刷新重试": "Contract filters are unavailable. Refresh to retry.",
   合同状态: "Contract status",
   全部状态: "All statuses",
   刷新合同列表: "Refresh contracts",

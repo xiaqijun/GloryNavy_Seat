@@ -144,6 +144,30 @@ func (q *Queries) ReadContractDetailStates(ctx context.Context, arg ReadContract
 	return items, nil
 }
 
+const readContractFilterOptions = `-- name: ReadContractFilterOptions :one
+SELECT coalesce(array_agg(DISTINCT contract_type ORDER BY contract_type), '{}'::text[])::text[] AS types,
+       coalesce(array_agg(DISTINCT status ORDER BY status), '{}'::text[])::text[] AS statuses
+FROM eve_contracts
+WHERE owner_kind=$1 AND owner_id=$2 AND in_scope
+`
+
+type ReadContractFilterOptionsParams struct {
+	OwnerKind string
+	OwnerID   int64
+}
+
+type ReadContractFilterOptionsRow struct {
+	Types    []string
+	Statuses []string
+}
+
+func (q *Queries) ReadContractFilterOptions(ctx context.Context, arg ReadContractFilterOptionsParams) (ReadContractFilterOptionsRow, error) {
+	row := q.db.QueryRow(ctx, readContractFilterOptions, arg.OwnerKind, arg.OwnerID)
+	var i ReadContractFilterOptionsRow
+	err := row.Scan(&i.Types, &i.Statuses)
+	return i, err
+}
+
 const readContractItems = `-- name: ReadContractItems :many
 SELECT owner_kind, owner_id, contract_id, record_id, type_id, quantity, is_included, is_singleton, raw_quantity FROM eve_contract_items WHERE owner_kind=$1 AND owner_id=$2 AND contract_id=$3 AND record_id>$4 ORDER BY record_id LIMIT 101
 `

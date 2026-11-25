@@ -7758,6 +7758,48 @@ paths:
             },
         },
     }
+  /api/v1/eve/contracts/{kind}/{id}/filters:
+    get:
+      operationId: getContractFilterOptions
+      summary: Read contract types and statuses available for an authorized owner
+      description: Applies the same owner authorization and corporation scope as the contract list. Options cover all locally synchronized contracts for that owner, independent of the current search and page.
+      security: [{ SessionCookie: [] }]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string, enum: [character, corporation] }
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[0-9]+$" }
+      responses:
+        "200":
+          description: Observed contract types and statuses, each returned as a sorted array
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [types, statuses]
+                    properties:
+                      types: { type: array, items: { type: string } }
+                      statuses: { type: array, items: { type: string } }
+        "401":
+          description: Login required
+          content: { application/json: { schema: { "$ref": "#/components/schemas/Error" } } }
+        "403":
+          description: Complete the community profile or satisfy route permissions
+          content: { application/json: { schema: { "$ref": "#/components/schemas/Error" } } }
+        "404":
+          description: Owner unavailable
+          content: { application/json: { schema: { "$ref": "#/components/schemas/Error" } } }
+        "503":
+          description: Storage or authorization unavailable
+          content: { application/json: { schema: { "$ref": "#/components/schemas/Error" } } }
   /api/v1/eve/contracts/{kind}/{id}/{contract}:
     {
       "get":

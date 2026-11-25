@@ -90,6 +90,7 @@ ESI 列表仍完整分页核对，保留返回的基础元数据，避免跳页�
 
 - `GET /api/v1/eve/contracts/owners`：默认返回本人角色与可查看军团；管理员可带 `?member=本站账号UUID` 选择该成员的有效角色，非管理员或不存在的成员返回 404。管理员从 `/members` 选择角色进入合同；列表／详情／物品／出价均逐次检查当前管理员身份和目标有效绑定。
 - `GET /api/v1/eve/contracts/{kind}/{id}`：每页 25 份，按合同 ID 降序；`q` 按上文多关键词规则匹配，`type/status` 筛选，`before` 为排他游标。
+- `GET /api/v1/eve/contracts/{kind}/{id}/filters`：按列表权限返回所选角色或军团全部可见本地合同中出现过的类型和状态数组，涵盖全部分页，独立于当前关键词和筛选条件。范围无合同时返回两个空数组。
 - `GET /api/v1/eve/contracts/{kind}/{id}/{contract}`：详情及物品／出价同步状态。
 - 同路径下 `/items?after=`、`/bids?before=`：每页最多 100 条，物品按 record ID 升序、出价按 bid ID 降序。
 

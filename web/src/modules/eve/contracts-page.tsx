@@ -34,6 +34,7 @@ import {
   contractTypes,
   entityName,
   getBids,
+  getContractFilterOptions,
   getContractOwners,
   getItems,
   title,
@@ -392,6 +393,21 @@ function ContractList({
       .filter((v) => /^[1-9]\d*$/.test(v)),
   ];
   const query = useQuery(contractListQuery(user, owner, params));
+  const filters = useQuery({
+    queryKey: ["eve", "contracts", "filters", user, owner.kind, owner.id],
+    queryFn: ({ signal }) => getContractFilterOptions(owner, signal),
+    staleTime: 30_000,
+  });
+  const types = ["item_exchange", "courier", "auction", "loan", "unknown"]
+    .filter((value) => filters.data?.types.includes(value))
+    .map((value) => ({
+      value,
+      label: contractTypes[value],
+      group: value === "loan" || value === "unknown" ? msg("兼容数据") : undefined,
+    }));
+  const statuses = Object.entries(contractStatuses)
+    .filter(([value]) => filters.data?.statuses.includes(value))
+    .map(([value, label]) => ({ value, label }));
   const client = useQueryClient();
   useEffect(() => {
     if (!query.data?.next_cursor) return;
@@ -439,39 +455,29 @@ function ContractList({
           className="contract-type-select"
           label={msg("合同类型")}
           value={type}
+          placeholder={Object.hasOwn(contractTypes, type) ? contractTypes[type] : msg("全部类型")}
+          disabled={filters.isPending && !type}
           onValueChange={(value) => update({ type: value })}
-          options={[
-            { value: "", label: msg("全部类型") },
-            ...["item_exchange", "courier", "auction"].map((value) => ({
-              value,
-              label: contractTypes[value],
-            })),
-            ...["loan", "unknown"].map((value) => ({
-              value,
-              label: contractTypes[value],
-              group: msg("兼容数据"),
-            })),
-          ]}
+          options={[{ value: "", label: msg("全部类型") }, ...types]}
         />
         <Select
           className="contract-status-select"
           label={msg("合同状态")}
           value={status}
+          placeholder={Object.hasOwn(contractStatuses, status) ? contractStatuses[status] : msg("全部状态")}
+          disabled={filters.isPending && !status}
           onValueChange={(value) => update({ status: value })}
-          options={[
-            { value: "", label: msg("全部状态") },
-            ...Object.entries(contractStatuses).map(([value, label]) => ({
-              value,
-              label,
-            })),
-          ]}
+          options={[{ value: "", label: msg("全部状态") }, ...statuses]}
         />
         <IconAction
           label={msg("刷新合同列表")}
           className="contract-refresh"
           disabled={query.isFetching}
           aria-busy={query.isFetching}
-          onClick={() => void query.refetch()}
+          onClick={() => {
+            void query.refetch();
+            void filters.refetch();
+          }}
         >
           <RefreshCw />
         </IconAction>
@@ -481,6 +487,9 @@ function ContractList({
           filters={new URLSearchParams({ q: search, type, status }).toString()}
           disabled={query.isPending || query.isError}
         />
+        {filters.isError && !query.isError && (
+          <p className="contract-filter-feedback" role="status">{msg("合同筛选选项暂不可用，请刷新重试")}</p>
+        )}
       </div>
       {query.isPending ? (
         <Feedback text={msg("正在读取合同")} />

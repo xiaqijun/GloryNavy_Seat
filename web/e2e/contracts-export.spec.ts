@@ -70,6 +70,8 @@ async function setup(page: Page) {
           { kind: "corporation", id: "789", name: "Glory Navy" },
         ],
       });
+    if (url.pathname.endsWith("/filters"))
+      return json({ types: ["item_exchange"], statuses: ["outstanding", "finished"] });
     if (/\/contracts\/(character\/123|corporation\/789)$/.test(url.pathname)) {
       if (exporting) {
         requests.push(url);

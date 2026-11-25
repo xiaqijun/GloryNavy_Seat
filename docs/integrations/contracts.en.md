@@ -90,6 +90,7 @@ The workspace now includes `/contracts`: personal/corporation modes, authorized 
 
 - `GET /api/v1/eve/contracts/owners`: own active characters and permitted corporations by default. Administrators can use `?member=site-user-UUID` for another member's active characters; unauthorized or unavailable members return 404. /members provides the selector; list/detail/items/bids independently recheck the current administrator flag and active target binding.
 - `GET /api/v1/eve/contracts/{kind}/{id}`: 25 contracts, descending contract ID; multi-keyword search via `q` as described above, `type/status` filters and an exclusive `before` cursor.
+- `GET /api/v1/eve/contracts/{kind}/{id}/filters`: types and statuses observed across all locally synchronized contracts visible to the selected character or corporation under list authorization. The arrays are independent of the current search, selection and page. An empty scope returns two empty arrays.
 - `GET /api/v1/eve/contracts/{kind}/{id}/{contract}`: contract and independent item/bid synchronization states.
 - Append `/items?after=` or `/bids?before=`: at most 100 rows; ascending record ID or descending bid ID.
 
