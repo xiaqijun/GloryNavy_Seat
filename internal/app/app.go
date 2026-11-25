@@ -161,7 +161,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	attendanceModule.Service.AlliancePAP = attendance.AlliancePAPConfig{URL: auth.WinterCoPAPURL, AuthFile: auth.WinterCoPAPAuthFile}
 	attendanceModule.Service.Battle = reader
 	attendanceModule.Service.Names = staticData
-	alertConsumptionCapability := slices.Contains(enabled, "sentry") && slices.Contains(enabled, "exchange") && slices.Contains(enabled, "eve") && auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != ""
+	alertConsumptionCapability := slices.Contains(enabled, "sentry") && slices.Contains(enabled, "exchange") && slices.Contains(enabled, "eve")
 	exchangeService := &exchange.Service{Pool: pool, Administrator: accessService.IsAdministrator, Names: staticData, SearchTypes: staticData.SearchTypes, Sources: map[string]string{}, SourceScales: map[string]int64{}, AllowNew: slices.Contains(enabled, "exchange"), AllowAlertConsumption: alertConsumptionCapability}
 	if slices.Contains(enabled, "attendance") {
 		exchangeService.Sources["pap"] = "PAP 集结分"
@@ -293,7 +293,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	}
 	accessService.ScopeNames = reader.WalletNames
 	identityHandler.CorporationCleanup = characterCleanup
-	var sentryRemote sentry.Remote
+	var sentryRemote *sentry.HTTPRemote
 	if auth.SentryIntegrationURL != "" && auth.SentryIntegrationToken != "" {
 		remote, remoteErr := sentry.NewHTTPRemote(auth.SentryIntegrationURL, auth.SentryIntegrationToken)
 		if remoteErr != nil {
@@ -301,15 +301,16 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 		}
 		sentryRemote = remote
 	}
-	sentryService := sentry.New(pool, sentryRemote)
+	sentryService := sentry.New(pool, nil)
 	if err := sentryService.SetSecretKey(auth.TokenKey); err != nil {
 		return nil, err
 	}
 	sentryService.Administrator = accessService.IsAdministrator
+	sentryService.ConfigureConnection(sentryRemote)
 	// The legacy environment value is still parsed for configuration
 	// compatibility; the actual on/off state is persisted in
 	// sentry_alert_pricing and changed by an administrator from the Sentry page.
-	sentryService.AlertEnabled = alertConsumptionCapability && sentryService.ClientUsageRemote != nil
+	sentryService.AlertEnabled = alertConsumptionCapability
 	sentryService.AlertPolicy = sentry.AlertGrantPolicy{PriceVersion: auth.AlertPriceVersion, UnitSeconds: auth.AlertUnitSeconds, UnitPriceMinor: auth.AlertUnitPriceMinor, MaxGrantSeconds: auth.AlertMaxGrantSeconds, GrantTTL: auth.AlertGrantTTL}
 	if pool != nil {
 		if err := sentryService.LoadAlertPricing(context.Background(), sentryService.AlertPolicy); err != nil {
@@ -629,7 +630,9 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	eveHandler.Complete = func(ctx context.Context, character eve.Character, previous string, intent identity.LoginIntent) (string, error) {
 		var save identity.CredentialWrite
 		if syncService != nil {
-			save = func(ctx context.Context, tx pgx.Tx) error { return syncService.SaveTx(eve.PreserveExistingScopes(ctx), tx, character) }
+			save = func(ctx context.Context, tx pgx.Tx) error {
+				return syncService.SaveTx(eve.PreserveExistingScopes(ctx), tx, character)
+			}
 		}
 		if intent.Kind == "merge" {
 			return identityService.ProveMerge(ctx, character.ID, character.Owner, previous, intent.UserID, save)

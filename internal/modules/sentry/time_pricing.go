@@ -92,6 +92,16 @@ func (s *Service) EditTimePricing(ctx context.Context, user string, e TimePricin
 		enabled = *e.ChargingEnabled
 	}
 	consumptionRemote, canSyncConsumption := s.Remote.(AlertConsumptionRemote)
+	if s.connection != nil && enabled != currentEnabled {
+		remote, err := s.connection.active(ctx)
+		if err != nil {
+			return TimePricing{}, err
+		}
+		if remote == nil {
+			return TimePricing{}, ErrRemoteUnavailable
+		}
+		consumptionRemote, canSyncConsumption = remote, true
+	}
 	remoteSynced := false
 	if canSyncConsumption && e.ChargingEnabled != nil && enabled != currentEnabled {
 		operationID := fmt.Sprintf("seat-alert-consumption-v%d-%t", e.Version+1, enabled)

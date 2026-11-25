@@ -32,4 +32,6 @@ Goose 106 起，后续消费按账号、星系、冻结价格版本及单价组�
 
 监控奖励读取 `GET /api/v1/integrations/seat/monitor-contributions`，每个星系只有主节点贡献有效在线时长。同一账号选择多个预警星系时，各星系独立计量并合并到账号级果壳币流水。
 
-服务令牌只保存在两端服务端环境中，不进入浏览器或文档；当前生产入口为 `https://seat.glorynavy.com`。域名迁移时同步 `SENTRY_INTEGRATION_URL`，避免服务 POST 经过旧站重定向。
+首次接入可通过两个管理页面完成。Sentry 管理员在「系统管理 → SeAT 接入」生成并复制服务令牌，然后启用接入。SeAT 站点管理员在 `/sentry` 的「Sentry 接入设置」填写 Sentry HTTPS 地址和同一令牌，选择「测试并保存」。SeAT 用只读服务鉴权确认连接后才更新配置，版本冲突需刷新重试。令牌用现有服务端加密密钥保存，读取接口只返回是否已配置。新地址须使用公网 HTTPS；原环境变量指定的地址仍可使用，Web 保存后在运行时优先使用数据库配置。
+
+升级前已配置的环境变量作为启动默认值。当前生产入口为 `https://seat.glorynavy.com`。域名迁移时同步 `SENTRY_INTEGRATION_URL`，避免服务 POST 经过旧站重定向。
