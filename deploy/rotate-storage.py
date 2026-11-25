@@ -14,7 +14,6 @@ import re
 import shutil
 import stat
 import subprocess
-import time
 
 VERSION = re.compile(r"v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?\Z")
 
@@ -52,24 +51,12 @@ def release_info(path):
             "fingerprint": fingerprint(path), "metadata": fingerprint(path / "release.json")}
 
 
-def backup_selection(dumps, now):
+def backup_selection(dumps):
     ordered = sorted(dumps, key=lambda p: (-p.stat().st_mtime, p.name))
-    keep = {p.name for p in ordered[:3]}
-    buckets = set()
-    for p in ordered:
-        stamp = p.stat().st_mtime
-        date = dt.datetime.fromtimestamp(stamp, dt.timezone.utc)
-        age = (now - stamp) / 86400
-        kind, key = ("day", date.strftime("%Y-%m-%d")) if age <= 7 else (
-            ("week", date.strftime("%G-%V")) if age <= 28 else ("month", date.strftime("%Y-%m")))
-        if (kind, key) not in buckets:
-            keep.add(p.name)
-            buckets.add((kind, key))
-    return keep
+    return {p.name for p in ordered[:3]}
 
 
-def make_plan(site, backups=None, pins=None, now=None):
-    now = time.time() if now is None else now
+def make_plan(site, backups=None, pins=None):
     pins = pins or {}
     if site.is_symlink() or not site.is_dir() or (site / "releases").is_symlink():
         raise ValueError("site and releases must be real directories")
@@ -98,7 +85,7 @@ def make_plan(site, backups=None, pins=None, now=None):
             raise ValueError("backup and release roots must be separate")
         dumps = [p for p in backups.glob("*.dump") if regular(p)]
         complete = [p for p in dumps if regular(p.with_suffix(".env")) and p.stat().st_size > 0]
-        selected = backup_selection(complete, now) | set(pins.get("backups", []))
+        selected = backup_selection(complete) | set(pins.get("backups", []))
         for p in dumps:
             # Missing key material, incomplete files and historical layouts are retained.
             keep = p.name in selected or p not in complete

@@ -52,14 +52,17 @@ class RotationTests(unittest.TestCase):
         plan = retention.make_plan(self.site, pins={"releases": ["v0.1.0-test-1"]})
         self.assertEqual({r["name"] for r in plan["delete_releases"]}, {f"v0.1.0-test-{i}" for i in [2, 3, 4]})
 
-    def test_backup_buckets_and_latest_three_keep_complete_pairs(self):
+    def test_keeps_three_latest_complete_backups_and_verified_pin(self):
         for i, age in enumerate([.1, .2, .3, .4, 2, 2.1, 9, 9.1, 40, 40.1]):
             self.backup(f"snapshot-{i}", age)
         incomplete = self.backup("incomplete", .01, complete=False)
-        plan = retention.make_plan(self.site, self.backups)
+        historical = self.backup("historical", 20, backend="v0.1.0-test-0")
+        plan = retention.make_plan(self.site, self.backups, {"backups": [historical.name]})
         kept = {r["name"] for r in plan["keep_backups"]}
-        self.assertTrue({"snapshot-0.dump", "snapshot-1.dump", "snapshot-2.dump", incomplete.name} <= kept)
-        self.assertTrue(plan["delete_backups"])
+        self.assertEqual(kept, {
+            "snapshot-0.dump", "snapshot-1.dump", "snapshot-2.dump", historical.name, incomplete.name,
+        })
+        self.assertIn("v0.1.0-test-0", plan["keep_releases"])
         self.assertTrue(all(len(r["files"]) == 2 for r in plan["delete_backups"]))
 
     def test_backup_metadata_protects_restore_release(self):

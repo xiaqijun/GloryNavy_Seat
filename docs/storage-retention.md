@@ -6,7 +6,7 @@
 
 `deploy/rotate-storage.py` 默认仅生成 JSON 清单，显式 `--apply` 才删除。只处理项目的发布目录和根目录下完整的 `.dump` / `.env` 备份对及其 `.meta.json`，不处理业务表、Docker 卷、日志、临时文件或历史备份子目录。
 
-- 备份保留最近 3 份；最近 7 天按 UTC 每日留最新一份，7–28 天按 ISO 周留最新一份，超过 28 天按月留最新一份。密钥配置与数据库备份成对保留，缺配置、空文件和未知布局保持原样。
+- 轮换保留最近 3 份完整备份，并通过固定清单保留 1 份已做隔离恢复演练的历史备份。替换历史备份时先恢复新选中的备份，再更新固定清单。密钥配置与数据库备份成对保留，缺配置、空文件和未知布局保持原样。旧目录和专项快照由运维核对用途后单独处理。
 - 发布包保留当前及按 `release.json.built_at` 排序的最近 5 版。应用机额外保留所有留存备份对应的 `backend_release`；旧备份没有元数据时，保留名称中的目标版本和备份前最近两份构建。应用发布包自带同版本前端，供历史恢复使用。保留不等于允许跨数据库版本直接回退。
 - 缺少版本元数据/校验清单、版本名不符、包含符号链接的目录不自动删除；根目录及 current 必须通过真实路径范围校验。
 - `/etc/glorynavy/storage-retention-pins.json` 可额外保留指定名称，例如 `{"releases":["v0.1.0-example"],"backups":["before-example.dump"]}`。该文件不包含密钥。
@@ -39,7 +39,7 @@ python3 deploy/rotate-storage.py --role edge --apply
 
 ## 验证
 
-Linux 文件轮换测试：`python3 -m unittest discover -s deploy -p test_rotate_storage.py -v`。覆盖保留桶、当前版本/固定版本/备份恢复版本、缺材料和符号链接保护、过期计划拒绝、校验失败不删除、精确候选及幂等。
+Linux 文件轮换测试：`python3 -m unittest discover -s deploy -p test_rotate_storage.py -v`。覆盖最近三份与历史固定备份、当前版本/固定版本/备份恢复版本、缺材料和符号链接保护、过期计划拒绝、校验失败不删除、精确候选及幂等。
 
 数据库使用独立 PostgreSQL，通过 `TEST_DATABASE_URL` 执行 `TEST_SYNC_RETENTION_PLAN=1 go test ./internal/modules/eve -run 'SyncRunRetention|CleanSyncHistory' -count=1`；184 万行查询计划测试只能在隔离测试库运行。生产清理前后记录磁盘、目录与记录数，确认服务就绪，并保留至少一份实际恢复验证过的备份。
 
