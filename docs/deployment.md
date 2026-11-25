@@ -1,5 +1,9 @@
 # Linux 生产部署
 
+## 2026-11-26 QQ 入团后自动审批（Goose 120）
+
+前后端 `v0.1.0-qq-join-after-corp-20261126` 从已推送的 main `2786daa` 发布。Goose 120 持久化原 QQ 请求的等待状态。出现等待记录后保留该状态和识别它的后端，恢复时优先向前修复。备份和线上验收见[发布记录](history/qq-join-after-corp-release-20261126.md)。
+
 ## 2026-11-24 邮件提醒主题与 HTML 正文（仅后端）
 
 后端 `v0.1.0-feedback-email-html-20261124` 来自已推送的 main `0a9a960`。按标准流程备份并发布，Goose 118，前端为 `v0.1.0-qq-code-copy-20261124`。详见[发布记录](history/feedback-email-html-release-20261124.md)。

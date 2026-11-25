@@ -1,6 +1,6 @@
 # 项目状态
 
-待发布。QQ 入群申请改为先提交带绑定码的 QQ 申请，SEAT 同步到配置军团资格后再自动审批。Goose 120 保存等待状态，后台每分钟复查活动申请。真实 QQ 入群仍待联调。见[官方 QQ 机器人指南](integrations/qq-official.zh-CN.md)。
+2026-11-26 前后端已发布 `v0.1.0-qq-join-after-corp-20261126`，源码 main `2786daa`，Goose 120。QQ 入群可先提交带绑定码的申请，SEAT 同步到指定军团资格后自动审批。后台每分钟复查活动申请。生产就绪、QQ 网关连接、成员事件订阅、前端资源及匿名接口保护已复核，真实 QQ 入群仍待验收。详见[发布记录](history/qq-join-after-corp-release-20261126.md)。
 
 2026-11-26 SeAT 前端已发布 `v0.1.0-sentry-settings-summary-20261125`，源码为 main `dd6d10e`。「Sentry 接入设置」默认显示生效地址和令牌配置状态，点击编辑后打开表单。153 项前端测试通过。公网 `/sentry`、入口和预警模块资源与发布包一致，接入设置接口匿名返回 401。后端保持就绪，前端可通过标准边缘脚本切回 `v0.1.0-sentry-settings-placement-20261125`。
 
