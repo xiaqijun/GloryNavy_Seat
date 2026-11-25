@@ -251,3 +251,29 @@ export const updateTimePricing = (
   csrf: string,
   value: Pick<TimePricing, "alert_hourly_price_minor" | "monitor_hourly_reward_minor" | "version" | "charging_enabled">,
 ) => mutate("/api/v1/sentry/time-pricing", csrf, "PUT", value) as Promise<TimePricing>;
+
+export type ConnectionSettings = {
+  origin: string;
+  revision: number;
+  token_configured: boolean;
+  updated_at?: string;
+};
+
+const isConnectionSettings = (value: unknown): value is ConnectionSettings =>
+  object(value) &&
+  typeof value.origin === "string" &&
+  Number.isSafeInteger(value.revision) &&
+  typeof value.token_configured === "boolean" &&
+  (value.updated_at === undefined || typeof value.updated_at === "string");
+
+export const getConnection = (signal?: AbortSignal) =>
+  getData("/api/v1/sentry/connection", isConnectionSettings, signal);
+
+export async function updateConnection(
+  csrf: string,
+  value: Pick<ConnectionSettings, "origin" | "revision"> & { service_token?: string },
+): Promise<ConnectionSettings> {
+  const data: unknown = await mutate("/api/v1/sentry/connection", csrf, "PUT", value);
+  if (!isConnectionSettings(data)) throw new APIError(msg("服务响应格式异常（接口：{0}），请联系管理员", "/api/v1/sentry/connection"), 200);
+  return data;
+}

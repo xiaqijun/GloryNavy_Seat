@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { consumptions } from "./api";
+import { consumptions, updateConnection } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -27,4 +27,20 @@ describe("cumulative alert consumption responses", () => {
     } })));
     await expect(consumptions({})).rejects.toThrow();
   });
+});
+
+it("submits a connection token only in the protected settings write", async () => {
+  const origin = "https://sentry.example.org";
+  const token = "a".repeat(64);
+  const revision = 2;
+  const settings = { origin, revision: 3, token_configured: true };
+  const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: settings }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(updateConnection("csrf", { origin, revision, service_token: token })).resolves.toEqual(settings);
+  const [path, request] = fetchMock.mock.calls[0];
+  expect(path).toBe("/api/v1/sentry/connection");
+  expect(request.method).toBe("PUT");
+  expect(request.headers.get("X-CSRF-Token")).toBe("csrf");
+  expect(JSON.parse(request.body)).toEqual({ origin, revision, service_token: token });
 });

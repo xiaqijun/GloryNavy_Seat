@@ -9,6 +9,7 @@ import { IconAction } from "@/components/ui/icon-action";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { useToast } from "@/components/ui/toast-context";
 import * as api from "./api";
+import { ConnectionSettingsButton } from "./connection-settings";
 import "./sentry.css";
 import { mergeUsageRecords, type UsageRecord } from "./usage-merge";
 
@@ -125,6 +126,7 @@ function Workspace({ csrf }: { csrf: string }) {
       <header className="sentry-heading">
         <span className="sentry-brand"><RadioTower aria-hidden="true" /></span>
         <div><h1>{msg("预警平台")}</h1><p>{msg("查看预警消耗并管理客户端密钥")}</p></div>
+        <ConnectionSettingsButton csrf={csrf} />
       </header>
       {q.isError && <div className="sentry-state" role="alert">{q.error.message}<Button variant="outline" onClick={() => void q.refetch()}>{msg("重试")}</Button></div>}
       {!q.isError && items.length === 0 && create.isError && <div className="sentry-state" role="alert"><span>{msg("密钥准备失败")}</span><Button variant="outline" onClick={retryAutoCreate}>{msg("重试")}</Button></div>}

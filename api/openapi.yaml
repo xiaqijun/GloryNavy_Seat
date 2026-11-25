@@ -8261,6 +8261,40 @@ paths:
             },
         },
     }
+  /api/v1/sentry/connection:
+    get:
+      operationId: sentryReadConnection
+      summary: Read the Sentry connection for the current site administrator
+      security: [{SessionCookie: []}]
+      responses:
+        '200': {description: "Current origin, revision, token_configured and optional updated_at. The service token is write-only."}
+        '403': {description: Current site administrator required}
+        '503': {description: Settings storage unavailable}
+    put:
+      operationId: sentrySaveConnection
+      summary: Verify the Sentry service connection before saving
+      security: [{SessionCookie: []}]
+      parameters:
+        - {name: X-CSRF-Token, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [origin, revision]
+              properties:
+                origin: {type: string, maxLength: 2048}
+                revision: {type: integer, minimum: 0}
+                service_token: {type: string, minLength: 32, maxLength: 512, writeOnly: true}
+      responses:
+        '200': {description: Connection verified and saved}
+        '400': {description: Invalid origin or token}
+        '403': {description: Administrator session and CSRF token required}
+        '409': {description: Settings revision changed}
+        '502': {description: Sentry verification failed}
+        '503': {description: Settings storage unavailable}
   /api/v1/sentry/keys:
     get:
       operationId: sentryListKeys

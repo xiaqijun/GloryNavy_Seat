@@ -109,6 +109,7 @@ type Service struct {
 	secretMu             sync.RWMutex
 	secretBox            cipher.AEAD
 	policyMu             sync.RWMutex
+	connection           *managedConnection
 }
 
 func New(pool *pgxpool.Pool, remote Remote) *Service {
@@ -224,6 +225,10 @@ func (s *Service) alertChargingEnabled(ctx context.Context) (bool, error) {
 	}
 	if err != nil {
 		return false, err
+	}
+	if enabled && s.connection != nil {
+		remote, err := s.connection.active(ctx)
+		return remote != nil, err
 	}
 	return enabled, nil
 }
@@ -617,7 +622,18 @@ func (s *Service) Rotate(ctx context.Context, account, id string) (Key, error) {
 	if len(id) != 36 {
 		return Key{}, ErrInvalid
 	}
-	if s.Remote == nil {
+	connection := s.Remote
+	if s.connection != nil {
+		remote, err := s.connection.active(ctx)
+		if err != nil {
+			return Key{}, err
+		}
+		if remote == nil {
+			return Key{}, ErrRemoteUnavailable
+		}
+		connection = remote
+	}
+	if connection == nil {
 		return Key{}, ErrRemoteUnavailable
 	}
 	var old Key
@@ -653,12 +669,12 @@ func (s *Service) Rotate(ctx context.Context, account, id string) (Key, error) {
 	if _, err = s.Pool.Exec(ctx, `INSERT INTO sentry_key_events(key_id,account_id,action,detail) VALUES($1,$2,'revoke_requested',jsonb_build_object('rotation',true,'remote_key_id',$3::text))`, id, account, old.RemoteID); err != nil {
 		return Key{}, err
 	}
-	remote, err := s.Remote.Create(ctx, ProvisionRequest{OperationID: newOp, KeyID: newKeyID, AccountID: account, Name: old.Name, Prefix: prefix, Hash: hex.EncodeToString(digest), Permissions: old.Permissions, Version: 1})
+	remote, err := connection.Create(ctx, ProvisionRequest{OperationID: newOp, KeyID: newKeyID, AccountID: account, Name: old.Name, Prefix: prefix, Hash: hex.EncodeToString(digest), Permissions: old.Permissions, Version: 1})
 	if err != nil || remote.ID == "" || remote.ID != newKeyID {
 		_, _ = s.Pool.Exec(ctx, `UPDATE sentry_keys SET status='active',last_error='',updated_at=now() WHERE id=$1 AND account_id=$2`, id, account)
 		return Key{}, ErrRemoteUnavailable
 	}
-	if err = s.Remote.Revoke(ctx, old.RemoteID, revokeOp); err != nil {
+	if err = connection.Revoke(ctx, old.RemoteID, revokeOp); err != nil {
 		// The old key remains the usable one. Remove the new remote key so a
 		// failed rotation cannot leave two active credentials behind.
 		rollbackOp, rollbackIDErr := newID()
@@ -666,7 +682,7 @@ func (s *Service) Rotate(ctx context.Context, account, id string) (Key, error) {
 		if rollbackIDErr != nil {
 			rollbackErr = rollbackIDErr
 		} else {
-			rollbackErr = s.Remote.Revoke(ctx, newKeyID, rollbackOp)
+			rollbackErr = connection.Revoke(ctx, newKeyID, rollbackOp)
 		}
 		if rollbackErr == nil {
 			_, _ = s.Pool.Exec(ctx, `UPDATE sentry_keys SET status='active',last_error='',updated_at=now() WHERE id=$1 AND account_id=$2`, id, account)

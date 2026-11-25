@@ -25,6 +25,8 @@ func (h Handler) Module() module.Definition {
 		Manifest:    module.Manifest{ID: "sentry", Version: "0.1.0", APIVersion: 1, Requires: []module.Dependency{{ID: "identity", APIVersion: 1}, {ID: "access", APIVersion: 1}}},
 		Permissions: []string{"sentry.self", "sentry.manage"},
 		Routes: []module.Route{
+			{Method: http.MethodGet, Path: "/connection", Permission: "sentry.manage", Handler: http.HandlerFunc(h.readConnection)},
+			{Method: http.MethodPut, Path: "/connection", Permission: "sentry.manage", Handler: http.HandlerFunc(h.editConnection)},
 			{Method: http.MethodGet, Path: "/keys", Permission: "sentry.self", Handler: http.HandlerFunc(h.list)},
 			{Method: http.MethodPost, Path: "/keys", Permission: "sentry.self", Handler: http.HandlerFunc(h.create)},
 			{Method: http.MethodPost, Path: "/keys/{id}/rotate", Permission: "sentry.self", Handler: http.HandlerFunc(h.rotate)},
