@@ -1,6 +1,6 @@
 # 项目状态
 
-合同类型与状态筛选按所选角色或军团的可见记录生成，空选项不再占据下拉框。本地实现，待发布。详见[合同页面](ui/contracts.md)。
+2026-11-25 前后端已发布 `v0.1.0-contract-filter-options-20261125`，源码 main `ba2ca96`，Goose 118。合同类型与状态筛选按所选角色或军团的可见记录生成。隔离数据库、桌面和手机回归通过，生产静态资源、就绪和匿名鉴权已复核。详见[发布记录](history/contract-filter-options-release-20261125.md)。
 
 2026-11-25 前端已发布 `v0.1.0-approval-filter-search-20261125`，源码 main `dce2000`。审批中心的业务类型、军团、待办类型、状态和申请人下拉框支持部分名称匹配。桌面和手机回归通过，生产静态资源已核对。详见[发布记录](history/approval-filter-search-release-20261125.md)。
 
