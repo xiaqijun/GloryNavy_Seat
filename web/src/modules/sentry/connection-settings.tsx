@@ -43,11 +43,11 @@ export function ConnectionSettingsButton({ csrf }: { csrf: string }) {
 function ConnectionForm({ csrf, settings, close }: { csrf: string; settings: ConnectionSettings; close: () => void }) {
   const client = useQueryClient();
   const toast = useToast();
-  const [origin, setOrigin] = useState(settings.origin);
-  const [revision] = useState(settings.revision);
+  const [editingSettings, setEditingSettings] = useState<ConnectionSettings | null>(null);
+  const [origin, setOrigin] = useState("");
   const [token, setToken] = useState("");
   const save = useMutation({
-    mutationFn: () => updateConnection(csrf, {
+    mutationFn: (revision: number) => updateConnection(csrf, {
       origin: origin.trim(),
       revision,
       ...(token.trim() ? { service_token: token.trim() } : {}),
@@ -61,28 +61,45 @@ function ConnectionForm({ csrf, settings, close }: { csrf: string; settings: Con
       close();
     },
   });
-  const retainToken = settings.token_configured && origin.trim().replace(/\/+$/, "") === settings.origin;
+  const retainToken = editingSettings?.token_configured === true && origin.trim().replace(/\/+$/, "") === editingSettings.origin;
   return (
     <FormDialog
       title={msg("Sentry 接入设置")}
       close={close}
-      className="sentry-pricing-form"
+      className={editingSettings ? "sentry-pricing-form sentry-connection-form" : undefined}
       busy={save.isPending}
-      disabled={!origin.trim() || (!retainToken && !token.trim()) || (!!token.trim() && token.trim().length < 32)}
-      submitLabel={msg("测试并保存")}
-      onSubmit={() => save.mutate()}
+      disabled={editingSettings !== null && (!origin.trim() || (!retainToken && !token.trim()) || (!!token.trim() && token.trim().length < 32))}
+      submitLabel={editingSettings ? msg("测试并保存") : msg("编辑接入设置")}
+      onSubmit={() => {
+        if (editingSettings) {
+          save.mutate(editingSettings.revision);
+        } else {
+          setOrigin(settings.origin);
+          setEditingSettings(settings);
+        }
+      }}
     >
-      <label>
-        <span>{msg("Sentry 服务地址")}</span>
-        <input autoFocus type="url" maxLength={2048} required value={origin} onChange={(event) => setOrigin(event.target.value)} />
-      </label>
-      <label>
-        <span>{msg("服务令牌")}</span>
-        <input type="password" autoComplete="new-password" maxLength={512} required={!retainToken} value={token}
-          onChange={(event) => setToken(event.target.value)} />
-      </label>
-      {retainToken && <p>{msg("留空可继续使用已保存的令牌。")}</p>}
-      {save.isError && <p role="alert">{save.error.message}</p>}
+      {editingSettings ? (
+        <>
+          <label>
+            <span>{msg("Sentry 服务地址")}</span>
+            <input autoFocus type="url" maxLength={2048} required value={origin} onChange={(event) => setOrigin(event.target.value)} />
+          </label>
+          <label>
+            <span>{msg("服务令牌")}</span>
+            <input type="password" autoComplete="new-password" maxLength={512} required={!retainToken} value={token}
+              onChange={(event) => setToken(event.target.value)} />
+          </label>
+          {save.isError && <p role="alert">{save.error.message}</p>}
+        </>
+      ) : (
+        <dl className="sentry-connection-summary">
+          <dt>{msg("Sentry 服务地址")}</dt>
+          <dd>{settings.origin || msg("未配置")}</dd>
+          <dt>{msg("服务令牌")}</dt>
+          <dd>{settings.token_configured ? msg("已配置") : msg("未配置")}</dd>
+        </dl>
+      )}
     </FormDialog>
   );
 }

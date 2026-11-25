@@ -46,6 +46,11 @@
 .sentry-pricing-form input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .sentry-pricing-form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
 .sentry-pricing-form > p[role="alert"] { grid-column: 1 / -1; margin: 0; color: var(--destructive); font-size: 13px; }
+.sentry-connection-form { grid-template-columns: minmax(0, 1fr); }
+.sentry-connection-form label { min-width: 0; }
+.sentry-connection-summary { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 14px; margin: 0; font-size: 14px; }
+.sentry-connection-summary dt { color: var(--muted); }
+.sentry-connection-summary dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .sentry-heading h1 { font-size: 24px; }
   .sentry-usage-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
