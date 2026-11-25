@@ -126,7 +126,6 @@ function Workspace({ csrf }: { csrf: string }) {
       <header className="sentry-heading">
         <span className="sentry-brand"><RadioTower aria-hidden="true" /></span>
         <div><h1>{msg("预警平台")}</h1><p>{msg("查看预警消耗并管理客户端密钥")}</p></div>
-        <ConnectionSettingsButton csrf={csrf} />
       </header>
       {q.isError && <div className="sentry-state" role="alert">{q.error.message}<Button variant="outline" onClick={() => void q.refetch()}>{msg("重试")}</Button></div>}
       {!q.isError && items.length === 0 && create.isError && <div className="sentry-state" role="alert"><span>{msg("密钥准备失败")}</span><Button variant="outline" onClick={retryAutoCreate}>{msg("重试")}</Button></div>}
@@ -181,15 +180,18 @@ function AlertUsagePanel({ csrf, keyActions }: { csrf: string; keyActions: React
         </div>
         <div className="sentry-usage-actions">
           {keyActions}
-          {pricing.data?.can_edit && !pricingEditing ? (
-            <Button variant="outline" onClick={() => setPricingEditing(true)}>
-              <Settings2 aria-hidden="true" />
-              {msg("配置收费")}
+          <div className="sentry-usage-settings">
+            <ConnectionSettingsButton csrf={csrf} />
+            {pricing.data?.can_edit && !pricingEditing ? (
+              <Button variant="outline" onClick={() => setPricingEditing(true)}>
+                <Settings2 aria-hidden="true" />
+                {msg("配置收费")}
+                <ChargingIndicator enabled={pricing.data.charging_enabled} />
+              </Button>
+            ) : pricing.data ? (
               <ChargingIndicator enabled={pricing.data.charging_enabled} />
-            </Button>
-          ) : pricing.data ? (
-            <ChargingIndicator enabled={pricing.data.charging_enabled} />
-          ) : null}
+            ) : null}
+          </div>
           <IconAction label={msg("刷新消费记录")} disabled={usage.isFetching || page.isFetching || rewards.isFetching} onClick={refresh}>
             <RefreshCw size={18} aria-hidden="true" />
           </IconAction>

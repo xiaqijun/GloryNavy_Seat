@@ -16,6 +16,8 @@ Keys created before this migration have no recoverable plaintext and require one
 
 Saving the switch synchronizes `PUT /api/v1/integrations/seat/alert-consumption` on Sentry. A failed remote update prevents the local switch from committing.
 
+SeAT site administrators can open **Sentry Connection Settings** beside the pricing controls in the alert usage panel on `/sentry`.
+
 ## Billing rules
 
 The Goose 107 guards were released in backend `v0.1.0-sentry-billing-guard-20261024`. After the administrator resumed v17, live new charges, paused-usage exclusions and cumulative accounting were verified for one account using two systems. A new settlement requires a canonical positive integer `system_id`; settled replays and evidence covered by legacy batches retain their prior behavior. This validates the ID format. Attribution still comes from upstream evidence and does not establish complete coverage of all accounts or client selections. Backlogged usage already settled by the older 106 program during v15 is not automatically refunded or rewritten; see the [release record](../history/sentry-billing-rounding-20261024.md).

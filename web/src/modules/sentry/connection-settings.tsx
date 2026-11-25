@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings2 } from "lucide-react";
+import { Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { useToast } from "@/components/ui/toast-context";
@@ -25,7 +25,7 @@ export function ConnectionSettingsButton({ csrf }: { csrf: string }) {
   return (
     <>
       <Button type="button" variant="outline" onClick={() => setOpen(true)}>
-        <Settings2 aria-hidden="true" />{title}
+        <Link2 aria-hidden="true" />{title}
       </Button>
       {open && (connection.data ? (
         <ConnectionForm csrf={csrf} settings={connection.data} close={() => setOpen(false)} />
