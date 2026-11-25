@@ -5871,7 +5871,7 @@ paths:
     post:
       operationId: createQQGroupApplication
       summary: Create an official QQ group admission application
-      description: Issues a 15-minute one-time code to a current member of a configured corporation who has saved a QQ number. The applicant enters it in the QQ join message or review answer. Before approval, the server rechecks membership, target group, and the applicant OpenID. An existing link must match. GROUP_MEMBER_ADD confirms admission and completes the QQ link for first-time applicants.
+      description: Issues a 15-minute one-time code to a signed-in applicant who has saved a QQ number. The applicant enters it in the QQ join message or review answer. A verified request can wait beyond the code expiry while QQ still lists it as pending. SEAT approves once it confirms current membership in a configured corporation and rechecks the target group and applicant OpenID. An existing link must match. GROUP_MEMBER_ADD confirms admission and completes the QQ link for first-time applicants.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -5931,7 +5931,7 @@ paths:
       security: [{ SessionCookie: [] }]
       parameters:
         - { name: group_openid, in: query, required: false, schema: { type: string, maxLength: 256 } }
-        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, approving, approved, bound, rejected, expired, failed] } }
+        - { name: status, in: query, required: false, schema: { type: string, enum: [pending, waiting_membership, approving, approved, bound, rejected, expired, failed] } }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
       responses:
         "200":
@@ -5955,7 +5955,7 @@ paths:
     get:
       operationId: listQQGroupOptions
       summary: List enabled QQ group admission options
-      description: Returns only enabled bot-scoped groups and administrator display labels so a signed-in member can choose a target group for an admission application.
+      description: Returns the enabled bot-scoped group options to signed-in applicants, including those who have not joined a configured corporation.
       security: [{ SessionCookie: [] }]
       responses:
         "200":
@@ -5979,7 +5979,7 @@ paths:
     post:
       operationId: syncQQGroupApplications
       summary: Poll configured QQ groups for pending admission requests
-      description: Administrator-only fallback when an official GROUP_JOIN_REQUEST callback was delayed or not delivered. Each configured bot-scoped group is paged through the official join_request_list endpoint; matching verification codes are approved idempotently.
+      description: Administrator-only reconciliation in addition to the automatic background poll. Each configured group is paged through the official join_request_list endpoint. A verified request awaits configured corporation membership and is approved at most once.
       security: [{ SessionCookie: [] }]
       parameters:
         - { $ref: "#/components/parameters/MutationOrigin" }
@@ -10713,12 +10713,12 @@ components:
         id: { type: integer, format: int64 }
         group_openid: { type: string, maxLength: 256, description: Bot-scoped QQ group OpenID, not a numeric group number }
         qq_number: { type: string, pattern: "^[1-9][0-9]{4,11}$" }
-        status: { type: string, enum: [pending, approving, approved, bound, rejected, expired, failed] }
+        status: { type: string, enum: [pending, waiting_membership, approving, approved, bound, rejected, expired, failed] }
         member_openid: { type: string, maxLength: 256 }
         join_request_id: { type: string, maxLength: 256 }
         failure_reason: { type: string }
         created_at: { type: string, format: date-time }
-        expires_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, description: Code expiry for a new request. A verified request in waiting_membership follows QQ's pending request instead. }
         approved_at: { type: string, format: date-time, nullable: true }
         bound_at: { type: string, format: date-time, nullable: true }
     QQGroupApplicationChallenge:

@@ -21,37 +21,6 @@ func (q *Queries) ExpireQQGroupApplications(ctx context.Context) error {
 	return err
 }
 
-const findQQGroupApplicationByCode = `-- name: FindQQGroupApplicationByCode :one
-SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
- failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
-FROM community_qq_group_applications
-WHERE code_hash=$1 AND status='pending' AND expires_at>now()
-FOR UPDATE
-`
-
-func (q *Queries) FindQQGroupApplicationByCode(ctx context.Context, codeHash []byte) (CommunityQqGroupApplication, error) {
-	row := q.db.QueryRow(ctx, findQQGroupApplicationByCode, codeHash)
-	var i CommunityQqGroupApplication
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.GroupOpenid,
-		&i.QqNumber,
-		&i.QqVersion,
-		&i.CodeHash,
-		&i.Status,
-		&i.MemberOpenid,
-		&i.JoinRequestID,
-		&i.FailureReason,
-		&i.CreatedAt,
-		&i.ExpiresAt,
-		&i.ApprovedAt,
-		&i.BoundAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const findQQGroupApplicationByMember = `-- name: FindQQGroupApplicationByMember :one
 SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
  failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
@@ -122,7 +91,7 @@ func (q *Queries) GetQQBotSettings(ctx context.Context) (GetQQBotSettingsRow, er
 const insertQQGroupApplication = `-- name: InsertQQGroupApplication :one
 INSERT INTO community_qq_group_applications(user_id,group_openid,qq_number,qq_version,code_hash,status,expires_at)
 VALUES($1,$2,$3,$4,$5,'pending',$6)
-RETURNING id,group_openid,qq_number,qq_version,status,expires_at
+RETURNING id,group_openid,qq_number,qq_version,status,created_at,expires_at
 `
 
 type InsertQQGroupApplicationParams struct {
@@ -140,6 +109,7 @@ type InsertQQGroupApplicationRow struct {
 	QqNumber    string
 	QqVersion   int64
 	Status      string
+	CreatedAt   pgtype.Timestamptz
 	ExpiresAt   pgtype.Timestamptz
 }
 
@@ -159,6 +129,7 @@ func (q *Queries) InsertQQGroupApplication(ctx context.Context, arg InsertQQGrou
 		&i.QqNumber,
 		&i.QqVersion,
 		&i.Status,
+		&i.CreatedAt,
 		&i.ExpiresAt,
 	)
 	return i, err
@@ -345,7 +316,7 @@ const lockActiveQQGroupApplication = `-- name: LockActiveQQGroupApplication :one
 SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
  failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
 FROM community_qq_group_applications
-WHERE user_id=$1 AND group_openid=$2 AND status IN ('pending','approving','approved','bound')
+WHERE user_id=$1 AND group_openid=$2 AND status IN ('pending','waiting_membership','approving','approved','bound')
 ORDER BY created_at DESC LIMIT 1 FOR UPDATE
 `
 
@@ -444,8 +415,9 @@ func (q *Queries) MarkQQGroupApplicationApproved(ctx context.Context, id int64) 
 
 const markQQGroupApplicationApproving = `-- name: MarkQQGroupApplicationApproving :exec
 UPDATE community_qq_group_applications
-SET status='approving',member_openid=$2,join_request_id=$3,updated_at=now()
-WHERE id=$1 AND status='pending'
+SET status='approving',member_openid=$2,join_request_id=$3,updated_at=now(),
+    expires_at=CASE WHEN status='waiting_membership' THEN now()+interval '15 minutes' ELSE expires_at END
+WHERE id=$1 AND status IN ('pending','waiting_membership')
 `
 
 type MarkQQGroupApplicationApprovingParams struct {

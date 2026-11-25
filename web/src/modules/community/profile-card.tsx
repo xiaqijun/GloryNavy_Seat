@@ -72,7 +72,7 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
     enabled: !!targetGroup,
     refetchInterval: ({ state }) => {
       const status = state.data?.status ?? "";
-      return ["pending", "approving", "approved"].includes(status) ? 5_000 : false;
+      return ["pending", "waiting_membership", "approving", "approved"].includes(status) ? 5_000 : false;
     },
   });
   const groupApply = useMutation({
@@ -140,7 +140,10 @@ function ProfileCard({ userID, csrf }: { userID: string; csrf: string }) {
               setEditing(false);
               toast.success(msg("资料已保存"));
               requestAnimationFrame(() => editButton.current?.focus());
-              await client.invalidateQueries({ queryKey: ["access"] });
+              await Promise.all([
+                client.invalidateQueries({ queryKey: ["access"] }),
+                client.invalidateQueries({ queryKey: ["community", "qq-group-application", userID] }),
+              ]);
             }}
           />
         ) : (
@@ -194,7 +197,7 @@ function QQGroupAdmission({
   error: Error | null;
   onApply: () => void;
 }) {
-  const active = application && ["pending", "approving", "approved", "bound"].includes(application.status);
+  const active = application && ["pending", "waiting_membership", "approving", "approved", "bound"].includes(application.status);
   const requiresChoice = options.length > 1;
   const currentCode = application?.status === "pending" && challenge?.id === application.id ? challenge.code : "";
   const targetGroup = selectedGroup || (options.length === 1 ? options[0].group_openid : "");
@@ -230,6 +233,8 @@ function QQGroupAdmission({
         </>
       ) : application?.status === "bound" ? (
         <p role="status">{msg("已入群，QQ 已绑定")}</p>
+      ) : application?.status === "waiting_membership" ? (
+        <p role="status">{msg("已收到入群申请，加入军团并同步后自动通过")}</p>
       ) : active ? (
         <p role="status">
           {application.status === "approved" ? msg("入群申请已通过，等待入群确认") : msg("入群申请处理中")}
@@ -244,7 +249,7 @@ function QQGroupAdmission({
           onClick={onApply}
         >
           {pending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-          {msg("申请加入 QQ 群")}
+          {msg("生成入群绑定码")}
         </Button>
       )}
       {error && <p className="login-error">{error.message}</p>}

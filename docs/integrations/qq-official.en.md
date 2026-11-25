@@ -28,11 +28,15 @@ Publication rechecks the enabled configuration and exact verified AppID/secret/A
 
 An administrator enables admission for a bot-scoped group OpenID received by the current bot. Production supports first-time linking through admission. The first live admission is pending verification. See the [release record](../history/qq-first-binding-release-20261124.md).
 
-Members with a current character in a configured corporation save their QQ number in My Characters, generate a 15-minute application code, and enter it in the desired QQ group's join request or review answer. The procedure uses the join request and requires no direct chat, group message, or bot mention.
+Upcoming flow (Goose 120). Applicants save their QQ number in My Characters, generate an admission code, and enter it in the desired QQ group's join request or review answer within 15 minutes. They can apply before joining the corporation. The code is submitted in the QQ join request itself.
 
 Administrators can save a `https://qm.qq.com/q/…` invite link shared from each QQ group's profile. Members can choose **Open QQ to request to join** after generating a code, then paste it into the join verification field. Goose 118 adds the optional link field with an empty initial value for existing groups.
 
-Before approval, the server rechecks the bot configuration, target group, corporation membership, profile version, and applicant OpenID. Existing members must apply with their linked QQ identity. For first-time applicants, the OpenID is reserved for the site account until admission is confirmed. The matching member-join event rechecks eligibility, completes the link, and updates the application. Administrator reconciliation processes pending requests by their request-list group and remains idempotent. Changing the AppID expires unfinished applications and retains their history.
+A verified request waits for corporation membership while it remains pending in QQ, even after the admission code expires. While there are active applications, the background worker checks the pending list every minute. SEAT approves the request automatically when its synced EVE data confirms membership in a configured corporation. It can approve immediately when membership is already confirmed.
+
+Before approval, the server rechecks the bot configuration, group, corporation membership, profile version, and applicant OpenID. An existing QQ link must match. Once approval starts, a first-time applicant's OpenID is reserved until the matching member-join event rechecks eligibility and completes the link. Repeated events and administrator reconciliation are idempotent. Changing the AppID expires unfinished applications and retains their history.
+
+Goose 120 adds `waiting_membership`. A successful, complete pending-list read can close a waiting application whose request has disappeared, allowing the applicant to reapply. The migration cannot be downgraded while applications are waiting for membership.
 
 ## Migration and compatibility
 

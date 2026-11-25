@@ -14,22 +14,30 @@ import (
 )
 
 func TestQQGroupAdmissionRequiresCurrentMemberAndMatchingBinding(t *testing.T) {
-	s, _, user, bindCode := qqBindingFixture(t)
+	s, pool, user, bindCode := qqBindingFixture(t)
 	ctx := t.Context()
 	const groupID = "official-group"
 	const syncGroupID = "sync-official-group"
 	const openID = "confirmed-member"
 	var posts atomic.Int32
 	var syncItem atomic.Pointer[OfficialQQGroupJoinRequest]
+	var pendingItem atomic.Pointer[OfficialQQGroupJoinRequest]
+	var incompleteList atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			page := OfficialQQGroupJoinRequestPage{List: []OfficialQQGroupJoinRequest{}}
-			if r.URL.Path == "/v2/groups/sync-official-group/join_request_list" {
-				if item := syncItem.Load(); item != nil {
-					page.List = append(page.List, *item)
-				}
+			if incompleteList.Load() {
+				_, _ = w.Write([]byte(`{"code":0}`))
+				return
 			}
-			_ = json.NewEncoder(w).Encode(page)
+			page := OfficialQQGroupJoinRequestPage{List: []OfficialQQGroupJoinRequest{}}
+			item := pendingItem.Load()
+			if r.URL.Path == "/v2/groups/sync-official-group/join_request_list" {
+				item = syncItem.Load()
+			}
+			if item != nil {
+				page.List = append(page.List, *item)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": page})
 			return
 		}
 		posts.Add(1)
@@ -52,10 +60,6 @@ func TestQQGroupAdmissionRequiresCurrentMemberAndMatchingBinding(t *testing.T) {
 	s.QQGroupMember = func(_ context.Context, candidate string) (bool, error) {
 		return isMember && candidate == user, nil
 	}
-	if _, err := s.CreateQQGroupApplication(ctx, user, groupID); !errors.Is(err, ErrQQGroupMemberRequired) {
-		t.Fatalf("non-member application: %v", err)
-	}
-	isMember = true
 	if err := s.ConfirmQQOfficial(ctx, "binding", openID, bindCode, []byte("binding"), bot.callbackSnapshot()); err != nil {
 		t.Fatal(err)
 	}
@@ -75,14 +79,34 @@ func TestQQGroupAdmissionRequiresCurrentMemberAndMatchingBinding(t *testing.T) {
 	}
 	handle("mismatched-binding")
 	request.MemberOpenID = openID
-	isMember = false
-	handle("membership-revoked")
-	if pending, err := s.QQGroupApplication(ctx, user); err != nil || pending.Status != "pending" || posts.Load() != 0 {
+	handle("waiting-for-membership")
+	if pending, err := s.QQGroupApplication(ctx, user); err != nil || pending.Status != "waiting_membership" || posts.Load() != 0 {
 		t.Fatalf("invalid request advanced application or called QQ: %+v, posts=%d, %v", pending, posts.Load(), err)
 	}
+	replayed := request
+	replayed.JoinRequestID = "different-request"
+	if err := s.ProcessQQGroupJoinRequest(ctx, "wrong-request", replayed, []byte("wrong-request"), bot.callbackSnapshot()); err != nil {
+		t.Fatal(err)
+	}
+	listed := request
+	listed.VerifyInfo = officialQQVerifyInfo{}
+	pendingItem.Store(&listed)
+	// The code's 15-minute lifetime must not time out a received request.
+	if _, err := pool.Exec(ctx, "UPDATE community_qq_group_applications SET expires_at=now()-interval '1 hour' WHERE id=$1", application.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.syncPendingQQGroupApplications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if posts.Load() != 0 {
+		t.Fatal("approved before corporation membership was confirmed")
+	}
 	isMember = true
-	handle("valid-application")
-	handle("valid-application")
+	for range 2 {
+		if err := s.syncPendingQQGroupApplications(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if approved, err := s.QQGroupApplication(ctx, user); err != nil || approved.Status != "approved" || posts.Load() != 1 {
 		t.Fatalf("valid request did not approve exactly once: %+v, posts=%d, %v", approved, posts.Load(), err)
 	}
@@ -93,6 +117,37 @@ func TestQQGroupAdmissionRequiresCurrentMemberAndMatchingBinding(t *testing.T) {
 	if joined, err := s.QQGroupApplication(ctx, user); err != nil || joined.Status != "bound" {
 		t.Fatalf("verified member event did not complete the application: %+v, %v", joined, err)
 	}
+	isMember = false
+	withdrawn, err := s.CreateQQGroupApplication(ctx, user, syncGroupID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	syncItem.Store(&OfficialQQGroupJoinRequest{
+		JoinRequestID: "withdrawn-request", MemberOpenID: openID,
+		VerifyInfo: officialQQVerifyInfo{VerifyMessage: withdrawn.Code},
+	})
+	if err := s.syncPendingQQGroupApplications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, "UPDATE community_qq_group_applications SET updated_at=now()-interval '1 hour' WHERE id=$1", withdrawn.ID); err != nil {
+		t.Fatal(err)
+	}
+	syncItem.Store(nil)
+	incompleteList.Store(true)
+	if err := s.syncPendingQQGroupApplications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if waiting, err := s.qqGroupApplication(ctx, user, syncGroupID); err != nil || waiting.Status != "waiting_membership" {
+		t.Fatalf("incomplete list cleared a waiting application: %+v, %v", waiting, err)
+	}
+	incompleteList.Store(false)
+	if err := s.syncPendingQQGroupApplications(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if expired, err := s.qqGroupApplication(ctx, user, syncGroupID); err != nil || expired.Status != "expired" || posts.Load() != 1 {
+		t.Fatalf("withdrawn request was not expired: %+v, posts=%d, %v", expired, posts.Load(), err)
+	}
+	isMember = true
 	application, err = s.CreateQQGroupApplication(ctx, user, syncGroupID)
 	if err != nil {
 		t.Fatal(err)

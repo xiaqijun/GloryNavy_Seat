@@ -38,6 +38,13 @@ func (s *Service) lockQQGroupScope(ctx context.Context, q *store.Queries, bot *O
 }
 
 func (s *Service) checkQQGroupApplicant(ctx context.Context, q *store.Queries, app store.CommunityQqGroupApplication, member string) error {
+	if err := checkQQGroupApplicantIdentity(ctx, q, app, member); err != nil {
+		return err
+	}
+	return s.requireQQGroupMember(ctx, app.UserID.String())
+}
+
+func checkQQGroupApplicantIdentity(ctx context.Context, q *store.Queries, app store.CommunityQqGroupApplication, member string) error {
 	profile, err := q.LockProfile(ctx, app.UserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrQQNotBound
@@ -69,7 +76,7 @@ func (s *Service) checkQQGroupApplicant(ctx context.Context, q *store.Queries, a
 	if reserved {
 		return ErrQQOfficialConflict
 	}
-	return s.requireQQGroupMember(ctx, app.UserID.String())
+	return nil
 }
 
 func (s *Service) approveQQGroupApplicant(ctx context.Context, bot *OfficialQQBot, app store.CommunityQqGroupApplication, request OfficialQQGroupJoinRequest) error {

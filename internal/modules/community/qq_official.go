@@ -319,8 +319,24 @@ type OfficialQQGroupMemberEvent struct {
 }
 
 type OfficialQQGroupJoinRequestPage struct {
-	List       []OfficialQQGroupJoinRequest `json:"list"`
-	NextCursor string                       `json:"next_cursor"`
+	List         []OfficialQQGroupJoinRequest `json:"list"`
+	NextCursor   string                       `json:"next_cursor"`
+	listReported bool
+}
+
+func (p *OfficialQQGroupJoinRequestPage) UnmarshalJSON(data []byte) error {
+	var payload struct {
+		List       json.RawMessage `json:"list"`
+		NextCursor string          `json:"next_cursor"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+	*p = OfficialQQGroupJoinRequestPage{NextCursor: payload.NextCursor, listReported: len(payload.List) != 0}
+	if p.listReported {
+		return json.Unmarshal(payload.List, &p.List)
+	}
+	return nil
 }
 
 func (b *OfficialQQBot) groupAPI(ctx context.Context, method, path string, query url.Values, input any, output any) error {
@@ -376,13 +392,13 @@ func (b *OfficialQQBot) groupAPI(ctx context.Context, method, path string, query
 	if output == nil || len(bytes.TrimSpace(raw)) == 0 {
 		return nil
 	}
-	if err := json.Unmarshal(raw, output); err == nil {
-		return nil
-	}
 	if len(envelope.Data) > 0 && string(envelope.Data) != "null" {
 		if err := json.Unmarshal(envelope.Data, output); err == nil {
 			return nil
 		}
+	}
+	if err := json.Unmarshal(raw, output); err == nil {
+		return nil
 	}
 	return fmt.Errorf("qq bot group response format invalid")
 }

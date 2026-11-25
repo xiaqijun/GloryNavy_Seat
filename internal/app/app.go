@@ -357,7 +357,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 			return accessService.IsAdministrator(ctx, s.UserID)
 		}
 		if permission == "community.group.apply" {
-			return communityService.QQGroupMember(ctx, s.UserID)
+			return true, nil
 		}
 		if permission == "reminder.self" || permission == "lp.self" || permission == "feedback.self" || permission == "courier.self" || permission == "approval.self" || permission == "market.self" || permission == "wallet.self" || permission == "welfare.self" || permission == "loan.self" || permission == "skills.self" || permission == "fittings.self" || permission == "exchange.self" || permission == "attendance.self" || permission == "sentry.self" || permission == "structures.self" || permission == "eve.characters.manage" || permission == "eve.sync.self" || permission == "eve.contracts.read" || permission == "community.profile.read" || permission == "community.profile.update" {
 			return true, nil
@@ -938,7 +938,7 @@ func New(pool *pgxpool.Pool, logger *slog.Logger, version string, enabled []stri
 	application := &Application{Handler: httpapi.New(logger, registry, system.ReadyHandler(system.New(pool, version)), authorize)}
 	backgrounds := []func(context.Context){}
 	if pool != nil && slices.Contains(enabled, "community") {
-		backgrounds = append(backgrounds, communityService.RunQQGateway)
+		backgrounds = append(backgrounds, communityService.RunQQGateway, communityService.RunQQGroupAdmission)
 	}
 	if esiSync != nil {
 		backgrounds = append(backgrounds, esiSync.Run)

@@ -2,17 +2,52 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// QQGroupApprovalOwner lets the caller take the account lock before locking the
-// pending application. The application must be read again once that lock is held.
-func (q *Queries) QQGroupApprovalOwner(ctx context.Context, hash []byte) (pgtype.UUID, error) {
+// QQGroupApprovalCandidate lets the caller lock the account before rereading the
+// application row. After intake, only the exact QQ request can advance it.
+func (q *Queries) QQGroupApprovalCandidate(ctx context.Context, group, member, request string, hash []byte) (int64, pgtype.UUID, error) {
+	var id int64
 	var owner pgtype.UUID
-	err := q.db.QueryRow(ctx, `SELECT user_id FROM community_qq_group_applications
-		WHERE code_hash=$1 AND status='pending' AND expires_at>now()`, hash).Scan(&owner)
-	return owner, err
+	err := q.db.QueryRow(ctx, `SELECT id,user_id FROM community_qq_group_applications WHERE group_openid=$1
+		AND ((status='waiting_membership' AND member_openid=$2 AND join_request_id=$3)
+		  OR (status='pending' AND code_hash=$4 AND expires_at>now()))
+		ORDER BY (status='waiting_membership') DESC, id DESC LIMIT 1`, group, member, request, hash).Scan(&id, &owner)
+	return id, owner, err
+}
+
+func (q *Queries) WaitForQQGroupMembership(ctx context.Context, id int64, member, request string) error {
+	_, err := q.db.Exec(ctx, `UPDATE community_qq_group_applications SET status='waiting_membership',
+		member_openid=$2,join_request_id=$3,updated_at=now() WHERE id=$1 AND status IN ('pending','approving')`, id, member, request)
+	return err
+}
+
+func (q *Queries) QQGroupsAwaitingApplications(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, `SELECT DISTINCT group_openid FROM community_qq_group_applications
+		WHERE status='waiting_membership' OR (status='pending' AND expires_at>now()) ORDER BY group_openid`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var groups []string
+	for rows.Next() {
+		var group string
+		if err := rows.Scan(&group); err != nil {
+			return nil, err
+		}
+		groups = append(groups, group)
+	}
+	return groups, rows.Err()
+}
+
+func (q *Queries) ExpireMissingQQGroupRequests(ctx context.Context, group string, cutoff time.Time, observed []string) error {
+	_, err := q.db.Exec(ctx, `UPDATE community_qq_group_applications SET status='expired',updated_at=now()
+		WHERE group_openid=$1 AND status='waiting_membership' AND updated_at<$2
+		  AND NOT (join_request_id=ANY($3::text[]))`, group, cutoff, observed)
+	return err
 }
 
 func (q *Queries) QQBindingOpenID(ctx context.Context, user pgtype.UUID, version int64) (string, error) {
@@ -34,7 +69,7 @@ func (q *Queries) QQGroupIdentityReserved(ctx context.Context, user pgtype.UUID,
 
 func (q *Queries) ExpireStaleQQGroupApplications(ctx context.Context, user pgtype.UUID, group string, version int64) error {
 	_, err := q.db.Exec(ctx, `UPDATE community_qq_group_applications SET status='expired',updated_at=now()
-		WHERE user_id=$1 AND group_openid=$2 AND qq_version<>$3 AND status IN ('pending','approving','approved')`, user, group, version)
+		WHERE user_id=$1 AND group_openid=$2 AND qq_version<>$3 AND status IN ('pending','waiting_membership','approving','approved')`, user, group, version)
 	return err
 }
 
@@ -56,7 +91,7 @@ func (q *Queries) CompleteQQGroupAdmission(ctx context.Context, id int64) error 
 
 func (q *Queries) ExpireQQGroupApplicationsOnAppChange(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, `UPDATE community_qq_group_applications SET status='expired',updated_at=now()
-		WHERE status IN ('pending','approving','approved')`)
+		WHERE status IN ('pending','waiting_membership','approving','approved')`)
 	return err
 }
 

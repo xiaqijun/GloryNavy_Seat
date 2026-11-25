@@ -71,8 +71,6 @@ func (h Handler) createQQGroupApplication(w http.ResponseWriter, r *http.Request
 	switch {
 	case errors.Is(err, ErrQQNotBound):
 		httpapi.Failure(w, r, 409, "qq_profile_required", "请先在社区资料中填写 QQ 号")
-	case errors.Is(err, ErrQQGroupMemberRequired):
-		httpapi.Failure(w, r, 403, "qq_group_membership_required", ErrQQGroupMemberRequired.Error())
 	case errors.Is(err, ErrQQGroupNotConfigured):
 		httpapi.Failure(w, r, 503, "qq_group_unavailable", "入群审批群组尚未配置")
 	case errors.Is(err, ErrQQGroupApplicationExists):

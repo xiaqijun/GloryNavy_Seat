@@ -1,21 +1,14 @@
 -- name: InsertQQGroupApplication :one
 INSERT INTO community_qq_group_applications(user_id,group_openid,qq_number,qq_version,code_hash,status,expires_at)
 VALUES($1,$2,$3,$4,$5,'pending',$6)
-RETURNING id,group_openid,qq_number,qq_version,status,expires_at;
+RETURNING id,group_openid,qq_number,qq_version,status,created_at,expires_at;
 
 -- name: LockActiveQQGroupApplication :one
 SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
  failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
 FROM community_qq_group_applications
-WHERE user_id=$1 AND group_openid=$2 AND status IN ('pending','approving','approved','bound')
+WHERE user_id=$1 AND group_openid=$2 AND status IN ('pending','waiting_membership','approving','approved','bound')
 ORDER BY created_at DESC LIMIT 1 FOR UPDATE;
-
--- name: FindQQGroupApplicationByCode :one
-SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
- failure_reason,created_at,expires_at,approved_at,bound_at,updated_at
-FROM community_qq_group_applications
-WHERE code_hash=$1 AND status='pending' AND expires_at>now()
-FOR UPDATE;
 
 -- name: LatestQQGroupApplication :one
 SELECT id,user_id,group_openid,qq_number,qq_version,code_hash,status,member_openid,join_request_id,
@@ -31,8 +24,9 @@ FROM community_qq_group_applications WHERE id=$1 FOR UPDATE;
 
 -- name: MarkQQGroupApplicationApproving :exec
 UPDATE community_qq_group_applications
-SET status='approving',member_openid=$2,join_request_id=$3,updated_at=now()
-WHERE id=$1 AND status='pending';
+SET status='approving',member_openid=$2,join_request_id=$3,updated_at=now(),
+    expires_at=CASE WHEN status='waiting_membership' THEN now()+interval '15 minutes' ELSE expires_at END
+WHERE id=$1 AND status IN ('pending','waiting_membership');
 
 -- name: MarkQQGroupApplicationApproved :exec
 UPDATE community_qq_group_applications

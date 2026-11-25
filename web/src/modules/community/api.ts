@@ -80,7 +80,7 @@ export interface QQGroupApplication {
   id: number;
   group_openid: string;
   qq_number: string;
-  status: "pending" | "approving" | "approved" | "bound" | "rejected" | "expired" | "failed";
+  status: "pending" | "waiting_membership" | "approving" | "approved" | "bound" | "rejected" | "expired" | "failed";
   member_openid?: string;
   join_request_id?: string;
   failure_reason?: string;
@@ -96,7 +96,7 @@ const isQQGroupApplication = (v: unknown): v is QQGroupApplication => {
   if (!v || typeof v !== "object") return false;
   const a = v as Partial<QQGroupApplication>;
   return typeof a.id === "number" && typeof a.group_openid === "string" && typeof a.qq_number === "string" &&
-    ["pending", "approving", "approved", "bound", "rejected", "expired", "failed"].includes(a.status ?? "") &&
+    ["pending", "waiting_membership", "approving", "approved", "bound", "rejected", "expired", "failed"].includes(a.status ?? "") &&
     typeof a.created_at === "string" && typeof a.expires_at === "string";
 };
 const isQQGroupApplicationData = (v: unknown): v is QQGroupApplication | null => v === null || isQQGroupApplication(v);

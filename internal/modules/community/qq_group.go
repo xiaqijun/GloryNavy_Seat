@@ -99,9 +99,6 @@ func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpe
 	if s.qqOfficial == nil || !s.qqOfficial.GroupAllowed(groupOpenID) {
 		return QQGroupApplicationChallenge{}, ErrQQGroupNotConfigured
 	}
-	if err := s.requireQQGroupMember(ctx, userID); err != nil {
-		return QQGroupApplicationChallenge{}, err
-	}
 	bot := s.qqOfficial.callbackSnapshot()
 	if bot == nil || s.LockAccounts == nil {
 		return QQGroupApplicationChallenge{}, ErrQQOfficialDisabled
@@ -155,7 +152,7 @@ func (s *Service) CreateQQGroupApplication(ctx context.Context, userID, groupOpe
 	if err = tx.Commit(ctx); err != nil {
 		return QQGroupApplicationChallenge{}, err
 	}
-	return QQGroupApplicationChallenge{QQGroupApplication: QQGroupApplication{ID: row.ID, GroupOpenID: row.GroupOpenid, QQNumber: row.QqNumber, Status: row.Status, ExpiresAt: row.ExpiresAt.Time}, Code: code}, nil
+	return QQGroupApplicationChallenge{QQGroupApplication: QQGroupApplication{ID: row.ID, GroupOpenID: row.GroupOpenid, QQNumber: row.QqNumber, Status: row.Status, CreatedAt: row.CreatedAt.Time, ExpiresAt: row.ExpiresAt.Time}, Code: code}, nil
 }
 
 func (s *Service) QQGroupApplication(ctx context.Context, userID string) (QQGroupApplication, error) {
@@ -180,6 +177,15 @@ func (s *Service) qqGroupApplication(ctx context.Context, userID, group string) 
 	}
 	if row.Status == "pending" && !row.ExpiresAt.Time.After(time.Now()) {
 		row.Status = "expired"
+	}
+	if row.Status == "waiting_membership" {
+		profile, err := q.GetProfile(ctx, user)
+		if err != nil {
+			return QQGroupApplication{}, err
+		}
+		if profile.QqVersion != row.QqVersion {
+			row.Status = "expired"
+		}
 	}
 	return applicationFromRow(row), nil
 }
@@ -210,7 +216,10 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if bot == nil || s.LockAccounts == nil {
 		return ErrQQOfficialDisabled
 	}
-	code := qqGroupCodeFromVerifyInfo(request.VerifyInfo)
+	var codeHash []byte
+	if code := qqGroupCodeFromVerifyInfo(request.VerifyInfo); code != "" {
+		codeHash = officialChallengeHash(code)
+	}
 	hash := sha256.Sum256(payload)
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -236,19 +245,12 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 			return lookupErr
 		}
 	}
-	if code == "" {
+	id, owner, err := q.QQGroupApprovalCandidate(ctx, request.GroupOpenID, request.MemberOpenID, request.JoinRequestID, codeHash)
+	if errors.Is(err, pgx.ErrNoRows) {
 		if eventID != "" {
 			if err = q.InsertBotEvent(ctx, store.InsertBotEventParams{Source: "qqgroup-join", EventID: eventID, PayloadHash: hash[:]}); err != nil {
 				return err
 			}
-		}
-		return tx.Commit(ctx)
-	}
-	codeHash := officialChallengeHash(code)
-	owner, err := q.QQGroupApprovalOwner(ctx, codeHash)
-	if errors.Is(err, pgx.ErrNoRows) {
-		if eventID != "" {
-			_ = q.InsertBotEvent(ctx, store.InsertBotEventParams{Source: "qqgroup-join", EventID: eventID, PayloadHash: hash[:]})
 		}
 		return tx.Commit(ctx)
 	}
@@ -261,7 +263,7 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if err = s.LockAccounts(ctx, tx, []string{owner.String()}); err != nil {
 		return err
 	}
-	app, err := q.FindQQGroupApplicationByCode(ctx, codeHash)
+	app, err := q.LockQQGroupApplication(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
@@ -271,12 +273,34 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if app.UserID != owner || app.GroupOpenid != request.GroupOpenID {
 		return nil
 	}
-	if err = s.checkQQGroupApplicant(ctx, q, app, request.MemberOpenID); errors.Is(err, ErrQQNotBound) || errors.Is(err, ErrQQOfficialConflict) || errors.Is(err, ErrQQGroupMemberRequired) {
+	switch app.Status {
+	case "pending":
+		if !app.ExpiresAt.Time.After(time.Now()) || !bytesEqual(app.CodeHash, codeHash) {
+			return nil
+		}
+	case "waiting_membership":
+		if app.MemberOpenid.String != request.MemberOpenID || app.JoinRequestID.String != request.JoinRequestID {
+			return nil
+		}
+	default:
+		return nil
+	}
+	if err = checkQQGroupApplicantIdentity(ctx, q, app, request.MemberOpenID); errors.Is(err, ErrQQNotBound) || errors.Is(err, ErrQQOfficialConflict) {
 		return nil
 	} else if err != nil {
 		return err
 	}
-	if err = q.MarkQQGroupApplicationApproving(ctx, store.MarkQQGroupApplicationApprovingParams{ID: app.ID, MemberOpenid: pgtype.Text{String: request.MemberOpenID, Valid: true}, JoinRequestID: pgtype.Text{String: request.JoinRequestID, Valid: true}}); err != nil {
+	membershipErr := s.requireQQGroupMember(ctx, app.UserID.String())
+	waitForMembership := errors.Is(membershipErr, ErrQQGroupMemberRequired)
+	switch {
+	case waitForMembership:
+		err = q.WaitForQQGroupMembership(ctx, app.ID, request.MemberOpenID, request.JoinRequestID)
+	case membershipErr != nil:
+		return membershipErr
+	default:
+		err = q.MarkQQGroupApplicationApproving(ctx, store.MarkQQGroupApplicationApprovingParams{ID: app.ID, MemberOpenid: pgtype.Text{String: request.MemberOpenID, Valid: true}, JoinRequestID: pgtype.Text{String: request.JoinRequestID, Valid: true}})
+	}
+	if err != nil {
 		return err
 	}
 	if eventID != "" {
@@ -287,7 +311,14 @@ func (s *Service) ProcessQQGroupJoinRequest(ctx context.Context, eventID string,
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
+	if waitForMembership {
+		return nil
+	}
 	err = s.approveQQGroupApplicant(ctx, bot, app, request)
+	if errors.Is(err, ErrQQGroupMemberRequired) {
+		// The final check failed before contacting QQ. This request may wait again.
+		return store.New(s.pool).WaitForQQGroupMembership(ctx, app.ID, request.MemberOpenID, request.JoinRequestID)
+	}
 	if err != nil {
 		failureTx, beginErr := s.pool.Begin(ctx)
 		if beginErr != nil {
@@ -399,35 +430,4 @@ func (s *Service) ProcessQQGroupMemberAdded(ctx context.Context, eventID string,
 		return err
 	}
 	return tx.Commit(ctx)
-}
-
-func (s *Service) SyncQQGroupApplications(ctx context.Context) error {
-	if s.qqOfficial == nil {
-		return ErrQQOfficialDisabled
-	}
-	for _, group := range s.qqOfficial.ConfiguredGroups() {
-		cursor := ""
-		for {
-			page, err := s.qqOfficial.GroupJoinRequests(ctx, group, cursor, 100)
-			if err != nil {
-				return err
-			}
-			for _, item := range page.List {
-				// QQ scopes these entries by the GET path and omits the group from the list item.
-				if item.GroupOpenID != "" && item.GroupOpenID != group {
-					continue
-				}
-				item.GroupOpenID = group
-				eventID := "official-group-sync:" + group + ":" + item.JoinRequestID
-				if err = s.ProcessQQGroupJoinRequest(ctx, eventID, item, []byte(eventID)); err != nil {
-					return err
-				}
-			}
-			if page.NextCursor == "" || page.NextCursor == cursor {
-				break
-			}
-			cursor = page.NextCursor
-		}
-	}
-	return nil
 }

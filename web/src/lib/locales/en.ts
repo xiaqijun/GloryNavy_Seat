@@ -1825,6 +1825,8 @@ export const english: Record<string, string> = {
   "QQ 加群链接": "QQ group invite link",
   "请选择 QQ 群": "Select a QQ group",
   "入群申请处理中": "Group admission request is being processed",
+  "已收到入群申请，加入军团并同步后自动通过": "Request received. Approval is automatic once SEAT syncs your corporation membership.",
+  "生成入群绑定码": "Generate group admission code",
   "入群申请已通过，等待入群确认": "Admission approved; waiting for group membership confirmation",
   "已入群，QQ 已绑定": "Group joined and QQ linked",
   "用填写的 QQ 申请入群，并将此码填入验证信息": "Apply with your QQ account and enter this code in the join request",
